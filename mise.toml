@@ -1,0 +1,3 @@
+[tools]
+node = "lts"
+nub = "0.9.1"

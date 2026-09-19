@@ -1,0 +1,70 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "artisanconnect",
+  "compatibility_date": "2026-09-14",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "src/server.ts",
+  "workers_dev": true,
+  // Custom domains: replace the pattern with your hostname, then uncomment.
+  // "routes": [
+  //   { "pattern": "artisanconnect.example.com", "custom_domain": true },
+  // ],
+  "vars": {
+    "APP_NAME": "artisanconnect",
+  },
+  // Workers Assets: the Vite plugin injects the client build directory.
+  "assets": {
+    "binding": "ASSETS",
+  },
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+  },
+  "analytics_engine_datasets": [
+    {
+      "binding": "ANALYTICS",
+      "dataset": "artisanconnect_events",
+    },
+  ],
+  "ai": {
+    "binding": "AI",
+  },
+  // D1: omit database_id so Wrangler can auto-provision on first deploy.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "artisanconnect",
+      "migrations_dir": "migrations",
+    },
+  ],
+  "r2_buckets": [
+    {
+      "binding": "R2",
+      "bucket_name": "artisanconnect",
+    },
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "QUEUE",
+        "queue": "artisanconnect",
+      },
+    ],
+    "consumers": [
+      {
+        "queue": "artisanconnect",
+      },
+    ],
+  },
+  "triggers": {
+    "crons": ["0 * * * *"],
+  },
+  // Email Routing inbound uses the `email` handler in src/server.ts.
+  // Outbound send: verify destination addresses in the dashboard, then optionally
+  // set destination_address / allowed_destination_addresses here.
+  "send_email": [
+    {
+      "name": "SEND_EMAIL",
+    },
+  ],
+}
