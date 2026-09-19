@@ -8,5 +8,6 @@
     ".wrangler/**",
     ".tanstack/**",
     "node_modules/**",
+    ".agents/**",
   ],
 }
