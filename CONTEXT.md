@@ -53,7 +53,7 @@ A proposed change to the price or scope of an Engagement. It does not apply unti
 _Avoid_: Variation, Change order
 
 **Service Category**:
-An Admin-controlled trade a Job is posted in and an Artisan is verified for.
+An Admin-controlled trade a Job is posted in and an Artisan is verified for. Verified for means every check that category requires is current.
 _Avoid_: Subcategory, Specialty, Skill
 
 **Service**:
@@ -93,8 +93,8 @@ _Avoid_: Commission, Service fee, Platform fee
 ### Trust
 
 **Verification Badge**:
-One completed platform check, shown with its validity. It is not a promise that the work will be good.
-_Avoid_: Vetted, Guarantee
+One named check the platform has completed, shown with a validity date only when that check expires. A missing badge is not a failed one, and it is not a promise that the work will be good.
+_Avoid_: Vetted, Guarantee, Artisan Verification, Client Verification
 
 **Credential**:
 A statutory permission a Verification Badge may evidence. It is not itself a badge.

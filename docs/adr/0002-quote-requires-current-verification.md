@@ -1,0 +1,3 @@
+# A Quote requires current verification for that Service Category
+
+An Artisan may submit a Quote, and a Client may accept it, only while every check that Service Category requires is current. A Verification Badge records one named check the platform has completed. It is not a guarantee, and a required badge is shown only once the Artisan is verified for that category. An Account alone was rejected because a Client would otherwise hire an unchecked Artisan. A company electrical-contractor registration, a second person in control of plumbing, and a public permission-to-work badge were rejected because launch has no company, no second person, and no immigration label.
