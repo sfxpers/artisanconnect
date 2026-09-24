@@ -7,32 +7,28 @@ ArtisanConnect is a marketplace on which a Client hires an Artisan, and the requ
 ### Parties
 
 **Account**:
-The only party that signs in and acts. It is either a Client or an Artisan, never both. The person's name on it is an attribute of the Account, not a second party.
+The only party that signs in and acts, either a Client or an Artisan, never both, with one named person of at least 18 acting for it. That person's name is an attribute, not a second party; the person is not replaced, the kind does not change, and a human holds at most one of each.
 _Avoid_: User, Member, Owner, Operator
 
+**Identity Number**:
+The named person's South African ID number or recognised refugee identity document number, or, if they have neither, their passport number and its issuing country. An Account is not held without one, and closing that Account does not free it for the same kind.
+_Avoid_: Person-fact, ID, Credential, Asylum-seeker permit
+
 **Client**:
-The Account that posts a Job and pays for an Engagement. Its public name may be a person or an organization. That name is an attribute, not a second kind of Client.
+The Account that posts a Job and pays for an Engagement. Its public name may be the named person or a trading name, and that name is not a key.
 _Avoid_: Employer, Customer, Buyer, Client organization, Client Business
 
 **Artisan**:
-The Account that proposes a Quote and is paid for an Engagement. An Artisan is either a Solo Artisan or an Artisan Business.
-_Avoid_: Seller, Contractor, Tradesman, Service provider
-
-**Solo Artisan**:
-An Artisan whose public name is the person who does the work. A Solo Artisan has no Workers.
-_Avoid_: Freelancer, Individual
-
-**Artisan Business**:
-An Artisan whose public name is the business. It owns its Quotes, Engagements, Payouts, Reviews, and Client Relationships.
-_Avoid_: Company, Firm, Team
-
-**Worker**:
-A person recorded on an Artisan Business, with no Account, assigned to arrive for an Engagement, and not a party to the Quote, the Payout, the Review, or the Client Relationship. Everyone who arrives for that business is a Worker, including the person who signs in, but only once assigned.
-_Avoid_: Employee, Subcontractor, Team member, Staff
+The Account that proposes a Quote and is paid for an Engagement. It is the named person, and its public name may be that person or a trading name, not a key.
+_Avoid_: Seller, Contractor, Tradesman, Service provider, Solo Artisan, Artisan Business, Worker
 
 **Admin**:
-A staff identity that is not an Account. It cannot hold a Job or an Engagement.
+A staff identity that is not an Account. It cannot hold a Job or an Engagement, and it does not act as an Account.
 _Avoid_: User, Moderator
+
+**Visitor**:
+A person with no Account, and not a party.
+_Avoid_: Guest, Anonymous user, User
 
 ### Work
 
@@ -113,13 +109,13 @@ A Service Category-scoped rating one party writes about the other after a paid E
 _Avoid_: Reputation, Feedback, Score
 
 **Reliability Record**:
-The platform's record of an Artisan's conduct, including an assigned Worker's conduct, Cancellation, and no-show. It is not a Review.
+The platform's record of an Artisan's conduct, including Cancellation and no-show. It is not a Review.
 _Avoid_: Reputation, Feedback, Score
 
 ### Relationship
 
 **Client Relationship**:
-The pair of one Client Account and one Artisan Account. It is with the Artisan, not with a Worker.
+The pair of one Client Account and one Artisan Account.
 _Avoid_: Lock-in, Exclusivity, Repeat customer
 
 **Protected Relationship Period**:
