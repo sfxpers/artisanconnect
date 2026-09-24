@@ -36,6 +36,26 @@ _Avoid_: Guest, Anonymous user, User
 A Client's private request for work, before anyone is paid.
 _Avoid_: Lead, Deal, Order, Booking, Project
 
+**Region**:
+A named area Admin has opened and edged. A Job is posted in one. An Artisan selects at most three, and is matched only in those.
+_Avoid_: Zone, Suburb, Service Area, Reach, Ward, Subcouncil
+
+**Job Match**:
+The platform's offer of a Job to an Artisan who is verified for its Service Category and has selected its Region.
+_Avoid_: Lead, Dispatch, Assignment
+
+**Artisan Invitation**:
+A Client's choice that shows a Job to one Artisan who is verified for its Service Category and has selected its Region. It is not a Job Match.
+_Avoid_: Request, Direct hire, Lead
+
+**Artisan Profile**:
+The public page of an Artisan. A Visitor may open it. It shows no direct contact.
+_Avoid_: Listing, Storefront
+
+**Available for Jobs**:
+The Artisan's choice to receive new Job Matches and Artisan Invitations. Turning it off does not hide the Artisan Profile.
+_Avoid_: Online, Calendar, Schedule
+
 **Artisan Chosen**:
 A Job with an accepted Quote that the Client has not yet paid. It is not an Engagement.
 _Avoid_: Pending Engagement, Unfunded Engagement

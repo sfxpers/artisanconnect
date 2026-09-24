@@ -1,0 +1,3 @@
+# An Artisan arrives by Region, not by a city boundary
+
+A Job is private. An Artisan sees it only after a Job Match or an Artisan Invitation, and only in a Region they have selected. Launch opens twelve named areas inside the City of Cape Town. Admin draws each edge and may open a later Region; this launch does not. An Artisan selects at most three, and a verified address outside the Region is not a bar. A municipal in-or-out list was rejected because Cape Town is the first city, not the only one. Drive-time reach was rejected because the Artisan chooses named areas, not a journey length. Showing the Job and hoping they decline was rejected because the platform filters before the Job is shown.
