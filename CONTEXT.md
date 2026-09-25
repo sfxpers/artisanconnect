@@ -65,12 +65,28 @@ A Job once a Quote has been accepted and the Client has paid. One Job leads to a
 _Avoid_: Managed Engagement, Lead, Deal, Order, Booking, Project
 
 **Quote**:
-An Artisan's priced proposal on a Job that is not yet an Engagement. A change before the Client accepts it is still that Quote.
+An Artisan's priced proposal on a Job. One Artisan has one on a Job. It is accepted when the Artisan confirms the start date and duration the Client entered, and a change before that is still that Quote.
 _Avoid_: Offer, Bid, Estimate
 
+**Declined**:
+A Quote the Client rejected before one on that Job was accepted. It is not Not chosen, and it does not become open again.
+_Avoid_: Rejected, Lost
+
+**Withdrawn**:
+A Quote the Artisan pulled back before it was accepted. It does not become open again.
+_Avoid_: Declined, Cancelled
+
+**Not chosen**:
+A Quote that was still Sent when another Quote on that Job was accepted. It does not become Sent again, and it does not become Expired.
+_Avoid_: Lost, Rejected, Unsuccessful, Closed
+
 **Updated Quote**:
-A proposed change to the price or scope of an Engagement. It does not apply until the Client accepts it.
+A proposed change to the price, scope, or Warranty of an Engagement. It does not apply until the Client accepts it.
 _Avoid_: Variation, Change order
+
+**Schedule change**:
+A new start date and duration the Client enters after a Quote is accepted. It applies only when the Artisan confirms it, and it is not an Updated Quote.
+_Avoid_: Reschedule, Booking
 
 **Service Category**:
 An Admin-controlled trade a Job is posted in and an Artisan is verified for. Verified for means every check that category requires is current.
@@ -81,11 +97,11 @@ A line of work an Artisan describes publicly. It does not decide who may Quote, 
 _Avoid_: Subcategory, Specialty, Skill
 
 **Labour**:
-The part of a Quote that is the Artisan's work.
+The part of a Quote that is the Artisan's work, including any attendance. There is no separate call-out charge.
 _Avoid_: Call-out
 
 **Materials**:
-The part of a Quote that is the goods, priced apart from Labour.
+The goods in a Quote, priced apart from Labour. The amount is what the Artisan charges, and it is zero when the Client supplies them.
 _Avoid_: Parts, Supplies
 
 ### Money
@@ -121,7 +137,7 @@ A statutory permission a Verification Badge may evidence. It is not itself a bad
 _Avoid_: Badge
 
 **Warranty**:
-A promise the Artisan makes on a Quote. It is not a Verification Badge, and the platform does not make one.
+A promise the Artisan makes on a Quote. It may be absent. It is not a Verification Badge, and the platform does not make one.
 _Avoid_: Guarantee, Platform warranty
 
 **Review**:

@@ -1,0 +1,3 @@
+# A Quote is accepted when the Artisan confirms the dates
+
+A Client does not accept a Quote by herself. She enters a start date and a duration, and the Quote is accepted only when the Artisan confirms them. That confirmation locks the price and scope, and every other Sent Quote becomes Not chosen. Those Quotes do not return if she never pays. Her click alone was rejected because his withdraw would then strand her: the others would already be dead, and he cannot withdraw once the Quote is accepted. Letting her switch before Payment was rejected because accepting already stops new arrivals, and bringing the others back would reopen who can see the Job.
