@@ -115,7 +115,7 @@ Money sent to the Artisan's verified payout account. It is the Artisan's share o
 _Avoid_: Withdrawal, Settlement
 
 **Release**:
-The Client's decision that the accepted-Quote portion of a Payment may be sent as a Payout. One Payment may be Released in more than one part. Each part is still a Release.
+Sending the accepted-Quote portion of a Payment as a Payout, in one part or more. It is the Client's decision, or silence after the Artisan has marked the work done.
 _Avoid_: Release Payment, Milestone
 
 **Protection Fee**:
