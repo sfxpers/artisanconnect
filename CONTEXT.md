@@ -150,6 +150,10 @@ _Avoid_: Reputation, Feedback, Score
 
 ### Relationship
 
+**Conversation**:
+The speech between one Client and one Artisan on one Job, in text, pictures, video, documents, or voice notes. It opens when he Quotes, or when either speaks if she invited him, it is the same record after Payment, and it is not private from the platform.
+_Avoid_: Chat, thread, inbox, DM
+
 **Client Relationship**:
 The pair of one Client Account and one Artisan Account.
 _Avoid_: Lock-in, Exclusivity, Repeat customer
@@ -157,3 +161,11 @@ _Avoid_: Lock-in, Exclusivity, Repeat customer
 **Protected Relationship Period**:
 The time after the first paid Engagement in a Client Relationship during which further work between those Accounts belongs on the platform. Cancellation does not end it.
 _Avoid_: Lock-in, Exclusivity
+
+**Leaving**:
+An Account's attempt to move the request, the paid work, or the money off the platform, addressed to the other party or published where someone else can see it. A draft that never becomes matchable is not one.
+_Avoid_: Circumvention, leakage, off-platform dealing
+
+**Suspension challenge**:
+The suspended Account's one request, within seven times 24 hours of being told, that the suspension be ended. It is not a Dispute.
+_Avoid_: Dispute, appeal
