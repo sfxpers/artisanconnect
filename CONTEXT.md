@@ -14,6 +14,10 @@ _Avoid_: User, Member, Owner, Operator
 The named person's South African ID number or recognised refugee identity document number, or, if they have neither, their passport number and its issuing country. An Account is not held without one. Closing does not free it for the same kind, except when a closed Account's number is found not to be the named person's. A new Account held with that freed number does not inherit the closed one.
 _Avoid_: Person-fact, ID, Credential, Asylum-seeker permit
 
+**Email**:
+The address an Account signs in with. One email is one Account. It is not the Identity Number, and an Admin's address is not one.
+_Avoid_: login, username, phone
+
 **Client**:
 The Account that posts a Job and pays for an Engagement. Its public name may be the named person or a trading name, and that name is not a key.
 _Avoid_: Employer, Customer, Buyer, Client organization, Client Business
