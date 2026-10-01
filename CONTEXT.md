@@ -109,8 +109,16 @@ An Engagement with a Completion, of which some of the accepted-Quote portion has
 _Avoid_: Closed, Finished
 
 **Completion evidence**:
-A document a Completion must carry when that Job requires it, beyond the note and the after-work photo.
+A document a Completion must carry when that Job requires it, beyond the note and the after-work photo. It is not a Verification Badge.
 _Avoid_: Compliance document, certificate
+
+**Certificate of compliance**:
+The Completion evidence an Electrical Job requires, for that installation. It is not a Verification Badge, and it is not a PIRB certificate.
+_Avoid_: CoC, compliance document, electrical certificate
+
+**Certificate of conformity**:
+The Completion evidence a Plumbing Job requires when that work includes installing or removing a gas appliance, gas system, or gas reticulation. It is not a Verification Badge.
+_Avoid_: Gas certificate, CoC
 
 **Cancellation**:
 An ending of an Engagement before Completion, requested by either Account. It is not a walk-away before Payment. His is on the Reliability Record. Hers is not.
