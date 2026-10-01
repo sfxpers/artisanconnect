@@ -37,7 +37,7 @@ _Avoid_: Guest, Anonymous user, User
 ### Work
 
 **Job**:
-A Client's private request for work, before anyone is paid.
+A Client's private request for work, before anyone is paid. From the moment it can be matched until she pays, she may end it. That end is final, and it is not a Cancellation.
 _Avoid_: Lead, Deal, Order, Booking, Project
 
 **Site type**:
@@ -65,7 +65,7 @@ The Artisan's choice to receive new Job Matches and Artisan Invitations. Turning
 _Avoid_: Online, Calendar, Schedule
 
 **Artisan Chosen**:
-A Job with an accepted Quote that the Client has not yet paid. It is not an Engagement. She may end it before Payment. That end is final, and it is not a Cancellation.
+A Job with an accepted Quote that the Client has not yet paid. It is not an Engagement.
 _Avoid_: Pending Engagement, Unfunded Engagement
 
 **Engagement**:
@@ -91,6 +91,10 @@ _Avoid_: Lost, Rejected, Unsuccessful, Closed
 **Updated Quote**:
 A proposed change to the price, scope, or Warranty of an Engagement. It does not apply until the Client accepts it.
 _Avoid_: Variation, Change order
+
+**Preferred start**:
+The date the Client would like a Job to begin, or absent. It is not the start date on a Quote.
+_Avoid_: booking, schedule
 
 **Schedule change**:
 A new start date and duration the Client enters after a Quote is accepted. It applies only when the Artisan confirms it, and it is not an Updated Quote.
