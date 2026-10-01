@@ -11,7 +11,7 @@ The only party that signs in and acts, either a Client or an Artisan, never both
 _Avoid_: User, Member, Owner, Operator
 
 **Identity Number**:
-The named person's South African ID number or recognised refugee identity document number, or, if they have neither, their passport number and its issuing country. An Account is not held without one, and closing that Account does not free it for the same kind.
+The named person's South African ID number or recognised refugee identity document number, or, if they have neither, their passport number and its issuing country. An Account is not held without one. Closing does not free it for the same kind, except when a closed Account's number is found not to be the named person's. A new Account held with that freed number does not inherit the closed one.
 _Avoid_: Person-fact, ID, Credential, Asylum-seeker permit
 
 **Client**:
@@ -23,7 +23,7 @@ The Account that proposes a Quote and is paid for an Engagement. It is the named
 _Avoid_: Seller, Contractor, Tradesman, Service provider, Solo Artisan, Artisan Business, Worker
 
 **Admin**:
-A staff identity that is not an Account. It cannot hold a Job or an Engagement, and it does not act as an Account.
+A staff identity that is not an Account. It holds one or more of verification, marketplace operations, trust and safety, and finance and disputes, and one person may hold more than one. It cannot hold a Job or an Engagement, and it does not act as an Account.
 _Avoid_: User, Moderator
 
 **Visitor**:
@@ -109,8 +109,8 @@ A finding, on a Cancellation she requested, that he had not attended by the agre
 _Avoid_: Cancellation
 
 **Service Category**:
-An Admin-controlled trade a Job is posted in and an Artisan is verified for. Verified for means every check that category requires is current.
-_Avoid_: Subcategory, Specialty, Skill
+A trade a Job is posted in and an Artisan is verified for. The launch set is fixed, a participant cannot invent one, and verified for means every check that category requires is current.
+_Avoid_: Subcategory, Specialty, Skill, free-text category
 
 **Service**:
 A line of work an Artisan describes publicly. It does not decide who may Quote, and a Job does not select one.
@@ -179,7 +179,7 @@ _Avoid_: Reputation, Feedback, Score
 ### Relationship
 
 **Conversation**:
-The speech between one Client and one Artisan on one Job, in text, pictures, video, documents, or voice notes. It opens when he Quotes, or when either speaks if she invited him, it is the same record after Payment, and it is not private from the platform.
+The speech between one Client and one Artisan on one Job, in text, pictures, video, documents, or voice notes. It opens when he Quotes, or when either speaks if she invited him, it is the same record after Payment, and it is not private from the platform. An Admin may read it and may not speak in it.
 _Avoid_: Chat, thread, inbox, DM
 
 **Client Relationship**:
@@ -198,6 +198,10 @@ _Avoid_: Lock-in, Exclusivity
 An Account's attempt to move the request, the paid work, or the money off the platform, addressed to the other party or published where someone else can see it. A draft that never becomes matchable is not one.
 _Avoid_: Circumvention, leakage, off-platform dealing
 
+**Suspension**:
+A stop on new work for one Account. It follows the Leaving ladder, or a finding that the Identity Number is not the named person's. It does not end a paid Engagement, and it is not a close.
+_Avoid_: Ban, deactivation, block
+
 **Suspension challenge**:
-The suspended Account's one request, within seven times 24 hours of being told, that the suspension be ended. It is not a Dispute.
+The suspended Account's one request, within seven times 24 hours of being told, that the suspension be ended. A different person hears it. It is not a Dispute.
 _Avoid_: Dispute, appeal

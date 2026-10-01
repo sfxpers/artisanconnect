@@ -1,3 +1,3 @@
 # A Conversation is not private from the platform
 
-A Conversation may be read for support, a report, or a Dispute. Both parties are told that before the first message. End-to-end privacy was rejected because Leaving and a Dispute would then be unjudgeable. The notice wording is not this decision, and which Admin permission may open a Conversation is a separate one.
+A Conversation may be read, and an Admin may not speak in it. Trust and safety may open one from a report, a Leaving item, or a false-evidence report. Finance and disputes may open the Conversation of an Engagement they are allocating. No other grant may, and there is no search of every Conversation. Both parties are told that it may be read before the first message. End-to-end privacy was rejected because Leaving and a Dispute would then be unjudgeable. The notice wording is not this decision. A support queue was rejected because a report already opens the record.
