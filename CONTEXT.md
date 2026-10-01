@@ -169,8 +169,8 @@ A promise the Artisan makes on a Quote. It may be absent. It is not a Verificati
 _Avoid_: Guarantee, Platform warranty
 
 **Review**:
-A Service Category-scoped rating one party writes about the other after a paid Engagement.
-_Avoid_: Reputation, Feedback, Score
+A rating one party writes about the other, one each, only once an Engagement is Completed. Hers is scoped to that Engagement's Service Category. His is not. It is not a Reliability Record.
+_Avoid_: Reputation, Feedback, Score, Completion review
 
 **Reliability Record**:
 The platform's record of an Artisan's conduct. It records his Cancellation, and a no-show. It does not record hers. Admin and the Artisan may read it. A Client may not. It is not on the Artisan Profile, and it is not a Review.
@@ -185,6 +185,10 @@ _Avoid_: Chat, thread, inbox, DM
 **Client Relationship**:
 The pair of one Client Account and one Artisan Account.
 _Avoid_: Lock-in, Exclusivity, Repeat customer
+
+**Hire Again**:
+The Client's act of opening a new Job addressed only to an Artisan with whom she has a Completed Engagement. It is not a Job Match, and it is not a new fee.
+_Avoid_: Rehire, Repeat booking, Direct hire
 
 **Protected Relationship Period**:
 The time after the first paid Engagement in a Client Relationship during which further work between those Accounts belongs on the platform. Cancellation does not end it.
