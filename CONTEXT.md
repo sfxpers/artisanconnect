@@ -40,6 +40,10 @@ _Avoid_: Guest, Anonymous user, User
 A Client's private request for work, before anyone is paid.
 _Avoid_: Lead, Deal, Order, Booking, Project
 
+**Site type**:
+Home or Business, a label on a Job, not a kind of Account. A Home Site Job is one whose Site type is Home; a Business Site Job is one whose Site type is Business.
+_Avoid_: Client organization, commercial Job, premises, property type
+
 **Region**:
 A named area Admin has opened and edged. A Job is posted in one. An Artisan selects at most three, and is matched only in those.
 _Avoid_: Zone, Suburb, Service Area, Reach, Ward, Subcouncil
