@@ -57,11 +57,11 @@ The Artisan's choice to receive new Job Matches and Artisan Invitations. Turning
 _Avoid_: Online, Calendar, Schedule
 
 **Artisan Chosen**:
-A Job with an accepted Quote that the Client has not yet paid. It is not an Engagement.
+A Job with an accepted Quote that the Client has not yet paid. It is not an Engagement. She may end it before Payment. That end is final, and it is not a Cancellation.
 _Avoid_: Pending Engagement, Unfunded Engagement
 
 **Engagement**:
-A Job once a Quote has been accepted and the Client has paid. One Job leads to at most one Engagement.
+A Job once a Quote has been accepted and the Client has paid. One Job leads to at most one Engagement. The Artisan does not start the work before that Payment.
 _Avoid_: Managed Engagement, Lead, Deal, Order, Booking, Project
 
 **Quote**:
@@ -87,6 +87,26 @@ _Avoid_: Variation, Change order
 **Schedule change**:
 A new start date and duration the Client enters after a Quote is accepted. It applies only when the Artisan confirms it, and it is not an Updated Quote.
 _Avoid_: Reschedule, Booking
+
+**Completion**:
+The Artisan's statement that the work is done. It has not happened unless it carries a note, at least one after-work photo, and every piece of Completion evidence that Job requires.
+_Avoid_: Mark, Start Confirmation, Work Started
+
+**Completed**:
+An Engagement with a Completion, of which some of the accepted-Quote portion has been Released and none is still unreleased or held. A Cancellation is not one. A full Return is not one.
+_Avoid_: Closed, Finished
+
+**Completion evidence**:
+A document a Completion must carry when that Job requires it, beyond the note and the after-work photo.
+_Avoid_: Compliance document, certificate
+
+**Cancellation**:
+An ending of an Engagement before Completion, requested by either Account. It is not a walk-away before Payment. His is on the Reliability Record. Hers is not.
+_Avoid_: Refund, Withdrawal
+
+**No-show**:
+A finding, on a Cancellation she requested, that he had not attended by the agreed start date. It is on his Reliability Record. His own Cancellation is not one.
+_Avoid_: Cancellation
 
 **Service Category**:
 An Admin-controlled trade a Job is posted in and an Artisan is verified for. Verified for means every check that category requires is current.
@@ -115,8 +135,16 @@ Money sent to the Artisan's verified payout account. It is the Artisan's share o
 _Avoid_: Withdrawal, Settlement
 
 **Release**:
-Sending the accepted-Quote portion of a Payment as a Payout, in one part or more. It is the Client's decision, or silence after the Artisan has marked the work done.
+Sending the accepted-Quote portion of a Payment as a Payout, in one part or more. It is the Client's decision, or silence after Completion.
 _Avoid_: Release Payment, Milestone
+
+**Dispute**:
+The Client's claim, after Completion, against a named amount of the accepted-Quote portion that has not been Released. The amount is greater than zero and no greater than that unreleased portion. One Engagement has one. It is not an ending, and it is not a Cancellation.
+_Avoid_: Refund, appeal
+
+**Return**:
+Money from a Payment that goes back to the Client because it was not Released. It includes the Protection Fee on that part. It is not a price cut, and it is not a clawback of a Payout.
+_Avoid_: Refund
 
 **Protection Fee**:
 The Client's charge, added on top of the accepted Quote. It is part of the Payment and is never Released.
@@ -137,7 +165,7 @@ A statutory permission a Verification Badge may evidence. It is not itself a bad
 _Avoid_: Badge
 
 **Warranty**:
-A promise the Artisan makes on a Quote. It may be absent. It is not a Verification Badge, and the platform does not make one.
+A promise the Artisan makes on a Quote. It may be absent. It is not a Verification Badge, and the platform does not make one or enforce it.
 _Avoid_: Guarantee, Platform warranty
 
 **Review**:
@@ -145,7 +173,7 @@ A Service Category-scoped rating one party writes about the other after a paid E
 _Avoid_: Reputation, Feedback, Score
 
 **Reliability Record**:
-The platform's record of an Artisan's conduct, including Cancellation and no-show. It is not a Review.
+The platform's record of an Artisan's conduct. It records his Cancellation, and a no-show. It does not record hers. Admin and the Artisan may read it. A Client may not. It is not on the Artisan Profile, and it is not a Review.
 _Avoid_: Reputation, Feedback, Score
 
 ### Relationship
