@@ -49,11 +49,11 @@ A named area Admin has opened and edged. A Job is posted in one. An Artisan sele
 _Avoid_: Zone, Suburb, Service Area, Reach, Ward, Subcouncil
 
 **Job Match**:
-The platform's offer of a Job to an Artisan who is verified for its Service Category and has selected its Region.
+The platform's offer of a Job to an Artisan who may Quote it and has selected its Region.
 _Avoid_: Lead, Dispatch, Assignment
 
 **Artisan Invitation**:
-A Client's choice that shows a Job to one Artisan who is verified for its Service Category and has selected its Region. It is not a Job Match.
+A Client's choice that shows a Job to one Artisan who may Quote it and has selected its Region. It is not a Job Match.
 _Avoid_: Request, Direct hire, Lead
 
 **Artisan Profile**:
