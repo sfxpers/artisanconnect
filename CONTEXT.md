@@ -11,7 +11,7 @@ The only party that signs in and acts, either a Client or an Artisan, never both
 _Avoid_: User, Member, Owner, Operator
 
 **Identity Number**:
-The named person's South African ID number or recognised refugee identity document number, or, if they have neither, their passport number and its issuing country. An Account is not held without one. Closing does not free it for the same kind, except when a closed Account's number is found not to be the named person's. A new Account held with that freed number does not inherit the closed one.
+The named person's South African ID number or recognised refugee identity document number, or, if they have neither, their passport number and its issuing country. An Account is not held without one. A South African ID number must pass its checksum and show the named person is at least 18. Closing does not free it for the same kind, except when a closed Account's number is found not to be the named person's. A new Account held with that freed number does not inherit the closed one.
 _Avoid_: Person-fact, ID, Credential, Asylum-seeker permit
 
 **Email**:
@@ -34,11 +34,19 @@ _Avoid_: User, Moderator
 A person with no Account, and not a party.
 _Avoid_: Guest, Anonymous user, User
 
+**Closed**:
+An Account that no longer signs in or acts, by its own choice or after a finding that its Identity Number is not the named person's. It keeps its Reviews, its Reliability Record, and its Client Relationships. Its person may reopen an Account they closed themselves.
+_Avoid_: Deleted, Deactivated, Banned
+
 ### Work
 
 **Job**:
-A Client's private request for work, before anyone is paid. From the moment it can be matched until she pays, she may end it. That end is final, and it is not a Cancellation.
+A Client's private request for work, before anyone is paid. From the moment it can be matched until the Client pays, the Client may end it.
 _Avoid_: Lead, Deal, Order, Booking, Project
+
+**Ended**:
+A Job the Client ended before paying, or whose acceptance lapsed unpaid. It is final. It is not a Cancellation, and it is not Expired.
+_Avoid_: Cancelled, Closed, Withdrawn
 
 **Site type**:
 Home or Business, a label on a Job, not a kind of Account. A Home Site Job is one whose Site type is Home; a Business Site Job is one whose Site type is Business.
@@ -65,7 +73,7 @@ The Artisan's choice to receive new Job Matches and Artisan Invitations. Turning
 _Avoid_: Online, Calendar, Schedule
 
 **Artisan Chosen**:
-A Job with an accepted Quote that the Client has not yet paid. It is not an Engagement.
+A Job with an accepted Quote that the Client has not yet paid. It is not an Engagement. Unpaid seven times 24 hours after the Artisan confirmed the dates, it is Ended.
 _Avoid_: Pending Engagement, Unfunded Engagement
 
 **Engagement**:
@@ -88,8 +96,12 @@ _Avoid_: Declined, Cancelled
 A Quote that was still Sent when another Quote on that Job was accepted. It does not become Sent again, and it does not become Expired.
 _Avoid_: Lost, Rejected, Unsuccessful, Closed
 
+**Void**:
+A Quote that can no longer be accepted because its Job was Ended or an Account was suspended. It is not Declined, Withdrawn, Expired, or Not chosen, and it does not become Sent again.
+_Avoid_: Closed, Dead, Cancelled
+
 **Updated Quote**:
-A proposed change to the price, scope, or Warranty of an Engagement. It does not apply until the Client accepts it.
+A proposed change to the price, scope, or Warranty of an Engagement, only from the Artisan and only before Completion. It may raise the price and never lowers it. It does not apply until the Client accepts it.
 _Avoid_: Variation, Change order
 
 **Preferred start**:
@@ -121,11 +133,11 @@ The Completion evidence a Plumbing Job requires when that work includes installi
 _Avoid_: Gas certificate, CoC
 
 **Cancellation**:
-An ending of an Engagement before Completion, requested by either Account. It is not a walk-away before Payment. His is on the Reliability Record. Hers is not.
+An ending of an Engagement before Completion, requested by either Account. It is not a walk-away before Payment. The Artisan's Cancellation is on the Reliability Record. The Client's is not.
 _Avoid_: Refund, Withdrawal
 
 **No-show**:
-A finding, on a Cancellation she requested, that he had not attended by the agreed start date. It is on his Reliability Record. His own Cancellation is not one.
+A finding, on a Cancellation the Client requested, that the Artisan had not attended by the agreed start date. It is on the Artisan's Reliability Record. The Artisan's own Cancellation is not one.
 _Avoid_: Cancellation
 
 **Service Category**:
@@ -141,7 +153,7 @@ The part of a Quote that is the Artisan's work, including any attendance. There 
 _Avoid_: Call-out
 
 **Materials**:
-The goods in a Quote, priced apart from Labour. The amount is what the Artisan charges, and it is zero when the Client supplies them.
+The goods in a Quote, priced apart from Labour so the Client can read the split. The amount is what the Artisan charges, and it is zero when the Client supplies them. The split does not change the Artisan Fee.
 _Avoid_: Parts, Supplies
 
 ### Money
@@ -151,11 +163,11 @@ Money the Client pays in for an Engagement: the accepted Quote plus the Protecti
 _Avoid_: Escrow, Wallet, Balance, Held funds
 
 **Payout**:
-Money sent to the Artisan's verified payout account. It is the Artisan's share of the accepted Quote after the Artisan Fee. The Protection Fee is never part of a Payout.
+Money sent to the Artisan's verified payout account. It is the Artisan's share of a Release after the Artisan Fee. The Protection Fee is never part of a Payout. A Payout waits while the payout account is not current, and once sent it does not come back.
 _Avoid_: Withdrawal, Settlement
 
 **Release**:
-Sending the accepted-Quote portion of a Payment as a Payout, in one part or more. It is the Client's decision, or silence after Completion.
+Sending the accepted-Quote portion of a Payment as a Payout, in one part or more. It is the Client's decision, silence after Completion, or an Admin's allocation.
 _Avoid_: Release Payment, Milestone
 
 **Dispute**:
@@ -163,7 +175,7 @@ The Client's claim, after Completion, against a named amount of the accepted-Quo
 _Avoid_: Refund, appeal
 
 **Return**:
-Money from a Payment that goes back to the Client because it was not Released. It includes the Protection Fee on that part. It is not a price cut, and it is not a clawback of a Payout.
+Money from a Payment that goes back to the Client because it was not Released: by an Admin's allocation, by agreement in a Dispute, by the Artisan after Completion, or because the Payment was reversed. It includes the Protection Fee on that part. It is not a price cut, and it is not a clawback of a Payout.
 _Avoid_: Refund
 
 **Protection Fee**:
@@ -171,7 +183,7 @@ The Client's charge, added on top of the accepted Quote. It is part of the Payme
 _Avoid_: Commission, Service fee, Platform fee
 
 **Artisan Fee**:
-The charge taken from the Artisan, on Labour only, not on Materials.
+The charge taken from the Artisan on each Release, on the whole accepted Quote, Labour and Materials together. Its rate falls with the Completed Engagements already in that Client Relationship.
 _Avoid_: Commission, Service fee, Platform fee
 
 ### Trust
@@ -189,17 +201,17 @@ A promise the Artisan makes on a Quote. It may be absent. It is not a Verificati
 _Avoid_: Guarantee, Platform warranty
 
 **Review**:
-A rating one party writes about the other, one each, only once an Engagement is Completed. Hers is scoped to that Engagement's Service Category. His is not. She scores workmanship, agreed work, punctuality, and communication, the same four in every category. It is not a Reliability Record.
+A rating one party writes about the other, one each, only once an Engagement is Completed. The Client's Review is scoped to that Engagement's Service Category. The Artisan's is not. The Client scores workmanship, agreed work, punctuality, and communication, the same four in every category. It is not a Reliability Record.
 _Avoid_: Reputation, Feedback, Score, Completion review
 
 **Reliability Record**:
-The platform's record of an Artisan's conduct. It records his Cancellation, and a no-show. It does not record hers. Admin and the Artisan may read it. A Client may not. It is not on the Artisan Profile, and it is not a Review.
+The platform's record of an Artisan's conduct. It records the Artisan's Cancellation, a no-show, and an Admin's allocation in a Dispute that Returns any amount. It does not record the Client's Cancellation. Admin and the Artisan may read it. A Client may not. It is not on the Artisan Profile, and it is not a Review.
 _Avoid_: Reputation, Feedback, Score
 
 ### Relationship
 
 **Conversation**:
-The speech between one Client and one Artisan on one Job, in text, pictures, video, documents, or voice notes. It opens when he Quotes, or when either speaks if she invited him, it is the same record after Payment, and it is not private from the platform. An Admin may read it and may not speak in it.
+The speech between one Client and one Artisan on one Job, in text, pictures, video, documents, or voice notes. It opens when the Artisan Quotes, or when either speaks if the Client invited the Artisan, it is the same record after Payment, and it is not private from the platform. It takes no new message once its Quote is no longer Sent or Accepted, or its Job is Ended. An Admin may read it and may not speak in it.
 _Avoid_: Chat, thread, inbox, DM
 
 **Client Relationship**:
@@ -207,7 +219,7 @@ The pair of one Client Account and one Artisan Account.
 _Avoid_: Lock-in, Exclusivity, Repeat customer
 
 **Hire Again**:
-The Client's act of opening a new Job addressed only to an Artisan with whom she has a Completed Engagement. It is not a Job Match, and it is not a new fee.
+The Client's act of opening a new Job addressed only to an Artisan with whom the Client has a Completed Engagement. It is not a Job Match, and it is not a new fee.
 _Avoid_: Rehire, Repeat booking, Direct hire
 
 **Protected Relationship Period**:
@@ -215,11 +227,11 @@ The 365 times 24 hours after the Payment that begins the first Engagement in a C
 _Avoid_: Lock-in, Exclusivity
 
 **Leaving**:
-An Account's attempt to move the request, the paid work, or the money off the platform, addressed to the other party or published where someone else can see it. A draft that never becomes matchable is not one.
+An Account's attempt, found by an Admin, to move the request, the paid work, or the money off the platform, addressed to the other party or published where someone else can see it. A draft that never becomes matchable is not one, and neither is a send the platform refuses.
 _Avoid_: Circumvention, leakage, off-platform dealing
 
 **Suspension**:
-A stop on new work for one Account. It follows the Leaving ladder, or a finding that the Identity Number is not the named person's. It does not end a paid Engagement, and it is not a close.
+A stop on new work for one Account. It follows the Leaving ladder, or a finding that the Identity Number is not the named person's. It does not end a paid Engagement, and it is not a close. A suspension for an Identity Number also holds the money on that Account's Engagements.
 _Avoid_: Ban, deactivation, block
 
 **Suspension challenge**:
