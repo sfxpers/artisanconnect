@@ -5,6 +5,7 @@
   "sideEffects": false,
   "scripts": {
     "dev": "vite dev",
+    "prototype": "vite dev --open /prototype/launch",
     "build": "vite build",
     "preview": "vite preview",
     "deploy": "vite build && wrangler deploy",
