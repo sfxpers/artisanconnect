@@ -211,7 +211,7 @@ The Client's act of opening a new Job addressed only to an Artisan with whom she
 _Avoid_: Rehire, Repeat booking, Direct hire
 
 **Protected Relationship Period**:
-The time after the first paid Engagement in a Client Relationship during which further work between those Accounts belongs on the platform. Cancellation does not end it.
+The 365 times 24 hours after the Payment that begins the first Engagement in a Client Relationship, during which further work between those Accounts belongs on the platform. A later paid Engagement does not extend it, and Cancellation, a full Return, Completion, Suspension, and an open Dispute do not end or pause it.
 _Avoid_: Lock-in, Exclusivity
 
 **Leaving**:

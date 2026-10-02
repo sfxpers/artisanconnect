@@ -1,0 +1,3 @@
+# The Protected Relationship Period does not renew
+
+The brief proposed twelve months from the first paid Engagement, and a later Engagement could have extended that clock for as long as the two Accounts kept paying. The period is 365 times 24 hours from the instant of the Payment that begins the first Engagement in that Client Relationship. A later paid Engagement does not extend it. A full Return, Completion, Suspension, and an open Dispute do not end or pause it. The Artisan Fee already declines for the life of the relationship and does not reset when the period ends, so a rolling clock would have been a second lock. Twelve calendar months was rejected because every other duration in this product is a count of 24 hours.
