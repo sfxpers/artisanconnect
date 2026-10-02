@@ -189,7 +189,7 @@ A promise the Artisan makes on a Quote. It may be absent. It is not a Verificati
 _Avoid_: Guarantee, Platform warranty
 
 **Review**:
-A rating one party writes about the other, one each, only once an Engagement is Completed. Hers is scoped to that Engagement's Service Category. His is not. It is not a Reliability Record.
+A rating one party writes about the other, one each, only once an Engagement is Completed. Hers is scoped to that Engagement's Service Category. His is not. She scores workmanship, agreed work, punctuality, and communication, the same four in every category. It is not a Reliability Record.
 _Avoid_: Reputation, Feedback, Score, Completion review
 
 **Reliability Record**:
