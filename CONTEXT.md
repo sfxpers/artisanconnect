@@ -30,6 +30,10 @@ _Avoid_: Guest, Anonymous user
 An Artisan's South African ID number, or passport number and issuing country, read by the Admin from the identity document. One Identity Number holds at most one Artisan Account.
 _Avoid_: ID, Credential
 
+**Email code**:
+A code sent to an Email to prove its holder has it, at sign-up, recovery, reopening, and a change of Email. It works once, for ten minutes.
+_Avoid_: OTP, Verification code
+
 **Suspended**:
 An Account the Admin has stopped from starting new work. Its paid Jobs continue, and the Admin may also hold its Payouts.
 _Avoid_: Banned, Blocked, Deactivated
@@ -204,6 +208,10 @@ _Avoid_: Guarantee
 The rules every Account accepts at sign-up and again after each change, with consent to how its personal data is used.
 _Avoid_: Terms, Policy
 
+**Receipt**:
+The email the platform sends for each Payment and Refund to the Client, and for each Payout to the Artisan. It is not a tax invoice.
+_Avoid_: Invoice, Tax invoice
+
 **Review**:
 A 1 to 5 rating with an optional comment, one from each party once an Engagement is Completed, published only once the Admin approves it. Neither can read the other's until both submit or seven days pass.
 _Avoid_: Feedback, Score, Reputation
@@ -231,6 +239,14 @@ _Avoid_: Flag, Alert
 **Report**:
 A signed-in Account's complaint about a Job, Quote, message, Artisan Profile, or Review, which goes to the Admin.
 _Avoid_: Ticket, Flag
+
+**Support request**:
+A signed-in Account's message to the Admin under a fixed topic, which the Admin answers by email. A suspended Account may send one.
+_Avoid_: Ticket, Contact form
+
+**Data request**:
+An Account's request for a copy of its data, or to have it erased. Erasure anonymises a Closed Account and keeps its money records.
+_Avoid_: Deletion, GDPR request
 
 **Leaving**:
 An attempt, found by the Admin, to move a Job, its work, or its money off the platform. The first is a warning and the second a Suspension; one that openly dodges the fees is a Suspension at once.
