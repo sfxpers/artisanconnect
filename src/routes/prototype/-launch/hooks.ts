@@ -99,7 +99,7 @@ export function usePostJob() {
     ? null
     : /paarl|stellenbosch|joburg|johannesburg|durban/i.test(address)
       ? "unplaceable"
-      : "Southern Suburbs";
+      : "Southern";
   const leak = F.refusedBecause(`${title}\n${description}`);
   const missing = [
     !category && "a Service Category",

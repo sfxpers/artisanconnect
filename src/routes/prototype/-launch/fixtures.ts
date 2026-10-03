@@ -79,18 +79,14 @@ export const CATEGORIES = [
 export type Category = (typeof CATEGORIES)[number];
 
 export const REGIONS = [
-  "City Bowl",
-  "Atlantic Seaboard",
-  "Southern Suburbs",
-  "South Peninsula",
   "Cape Flats",
-  "Mitchells Plain",
-  "Khayelitsha",
-  "Northern Suburbs",
-  "Durbanville and Kraaifontein",
-  "Blaauwberg",
+  "Mitchells Plain/Khayelitsha",
   "Helderberg",
-  "Atlantis",
+  "Table Bay",
+  "Southern",
+  "Tygerberg",
+  "Blaauwberg",
+  "Northern",
 ] as const;
 
 export type Badge = { name: string; validTo?: string };
@@ -99,7 +95,7 @@ export const artisan = {
   publicName: "Sipho Ndlovu",
   initials: "SN",
   available: true,
-  regions: ["Southern Suburbs", "City Bowl", "Cape Flats"],
+  regions: ["Southern", "Table Bay", "Cape Flats"],
   about:
     "Geysers, leaks, and bathroom refits. Fifteen years on the job. I quote from your photos and description.",
   services: ["Geyser replacement", "Leak detection", "Bathroom refits", "Gas hob fitting"],
@@ -135,7 +131,7 @@ export const job = {
   category: "Plumbing" as Category,
   gas: true,
   siteType: "Home" as "Home" | "Business",
-  region: "Southern Suburbs",
+  region: "Southern",
   description:
     "150 L geyser in the roof burst this morning, water is off at the mains. Also want the new 4-burner gas hob fitted to the existing bottle outside the kitchen wall. Roof hatch is in the passage.",
   photos: ["Burst geyser", "Roof hatch", "Hob and bottle"],
@@ -392,7 +388,7 @@ export const home = {
     {
       title: "Kitchen mixer leaking under the sink",
       category: "Plumbing" as Category,
-      region: "City Bowl",
+      region: "Table Bay",
       siteType: "Home",
       client: { shownName: "Ruan B.", paid: 0, completed: 0, reviews: 0 },
       at: "Today, 08:10",
@@ -401,7 +397,7 @@ export const home = {
     {
       title: "Re-tile shower floor, 1.2 m²",
       category: "Tiling" as Category,
-      region: "Southern Suburbs",
+      region: "Southern",
       siteType: "Home",
       client: { shownName: "Fatima A.", paid: 2, completed: 2, average: 4.5, reviews: 2 },
       at: "Yesterday, 17:44",
@@ -449,7 +445,7 @@ export const notices: Record<"Client" | "Artisan", Notice[]> = {
     { at: "3 Oct, 11:40", job: "Replace burst geyser and fit a gas hob", event: "New Quote from Ayanda Khumalo" },
   ],
   Artisan: [
-    { at: "Today, 08:10", job: "Kitchen mixer leaking under the sink", event: "New Job Match in City Bowl", unread: true },
+    { at: "Today, 08:10", job: "Kitchen mixer leaking under the sink", event: "New Job Match in Table Bay", unread: true },
     { at: "Yesterday, 17:44", job: "Re-tile shower floor, 1.2 m²", event: "Artisan Invitation from Fatima A.", unread: true },
     { at: "4 Oct, 10:30", job: "Replace burst geyser and fit a gas hob", event: "Thandi M. sent dates: 12 Oct, 2 days" },
     { at: "3 Oct, 18:00", job: "Outside tap and garden line", event: "Your Quote was not chosen" },

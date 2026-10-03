@@ -59,7 +59,7 @@ export function VariantB({ screen, go }: H.VariantProps) {
 type Rec = { at: string; icon: ReactNode; title: string; body?: ReactNode; who?: "Client" | "Artisan" | "Platform" };
 
 const RECORDS: Rec[] = [
-  { at: "2 Oct, 18:20", icon: <FilePlus2 />, title: "Job posted, Open", body: "Plumbing · gas work: yes · Southern Suburbs · Home", who: "Client" },
+  { at: "2 Oct, 18:20", icon: <FilePlus2 />, title: "Job posted, Open", body: "Plumbing · gas work: yes · Southern · Home", who: "Client" },
   { at: "3 Oct, 09:12", icon: <Send />, title: "Quote from Sipho Ndlovu · R12,000", who: "Artisan" },
   { at: "3 Oct, 11:40", icon: <Send />, title: "Quote from Ayanda Khumalo · R10,450", who: "Artisan" },
   { at: "4 Oct, 08:05", icon: <Send />, title: "Quote from Pieter van Wyk · R13,900, revised", who: "Artisan" },
