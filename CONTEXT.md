@@ -38,6 +38,54 @@ _Avoid_: Banned, Blocked, Deactivated
 An Account its person has closed while it had no paid Job in progress. It keeps its Reviews and may be reopened with an Email code.
 _Avoid_: Deleted
 
+### Place and trade
+
+**Region**:
+One of the City of Cape Town's eight Development Management Districts. An Artisan selects up to three and is offered Jobs only in those.
+_Avoid_: Zone, Area, Service Area
+
+**Suburb**:
+One of the City's official suburbs, which the Client picks to place a Job. Each belongs to exactly one Region.
+_Avoid_: Neighbourhood, Area
+
+**Service Category**:
+One of the eight launch trades a Job is posted in and an Artisan is verified for: Plumbing, Electrical, Carpentry and cabinetry, Painting, Tiling, Brickwork and plastering, Roofing, Welding and metalwork.
+_Avoid_: Skill, Specialty, Subcategory
+
+**Site type**:
+Home or Business, a label on a Job that changes no rule.
+_Avoid_: Property type
+
+### Finding an Artisan
+
+**Job**:
+A Client's request for work, which is Draft, Open, Expired, Closed, or Hired. It is never shown to a Visitor.
+_Avoid_: Lead, Project, Order, Booking
+
+**Invite-only Job**:
+A Job the platform does not offer to anyone, seen only by the Artisans the Client invites.
+_Avoid_: Private job, Direct hire
+
+**Batch**:
+The up to ten Artisans a Job is offered to at once: those eligible who were offered a Job least recently. A further Batch follows every 24 hours while the Job is Open with fewer than five Quotes.
+_Avoid_: Broadcast, Round
+
+**Job Match**:
+The offer of a Job to one Artisan in a Batch. The Artisan may Quote or pass.
+_Avoid_: Lead, Dispatch, Assignment
+
+**Invitation**:
+A Client's request to one Artisan to Quote on a Job. It reaches the Artisan even if they passed on a Job Match for it.
+_Avoid_: Lead, Direct hire
+
+**Available for Jobs**:
+The Artisan's switch for receiving Job Matches. Turning it off does not hide the Artisan Profile.
+_Avoid_: Online, Calendar
+
+**Artisan Profile**:
+An Artisan's public page, which anyone may open, with no direct contact. Every edit shows only once the Admin approves it.
+_Avoid_: Listing, Storefront
+
 ### Trust
 
 **Verification**:
