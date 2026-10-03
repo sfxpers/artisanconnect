@@ -1,0 +1,3 @@
+# The launch stack sends mail and does not receive it
+
+The spec assumes TanStack Start on Cloudflare Workers, D1 and Drizzle, better-auth, TanStack Query, TanStack Form, Zod, R2, and Vitest at one Engagement seam. It does not name a payment provider or a schema. Mail leaves through Cloudflare Email Sending only. Resend was rejected because it would not become the support mailbox, and Email Routing was rejected because it would take the root MX and that mailbox with it. support@ stays at HostAfrica, outside the product. The Admin signs in on the same auth as an Account, marked only as staff, and is not an Account; impersonation and the plugin's user-management powers are off. A separate staff door was rejected.

@@ -1,3 +1,0 @@
-# A refused send is not Leaving
-
-The platform refuses a Job, a Quote, a profile edit, a Conversation message, or a Review comment whose text carries a phone number, an email address, a link, or a bank account number, and tells the sender why. That refusal is not a Leaving and not a warning. Every Leaving is found by the Admin, from a Report. Counting a refusal as a warning was rejected because the pattern check cannot always tell a phone number from a price or a measurement, and false matches would warn an honest Account with no human having looked. The check reads text only (ADR 0018). A name, a photo, or a place finer than the Region is enforced by Report.

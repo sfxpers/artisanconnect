@@ -1,0 +1,3 @@
+# This product does not know EcoBuiltConnect
+
+ArtisanConnect does not read or write EcoBuiltConnect. No fact enters and none leaves: no import, no export, no identity match, no shared session, no shared Account store, no shared file bucket, and no consent screen. A completed check, a sanction, a staff list, and a materials catalogue stay on their own side. A person suspended there can open an Account here, and the Admin exists only because setup created it here. Product-authored surfaces speak only as ArtisanConnect. A denylist of that name was rejected, because the list would itself be knowledge of the other product. A consented bridge was rejected because reuse of a check or a sanction would be a path, and the launch spec must be able to test that the path is absent.

@@ -1,0 +1,3 @@
+# Only text is checked before Payment, and only photos may be sent
+
+Before Payment, a Job, a Quote, an Artisan Profile, and a Conversation take text and photos only. Text is checked for a phone number, an email address, a link, and a bank account number; a match is refused with the reason, and the refusal is not Leaving or a warning, because the check cannot always tell a phone number from a price. Photos are not machine-read and are enforced by Report. Voice notes, documents, and video are allowed only after Payment, when the parties may swap contact details anyway. Reading every image and voice note with a model was rejected as a pipeline to build and run that stops only casual leakage.

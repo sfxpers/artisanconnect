@@ -1,0 +1,3 @@
+# Fees are never refunded
+
+The Protection Fee is taken at each Payment and kept whatever happens next: a Cancellation by either party, a Refund, or a Dispute. The Artisan Fee is taken from each Release and kept; refunded money never had one taken. Refunding the Protection Fee was rejected because it made the platform a free introduction service: pay, swap contact details, cancel, get everything back, and deal off the platform. The fee also pays for card processing (about 2.9% plus R1 a payment), which the platform pays whether or not the money is later refunded. Upwork's client fee is non-refundable for the same reason. Whether a disclosed 5% is a "reasonable" charge under the Consumer Protection Act is for legal review.
