@@ -102,6 +102,46 @@ _Avoid_: Deposit, Parts, Supplies
 The Client's choice of a Sent Quote, made by paying for it. Other Sent Quotes on that Job become Declined.
 _Avoid_: Accept, Booking
 
+### Doing the work
+
+**Updated Quote**:
+The Artisan's proposed new Labour and Materials before Completion. Neither line may go down. It applies when the Client pays the difference.
+_Avoid_: Variation, Change order
+
+### Money
+
+**Payment**:
+Money the Client pays in: the Hired Quote plus the Protection Fee, or an Updated Quote's difference plus its Protection Fee.
+_Avoid_: Escrow, Wallet, Balance, Deposit
+
+**Protection Fee**:
+The Client's 5% charge on each Payment, which the Client acknowledges as non-refundable when paying. It is never refunded.
+_Avoid_: Service fee, Platform fee, Commission
+
+**Artisan Fee**:
+The platform's share of each Release, set at Hire: 10% if the Client Relationship has no Completed Engagement yet, 5% if it has one. It is never refunded.
+_Avoid_: Commission, Service fee
+
+**Release**:
+Sending Materials or Labour to the Artisan, less the Artisan Fee.
+_Avoid_: Approve, Pay out
+
+**Refund**:
+Unreleased money sent back to the Client, without the Protection Fee, by the Artisan's choice at any time, a Cancellation, or the Admin's decision in a Dispute.
+_Avoid_: Return, Reversal
+
+**Payout**:
+Money sent to the Artisan's Payout account after a Release, in the next daily run. Once sent it does not come back.
+_Avoid_: Withdrawal, Settlement
+
+**Payout account**:
+The bank account in the Artisan's own name, proven by a bank letter, that Payouts are sent to. No two Artisans may hold the same one.
+_Avoid_: Wallet, Bank details
+
+**Chargeback**:
+A card Payment reversed by the bank. It freezes the Engagement for the Admin, and a Payout already sent stays the platform's loss.
+_Avoid_: Reversal
+
 ### Trust
 
 **Verification**:
