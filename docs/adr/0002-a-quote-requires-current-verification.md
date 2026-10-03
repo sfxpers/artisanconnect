@@ -1,0 +1,3 @@
+# A Quote requires current Verification for that Service Category
+
+An Artisan may send a Quote, and a Client may Hire it, only while every check that Service Category requires is current. A Verification Badge records one check the Admin accepted; it is not a guarantee. Letting any Account Quote was rejected because a Client would then hire an unchecked Artisan into their home. References and proof of address were rejected: one Admin cannot phone two referees per trade for every Artisan, and a proof of address shuts out Artisans in informal settlements. A company registration was rejected because an Artisan is the named person.

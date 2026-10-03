@@ -40,6 +40,18 @@ _Avoid_: Deleted
 
 ### Trust
 
+**Verification**:
+The Admin's acceptance of an Artisan's documents. Once: an identity document with a selfie holding it, a work permit if it is a foreign passport, and a Payout account. Per Service Category: three photos of their own work and any Credential that category needs.
+_Avoid_: Vetting, KYC
+
+**Credential**:
+A legal permission a Service Category requires: a trained plumber for Plumbing, a gas practitioner for gas work, a registered person and electrical contractor registration for Electrical.
+_Avoid_: Certificate, Licence
+
+**Verification Badge**:
+One check the Admin has accepted, shown on the Artisan Profile with its expiry date when it expires. It is not a promise that the work will be good.
+_Avoid_: Vetted, Guarantee
+
 **Marketplace rules**:
 The rules every Account accepts at sign-up and again after each change, with consent to how its personal data is used.
 _Avoid_: Terms, Policy
