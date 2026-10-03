@@ -31,7 +31,7 @@ The Account that proposes a Quote and is paid for an Engagement. It is the named
 _Avoid_: Seller, Contractor, Tradesman, Service provider, Solo Artisan, Artisan Business, Worker
 
 **Admin**:
-A staff identity that is not an Account. It holds one or more of verification, marketplace operations, trust and safety, and finance and disputes, and one person may hold more than one. It cannot hold a Job or an Engagement, and it does not act as an Account.
+A staff identity that is not an Account. It holds one or more of verification, marketplace operations, trust and safety, and finance and disputes, and one person may hold more than one. It cannot hold a Job or an Engagement, and it does not act as an Account. Only an Admin holding marketplace operations gives or takes a grant, never their own, and never a grant's last holder. The first Admin is created by setup, not given.
 _Avoid_: User, Moderator
 
 **Visitor**:
