@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite dev",
     "prototype": "vite dev --open /prototype/launch",
+    "prototype:surfaces": "vite dev --open \"/prototype/surfaces?variant=B&screen=landing\"",
     "build": "vite build",
     "preview": "vite preview",
     "deploy": "vite build && wrangler deploy",

@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PrototypeLaunchRouteImport } from './routes/prototype/launch'
+import { Route as PrototypeSurfacesRouteImport } from './routes/prototype/surfaces'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,31 +23,40 @@ const PrototypeLaunchRoute = PrototypeLaunchRouteImport.update({
   path: '/prototype/launch',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrototypeSurfacesRoute = PrototypeSurfacesRouteImport.update({
+  id: '/prototype/surfaces',
+  path: '/prototype/surfaces',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/prototype/launch': typeof PrototypeLaunchRoute
+  '/prototype/surfaces': typeof PrototypeSurfacesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/prototype/launch': typeof PrototypeLaunchRoute
+  '/prototype/surfaces': typeof PrototypeSurfacesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/prototype/launch': typeof PrototypeLaunchRoute
+  '/prototype/surfaces': typeof PrototypeSurfacesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/prototype/launch'
+  fullPaths: '/' | '/prototype/launch' | '/prototype/surfaces'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/prototype/launch'
-  id: '__root__' | '/' | '/prototype/launch'
+  to: '/' | '/prototype/launch' | '/prototype/surfaces'
+  id: '__root__' | '/' | '/prototype/launch' | '/prototype/surfaces'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   PrototypeLaunchRoute: typeof PrototypeLaunchRoute
+  PrototypeSurfacesRoute: typeof PrototypeSurfacesRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +75,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrototypeLaunchRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/prototype/surfaces': {
+      id: '/prototype/surfaces'
+      path: '/prototype/surfaces'
+      fullPath: '/prototype/surfaces'
+      preLoaderRoute: typeof PrototypeSurfacesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   PrototypeLaunchRoute: PrototypeLaunchRoute,
+  PrototypeSurfacesRoute: PrototypeSurfacesRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
