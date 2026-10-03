@@ -170,6 +170,10 @@ _Avoid_: Escrow, Wallet, Balance, Held funds
 Money sent to the Artisan's verified payout account. It is the Artisan's share of a Release after the Artisan Fee. The Protection Fee is never part of a Payout. A Payout waits while the payout account is not current, and once sent it does not come back.
 _Avoid_: Withdrawal, Settlement
 
+**Payout account**:
+The bank account Payouts are sent to. It bears the named person's name and is accepted by the platform. It is current until it is removed or a bank rejects a Payout to it, and a replacement does not displace it until the replacement is accepted. A Payout waits while none is current.
+_Avoid_: Wallet, Bank details
+
 **Release**:
 Sending the accepted-Quote portion of a Payment as a Payout, in one part or more. It is the Client's decision, silence after Completion, or an Admin's allocation.
 _Avoid_: Release Payment, Milestone
@@ -179,7 +183,7 @@ The Client's claim, after Completion, against a named amount of the accepted-Quo
 _Avoid_: Refund, appeal
 
 **Return**:
-Money from a Payment that goes back to the Client because it was not Released: by an Admin's allocation, by agreement in a Dispute, by the Artisan after Completion, or because the Payment was reversed. It includes the Protection Fee on that part. It is not a price cut, and it is not a clawback of a Payout.
+Money from a Payment that goes back to the Client because it was not Released: by an Admin's allocation, by the Artisan alone after Completion, including of an amount a Dispute holds, or because the Payment was reversed. It includes the Protection Fee on that part. It is not a price cut, and it is not a clawback of a Payout.
 _Avoid_: Refund
 
 **Protection Fee**:
@@ -204,6 +208,14 @@ _Avoid_: Badge
 A promise the Artisan makes on a Quote. It may be absent. It is not a Verification Badge, and the platform does not make one or enforce it.
 _Avoid_: Guarantee, Platform warranty
 
+**Reference**:
+A person who vouches for an Artisan's work in one Service Category: a name, a phone number or email, how they know the Artisan, the work done, and its month and year. It is never shown. It is not the Artisan or the Artisan's other Account, and it does not expire.
+_Avoid_: Referee channel, Testimonial
+
+**Marketplace rules**:
+The version of the rules the platform publishes, which a Client accepts at sign-up and an Artisan accepts as a gate to Quote. After a change a Client accepts again before making a Job matchable or paying, and nothing else a Client does waits on it.
+_Avoid_: Terms, Policy
+
 **Review**:
 A rating one party writes about the other, one each, only once an Engagement is Completed. The Client's Review is scoped to that Engagement's Service Category. The Artisan's is not. The Client scores workmanship, agreed work, punctuality, and communication, the same four in every category. It is not a Reliability Record.
 _Avoid_: Reputation, Feedback, Score, Completion review
@@ -215,7 +227,7 @@ _Avoid_: Reputation, Feedback, Score
 ### Relationship
 
 **Conversation**:
-The speech between one Client and one Artisan on one Job, in text, pictures, documents, or voice notes, and after Payment also video. It opens when the Artisan Quotes, or when either speaks if the Client invited the Artisan, it is the same record after Payment, and it is not private from the platform. It takes no new message once its Quote is no longer Sent or Accepted, or its Job is Ended. An Admin may read it and may not speak in it.
+The speech between one Client and one Artisan on one Job, in text, pictures, documents, or voice notes, and after Payment also video. It opens when the Artisan Quotes, or when either speaks if the Client invited the Artisan, it is the same record after Payment, and it is not private from the platform. It takes no new message once its Quote is no longer Sent or Accepted, its Job is Ended, or its Engagement is Completed, Cancelled, or Returned, and is then read-only. An Admin may read it and may not speak in it.
 _Avoid_: Chat, thread, inbox, DM
 
 **Client Relationship**:
