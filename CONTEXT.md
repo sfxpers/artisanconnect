@@ -69,7 +69,7 @@ The platform's offer of a Job to an Artisan who may Quote it and has selected it
 _Avoid_: Lead, Dispatch, Assignment
 
 **Artisan Invitation**:
-A Client's choice that shows a Job to one Artisan who may Quote it and has selected its Region. It is not a Job Match.
+A Client's choice that shows a Job to one Artisan who may Quote it and has selected its Region. It is not a Job Match, but it turns one the Artisan already holds into an Invitation. Where the platform will not show the Artisan the Job, because they declined it or are suspended, the choice is recorded and reaches no one.
 _Avoid_: Request, Direct hire, Lead
 
 **Artisan Profile**:
