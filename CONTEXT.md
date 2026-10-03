@@ -15,8 +15,12 @@ The named person's South African ID number or recognised refugee identity docume
 _Avoid_: Person-fact, ID, Credential, Asylum-seeker permit
 
 **Email**:
-The address an Account signs in with. One email is one Account. It is not the Identity Number, and an Admin's address is not one.
+The address an Account signs in with. One email is one Account, and a closed Account keeps its address. It is not the Identity Number, and an Admin's address is not one. An Account may change it, once the new address is proven by an Email code.
 _Avoid_: login, username, phone
+
+**Email code**:
+The code sent to an address to prove its holder has it, at sign-up, reopening, recovery, and a change of Email. It is valid for ten minutes and works once.
+_Avoid_: OTP, Verification code, Badge
 
 **Client**:
 The Account that posts a Job and pays for an Engagement. Its public name may be the named person or a trading name, and that name is not a key.
@@ -115,6 +119,14 @@ _Avoid_: booking, schedule
 **Schedule change**:
 A new start date and duration the Client enters after a Quote is accepted. It applies only when the Artisan confirms it, and it is not an Updated Quote.
 _Avoid_: Reschedule, Booking
+
+**Duration**:
+How long the work takes, in whole days, at least 1 and at most 365, entered by the Client with a start date and estimated by the Artisan. The start date is day 1, so the duration ends at the end of its last day, in South African time.
+_Avoid_: Hours, Length, Estimate
+
+**Clock**:
+A period counted in elapsed time from an event, written as N times 24 hours or N hours, which does not pause. A date a person enters, such as a start date or a validity date, is a South African calendar day, not a clock.
+_Avoid_: Timer, Deadline, Clock days
 
 **Completion**:
 The Artisan's statement that the work is done. It has not happened unless it carries a note, at least one after-work photo, and every piece of Completion evidence that Job requires.
