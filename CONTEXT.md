@@ -211,7 +211,7 @@ _Avoid_: Reputation, Feedback, Score
 ### Relationship
 
 **Conversation**:
-The speech between one Client and one Artisan on one Job, in text, pictures, video, documents, or voice notes. It opens when the Artisan Quotes, or when either speaks if the Client invited the Artisan, it is the same record after Payment, and it is not private from the platform. It takes no new message once its Quote is no longer Sent or Accepted, or its Job is Ended. An Admin may read it and may not speak in it.
+The speech between one Client and one Artisan on one Job, in text, pictures, documents, or voice notes, and after Payment also video. It opens when the Artisan Quotes, or when either speaks if the Client invited the Artisan, it is the same record after Payment, and it is not private from the platform. It takes no new message once its Quote is no longer Sent or Accepted, or its Job is Ended. An Admin may read it and may not speak in it.
 _Avoid_: Chat, thread, inbox, DM
 
 **Client Relationship**:
@@ -231,9 +231,17 @@ An Account's attempt, found by an Admin, to move the request, the paid work, or 
 _Avoid_: Circumvention, leakage, off-platform dealing
 
 **Suspension**:
-A stop on new work for one Account. It follows the Leaving ladder, or a finding that the Identity Number is not the named person's. It does not end a paid Engagement, and it is not a close. A suspension for an Identity Number also holds the money on that Account's Engagements.
+A stop on new work for one Account. It follows the Leaving ladder, a finding that the Identity Number is not the named person's, or a conduct finding on a paid Engagement. It does not end a paid Engagement, and it is not a close. A suspension for an Identity Number also holds the money on that Account's Engagements.
 _Avoid_: Ban, deactivation, block
 
 **Suspension challenge**:
 The suspended Account's one request, within seven times 24 hours of being told, that the suspension be ended. A different person hears it. It is not a Dispute.
 _Avoid_: Dispute, appeal
+
+**Report**:
+One signed-in Account's complaint about one thing it can see, made from that thing's page, with one fixed reason and an optional note. It removes nothing, and the reporter is told it was received and never the outcome.
+_Avoid_: Complaint, Ticket, Support request
+
+**Flag**:
+A fact the platform raises for an Admin with no reporter: a third refused send on one Job, a chargeback, a payout account on two Artisan Accounts, or one an Admin raises from an item they already have open.
+_Avoid_: Alert, Report
