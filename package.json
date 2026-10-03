@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite dev",
     "prototype": "vite dev --open /prototype/launch",
+    "prototype:admin": "vite dev --open /prototype/admin",
     "build": "vite build",
     "preview": "vite preview",
     "deploy": "vite build && wrangler deploy",

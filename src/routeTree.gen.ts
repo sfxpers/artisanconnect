@@ -10,11 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PrototypeAdminRouteImport } from './routes/prototype/admin'
 import { Route as PrototypeLaunchRouteImport } from './routes/prototype/launch'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrototypeAdminRoute = PrototypeAdminRouteImport.update({
+  id: '/prototype/admin',
+  path: '/prototype/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrototypeLaunchRoute = PrototypeLaunchRouteImport.update({
@@ -25,27 +31,31 @@ const PrototypeLaunchRoute = PrototypeLaunchRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/prototype/admin': typeof PrototypeAdminRoute
   '/prototype/launch': typeof PrototypeLaunchRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/prototype/admin': typeof PrototypeAdminRoute
   '/prototype/launch': typeof PrototypeLaunchRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/prototype/admin': typeof PrototypeAdminRoute
   '/prototype/launch': typeof PrototypeLaunchRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/prototype/launch'
+  fullPaths: '/' | '/prototype/admin' | '/prototype/launch'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/prototype/launch'
-  id: '__root__' | '/' | '/prototype/launch'
+  to: '/' | '/prototype/admin' | '/prototype/launch'
+  id: '__root__' | '/' | '/prototype/admin' | '/prototype/launch'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  PrototypeAdminRoute: typeof PrototypeAdminRoute
   PrototypeLaunchRoute: typeof PrototypeLaunchRoute
 }
 
@@ -56,6 +66,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/prototype/admin': {
+      id: '/prototype/admin'
+      path: '/prototype/admin'
+      fullPath: '/prototype/admin'
+      preLoaderRoute: typeof PrototypeAdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/prototype/launch': {
@@ -70,6 +87,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  PrototypeAdminRoute: PrototypeAdminRoute,
   PrototypeLaunchRoute: PrototypeLaunchRoute,
 }
 export const routeTree = rootRouteImport
