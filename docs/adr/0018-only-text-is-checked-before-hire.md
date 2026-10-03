@@ -1,0 +1,3 @@
+# Only text is checked before Hire, and only photos may be sent
+
+Before Hire, a Job, a Quote, an Artisan Profile, and a Conversation take text and photos only. Text is checked for a phone number, an email address, a link, and a bank account number, and a match is refused with the reason. Photos are not machine-read and are enforced by Report. Voice notes, documents, and video are allowed only after Hire, when contact details are shared anyway. Reading every image, PDF, and voice note with Workers AI was rejected as a pipeline to build and run that stops only casual leakage, which the text check already stops.

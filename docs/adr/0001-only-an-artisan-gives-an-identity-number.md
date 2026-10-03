@@ -1,0 +1,3 @@
+# Only an Artisan gives an Identity Number
+
+An Artisan Account is held by one Identity Number, read by the Admin from the identity document beside a selfie holding it, so one person cannot hold two Artisan Accounts and split their Reviews. A Client gives a name, an Email, and a mobile number, and no Identity Number. Requiring one from every Client was rejected: it adds friction at sign-up, POPIA asks us to collect only what we need, and a Client's card payment already passes the bank's own checks. The cost is that a person can open a second Client Account, which the Admin handles by Report and Suspension. The Admin corrects an Artisan's number while checking the document, so there is no separate correction request.
