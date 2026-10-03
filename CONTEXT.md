@@ -102,6 +102,10 @@ _Avoid_: Deposit, Parts, Supplies
 The Client's choice of a Sent Quote, made by paying for it. Other Sent Quotes on that Job become Declined.
 _Avoid_: Accept, Booking
 
+**Conversation**:
+The messages between one Client and one Artisan on one Job, opened by a Quote or an Invitation. The Admin may read it and not write in it. Before Payment it takes text and photos; after Payment also voice notes and PDFs; never video.
+_Avoid_: Chat, Inbox, DM
+
 ### Doing the work
 
 **Engagement**:
@@ -199,3 +203,27 @@ _Avoid_: Terms, Policy
 **Artisan record**:
 The Admin's view of an Artisan's Cancellations, Cancellations by Clients before Work started, and Disputes decided against them. No Account sees it.
 _Avoid_: Reliability score, Reputation
+
+**Content check**:
+The automatic reading of everything sent before anyone sees it: patterns, then an AI reading, over text, photo OCR, voice notes turned into text, and PDFs' extracted text, for contact, payment off the platform, and abuse, plus an AI that spots contact cards in photos. A sure hit is refused with the reason and counts toward nothing; an unsure one is Held for the Admin.
+_Avoid_: Moderation, Filter, Detector
+
+**Held**:
+An item waiting for the Admin's Pre-check. It does not exist for anyone else until released: a Held Quote is not Sent, a Held Job is not matched. The sender sees "being checked" and may withdraw it.
+_Avoid_: Pending, Queued, Moderated
+
+**Pre-check**:
+The Admin's approval before something goes live: Verification checks, every Artisan Profile edit, every Review, an unsure certificate, and anything the Content check is unsure about.
+_Avoid_: Moderation, Approval
+
+**Signal**:
+A pattern of behaviour that detection sends to the Admin as a queue item, with no automatic sanction: shared devices or Payout names between a Client and Artisan who transact, repeated trouble, repeated refusals, or a new Account linked to a Suspended one.
+_Avoid_: Flag, Alert
+
+**Report**:
+A signed-in Account's complaint about a Job, Quote, message, Artisan Profile, or Review, which goes to the Admin.
+_Avoid_: Ticket, Flag
+
+**Leaving**:
+An attempt, found by the Admin, to move a Job, its work, or its money off the platform. The first is a warning and the second a Suspension; one that openly dodges the fees is a Suspension at once.
+_Avoid_: Circumvention, Leakage
