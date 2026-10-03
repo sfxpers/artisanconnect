@@ -86,6 +86,22 @@ _Avoid_: Online, Calendar
 An Artisan's public page, which anyone may open, with no direct contact. Every edit shows only once the Admin approves it.
 _Avoid_: Listing, Storefront
 
+**Quote**:
+An Artisan's fixed price on a Job: a scope, Labour, Materials, who supplies the materials, a start date, a duration, and an optional Warranty, totalling at least R300. It is Sent for 14 days and may be revised until it is Hired, Declined, Withdrawn, or Expired.
+_Avoid_: Offer, Bid, Estimate, Proposal
+
+**Labour**:
+The part of a Quote that pays for the Artisan's work, released at Approval.
+_Avoid_: Call-out, Service charge
+
+**Materials**:
+The part of a Quote that pays for goods the Artisan supplies, released at Work started. It is zero when the Client supplies them.
+_Avoid_: Deposit, Parts, Supplies
+
+**Hire**:
+The Client's choice of a Sent Quote, made by paying for it. Other Sent Quotes on that Job become Declined.
+_Avoid_: Accept, Booking
+
 ### Trust
 
 **Verification**:
@@ -99,6 +115,10 @@ _Avoid_: Certificate, Licence
 **Verification Badge**:
 One check the Admin has accepted, shown on the Artisan Profile with its expiry date when it expires. It is not a promise that the work will be good.
 _Avoid_: Vetted, Guarantee
+
+**Warranty**:
+A promise the Artisan makes on a Quote. The platform does not make or enforce one.
+_Avoid_: Guarantee
 
 **Marketplace rules**:
 The rules every Account accepts at sign-up and again after each change, with consent to how its personal data is used.
