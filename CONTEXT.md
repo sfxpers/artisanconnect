@@ -104,9 +104,41 @@ _Avoid_: Accept, Booking
 
 ### Doing the work
 
+**Engagement**:
+A Hired Quote's work and money. It is Paid, Work started, Awaiting approval, Fix requested, Disputed, Completed, or Cancelled.
+_Avoid_: Contract, Booking, Order
+
+**Work started**:
+The moment the Artisan is working on site, set by the Client, or by the Artisan when the Client does not answer "Not started" within 24 hours. It releases the Materials.
+_Avoid_: Start code, Check-in
+
+**Completion**:
+The Artisan's statement that the work is done, with a note, at least one after-work photo, and any Completion evidence. It needs Work started first.
+_Avoid_: Mark done, Delivery
+
+**Completion evidence**:
+A certificate the law requires before the work is handed over: a certificate of compliance on an Electrical Job, a certificate of conformity on a Plumbing Job that installs or removes gas. It is read for its kind and the Artisan's registration number; if unsure, the Completion is Held.
+_Avoid_: CoC, Compliance document
+
+**Approval**:
+The Client's acceptance of a Completion, which releases the Labour. Silence for seven days after a Completion is Approval.
+_Avoid_: Sign-off, Accept
+
+**Fix request**:
+The Client's answer to a Completion asking the Artisan to put something right. The next Completion starts a new seven days.
+_Avoid_: Rework order, Rejection
+
 **Updated Quote**:
 The Artisan's proposed new Labour and Materials before Completion. Neither line may go down. It applies when the Client pays the difference.
 _Avoid_: Variation, Change order
+
+**Cancellation**:
+Either Account's ending of an Engagement before Approval. Before Work started the Client is refunded at once; after it, the unreleased Labour is refunded after 72 hours unless the Artisan opens a Dispute.
+_Avoid_: Termination, Withdrawal
+
+**Dispute**:
+A request that the Admin decide how much of a held amount of Labour is released and how much refunded. The Client opens one for a named amount at Completion; the Artisan opens one against a Fix request or a Cancellation. The Admin's decision is final.
+_Avoid_: Appeal, Complaint, Claim
 
 ### Money
 
@@ -163,3 +195,7 @@ _Avoid_: Guarantee
 **Marketplace rules**:
 The rules every Account accepts at sign-up and again after each change, with consent to how its personal data is used.
 _Avoid_: Terms, Policy
+
+**Artisan record**:
+The Admin's view of an Artisan's Cancellations, Cancellations by Clients before Work started, and Disputes decided against them. No Account sees it.
+_Avoid_: Reliability score, Reputation
