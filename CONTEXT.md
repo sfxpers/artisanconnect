@@ -53,8 +53,12 @@ Home or Business, a label on a Job, not a kind of Account. A Home Site Job is on
 _Avoid_: Client organization, commercial Job, premises, property type
 
 **Region**:
-A named area Admin has opened and edged. A Job is posted in one. An Artisan selects at most three, and is matched only in those.
+A named area Admin has opened. At launch each is one of the City of Cape Town's eight Development Management Districts, as the City names them. A Job is posted in one. An Artisan selects at most three, and is matched only in those.
 _Avoid_: Zone, Suburb, Service Area, Reach, Ward, Subcouncil
+
+**Suburb**:
+One of the City of Cape Town's official suburbs, as the City names them. A Client picks one to place a site, and it belongs to exactly one Region. It is not a Region, and an Admin may add one the City has newly created but may not move or rename one.
+_Avoid_: Area, Neighbourhood, Zone, Ward, Subcouncil
 
 **Job Match**:
 The platform's offer of a Job to an Artisan who may Quote it and has selected its Region.
