@@ -1,0 +1,3 @@
+# A Review is one rating, only once an Engagement is Completed
+
+Each party gives the other one rating from 1 to 5 and an optional comment, only once the Engagement is Completed, and it publishes only once the Admin approves it; a Review written inside its window publishes on approval even if that comes later. Neither can read the other's until both submit or seven days pass, and a side that misses the window cannot write later. Each Review on an Artisan Profile shows its Service Category, and anyone may read it. Four scored dimensions each way were rejected as eight questions for a signal one number and the category label carry. Reviewing a Cancelled Engagement was rejected because a Review should cost a real, approved Job.

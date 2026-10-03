@@ -144,6 +144,10 @@ _Avoid_: Termination, Withdrawal
 A request that the Admin decide how much of a held amount of Labour is released and how much refunded. The Client opens one for a named amount at Completion; the Artisan opens one against a Fix request or a Cancellation. The Admin's decision is final.
 _Avoid_: Appeal, Complaint, Claim
 
+**Hire Again**:
+The Client's act of opening an Invite-only Job for an Artisan they have a Completed Engagement with, prefilled from it.
+_Avoid_: Rehire, Repeat booking
+
 ### Money
 
 **Payment**:
@@ -200,6 +204,10 @@ _Avoid_: Guarantee
 The rules every Account accepts at sign-up and again after each change, with consent to how its personal data is used.
 _Avoid_: Terms, Policy
 
+**Review**:
+A 1 to 5 rating with an optional comment, one from each party once an Engagement is Completed, published only once the Admin approves it. Neither can read the other's until both submit or seven days pass.
+_Avoid_: Feedback, Score, Reputation
+
 **Artisan record**:
 The Admin's view of an Artisan's Cancellations, Cancellations by Clients before Work started, and Disputes decided against them. No Account sees it.
 _Avoid_: Reliability score, Reputation
@@ -227,3 +235,13 @@ _Avoid_: Ticket, Flag
 **Leaving**:
 An attempt, found by the Admin, to move a Job, its work, or its money off the platform. The first is a warning and the second a Suspension; one that openly dodges the fees is a Suspension at once.
 _Avoid_: Circumvention, Leakage
+
+### Relationship
+
+**Client Relationship**:
+The pair of one Client and one Artisan.
+_Avoid_: Lock-in, Repeat customer
+
+**Protected Relationship Period**:
+The 365 days after the first Payment in a Client Relationship, during which all work between them belongs on the platform.
+_Avoid_: Lock-in, Exclusivity
