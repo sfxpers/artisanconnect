@@ -13,7 +13,8 @@
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
     "typecheck": "tsc --noEmit",
-    "postinstall": "wrangler types"
+    "postinstall": "wrangler types",
+    "prototype": "vite dev --open /prototype/launch"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
