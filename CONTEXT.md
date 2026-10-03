@@ -242,6 +242,14 @@ _Avoid_: Ban, deactivation, block
 The suspended Account's one request, within seven times 24 hours of being told, that the suspension be ended. A different person hears it. It is not a Dispute.
 _Avoid_: Dispute, appeal
 
+**Tell**:
+The platform's message to an Account that something has happened, sent when the event needs that Account's action, moves its money, ends something it holds, or changes its standing. An Account is told once its notice is written, whether or not the email arrives. An Account is never told of its own act, and a pure view tells nobody.
+_Avoid_: Notification, Alert, Message
+
+**Reminder**:
+A Tell, sent before a clock ends, to the party who can still act. It never says whether the other side has acted.
+_Avoid_: Nudge, Warning
+
 **Report**:
 One signed-in Account's complaint about one thing it can see, made from that thing's page, with one fixed reason and an optional note. It removes nothing, and the reporter is told it was received and never the outcome.
 _Avoid_: Complaint, Ticket, Support request
