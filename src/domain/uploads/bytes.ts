@@ -1,6 +1,9 @@
 /** The file is damaged, or not what its first bytes say it is. */
 export class Unreadable extends Error {}
 
+/** A PDF locked with a password, whose contents cannot be read. */
+export class Locked extends Unreadable {}
+
 export function viewOf(bytes: Uint8Array): DataView {
   return new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
 }

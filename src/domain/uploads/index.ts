@@ -6,7 +6,7 @@
 
 import type { Context } from "../context";
 import { ok, refuse, type Result } from "../result";
-import { startsWith, Unreadable } from "./bytes";
+import { Locked, startsWith, Unreadable } from "./bytes";
 import { mediaContainer, readMedia, type MediaContainer } from "./media";
 import { hasActiveContent, isPdf } from "./pdf";
 import { drawPhoto, MAX_PHOTO_PIXELS, photoFormat, readPhotoHeader } from "./photos";
@@ -15,13 +15,19 @@ import { drawPhoto, MAX_PHOTO_PIXELS, photoFormat, readPhotoHeader } from "./pho
 export const MAX_FILE_BYTES = 10 * 1024 * 1024;
 export const MAX_VOICE_NOTE_SECONDS = 5 * 60;
 
-export type UploadContext = {
-  /**
-   * Whether Payment has happened where the file is going, which the caller
-   * knows. Before it only photos are taken; after it, PDFs and voice notes too.
-   */
-  afterPayment: boolean;
-};
+export type FileKind = "photo" | "pdf" | "voice-note";
+
+/** Which kinds of file the place the file is going takes; the caller knows. */
+export type UploadContext = { takes: readonly FileKind[] };
+
+export const UPLOAD_CONTEXTS = {
+  /** A Job, or a Conversation before Payment: what is sent may reach a stranger. */
+  beforePayment: { takes: ["photo"] },
+  /** An Engagement's Conversation, or a Completion. */
+  afterPayment: { takes: ["photo", "pdf", "voice-note"] },
+  /** Verification documents, which only the Admin sees. */
+  verification: { takes: ["photo", "pdf"] },
+} as const satisfies Record<string, UploadContext>;
 
 export type StoredFile =
   | {
@@ -42,7 +48,7 @@ export type UploadRefusal =
   | "video"
   | "script"
   | "type-not-taken"
-  | "after-payment-only"
+  | "not-taken-here"
   | "unreadable";
 
 const VOICE_NOTE_TYPES: Record<MediaContainer, { contentType: string; extension: string }> = {
@@ -62,8 +68,14 @@ export async function uploadFile(
   try {
     return await upload(ctx, bytes, where);
   } catch (error) {
+    if (error instanceof Locked) {
+      return refuse(
+        "unreadable",
+        "This PDF is locked, so it cannot be read. Save it again without a password, for example with Print, then Save as PDF.",
+      );
+    }
     if (error instanceof Unreadable) {
-      return refuse("unreadable", "This file is damaged or locked, so it cannot be read.");
+      return refuse("unreadable", "This file is damaged, so it cannot be read.");
     }
     throw error;
   }
@@ -78,8 +90,9 @@ async function upload(
   if (photo) {
     const header = readPhotoHeader(bytes, photo);
     if (header.animated) return refuseVideo();
+    if (!where.takes.includes("photo")) return refuseHere(where);
     if (header.width * header.height > MAX_PHOTO_PIXELS) {
-      return refuse("too-large", "A photo can be at most 24 megapixels.");
+      return refuse("too-large", "A photo can be at most 12 megapixels.");
     }
     const drawn = await drawPhoto(bytes, photo);
     const id = ctx.newId();
@@ -109,7 +122,7 @@ async function upload(
     const media = readMedia(bytes, container);
     if (media.kind === "video") return refuseVideo();
     if (media.kind === "other") return refuseType();
-    if (!where.afterPayment) return refuseBeforePayment();
+    if (!where.takes.includes("voice-note")) return refuseHere(where);
     if (media.seconds > MAX_VOICE_NOTE_SECONDS) {
       return refuse("too-long", "A voice note can be at most 5 minutes.");
     }
@@ -121,7 +134,7 @@ async function upload(
   }
 
   if (isPdf(bytes)) {
-    if (!where.afterPayment) return refuseBeforePayment();
+    if (!where.takes.includes("pdf")) return refuseHere(where);
     if (await hasActiveContent(bytes)) {
       return refuse("script", "This PDF holds a script or another file, so it cannot be sent.");
     }
@@ -162,8 +175,20 @@ function refuseType() {
   return refuse("type-not-taken", "Send a photo (JPEG, PNG, or WebP), a PDF, or a voice note.");
 }
 
-function refuseBeforePayment() {
-  return refuse("after-payment-only", "PDFs and voice notes can be sent once the Job is paid for.");
+const KIND_NAMES: Record<FileKind, string> = {
+  photo: "photos",
+  pdf: "PDFs",
+  "voice-note": "voice notes",
+};
+
+/** "Only photos and PDFs can be sent here." */
+function refuseHere(where: UploadContext) {
+  const names = where.takes.map((kind) => KIND_NAMES[kind]);
+  const list =
+    names.length > 1
+      ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`
+      : (names[0] ?? "no files");
+  return refuse("not-taken-here", `Only ${list} can be sent here.`);
 }
 
 /** Video containers that hold nothing else: AVI, FLV, Windows Media, and MPEG. */

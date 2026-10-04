@@ -1,11 +1,17 @@
 import { assembleDomain, sections, type Actor } from "@/domain";
 import { defineSection } from "@/domain/section";
 import { ok } from "@/domain/result";
-import { checkFileCount, uploadFile, type FileCountLimit, type StoredFile } from "@/domain/uploads";
+import {
+  checkFileCount,
+  uploadFile,
+  type FileCountLimit,
+  type StoredFile,
+  type UploadContext,
+} from "@/domain/uploads";
 import { createHarness } from "./harness";
 
 // A probe section that calls the upload path the way Jobs, Completions, and
-// Conversations will: it says whether Payment has happened, and counts what
+// Conversations will: it says which kinds of file it takes, and counts what
 // the thing it attaches to already holds before uploading more.
 
 const uploadsProbe = defineSection({
@@ -13,19 +19,19 @@ const uploadsProbe = defineSection({
   api: (ctx) => {
     const held = new Map<string, StoredFile[]>();
     return {
-      async upload(_actor: Actor, input: { file: Blob; afterPayment: boolean }) {
-        return uploadFile(ctx, input.file, { afterPayment: input.afterPayment });
+      async upload(_actor: Actor, input: { file: Blob } & UploadContext) {
+        return uploadFile(ctx, input.file, { takes: input.takes });
       },
 
       async attach(
         _actor: Actor,
-        input: { to: string; limit: FileCountLimit; files: Blob[]; afterPayment: boolean },
+        input: { to: string; limit: FileCountLimit; files: Blob[] } & UploadContext,
       ) {
         const holding = held.get(input.to) ?? [];
         const counted = checkFileCount(input.limit, holding.length + input.files.length);
         if (!counted.ok) return counted;
         for (const file of input.files) {
-          const stored = await uploadFile(ctx, file, { afterPayment: input.afterPayment });
+          const stored = await uploadFile(ctx, file, { takes: input.takes });
           if (!stored.ok) return stored;
           holding.push(stored.value);
         }

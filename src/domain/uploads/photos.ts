@@ -22,11 +22,13 @@ export type PhotoFormat = "jpeg" | "png" | "webp";
 export const PHOTO_LONG_SIDE = 2048;
 export const THUMBNAIL_LONG_SIDE = 400;
 /**
- * The most pixels a photo may have: a 24-megapixel phone photo. Decoding
- * needs four bytes a pixel in memory, and a small file can claim a huge
- * picture, so the size is read from the header and checked before decoding.
+ * The most pixels a photo may have. Decoding needs four bytes a pixel, twice
+ * over (in the codec and in JavaScript), inside a Worker's 128 MB, and a small
+ * file can claim a huge picture, so the size is read from the header and
+ * checked before decoding. The app shrinks photos to 2048 pixels before
+ * sending them, so this only stops a file that skipped that.
  */
-export const MAX_PHOTO_PIXELS = 24_000_000;
+export const MAX_PHOTO_PIXELS = 12_000_000;
 const QUALITY = 80;
 
 let codecs: Promise<unknown> | undefined;

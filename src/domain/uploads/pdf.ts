@@ -1,4 +1,4 @@
-import { latin1, startsWith, Unreadable } from "./bytes";
+import { latin1, Locked, startsWith, Unreadable } from "./bytes";
 
 // A PDF may carry a script or a whole other file. Either is named by a key in
 // a dictionary, and a dictionary is either in plain sight or packed into a
@@ -32,7 +32,7 @@ export async function hasActiveContent(bytes: Uint8Array<ArrayBuffer>): Promise<
   const text = latin1(bytes);
   const names = namesIn(text);
   // A locked PDF's object streams are encrypted, so nothing in them can be checked.
-  if (names.has("Encrypt")) throw new Unreadable("The PDF is locked.");
+  if (names.has("Encrypt")) throw new Locked("The PDF is locked.");
   if (hasActiveName(names)) return true;
 
   let inflated = 0;

@@ -27,6 +27,7 @@ import {
   webpUnderstatingItsSize,
   withFillByte,
 } from "../support/files";
+import { UPLOAD_CONTEXTS, type UploadContext } from "@/domain/uploads";
 import { createUploadsHarness } from "../support/uploads";
 
 // The one upload path: a file reaches R2 only if its type, size, and where it
@@ -35,14 +36,16 @@ import { createUploadsHarness } from "../support/uploads";
 
 const client = { kind: "client", accountId: "client-1" } as const;
 const MB = 1024 * 1024;
-const beforePayment = { afterPayment: false };
-const afterPayment = { afterPayment: true };
+const { beforePayment, afterPayment, verification } = UPLOAD_CONTEXTS;
 
 function file(bytes: Uint8Array<ArrayBuffer> | string, name = "upload", type = "") {
   return new File([bytes], name, { type });
 }
 
-async function upload(bytes: Uint8Array<ArrayBuffer> | string, where = afterPayment) {
+async function upload(
+  bytes: Uint8Array<ArrayBuffer> | string,
+  where: UploadContext = afterPayment,
+) {
   const harness = await createUploadsHarness();
   const result = await harness.domain.uploadsProbe.upload(client, { file: file(bytes), ...where });
   return { ...harness, result };
@@ -51,7 +54,7 @@ async function upload(bytes: Uint8Array<ArrayBuffer> | string, where = afterPaym
 async function expectRefused(
   bytes: Uint8Array<ArrayBuffer> | string,
   reason: string,
-  where = afterPayment,
+  where: UploadContext = afterPayment,
 ) {
   const { result, stored } = await upload(bytes, where);
   expect(result).toMatchObject({ ok: false, refusal: { reason } });
@@ -161,7 +164,7 @@ describe("a PDF", () => {
   });
 
   test("is refused before Payment", async () => {
-    await expectRefused(fixture(certificatePdf), "after-payment-only", beforePayment);
+    await expectRefused(fixture(certificatePdf), "not-taken-here", beforePayment);
   });
 
   test.each(["plain", "escaped", "object-stream"] as const)(
@@ -178,9 +181,12 @@ describe("a PDF", () => {
     },
   );
 
-  test("that is locked is refused, since it cannot be read", async () => {
+  test("that is locked is refused, since it cannot be read, saying how to unlock it", async () => {
     expect((await upload(await pdf())).result).toMatchObject({ ok: true });
     await expectRefused(await pdf({ encrypted: true }), "unreadable");
+    expect((await upload(await pdf({ encrypted: true }))).result).toMatchObject({
+      refusal: { message: expect.stringMatching(/without a password/) },
+    });
   });
 });
 
@@ -218,7 +224,29 @@ describe("a voice note", () => {
   });
 
   test("is refused before Payment", async () => {
-    await expectRefused(fixture(chromeVoiceWebm), "after-payment-only", beforePayment);
+    await expectRefused(fixture(chromeVoiceWebm), "not-taken-here", beforePayment);
+  });
+});
+
+describe("where a file is going", () => {
+  test("before Payment takes only photos", async () => {
+    expect((await upload(await png(64, 64), beforePayment)).result).toMatchObject({ ok: true });
+    expect((await upload(fixture(certificatePdf), beforePayment)).result).toEqual({
+      ok: false,
+      refusal: { reason: "not-taken-here", message: "Only photos can be sent here." },
+    });
+  });
+
+  test("for Verification takes photos and PDFs, but not voice notes", async () => {
+    expect((await upload(await png(64, 64), verification)).result).toMatchObject({ ok: true });
+    expect((await upload(fixture(certificatePdf), verification)).result).toMatchObject({
+      ok: true,
+      value: { kind: "pdf" },
+    });
+    await expectRefused(fixture(chromeVoiceWebm), "not-taken-here", verification);
+    expect((await upload(fixture(chromeVoiceWebm), verification)).result).toMatchObject({
+      refusal: { message: "Only photos and PDFs can be sent here." },
+    });
   });
 });
 
@@ -282,7 +310,7 @@ describe("count limits, enforced by the caller", () => {
   async function attachMany(
     limit: Parameters<typeof attach>[1],
     count: number,
-    where = afterPayment,
+    where: UploadContext = afterPayment,
   ) {
     const harness = await createUploadsHarness();
     const files = await Promise.all(Array.from({ length: count }, tinyPhoto));
@@ -295,7 +323,7 @@ describe("count limits, enforced by the caller", () => {
     harness: Awaited<ReturnType<typeof createUploadsHarness>>,
     limit: "jobPhotos" | "completionPhotos" | "completionDocuments" | "messageAttachments",
     files: File[],
-    where: { afterPayment: boolean },
+    where: UploadContext,
   ) {
     return harness.domain.uploadsProbe.attach(client, { to: "thing-1", limit, files, ...where });
   }
