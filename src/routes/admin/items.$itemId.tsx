@@ -213,7 +213,8 @@ function DecidedCard({ decided }: { decided: NonNullable<Item["decided"]> }) {
           </p>
         )}
         <p className="text-xs text-muted-foreground">
-          {t.by(decided.by, formatDate(decided.at))}. {t.final}
+          {decided.by ? t.by(decided.by, formatDate(decided.at)) : formatDate(decided.at)}.{" "}
+          {t.final}
         </p>
       </CardContent>
     </Card>

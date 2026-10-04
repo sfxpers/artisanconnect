@@ -62,6 +62,8 @@ function SignUp() {
       turnstile.reset();
       if (!result.ok) {
         setRefusal(result.refusal.message);
+        // The Content check refused the names: back to them, as typed.
+        if (result.refusal.reason === "content") setStep("names");
         return;
       }
       await navigate({ to: "/confirm-email", search: { email: result.value.email } });
@@ -161,6 +163,7 @@ function SignUp() {
                     </p>
                   )}
                 </form.Subscribe>
+                <Refusal message={refusal} />
                 <Button type="button" onClick={() => void continueFrom(["name", "tradingName"])}>
                   {t.continue}
                 </Button>

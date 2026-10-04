@@ -204,14 +204,22 @@ export function createQueues(ctx: Context, kinds: Record<string, QueueItemKind>)
               decision: row.decision,
               label: kind.decisions[row.decision]?.label ?? row.decision,
               reason: row.reason,
-              by: row.decidedBy ?? "",
+              /** The Admin who decided; null for what the sender did, such as withdrawing. */
+              by: row.decidedBy,
               at: row.decidedAt,
             }
           : null;
       const timeline = [
         { at: row.raisedAt, text: "Raised" },
         ...(view.timeline ?? []),
-        ...(decided ? [{ at: decided.at, text: `${decided.label}, by ${decided.by}` }] : []),
+        ...(decided
+          ? [
+              {
+                at: decided.at,
+                text: decided.by ? `${decided.label}, by ${decided.by}` : decided.label,
+              },
+            ]
+          : []),
       ].sort((a, b) => a.at.getTime() - b.at.getTime());
       const decisions: AllowedDecision[] = decided ? [] : allowed;
       return {

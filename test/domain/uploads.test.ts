@@ -3,6 +3,11 @@ import chromeVideoMp4 from "../fixtures/chrome-video.mp4?inline";
 import chromeVideoWebm from "../fixtures/chrome-video.webm?inline";
 import chromeVoiceMp4 from "../fixtures/chrome-voice-note.mp4?inline";
 import chromeVoiceWebm from "../fixtures/chrome-voice-note.webm?inline";
+import bankLetterAes128 from "../fixtures/bank-letter-aes-128.pdf?inline";
+import bankLetterPasswordAes from "../fixtures/bank-letter-password-aes.pdf?inline";
+import bankLetterPasswordRc4 from "../fixtures/bank-letter-password-rc4.pdf?inline";
+import bankLetterRc4128 from "../fixtures/bank-letter-rc4-128.pdf?inline";
+import bankLetterRc440 from "../fixtures/bank-letter-rc4-40.pdf?inline";
 import certificatePdf from "../fixtures/certificate.pdf?inline";
 import heicPhoto from "../fixtures/photo.heic?inline";
 import macVoiceMemo from "../fixtures/macos-voice-memo.m4a?inline";
@@ -28,6 +33,7 @@ import {
   withFillByte,
 } from "../support/files";
 import { UPLOAD_CONTEXTS, type UploadContext } from "@/domain/uploads";
+import { textPdf } from "../support/pdfs";
 import { createUploadsHarness } from "../support/uploads";
 
 // The one upload path: a file reaches R2 only if its type, size, and where it
@@ -181,12 +187,44 @@ describe("a PDF", () => {
     },
   );
 
-  test("that is locked is refused, since it cannot be read, saying how to unlock it", async () => {
-    expect((await upload(await pdf())).result).toMatchObject({ ok: true });
-    await expectRefused(await pdf({ encrypted: true }), "unreadable");
-    expect((await upload(await pdf({ encrypted: true }))).result).toMatchObject({
-      refusal: { message: expect.stringMatching(/without a password/) },
-    });
+  // Saved by macOS's own PDF writer with an owner password only, as a bank
+  // letter or a generated certificate forbids editing or copying.
+  test.each([
+    ["RC4, 40 bits", bankLetterRc440],
+    ["RC4, 128 bits", bankLetterRc4128],
+    ["AES, 128 bits", bankLetterAes128],
+  ])("that opens without a password but is encrypted (%s) is accepted", async (_, letter) => {
+    const { result, stored } = await upload(fixture(letter));
+
+    expect(result).toMatchObject({ ok: true, value: { kind: "pdf" } });
+    expect(await stored()).toHaveLength(1);
+  });
+
+  test("that opens without a password but is encrypted (AES, 256 bits) is accepted", async () => {
+    const letter = await textPdf({ lines: ["Account number 62812345678"], aes256: {} });
+
+    expect((await upload(letter)).result).toMatchObject({ ok: true, value: { kind: "pdf" } });
+  });
+
+  test.each([
+    ["RC4", async () => fixture(bankLetterPasswordRc4)],
+    ["AES, 128 bits", async () => fixture(bankLetterPasswordAes)],
+    ["AES, 256 bits", () => textPdf({ lines: ["Hidden"], aes256: { userPassword: "secret" } })],
+  ])(
+    "that needs a password to open (%s) is refused, since it cannot be read, saying how to unlock it",
+    async (_, locked) => {
+      const { result, stored } = await upload(await locked());
+
+      expect(result).toMatchObject({
+        ok: false,
+        refusal: { reason: "unreadable", message: expect.stringMatching(/without a password/) },
+      });
+      expect(await stored()).toEqual([]);
+    },
+  );
+
+  test("that is encrypted and carries a script in an object stream is refused", async () => {
+    await expectRefused(await textPdf({ aes256: {}, script: true }), "script");
   });
 });
 

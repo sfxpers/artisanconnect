@@ -220,7 +220,11 @@ describe("the fake clock", () => {
 describe("the fake content reader", () => {
   test("gives the verdict it is forced to", async () => {
     const reader = createFakeContentReader();
-    const content = { text: "Call me", context: { kind: "before-payment" } } as const;
+    const content = {
+      text: "Call me",
+      photos: [],
+      context: { kind: "before-payment" },
+    } as const;
 
     expect(await reader.read(content)).toEqual({ kind: "clear" });
     reader.force({ kind: "unsure", reason: "May be contact details" });
@@ -229,6 +233,24 @@ describe("the fake content reader", () => {
       reason: "May be contact details",
     });
     expect(reader.reads).toHaveLength(2);
+  });
+
+  test("reads photos and voice notes as it is told to, and fails every call once broken", async () => {
+    const reader = createFakeContentReader();
+    const audio = { bytes: new Uint8Array(1), contentType: "audio/webm" };
+
+    expect(await reader.readPhoto(new Uint8Array(1))).toBe("");
+    expect(await reader.transcribe(audio)).toBe("");
+    reader.photosSay("Thandi 082 555 0123");
+    reader.voiceNotesSay("zero eight two");
+    expect(await reader.readPhoto(new Uint8Array(1))).toBe("Thandi 082 555 0123");
+    expect(await reader.transcribe(audio)).toBe("zero eight two");
+    reader.breaks();
+    await expect(reader.readPhoto(new Uint8Array(1))).rejects.toThrow();
+    await expect(reader.transcribe(audio)).rejects.toThrow();
+    await expect(
+      reader.read({ text: "", photos: [], context: { kind: "before-payment" } }),
+    ).rejects.toThrow();
   });
 });
 

@@ -6,6 +6,7 @@ import {
   integer,
   sqliteTable,
   text,
+  uniqueIndex,
   type AnySQLiteColumn,
 } from "drizzle-orm/sqlite-core";
 
@@ -144,8 +145,47 @@ export const accounts = sqliteTable(
       .references(() => marketplaceRules.version),
     rulesAcceptedAt: instant("rules_accepted_at").notNull(),
     signedUpAt: instant("signed_up_at").notNull(),
+    /**
+     * Whether anyone else may see the names: false until the names given at
+     * sign-up pass the Content check, or the Admin releases them. A name held
+     * here that is not shown is the Account's and the Admin's only.
+     */
+    namesShown: integer("names_shown", { mode: "boolean" }).notNull().default(true),
   },
   (table) => [check("accounts_kind", sql`${table.kind} in ('client', 'artisan')`)],
+);
+
+export const NAMES_STATES = ["shown", "held", "released", "refused", "withdrawn"] as const;
+
+/**
+ * Each time an Account gives its names, at sign-up or changing them, and
+ * what the Content check made of them: shown at once, or Held for the
+ * Admin's Pre-check and then released, refused, or withdrawn. The newest row
+ * says where the Account's names stand; `accounts` holds the names shown.
+ */
+export const namesSent = sqliteTable(
+  "names_sent",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    tradingName: text("trading_name"),
+    state: text("state", { enum: NAMES_STATES }).notNull(),
+    /** Why the check Held them, for the Admin. */
+    heldFor: text("held_for"),
+    sentAt: instant("sent_at").notNull(),
+  },
+  (table) => [
+    index("names_sent_account").on(table.accountId, table.sentAt),
+    // One set of names waits at a time.
+    uniqueIndex("names_sent_one_held").on(table.accountId).where(sql.raw("state = 'held'")),
+    check(
+      "names_sent_state",
+      sql.raw(`state in (${NAMES_STATES.map((state) => `'${state}'`).join(", ")})`),
+    ),
+  ],
 );
 
 /** Each published version of the Marketplace rules. The newest is current. */

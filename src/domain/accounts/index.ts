@@ -5,7 +5,9 @@ import { accountIdOf, visitor, type AccountActor, type Actor } from "../actor";
 import { tryWithin } from "../rate-limits";
 import { ok, refuse } from "../result";
 import { adminActorFor } from "../admins/identity";
-import { accounts, authUsers } from "../schema";
+import { alreadyChecked, isAlreadyDecided } from "../content/held";
+import { causedBy } from "../errors";
+import { accounts, authUsers, namesSent } from "../schema";
 import { defineSection } from "../section";
 import { authErrorCode, createAuth, type Auth } from "./auth";
 import {
@@ -25,15 +27,28 @@ import {
   EMAIL_CODE,
   email,
   firstProblem,
+  names,
   password,
   signUpDetails,
   type SignUpDetails,
 } from "./inputs";
 import { clientShownName, publicName } from "./names";
+import {
+  checkNames,
+  heldNames,
+  heldNamesOf,
+  holdNames,
+  namesStanding,
+  raiseHeldNames,
+  raiseNames,
+  showNames,
+  withdrawNames,
+} from "./names-check";
 import { currentRules } from "./rules";
 
 export const accountsSection = defineSection({
   name: "accounts",
+  queueItems: [heldNames],
   api: (ctx) => {
     let auth: Auth | undefined;
     const getAuth = () => (auth ??= createAuth(ctx));
@@ -81,6 +96,10 @@ export const accountsSection = defineSection({
             `A sign-up with this Email is waiting for its code. Enter that code, or try again once it stops working, ${EMAIL_CODE.minutes} minutes after it was sent.`,
           );
         }
+        // Names are checked like everything sent; a sure hit leaves the form as it was.
+        const given = { name: details.name, tradingName: details.tradingName ?? null };
+        const checked = await checkNames(ctx, given);
+        if (!checked.ok) return checked;
         const refused = await mayRequestCode(ctx, details.email, input.ip);
         if (refused) return refused;
 
@@ -111,6 +130,8 @@ export const accountsSection = defineSection({
           body: { email: details.email, password: details.password, name: details.name },
         });
         const now = ctx.now();
+        const verdict = checked.value;
+        const clear = verdict.verdict === "clear";
         await ctx.commit([
           ctx.db.insert(accounts).values({
             id: created.user.id,
@@ -120,7 +141,18 @@ export const accountsSection = defineSection({
             rulesVersion: rules.version,
             rulesAcceptedAt: now,
             signedUpAt: now,
+            namesShown: clear,
           }),
+          // Held names reach the Admin once the Email is proven.
+          verdict.verdict === "clear"
+            ? ctx.db.insert(namesSent).values({
+                id: ctx.newId(),
+                accountId: created.user.id,
+                ...given,
+                state: "shown",
+                sentAt: now,
+              })
+            : holdNames(ctx, created.user.id, given, verdict.reason).write,
         ]);
         await getAuth().api.sendVerificationOTP({
           body: { email: details.email, type: "email-verification" },
@@ -182,6 +214,8 @@ export const accountsSection = defineSection({
           await signedOut();
           return codeRefusal("INVALID_OTP");
         }
+        // Now an Account: its Held names go to the Admin.
+        await raiseHeldNames(ctx, account.id);
         // The Email is proven either way; new rules are accepted at sign-in.
         if (account.rulesVersion !== (await currentRules(ctx)).version) {
           await signedOut();
@@ -254,6 +288,8 @@ export const accountsSection = defineSection({
               .where(eq(accounts.id, account.id)),
           ]);
         }
+        // In case they did not reach the Admin when the Email was proven.
+        await raiseHeldNames(ctx, account.id);
         const signedInAs: AccountActor = { kind: account.kind, accountId: account.id };
         return ok({ actor: signedInAs, cookies: signedIn.headers.getSetCookie() });
       },
@@ -335,17 +371,70 @@ export const accountsSection = defineSection({
        */
       async shownName(viewer: Actor, input: { accountId: string }): Promise<string | null> {
         const [account] = await ctx.db
-          .select({ kind: accounts.kind, name: accounts.name, tradingName: accounts.tradingName })
+          .select({
+            kind: accounts.kind,
+            name: accounts.name,
+            tradingName: accounts.tradingName,
+            namesShown: accounts.namesShown,
+          })
           .from(accounts)
           .innerJoin(authUsers, eq(authUsers.id, accounts.id))
           .where(and(eq(accounts.id, input.accountId), eq(authUsers.emailVerified, true)));
         if (!account) return null;
-        if (account.kind === "artisan") return publicName(account);
-        if (viewer.kind === "artisan") return clientShownName(publicName(account));
         if (viewer.kind === "admin" || accountIdOf(viewer) === input.accountId) {
           return publicName(account);
         }
+        // Names the Content check has not passed are nobody else's to see.
+        if (!account.namesShown) return null;
+        if (account.kind === "artisan") return publicName(account);
+        if (viewer.kind === "artisan") return clientShownName(publicName(account));
         return null;
+      },
+
+      /**
+       * Gives the Account new names, checked like everything sent. A sure hit
+       * is refused and changes nothing; unsure ones are Held, and the names
+       * shown until now stay shown until the Admin releases the new ones.
+       */
+      async changeNames(actor: Actor, input: { name: string; tradingName?: string }) {
+        const accountId = accountIdOf(actor);
+        if (!accountId) return refuse("sign-in-required", "Sign in to change your names.");
+        const parsed = names.safeParse(input);
+        if (!parsed.success) return refuse("invalid", firstProblem(parsed.error));
+        const given = { name: parsed.data.name, tradingName: parsed.data.tradingName ?? null };
+        if (await heldNamesOf(ctx, accountId)) return namesBeingChecked();
+
+        const checked = await checkNames(ctx, given);
+        if (!checked.ok) return checked;
+        if (checked.value.verdict === "clear") {
+          await ctx.commit(showNames(ctx, accountId, given));
+          return ok({ names: "shown" as const });
+        }
+        const held = holdNames(ctx, accountId, given, checked.value.reason);
+        try {
+          await ctx.commit([held.write, raiseNames(ctx, { id: held.id, ...given })]);
+        } catch (error) {
+          if (causedBy(error, "UNIQUE constraint failed: names_sent.account_id")) {
+            return namesBeingChecked();
+          }
+          throw error;
+        }
+        return ok({ names: "being-checked" as const });
+      },
+
+      /** Withdraws names that are being checked, leaving the names shown until now. */
+      async withdrawNames(actor: Actor) {
+        const accountId = accountIdOf(actor);
+        if (!accountId) return refuse("sign-in-required", "Sign in to withdraw your names.");
+        const held = await heldNamesOf(ctx, accountId);
+        if (!held) return refuse("nothing-held", "Your names are not being checked.");
+        try {
+          await ctx.commit(await withdrawNames(ctx, held.id));
+        } catch (error) {
+          if (isAlreadyDecided(error)) return alreadyChecked();
+          throw error;
+        }
+        return ok({});
       },
 
       /** The signed-in Account as it sees itself. */
@@ -361,6 +450,7 @@ export const accountsSection = defineSection({
             email: authUsers.email,
             rulesVersion: accounts.rulesVersion,
             rulesAcceptedAt: accounts.rulesAcceptedAt,
+            namesShown: accounts.namesShown,
           })
           .from(accounts)
           .innerJoin(authUsers, eq(authUsers.id, accounts.id))
@@ -372,6 +462,11 @@ export const accountsSection = defineSection({
           name: row.name,
           tradingName: row.tradingName,
           publicName: publicName(row),
+          /**
+           * Whether others see the names; new names being checked, which
+           * only this Account sees; and names the Admin refused, with why.
+           */
+          names: { shown: row.namesShown, ...(await namesStanding(ctx, row.id)) },
           email: row.email,
           rules: { version: row.rulesVersion, acceptedAt: row.rulesAcceptedAt },
           // A Client may post a Job at once; an Artisan is verified first.
@@ -386,6 +481,13 @@ function rulesChangedAtSignIn() {
   return refuse(
     "accept-rules",
     "The Marketplace rules have changed. Read and accept them to sign in.",
+  );
+}
+
+function namesBeingChecked() {
+  return refuse(
+    "names-being-checked",
+    "Your names are being checked. Withdraw them to give other names.",
   );
 }
 

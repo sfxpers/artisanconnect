@@ -29,6 +29,13 @@
       "when": 1791104132759,
       "tag": "0003_admins",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1791107161783,
+      "tag": "0004_names-check",
+      "breakpoints": true
     }
   ]
 }

@@ -145,6 +145,19 @@ export const copy = {
     rules: "Marketplace rules",
     accepted: (version: number, when: string) => `Version ${version}, accepted ${when}`,
     signOut: "Sign out",
+    names: {
+      beingChecked: "Being checked",
+      beingCheckedLead:
+        "These names are being checked before anyone else sees them. Until then, others see the names shown above, if any.",
+      notShown: "Nobody else sees your names until they pass the check.",
+      refused: (reason: string) => `Your names were refused: ${reason}`,
+      withdraw: "Withdraw",
+      change: "Change names",
+      save: "Save names",
+      cancel: "Cancel",
+      saved: "Your names are saved.",
+      held: "Your names are being checked.",
+    },
   },
   admin: {
     signIn: {

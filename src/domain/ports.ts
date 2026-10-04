@@ -49,16 +49,31 @@ export type ContentContext =
 export type ContentToRead = {
   /** The item's text, with any text read from its photos, voice notes, and PDFs. */
   text: string;
+  /**
+   * The item's photos, to look at for what reading their text misses: a
+   * contact card, a screenshot of contact details, or a payment QR code.
+   */
+  photos: readonly Uint8Array[];
   context: ContentContext;
 };
 
+/**
+ * A sure hit's or an unsure one's reason is said for the sender ("It gives a
+ * phone number in words."); a sure hit's is shown to them.
+ */
 export type ContentVerdict =
   | { kind: "clear" }
   | { kind: "sure-hit"; reason: string }
   | { kind: "unsure"; reason: string }
   | { kind: "cannot-run"; reason: string };
 
+/** Workers AI. Any call may throw, when it is down or a file cannot be read. */
 export type ContentReader = {
+  /** The text in a photo (OCR); empty if it has none. */
+  readPhoto(photo: Uint8Array): Promise<string>;
+  /** The words spoken in a voice note. */
+  transcribe(voiceNote: { bytes: Uint8Array; contentType: string }): Promise<string>;
+  /** Reads the text, and looks at the photos, for what patterns miss. */
   read(content: ContentToRead): Promise<ContentVerdict>;
 };
 

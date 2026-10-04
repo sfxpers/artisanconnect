@@ -97,6 +97,20 @@ export const recover = createServerFn({ method: "POST" })
     requestDomain().accounts.recover(visitor, { ...data, ip: requestIp() }),
   );
 
+/** Gives the signed-in Account new names, which go through the Content check. */
+export const changeNames = createServerFn({ method: "POST" })
+  .inputValidator((input: { name: string; tradingName?: string }) => input)
+  .handler(async ({ data }) => {
+    const domain = requestDomain();
+    return domain.accounts.changeNames(await requestActor(domain), data);
+  });
+
+/** Withdraws the signed-in Account's names that are being checked. */
+export const withdrawNames = createServerFn({ method: "POST" }).handler(async () => {
+  const domain = requestDomain();
+  return domain.accounts.withdrawNames(await requestActor(domain));
+});
+
 /** The signed-in Account's Notices stream. */
 export const getNotices = createServerFn({ method: "GET" }).handler(async () => {
   const domain = requestDomain();

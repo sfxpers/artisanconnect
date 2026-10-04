@@ -1,6 +1,7 @@
-import type { ContentReader, DomainConfig, Email, Mailer, Ports } from "@/domain";
+import type { DomainConfig, Email, Mailer, Ports } from "@/domain";
 import { createDomain } from "@/domain";
 import { createFakePayments } from "@/domain/fakes/payments";
+import { workersAiContentReader } from "./content-reader";
 
 /** The domain module, built from the Worker's bindings. */
 export function domainFromEnv(env: Env) {
@@ -13,7 +14,7 @@ export function portsFromEnv(env: Env): Ports {
     db: env.DB,
     files: env.R2,
     clock: { now: () => new Date() },
-    contentReader: unbuiltContentReader,
+    contentReader: workersAiContentReader(env.AI),
     payments,
     mailer: env.ENVIRONMENT === "local" ? localMailbox : cloudflareMailer(env),
   };
@@ -29,16 +30,6 @@ export function configFromEnv(env: Env): DomainConfig {
  * isolate's memory until the Hire ticket (#126) gives it a home that survives.
  */
 const payments = createFakePayments();
-
-/**
- * The Workers AI reader comes with the content check (#116). Until then every
- * read cannot run, which Holds the item for the Admin: nothing unread goes out.
- */
-const unbuiltContentReader: ContentReader = {
-  async read() {
-    return { kind: "cannot-run", reason: "The content reader is not built yet." };
-  },
-};
 
 /** Cloudflare Email Sending, outbound only. */
 function cloudflareMailer(env: Env): Mailer {

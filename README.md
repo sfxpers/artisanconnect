@@ -95,7 +95,7 @@ nub run admin:setup -- you@example.com --env staging
 
 The setup command looks the environment's D1 up by name and reaches it as a remote binding. The new Admin signs in at `/admin/sign-in` with an Email code; every other Admin is invited from the Admins page.
 
-Workers AI has no local simulation. `vite.config.ts` and the tests set `remoteBindings: false` so `nub run dev` and `nub run test` work offline. After `nubx wrangler login`, set `remoteBindings: true` in `vite.config.ts` for live inference.
+Workers AI has no local simulation. `vite.config.ts` and the tests set `remoteBindings: false` so `nub run dev` and `nub run test` work offline. Without it the Content check cannot run, so everything sent locally that passes its patterns (names at sign-up included) is Held for the Admin's Pre-check. After `nubx wrangler login`, set `remoteBindings: true` in `vite.config.ts` for live inference.
 
 ## UI
 

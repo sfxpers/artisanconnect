@@ -211,12 +211,10 @@ export function m4a(seconds: number, { video = false } = {}): Uint8Array<ArrayBu
 
 export async function pdf({
   script = "none",
-  encrypted = false,
   packing = "flate",
 }: {
   /** Where a JavaScript action sits: nowhere, in plain sight, behind a name escape, or compressed in an object stream. */
   script?: "none" | "plain" | "escaped" | "object-stream";
-  encrypted?: boolean;
   /** How the object stream is packed: plain Flate, Flate then hex, or Flate with a predictor. */
   packing?: "flate" | "flate-then-hex" | "predictor";
 } = {}): Promise<Uint8Array<ArrayBuffer>> {
@@ -258,8 +256,7 @@ export async function pdf({
       ascii(`\nendstream\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF\n`),
     );
   }
-  const trailer = encrypted ? "<< /Root 1 0 R /Encrypt 9 0 R >>" : "<< /Root 1 0 R >>";
-  return ascii(`%PDF-1.7\n${body}trailer\n${trailer}\n%%EOF\n`);
+  return ascii(`%PDF-1.7\n${body}trailer\n<< /Root 1 0 R >>\n%%EOF\n`);
 }
 
 // Bytes

@@ -42,6 +42,9 @@ export const acceptance = {
   }),
 };
 
+/** An Account's names, as given at sign-up or changed later. */
+export const names = z.object({ name, tradingName });
+
 export const signUpDetails = z.object({
   kind: z.enum(["client", "artisan"], { error: "Choose Client or Artisan." }),
   name,
