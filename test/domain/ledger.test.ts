@@ -14,7 +14,7 @@ describe("the money ledger", () => {
       domain.probe.recordMoney(system, { amountsCents: [2_000, 0.5] }),
     ).rejects.toThrow();
 
-    expect(await domain.probe.ledgerTotalCents()).toBe(10_500);
+    expect(await domain.probe.ledgerTotalCents(system)).toBe(10_500);
   });
 
   // The ledger has no public command that could change a row, so this checks
@@ -27,6 +27,6 @@ describe("the money ledger", () => {
       env.DB.prepare("UPDATE ledger_entries SET amount_cents = 1").run(),
     ).rejects.toThrow(/append-only/);
     await expect(env.DB.prepare("DELETE FROM ledger_entries").run()).rejects.toThrow(/append-only/);
-    expect(await domain.probe.ledgerTotalCents()).toBe(10_000);
+    expect(await domain.probe.ledgerTotalCents(system)).toBe(10_000);
   });
 });

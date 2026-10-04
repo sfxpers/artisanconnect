@@ -42,7 +42,7 @@ nub run deploy:production  # migrate production D1, build, and deploy
 
 ## Domain module
 
-Every rule lives in `src/domain` (ADR 0017). It is built with exactly six ports, D1, R2, a clock, a content reader, a payment adapter, and a mailer (ADR 0018), and nothing else. Each area adds its commands and clocks to `areas` in `src/domain/index.ts`. A command takes the acting party first and returns the new state or a typed refusal.
+Every rule lives in `src/domain` (ADR 0017). It is built with exactly six ports, D1, R2, a clock, a content reader, a payment adapter, and a mailer, and nothing else, which is how ADR 0018 (no path to or from another product) is tested. Each section adds its commands and clocks to `sections` in `src/domain/index.ts`. A command takes the acting party first and returns the new state or a typed refusal.
 
 - **Clocks** are rows in `due_clocks`. The every-minute cron calls `system.runDueClocks`, the scheduled handler's only job. A clock fires once, however late, and does nothing if its condition has lapsed.
 - **Money** is append-only rows in `ledger_entries`. A domain event writes all its rows in one D1 batch.

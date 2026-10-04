@@ -13,14 +13,15 @@ export type DueClock = {
  * Fires one clock. It reads the current state and returns the writes the
  * firing makes, or none when its condition no longer holds (the Client already
  * answered, the Engagement was Approved): firing a lapsed clock does nothing.
+ *
+ * A command may land between the handler's read and its batch, so each write
+ * must also carry the condition it read (`UPDATE … WHERE state = 'running'`),
+ * or the firing would undo that command.
  */
 export type ClockHandler = (ctx: Context, clock: DueClock) => Promise<Write[]>;
 
 /** The write that starts a clock; commit it with the event that starts it. */
-export function startClock(
-  ctx: Context,
-  clock: { kind: string; subjectId: string; dueAt: Date },
-): Write {
+export function startClock(ctx: Context, clock: Omit<DueClock, "id">): Write {
   return ctx.db.insert(dueClocks).values({ id: ctx.newId(), ...clock });
 }
 

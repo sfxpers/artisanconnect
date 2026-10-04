@@ -107,21 +107,15 @@ export function createFakePayments({
     return { body, headers: { [SIGNATURE_HEADER]: toHex(signature) } };
   }
 
-  function collection(id: string) {
-    const found = collections.get(id);
-    if (!found) throw new Error(`No collection ${id}`);
+  function find<S>(items: Map<string, { state: S }>, id: string, what: string): S {
+    const found = items.get(id);
+    if (!found) throw new Error(`No ${what} ${id}`);
     return found.state;
   }
-  function refund(id: string) {
-    const found = refunds.get(id);
-    if (!found) throw new Error(`No refund ${id}`);
-    return found.state;
-  }
-  function payout(id: string) {
-    const found = payouts.get(id);
-    if (!found) throw new Error(`No payout ${id}`);
-    return found.state;
-  }
+  const collection = (id: string) => find(collections, id, "collection");
+  const refund = (id: string) => find(refunds, id, "refund");
+  const payout = (id: string) => find(payouts, id, "payout");
+
   /** Moves the item's state; `effect` runs between the check and the move, and may refuse it. */
   function move<S extends { state: string }>(
     item: S,

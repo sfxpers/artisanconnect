@@ -96,6 +96,7 @@ describe("the Worker", () => {
     }
   });
 
+  // ASSETS is not named in ADR 0017; it serves the web app's own client build.
   test.each(environments)(
     "binds exactly D1, R2, Workers AI, Email Sending, and its assets in %s",
     (_, environment) => {

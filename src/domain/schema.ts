@@ -27,8 +27,8 @@ export const dueClocks = sqliteTable(
 /**
  * The money ledger: append-only rows, never updated or deleted (a trigger in
  * the migration refuses both). Every row of one domain event shares an
- * eventId and is written in that event's one atomic batch. Balances are
- * derived from these rows, never stored.
+ * eventId and is written in that event's one atomic batch. What is paid in,
+ * released, owed, or refunded is derived from these rows, never stored.
  */
 export const ledgerEntries = sqliteTable(
   "ledger_entries",

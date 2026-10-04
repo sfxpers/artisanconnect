@@ -2,38 +2,41 @@
 // through server functions; the scheduled handler and the payment webhook
 // route are thin adapters onto its system entry points.
 
-import type { Area, AreasApi } from "./area";
+import type { Section, SectionsApi } from "./section";
 import { runDueClocks, type ClockHandler } from "./clocks";
 import { createContext } from "./context";
 import { PORT_NAMES, type Ports } from "./ports";
 
-/** Every area of the module. Each ticket adds its area here. */
-export const areas = [] as const satisfies readonly Area[];
+/** Every section of the module. Each ticket adds its section here. */
+export const sections = [] as const satisfies readonly Section[];
 
 export type Domain = ReturnType<typeof createDomain>;
 
 export function createDomain(ports: Ports) {
-  return assembleDomain(ports, areas);
+  return assembleDomain(ports, sections);
 }
 
-/** Builds the module from its areas. Tests of the harness itself add a probe area. */
-export function assembleDomain<const Areas extends readonly Area[]>(ports: Ports, areas: Areas) {
+/** Builds the module from its sections. Tests of the harness itself add a probe section. */
+export function assembleDomain<const Sections extends readonly Section[]>(
+  ports: Ports,
+  sections: Sections,
+) {
   assertExactPorts(ports);
   const ctx = createContext(ports);
   const clocks: Record<string, ClockHandler> = {};
   const api: Record<string, unknown> = {};
-  for (const area of areas) {
-    if (area.name in api || area.name === "system") {
-      throw new Error(`Area "${area.name}" is defined twice`);
+  for (const section of sections) {
+    if (section.name in api || section.name === "system") {
+      throw new Error(`Section "${section.name}" is defined twice`);
     }
-    api[area.name] = area.api(ctx);
-    for (const [kind, handler] of Object.entries(area.clocks ?? {})) {
+    api[section.name] = section.api(ctx);
+    for (const [kind, handler] of Object.entries(section.clocks ?? {})) {
       if (kind in clocks) throw new Error(`Clock kind "${kind}" is defined twice`);
       clocks[kind] = handler;
     }
   }
   return {
-    ...(api as AreasApi<Areas>),
+    ...(api as SectionsApi<Sections>),
     /** Entry points the platform calls, not a party. */
     system: {
       /** Called by the every-minute cron. */

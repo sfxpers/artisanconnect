@@ -21,6 +21,12 @@ export const PORT_NAMES = [
   "mailer",
 ] as const satisfies readonly (keyof Ports)[];
 
+// PORT_NAMES lists every port, not just some: this fails to compile otherwise.
+const listsEveryPort: [Exclude<keyof Ports, (typeof PORT_NAMES)[number]>] extends [never]
+  ? true
+  : never = true;
+void listsEveryPort;
+
 export type Clock = {
   now(): Date;
 };
@@ -66,6 +72,7 @@ export type Mailer = {
 // is by our id. Every movement is async: a write returns pending, and the
 // result arrives as a PaymentEvent, which may repeat or arrive out of order.
 
+/** Card, or Instant EFT ("Pay by Bank" at Stitch). */
 export type PaymentMethod = "card" | "pay_by_bank";
 
 export type CreateCollection = {

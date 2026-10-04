@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest";
 import { visitor } from "@/domain/actor";
 import { createProbeHarness } from "../support/probe";
 
-// The harness itself, driven through a probe area (test/support/probe.ts).
+// The harness itself, driven through a probe section (test/support/probe.ts).
 
 const client = { kind: "client", accountId: "client-1" } as const;
 
@@ -39,6 +39,19 @@ describe("a domain command", () => {
       refusal: { reason: "sign-in-required", message: "Sign in to start a timer." },
     });
     expect(await domain.system.runDueClocks()).toEqual({ fired: 0 });
+  });
+});
+
+describe("the file store", () => {
+  test("keeps what a command stores in local R2", async () => {
+    const { domain } = await createProbeHarness();
+
+    const saved = await domain.probe.saveNote(client, { text: "Bring the ladder" });
+
+    if (!saved.ok) throw new Error(saved.refusal.message);
+    expect(await domain.probe.note(client, { noteId: saved.value.noteId })).toBe(
+      "Bring the ladder",
+    );
   });
 });
 
