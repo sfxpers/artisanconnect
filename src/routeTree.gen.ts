@@ -22,6 +22,7 @@ import { Route as RecoverRouteImport } from './routes/recover'
 import { Route as RulesRouteImport } from './routes/rules'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as SignUpRouteImport } from './routes/sign-up'
+import { Route as SupportRouteImport } from './routes/support'
 import { Route as VerificationRouteImport } from './routes/verification'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminAdminsRouteImport } from './routes/admin/admins'
@@ -95,6 +96,11 @@ const SignUpRoute = SignUpRouteImport.update({
   path: '/sign-up',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SupportRoute = SupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VerificationRoute = VerificationRouteImport.update({
   id: '/verification',
   path: '/verification',
@@ -145,6 +151,7 @@ export interface FileRoutesByFullPath {
   '/rules': typeof RulesRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/support': typeof SupportRoute
   '/verification': typeof VerificationRoute
   '/admin/admins': typeof AdminAdminsRoute
   '/admin/audit': typeof AdminAuditRoute
@@ -167,6 +174,7 @@ export interface FileRoutesByTo {
   '/rules': typeof RulesRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/support': typeof SupportRoute
   '/verification': typeof VerificationRoute
   '/admin/admins': typeof AdminAdminsRoute
   '/admin/audit': typeof AdminAuditRoute
@@ -190,6 +198,7 @@ export interface FileRoutesById {
   '/rules': typeof RulesRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/support': typeof SupportRoute
   '/verification': typeof VerificationRoute
   '/admin/admins': typeof AdminAdminsRoute
   '/admin/audit': typeof AdminAuditRoute
@@ -214,6 +223,7 @@ export interface FileRouteTypes {
     | '/rules'
     | '/sign-in'
     | '/sign-up'
+    | '/support'
     | '/verification'
     | '/admin/admins'
     | '/admin/audit'
@@ -236,6 +246,7 @@ export interface FileRouteTypes {
     | '/rules'
     | '/sign-in'
     | '/sign-up'
+    | '/support'
     | '/verification'
     | '/admin/admins'
     | '/admin/audit'
@@ -258,6 +269,7 @@ export interface FileRouteTypes {
     | '/rules'
     | '/sign-in'
     | '/sign-up'
+    | '/support'
     | '/verification'
     | '/admin/admins'
     | '/admin/audit'
@@ -281,6 +293,7 @@ export interface RootRouteChildren {
   RulesRoute: typeof RulesRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
+  SupportRoute: typeof SupportRoute
   VerificationRoute: typeof VerificationRoute
   AdminAdminsRoute: typeof AdminAdminsRoute
   AdminAuditRoute: typeof AdminAuditRoute
@@ -383,6 +396,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignUpRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/support': {
+      id: '/support'
+      path: '/support'
+      fullPath: '/support'
+      preLoaderRoute: typeof SupportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/verification': {
       id: '/verification'
       path: '/verification'
@@ -449,6 +469,7 @@ const rootRouteChildren: RootRouteChildren = {
   RulesRoute: RulesRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
+  SupportRoute: SupportRoute,
   VerificationRoute: VerificationRoute,
   AdminAdminsRoute: AdminAdminsRoute,
   AdminAuditRoute: AdminAuditRoute,

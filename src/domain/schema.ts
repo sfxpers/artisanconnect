@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { QUEUE_NAMES } from "./queue-names";
+import { SUPPORT_TOPICS } from "./support/topics";
 import {
   check,
   index,
@@ -207,14 +208,20 @@ export const notices = sqliteTable(
     /** The Account told; it sees the notice in its Notices stream. */
     accountId: text("account_id").references(() => accounts.id, { onDelete: "cascade" }),
     /**
-     * Or an address no Account holds, such as an invited Admin's: told by
-     * email only, with no stream to show it in.
+     * Or an address told by email only, with no stream to show it in: one no
+     * Account holds, such as an invited Admin's, or an Account's for what it
+     * is told only by email, such as the answer to its Support request.
      */
     address: text("address"),
     /** What happened, by kind; the title names it for the person. */
     event: text("event").notNull(),
     title: text("title").notNull(),
     link: text("link").notNull(),
+    /**
+     * The email's own text, for an email that carries what it is about (a
+     * Support answer). A Tell has none: its email names the event and links back.
+     */
+    body: text("body"),
     toldAt: instant("told_at").notNull(),
     emailedAt: instant("emailed_at"),
   },
@@ -312,6 +319,36 @@ export const queueItems = sqliteTable(
     check(
       "queue_items_queue",
       sql.raw(`queue in (${QUEUE_NAMES.map((name) => `'${name}'`).join(", ")})`),
+    ),
+  ],
+);
+
+/**
+ * A message to the Admin: an Account's, under a fixed topic, or one the
+ * platform raises itself with a tag. The Admin's answer is the decision on
+ * its queue item.
+ */
+export const supportRequests = sqliteTable(
+  "support_requests",
+  {
+    id: text("id").primaryKey(),
+    /**
+     * The Account that sent it, or that a system request is about. A request
+     * outlives its Account, as a system one may be about money owed.
+     */
+    accountId: text("account_id").references(() => accounts.id, { onDelete: "set null" }),
+    /** An Account's request has a topic; a system request has a tag instead. */
+    topic: text("topic", { enum: SUPPORT_TOPICS }),
+    tag: text("tag"),
+    message: text("message").notNull(),
+    sentAt: instant("sent_at").notNull(),
+  },
+  (table) => [
+    index("support_requests_account").on(table.accountId, table.sentAt),
+    check("support_requests_topic_or_tag", sql.raw("(topic is null) <> (tag is null)")),
+    check(
+      "support_requests_topic",
+      sql.raw(`topic in (${SUPPORT_TOPICS.map((topic) => `'${topic}'`).join(", ")})`),
     ),
   ],
 );

@@ -168,7 +168,9 @@ function DecisionCard({ item }: { item: Item }) {
         {option && option.reason !== "none" && (
           <div className="space-y-1.5">
             <Label htmlFor="reason">
-              {option.reason === "required" ? t.reason : t.reasonOptional}
+              {option.reason === "required"
+                ? (option.reasonLabel ?? t.reason)
+                : t.optional(option.reasonLabel ?? t.reason)}
             </Label>
             <Textarea
               id="reason"
@@ -208,8 +210,8 @@ function DecidedCard({ decided }: { decided: NonNullable<Item["decided"]> }) {
       <CardContent className="space-y-2 text-sm">
         {decided.reason && (
           <p>
-            <span className="text-muted-foreground">{t.reason}: </span>
-            {decided.reason}
+            <span className="text-muted-foreground">{decided.reasonLabel ?? t.reason}: </span>
+            <span className="whitespace-pre-line">{decided.reason}</span>
           </p>
         )}
         <p className="text-xs text-muted-foreground">

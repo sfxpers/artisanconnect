@@ -9,6 +9,7 @@ import { adminsSection, setUpFirstAdmin } from "./admins";
 import { marketplaceRulesSection } from "./accounts/rules";
 import { createContext } from "./context";
 import { createQueues, type QueueItemKind } from "./queues";
+import { supportSection } from "./support";
 import { emailTells, noticesSection } from "./tells";
 import { PORT_NAMES, type DomainConfig, type Ports } from "./ports";
 
@@ -18,6 +19,7 @@ export const sections = [
   adminsSection,
   marketplaceRulesSection,
   noticesSection,
+  supportSection,
 ] as const satisfies readonly Section[];
 
 export type Domain = ReturnType<typeof createDomain>;

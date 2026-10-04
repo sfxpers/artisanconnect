@@ -241,7 +241,7 @@ A signed-in Account's complaint about a Job, Quote, message, Artisan Profile, or
 _Avoid_: Ticket, Flag
 
 **Support request**:
-A signed-in Account's message to the Admin under a fixed topic, which the Admin answers by email. A suspended Account may send one.
+A signed-in Account's message to the Admin under a fixed topic, which the Admin answers by email. A suspended Account may send one. The platform also raises one itself, with a tag, for what only the Admin can settle, such as a failed Refund.
 _Avoid_: Ticket, Contact form
 
 **Data request**:

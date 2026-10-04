@@ -25,6 +25,8 @@ export type DecisionOption = {
   /** Who the decision tells, said for the Admin: "The Artisan", "Both", "Nobody". */
   told: string;
   reason: "required" | "optional" | "none";
+  /** What the reason is called, if not "Reason": an answer, a note. */
+  reasonLabel?: string;
 };
 
 /** A decision allowed on an item now, by its key. */
@@ -204,6 +206,7 @@ export function createQueues(ctx: Context, kinds: Record<string, QueueItemKind>)
               decision: row.decision,
               label: kind.decisions[row.decision]?.label ?? row.decision,
               reason: row.reason,
+              reasonLabel: kind.decisions[row.decision]?.reasonLabel ?? null,
               /** The Admin who decided; null for what the sender did, such as withdrawing. */
               by: row.decidedBy,
               at: row.decidedAt,
@@ -273,7 +276,7 @@ export function createQueues(ctx: Context, kinds: Record<string, QueueItemKind>)
           ...made.value,
           audit(ctx, actor, {
             action: "queue.decided",
-            summary: `${option.label}: ${row.title}${reason ? `. Reason: ${reason}` : ""}`,
+            summary: `${option.label}: ${row.title}${reason ? `. ${option.reasonLabel ?? "Reason"}: ${reason}` : ""}`,
             subjectId: row.id,
           }),
         ]);

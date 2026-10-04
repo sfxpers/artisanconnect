@@ -39,6 +39,15 @@ export function tellAddress(ctx: Context, address: string, told: Tell): Write {
   return ctx.db.insert(notices).values({ id: ctx.newId(), address, toldAt: ctx.now(), ...told });
 }
 
+/**
+ * The write that emails an address something that is not a Tell: an email
+ * carrying what it is about in its own text, such as the answer to a Support
+ * request. It goes out with the Tells' emails, and is retried as they are.
+ */
+export function emailAddress(ctx: Context, address: string, email: Tell & { body: string }): Write {
+  return ctx.db.insert(notices).values({ id: ctx.newId(), address, toldAt: ctx.now(), ...email });
+}
+
 /** The write that tells every Account (never a sign-up whose Email is unproven). */
 export function tellEveryAccount(ctx: Context, told: Tell): Write {
   return ctx.db.insert(notices).select(
@@ -50,6 +59,7 @@ export function tellEveryAccount(ctx: Context, told: Tell): Write {
         event: sql<string>`${told.event}`.as("event"),
         title: sql<string>`${told.title}`.as("title"),
         link: sql<string>`${told.link}`.as("link"),
+        body: sql<null>`null`.as("body"),
         toldAt: sql<number>`${ctx.now().getTime()}`.as("told_at"),
         emailedAt: sql<null>`null`.as("emailed_at"),
       })
@@ -71,6 +81,7 @@ export async function emailTells(ctx: Context): Promise<void> {
       id: notices.id,
       title: notices.title,
       link: notices.link,
+      body: notices.body,
       to: sql<string>`coalesce(${notices.address}, ${authUsers.email})`,
     })
     .from(notices)
@@ -89,7 +100,7 @@ export async function emailTells(ctx: Context): Promise<void> {
       await ctx.ports.mailer.send({
         to: notice.to,
         subject: notice.title,
-        text: `${notice.title}.\n\nSee it on ArtisanConnect: ${new URL(notice.link, ctx.config.appUrl).href}`,
+        text: `${notice.body ?? `${notice.title}.`}\n\nSee it on ArtisanConnect: ${new URL(notice.link, ctx.config.appUrl).href}`,
       });
     } catch (error) {
       console.error(`The email of notice ${notice.id} did not go`, error);

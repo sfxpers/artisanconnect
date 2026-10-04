@@ -144,6 +144,8 @@ export const copy = {
     kind: "Kind",
     rules: "Marketplace rules",
     accepted: (version: number, when: string) => `Version ${version}, accepted ${when}`,
+    support: "Contact support",
+    supportLink: "Write to the Admin",
     signOut: "Sign out",
     names: {
       beingChecked: "Being checked",
@@ -158,6 +160,19 @@ export const copy = {
       saved: "Your names are saved.",
       held: "Your names are being checked.",
     },
+  },
+  support: {
+    title: "Contact support",
+    lead: "Write to the Admin about anything on ArtisanConnect. The answer comes to your Email.",
+    topic: "What it is about",
+    message: "Your message",
+    send: "Send to the Admin",
+    sent: "Sent. The Admin's answer will come to your Email.",
+    yours: "Your requests",
+    none: "You have not written to the Admin yet.",
+    sentAt: (when: string) => `Sent ${when}`,
+    waiting: "Waiting",
+    answered: (when: string) => `Answered by email, ${when}`,
   },
   admin: {
     signIn: {
@@ -201,7 +216,7 @@ export const copy = {
       told: (who: string) => `Told: ${who}.`,
       final: "A recorded decision is final and cannot be reopened.",
       reason: "Reason",
-      reasonOptional: "Reason (optional)",
+      optional: (label: string) => `${label} (optional)`,
       record: "Record decision",
       recorded: (label: string) => `Decision recorded: ${label}`,
       by: (by: string, when: string) => `By ${by}, ${when}`,

@@ -37,6 +37,11 @@ function Account() {
               {t.accepted(me.rules.version, formatDate(me.rules.acceptedAt))}
             </Link>
           </SettingsRow>
+          <SettingsRow label={t.support}>
+            <Link to="/support" className="underline">
+              {t.supportLink}
+            </Link>
+          </SettingsRow>
         </dl>
       </Card>
       <Button

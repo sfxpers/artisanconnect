@@ -52,7 +52,9 @@ export function Blocks({ blocks }: { blocks: Block[] }) {
     <div className="space-y-3 text-sm">
       {blocks.map((block, index) =>
         block.kind === "text" ? (
-          <p key={index}>{block.text}</p>
+          <p key={index} className="whitespace-pre-line">
+            {block.text}
+          </p>
         ) : (
           <dl key={index} className="space-y-1">
             {block.facts.map((fact) => (
