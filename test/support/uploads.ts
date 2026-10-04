@@ -8,7 +8,7 @@ import {
   type StoredFile,
   type UploadContext,
 } from "@/domain/uploads";
-import { createHarness } from "./harness";
+import { createHarness, TEST_CONFIG } from "./harness";
 
 // A probe section that calls the upload path the way Jobs, Completions, and
 // Conversations will: it says which kinds of file it takes, and counts what
@@ -45,7 +45,7 @@ const uploadsProbe = defineSection({
 /** The harness with the uploads probe added, and a view of what R2 holds. */
 export async function createUploadsHarness() {
   const harness = await createHarness();
-  const domain = assembleDomain(harness.ports, [...sections, uploadsProbe]);
+  const domain = assembleDomain(harness.ports, TEST_CONFIG, [...sections, uploadsProbe]);
   async function stored() {
     const listed = await harness.files.list({ include: ["httpMetadata", "customMetadata"] });
     return listed.objects;

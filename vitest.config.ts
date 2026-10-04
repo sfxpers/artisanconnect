@@ -5,8 +5,10 @@ import { defineConfig } from "vitest/config";
 // Tests run inside workerd against real local D1 and R2, with the bindings
 // from wrangler.jsonc. The migrations are read here and applied per test.
 export default defineConfig(async () => {
-  // Sentry is off in tests.
+  // Sentry is off in tests, and the domain is given its own test config.
   process.env.SENTRY_DSN ??= "";
+  process.env.BETTER_AUTH_SECRET ??= "";
+  process.env.TURNSTILE_SECRET_KEY ??= "";
   const migrations = await readD1Migrations(path.join(import.meta.dirname, "migrations"));
   return {
     resolve: { tsconfigPaths: true },

@@ -1,7 +1,6 @@
 import * as Sentry from "@sentry/cloudflare";
 import handler from "@tanstack/react-start/server-entry";
-import { createDomain } from "@/domain";
-import { portsFromEnv } from "@/worker/ports";
+import { domainFromEnv } from "@/worker/ports";
 
 // Errors go to Workers Logs and, where SENTRY_DSN is set, to Sentry.
 export default Sentry.withSentry(
@@ -12,7 +11,7 @@ export default Sentry.withSentry(
 
     // Every minute (ADR 0017). Every clock's rule lives in the domain module.
     async scheduled(_controller, env) {
-      await createDomain(portsFromEnv(env)).system.runDueClocks();
+      await domainFromEnv(env).system.runDueClocks();
     },
   } satisfies ExportedHandler<Env>,
 );

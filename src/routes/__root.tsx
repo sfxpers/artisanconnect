@@ -2,6 +2,9 @@ import type { ReactNode } from "react";
 import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import appCss from "@/styles.css?url";
+import { AppHeader } from "@/components/app-header";
+import { getSession } from "@/web/accounts";
+import { copy } from "@/web/copy";
 
 export const Route = createRootRoute({
   head: () => ({
@@ -11,17 +14,23 @@ export const Route = createRootRoute({
         name: "viewport",
         content: "width=device-width, initial-scale=1",
       },
-      { title: "artisanconnect" },
+      { title: copy.appName },
     ],
     links: [{ rel: "stylesheet", href: appCss }],
   }),
+  // Who is signed in decides the header and which pages they may open.
+  beforeLoad: () => getSession(),
   component: RootComponent,
 });
 
 function RootComponent() {
+  const { me } = Route.useRouteContext();
   return (
     <RootDocument>
-      <Outlet />
+      <div className="min-h-svh bg-muted/40 pb-16">
+        <AppHeader me={me} />
+        <Outlet />
+      </div>
     </RootDocument>
   );
 }

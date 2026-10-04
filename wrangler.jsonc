@@ -22,13 +22,17 @@
   // The top level is local. Staging and production below repeat every binding
   // with their own D1, R2, and secrets; bindings are not inherited.
   // MAIL_FROM: replace with an address on the domain verified for Email Sending.
+  // APP_URL: the web app's origin, which links in emails point to.
+  // TURNSTILE_SITE_KEY: locally, Cloudflare's test key that always passes.
   "vars": {
     "APP_NAME": "artisanconnect",
     "ENVIRONMENT": "local",
     "MAIL_FROM": "ArtisanConnect <no-reply@example.com>",
+    "APP_URL": "http://localhost:3000",
+    "TURNSTILE_SITE_KEY": "1x00000000000000000000AA",
   },
   "secrets": {
-    "required": ["SENTRY_DSN"],
+    "required": ["SENTRY_DSN", "BETTER_AUTH_SECRET", "TURNSTILE_SECRET_KEY"],
   },
   // Workers Assets: the Vite plugin injects the client build directory.
   "assets": {
@@ -65,9 +69,11 @@
         "APP_NAME": "artisanconnect",
         "ENVIRONMENT": "staging",
         "MAIL_FROM": "ArtisanConnect <no-reply@example.com>",
+        "APP_URL": "https://staging.artisanconnect.example.com",
+        "TURNSTILE_SITE_KEY": "replace-with-the-staging-turnstile-site-key",
       },
       "secrets": {
-        "required": ["SENTRY_DSN"],
+        "required": ["SENTRY_DSN", "BETTER_AUTH_SECRET", "TURNSTILE_SECRET_KEY"],
       },
       "assets": {
         "binding": "ASSETS",
@@ -100,9 +106,11 @@
         "APP_NAME": "artisanconnect",
         "ENVIRONMENT": "production",
         "MAIL_FROM": "ArtisanConnect <no-reply@example.com>",
+        "APP_URL": "https://artisanconnect.example.com",
+        "TURNSTILE_SITE_KEY": "replace-with-the-production-turnstile-site-key",
       },
       "secrets": {
-        "required": ["SENTRY_DSN"],
+        "required": ["SENTRY_DSN", "BETTER_AUTH_SECRET", "TURNSTILE_SECRET_KEY"],
       },
       "assets": {
         "binding": "ASSETS",

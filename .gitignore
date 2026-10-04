@@ -14,3 +14,5 @@ dist
 .vite
 *.log
 worker-configuration.d.ts
+test-results
+playwright-report

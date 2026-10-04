@@ -15,6 +15,13 @@
       "when": 1791091335317,
       "tag": "0001_append-only",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1791097706537,
+      "tag": "0002_accounts",
+      "breakpoints": true
     }
   ]
 }

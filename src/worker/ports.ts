@@ -1,5 +1,11 @@
-import type { ContentReader, Mailer, Ports } from "@/domain";
+import type { ContentReader, DomainConfig, Email, Mailer, Ports } from "@/domain";
+import { createDomain } from "@/domain";
 import { createFakePayments } from "@/domain/fakes/payments";
+
+/** The domain module, built from the Worker's bindings. */
+export function domainFromEnv(env: Env) {
+  return createDomain(portsFromEnv(env), configFromEnv(env));
+}
 
 /** The domain's ports, from the Worker's bindings. */
 export function portsFromEnv(env: Env): Ports {
@@ -9,8 +15,13 @@ export function portsFromEnv(env: Env): Ports {
     clock: { now: () => new Date() },
     contentReader: unbuiltContentReader,
     payments,
-    mailer: cloudflareMailer(env),
+    mailer: env.ENVIRONMENT === "local" ? localMailbox : cloudflareMailer(env),
   };
+}
+
+export function configFromEnv(env: Env): DomainConfig {
+  if (!env.BETTER_AUTH_SECRET) throw new Error("Set the BETTER_AUTH_SECRET secret");
+  return { appUrl: env.APP_URL, authSecret: env.BETTER_AUTH_SECRET };
 }
 
 /**
@@ -37,3 +48,15 @@ function cloudflareMailer(env: Env): Mailer {
     },
   };
 }
+
+/**
+ * Locally, email goes nowhere: the newest stays in this isolate's memory, for
+ * the /dev/mail page to show (Email codes included).
+ */
+export const localMail: Email[] = [];
+const localMailbox: Mailer = {
+  async send(email) {
+    localMail.unshift(email);
+    localMail.length = Math.min(localMail.length, 50);
+  },
+};

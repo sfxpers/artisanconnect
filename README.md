@@ -30,6 +30,7 @@ nub run dev                # Vite + Workers runtime on http://localhost:3000
 nub run build              # production client + worker
 nub run preview            # preview the production build locally
 nub run test               # Vitest in the Workers runtime, against local D1 and R2
+nub run test:smoke         # Playwright smoke tests against the local app, in the installed Chrome
 nub run typecheck
 nub run lint
 nub run fmt
@@ -48,25 +49,34 @@ Every rule lives in `src/domain` (ADR 0017). It is built with exactly six ports,
 - **Money** is append-only rows in `ledger_entries`. A domain event writes all its rows in one D1 batch.
 - **Payments** use the fake adapter in `src/domain/fakes/payments.ts` in every environment; no money moves at launch.
 
-Tests drive the module through `test/support/harness.ts`: real local D1 and R2, with a fake clock, content reader, payment adapter, and mailer.
+Tests drive the module through `test/support/harness.ts`: real local D1 and R2, with a fake clock, content reader, payment adapter, and mailer. better-auth reads `Date`, so the harness keeps the system time on the fake clock.
+
+- **Sign-in** is better-auth (ADR 0017) inside the `accounts` section, on D1. Its HTTP handler is never mounted: the web app reaches it only through the module's commands, which add the rules (kinds, Marketplace rules, rate limits). Turnstile is checked by the server functions before a command runs.
+- **Tells** are rows in `notices` written with the event; their one email goes after the commit, and the every-minute cron retries one that did not go (`src/domain/tells.ts`).
+
+Locally, email is not sent: open http://localhost:3000/dev/mail to read it, Email codes included.
 
 ## Cloudflare
 
 Bindings live in `wrangler.jsonc` and are available in server code via `import { env } from "cloudflare:workers"`. The top level is local; `staging` and `production` each have their own D1, R2, and secrets.
 
-| Binding       | Resource                                         |
-| ------------- | ------------------------------------------------ |
-| `DB`          | D1 (`artisanconnect`, `-staging`, `-production`) |
-| `R2`          | R2 bucket (same names)                           |
-| `AI`          | Workers AI                                       |
-| `SEND_EMAIL`  | Email Sending, outbound only                     |
-| `ASSETS`      | Workers Assets (Vite injects dir)                |
-| `APP_NAME`    | env var                                          |
-| `ENVIRONMENT` | env var: `local`, `staging`, or `production`     |
-| `MAIL_FROM`   | env var: the sending address                     |
-| `SENTRY_DSN`  | secret; errors also go to Workers Logs           |
+| Binding                | Resource                                              |
+| ---------------------- | ----------------------------------------------------- |
+| `DB`                   | D1 (`artisanconnect`, `-staging`, `-production`)      |
+| `R2`                   | R2 bucket (same names)                                |
+| `AI`                   | Workers AI                                            |
+| `SEND_EMAIL`           | Email Sending, outbound only                          |
+| `ASSETS`               | Workers Assets (Vite injects dir)                     |
+| `APP_NAME`             | env var                                               |
+| `ENVIRONMENT`          | env var: `local`, `staging`, or `production`          |
+| `MAIL_FROM`            | env var: the sending address                          |
+| `APP_URL`              | env var: the web app's origin, for links in email     |
+| `TURNSTILE_SITE_KEY`   | env var: locally, Cloudflare's always-pass test key   |
+| `SENTRY_DSN`           | secret; errors also go to Workers Logs                |
+| `BETTER_AUTH_SECRET`   | secret: signs session cookies                         |
+| `TURNSTILE_SECRET_KEY` | secret: locally, Cloudflare's always-pass test secret |
 
-Local secrets go in `.dev.vars` (see `.dev.vars.example`). Set the others with `nubx wrangler secret put SENTRY_DSN --env staging` (or `production`). Set `MAIL_FROM` to an address on the domain verified for Email Sending.
+Local secrets go in `.dev.vars` (copy `.dev.vars.example` and set `BETTER_AUTH_SECRET`). Set the others with `nubx wrangler secret put SENTRY_DSN --env staging` (or `production`), and the same for `BETTER_AUTH_SECRET` and `TURNSTILE_SECRET_KEY`. Replace `APP_URL` and `TURNSTILE_SITE_KEY` in `wrangler.jsonc` for staging and production. Set `MAIL_FROM` to an address on the domain verified for Email Sending.
 
 Custom domain: uncomment `routes` in `wrangler.jsonc` and replace the hostname.
 

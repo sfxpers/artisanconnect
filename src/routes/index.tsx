@@ -1,43 +1,32 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
-import { env } from "cloudflare:workers";
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-
-const getGreeting = createServerFn({ method: "GET" }).handler(() => {
-  return {
-    appName: env.APP_NAME,
-    runtime: navigator.userAgent,
-  };
-});
-
-const ping = createServerFn({ method: "POST" }).handler(() => {
-  return { ok: true as const, at: new Date().toISOString() };
-});
+import { Link, createFileRoute } from "@tanstack/react-router";
+import { buttonVariants } from "@/components/ui/button";
+import { Page } from "@/components/page";
+import { copy } from "@/web/copy";
+import { onlyForVisitors } from "@/web/guards";
 
 export const Route = createFileRoute("/")({
-  loader: () => getGreeting(),
-  component: Home,
+  beforeLoad: ({ context }) => onlyForVisitors(context.me),
+  component: Landing,
 });
 
-function Home() {
-  const data = Route.useLoaderData();
-  const [pong, setPong] = useState<string | null>(null);
+const t = copy.landing;
 
+/** The Visitor's landing page. What it shows in full comes with Browse (#120). */
+function Landing() {
   return (
-    <main className="flex min-h-svh flex-col items-center justify-center gap-4 bg-background p-6 text-foreground">
-      <h1 className="text-2xl font-semibold tracking-tight">{data.appName}</h1>
-      <p className="max-w-md text-center text-sm text-muted-foreground">{data.runtime}</p>
-      <Button
-        onClick={() => {
-          void ping().then((result) => {
-            setPong(`${result.ok ? "ok" : "error"} @ ${result.at}`);
-          });
-        }}
-      >
-        Ping server
-      </Button>
-      {pong ? <p className="font-mono text-xs text-muted-foreground">{pong}</p> : null}
-    </main>
+    <Page>
+      <section className="max-w-2xl space-y-4 py-10">
+        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">{t.title}</h1>
+        <p className="text-muted-foreground">{t.lead}</p>
+        <div className="flex flex-wrap gap-3">
+          <Link to="/sign-up" className={buttonVariants({ size: "lg" })}>
+            {t.signUp}
+          </Link>
+          <Link to="/sign-in" className={buttonVariants({ size: "lg", variant: "outline" })}>
+            {t.signIn}
+          </Link>
+        </div>
+      </section>
+    </Page>
   );
 }

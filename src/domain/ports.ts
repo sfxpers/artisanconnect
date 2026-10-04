@@ -27,6 +27,14 @@ const listsEveryPort: [Exclude<keyof Ports, (typeof PORT_NAMES)[number]>] extend
   : never = true;
 void listsEveryPort;
 
+/** Settings the module is built with. Not ports: nothing goes out through them. */
+export type DomainConfig = {
+  /** The web app's origin, which links in emails point to. */
+  appUrl: string;
+  /** Signs session cookies. */
+  authSecret: string;
+};
+
 export type Clock = {
   now(): Date;
 };

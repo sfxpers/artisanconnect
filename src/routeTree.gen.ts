@@ -10,33 +10,219 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AccountRouteImport } from './routes/account'
+import { Route as ArtisansRouteImport } from './routes/artisans'
+import { Route as ConfirmEmailRouteImport } from './routes/confirm-email'
+import { Route as HomeRouteImport } from './routes/home'
+import { Route as JobsRouteImport } from './routes/jobs'
+import { Route as NoticesRouteImport } from './routes/notices'
+import { Route as PayoutsRouteImport } from './routes/payouts'
+import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as RecoverRouteImport } from './routes/recover'
+import { Route as RulesRouteImport } from './routes/rules'
+import { Route as SignInRouteImport } from './routes/sign-in'
+import { Route as SignUpRouteImport } from './routes/sign-up'
+import { Route as VerificationRouteImport } from './routes/verification'
+import { Route as DevMailRouteImport } from './routes/dev/mail'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AccountRoute = AccountRouteImport.update({
+  id: '/account',
+  path: '/account',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ArtisansRoute = ArtisansRouteImport.update({
+  id: '/artisans',
+  path: '/artisans',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConfirmEmailRoute = ConfirmEmailRouteImport.update({
+  id: '/confirm-email',
+  path: '/confirm-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HomeRoute = HomeRouteImport.update({
+  id: '/home',
+  path: '/home',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JobsRoute = JobsRouteImport.update({
+  id: '/jobs',
+  path: '/jobs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NoticesRoute = NoticesRouteImport.update({
+  id: '/notices',
+  path: '/notices',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PayoutsRoute = PayoutsRouteImport.update({
+  id: '/payouts',
+  path: '/payouts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecoverRoute = RecoverRouteImport.update({
+  id: '/recover',
+  path: '/recover',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RulesRoute = RulesRouteImport.update({
+  id: '/rules',
+  path: '/rules',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignInRoute = SignInRouteImport.update({
+  id: '/sign-in',
+  path: '/sign-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignUpRoute = SignUpRouteImport.update({
+  id: '/sign-up',
+  path: '/sign-up',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VerificationRoute = VerificationRouteImport.update({
+  id: '/verification',
+  path: '/verification',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DevMailRoute = DevMailRouteImport.update({
+  id: '/dev/mail',
+  path: '/dev/mail',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
+  '/artisans': typeof ArtisansRoute
+  '/confirm-email': typeof ConfirmEmailRoute
+  '/home': typeof HomeRoute
+  '/jobs': typeof JobsRoute
+  '/notices': typeof NoticesRoute
+  '/payouts': typeof PayoutsRoute
+  '/profile': typeof ProfileRoute
+  '/recover': typeof RecoverRoute
+  '/rules': typeof RulesRoute
+  '/sign-in': typeof SignInRoute
+  '/sign-up': typeof SignUpRoute
+  '/verification': typeof VerificationRoute
+  '/dev/mail': typeof DevMailRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
+  '/artisans': typeof ArtisansRoute
+  '/confirm-email': typeof ConfirmEmailRoute
+  '/home': typeof HomeRoute
+  '/jobs': typeof JobsRoute
+  '/notices': typeof NoticesRoute
+  '/payouts': typeof PayoutsRoute
+  '/profile': typeof ProfileRoute
+  '/recover': typeof RecoverRoute
+  '/rules': typeof RulesRoute
+  '/sign-in': typeof SignInRoute
+  '/sign-up': typeof SignUpRoute
+  '/verification': typeof VerificationRoute
+  '/dev/mail': typeof DevMailRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
+  '/artisans': typeof ArtisansRoute
+  '/confirm-email': typeof ConfirmEmailRoute
+  '/home': typeof HomeRoute
+  '/jobs': typeof JobsRoute
+  '/notices': typeof NoticesRoute
+  '/payouts': typeof PayoutsRoute
+  '/profile': typeof ProfileRoute
+  '/recover': typeof RecoverRoute
+  '/rules': typeof RulesRoute
+  '/sign-in': typeof SignInRoute
+  '/sign-up': typeof SignUpRoute
+  '/verification': typeof VerificationRoute
+  '/dev/mail': typeof DevMailRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/account'
+    | '/artisans'
+    | '/confirm-email'
+    | '/home'
+    | '/jobs'
+    | '/notices'
+    | '/payouts'
+    | '/profile'
+    | '/recover'
+    | '/rules'
+    | '/sign-in'
+    | '/sign-up'
+    | '/verification'
+    | '/dev/mail'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/account'
+    | '/artisans'
+    | '/confirm-email'
+    | '/home'
+    | '/jobs'
+    | '/notices'
+    | '/payouts'
+    | '/profile'
+    | '/recover'
+    | '/rules'
+    | '/sign-in'
+    | '/sign-up'
+    | '/verification'
+    | '/dev/mail'
+  id:
+    | '__root__'
+    | '/'
+    | '/account'
+    | '/artisans'
+    | '/confirm-email'
+    | '/home'
+    | '/jobs'
+    | '/notices'
+    | '/payouts'
+    | '/profile'
+    | '/recover'
+    | '/rules'
+    | '/sign-in'
+    | '/sign-up'
+    | '/verification'
+    | '/dev/mail'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AccountRoute: typeof AccountRoute
+  ArtisansRoute: typeof ArtisansRoute
+  ConfirmEmailRoute: typeof ConfirmEmailRoute
+  HomeRoute: typeof HomeRoute
+  JobsRoute: typeof JobsRoute
+  NoticesRoute: typeof NoticesRoute
+  PayoutsRoute: typeof PayoutsRoute
+  ProfileRoute: typeof ProfileRoute
+  RecoverRoute: typeof RecoverRoute
+  RulesRoute: typeof RulesRoute
+  SignInRoute: typeof SignInRoute
+  SignUpRoute: typeof SignUpRoute
+  VerificationRoute: typeof VerificationRoute
+  DevMailRoute: typeof DevMailRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +234,123 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/account': {
+      id: '/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AccountRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/artisans': {
+      id: '/artisans'
+      path: '/artisans'
+      fullPath: '/artisans'
+      preLoaderRoute: typeof ArtisansRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirm-email': {
+      id: '/confirm-email'
+      path: '/confirm-email'
+      fullPath: '/confirm-email'
+      preLoaderRoute: typeof ConfirmEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/home': {
+      id: '/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof HomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/jobs': {
+      id: '/jobs'
+      path: '/jobs'
+      fullPath: '/jobs'
+      preLoaderRoute: typeof JobsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notices': {
+      id: '/notices'
+      path: '/notices'
+      fullPath: '/notices'
+      preLoaderRoute: typeof NoticesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/payouts': {
+      id: '/payouts'
+      path: '/payouts'
+      fullPath: '/payouts'
+      preLoaderRoute: typeof PayoutsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recover': {
+      id: '/recover'
+      path: '/recover'
+      fullPath: '/recover'
+      preLoaderRoute: typeof RecoverRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/rules': {
+      id: '/rules'
+      path: '/rules'
+      fullPath: '/rules'
+      preLoaderRoute: typeof RulesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sign-in': {
+      id: '/sign-in'
+      path: '/sign-in'
+      fullPath: '/sign-in'
+      preLoaderRoute: typeof SignInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sign-up': {
+      id: '/sign-up'
+      path: '/sign-up'
+      fullPath: '/sign-up'
+      preLoaderRoute: typeof SignUpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verification': {
+      id: '/verification'
+      path: '/verification'
+      fullPath: '/verification'
+      preLoaderRoute: typeof VerificationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dev/mail': {
+      id: '/dev/mail'
+      path: '/dev/mail'
+      fullPath: '/dev/mail'
+      preLoaderRoute: typeof DevMailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AccountRoute: AccountRoute,
+  ArtisansRoute: ArtisansRoute,
+  ConfirmEmailRoute: ConfirmEmailRoute,
+  HomeRoute: HomeRoute,
+  JobsRoute: JobsRoute,
+  NoticesRoute: NoticesRoute,
+  PayoutsRoute: PayoutsRoute,
+  ProfileRoute: ProfileRoute,
+  RecoverRoute: RecoverRoute,
+  RulesRoute: RulesRoute,
+  SignInRoute: SignInRoute,
+  SignUpRoute: SignUpRoute,
+  VerificationRoute: VerificationRoute,
+  DevMailRoute: DevMailRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

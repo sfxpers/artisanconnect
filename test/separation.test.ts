@@ -2,7 +2,7 @@ import { parse } from "jsonc-parser";
 import { describe, expect, expectTypeOf, test } from "vitest";
 import wranglerConfig from "../wrangler.jsonc?raw";
 import { createDomain, PORT_NAMES, type Ports } from "@/domain";
-import { createHarness } from "./support/harness";
+import { createHarness, TEST_CONFIG } from "./support/harness";
 
 // ADR 0018: this product does not know EcoBuiltConnect. There is no path to or
 // from it because the module's ports and the Worker's bindings are exactly
@@ -28,14 +28,18 @@ describe("the domain module", () => {
   test("cannot be built with any other port", async () => {
     const { ports } = await createHarness();
 
-    expect(() => createDomain({ ...ports, importer: {} } as Ports)).toThrow(/exactly the ports/);
+    expect(() => createDomain({ ...ports, importer: {} } as Ports, TEST_CONFIG)).toThrow(
+      /exactly the ports/,
+    );
   });
 
   test("cannot be built without one of its ports", async () => {
     const { ports } = await createHarness();
     const { mailer: _, ...withoutMailer } = ports;
 
-    expect(() => createDomain(withoutMailer as unknown as Ports)).toThrow(/exactly the ports/);
+    expect(() => createDomain(withoutMailer as unknown as Ports, TEST_CONFIG)).toThrow(
+      /exactly the ports/,
+    );
   });
 });
 
@@ -103,10 +107,17 @@ describe("the Worker", () => {
       expect(bindingNames(environment)).toEqual(["AI", "ASSETS", "DB", "R2", "SEND_EMAIL"]);
       expect(Object.keys(environment.vars as object).sort()).toEqual([
         "APP_NAME",
+        "APP_URL",
         "ENVIRONMENT",
         "MAIL_FROM",
+        "TURNSTILE_SITE_KEY",
       ]);
-      expect((environment.secrets as { required: string[] }).required).toEqual(["SENTRY_DSN"]);
+      // Sentry, better-auth's session signing, and Turnstile (ADR 0017).
+      expect((environment.secrets as { required: string[] }).required).toEqual([
+        "SENTRY_DSN",
+        "BETTER_AUTH_SECRET",
+        "TURNSTILE_SECRET_KEY",
+      ]);
     },
   );
 

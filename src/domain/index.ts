@@ -4,25 +4,33 @@
 
 import type { Section, SectionsApi } from "./section";
 import { runDueClocks, type ClockHandler } from "./clocks";
+import { accountsSection } from "./accounts";
+import { marketplaceRulesSection } from "./accounts/rules";
 import { createContext } from "./context";
-import { PORT_NAMES, type Ports } from "./ports";
+import { emailTells, noticesSection } from "./tells";
+import { PORT_NAMES, type DomainConfig, type Ports } from "./ports";
 
 /** Every section of the module. Each ticket adds its section here. */
-export const sections = [] as const satisfies readonly Section[];
+export const sections = [
+  accountsSection,
+  marketplaceRulesSection,
+  noticesSection,
+] as const satisfies readonly Section[];
 
 export type Domain = ReturnType<typeof createDomain>;
 
-export function createDomain(ports: Ports) {
-  return assembleDomain(ports, sections);
+export function createDomain(ports: Ports, config: DomainConfig) {
+  return assembleDomain(ports, config, sections);
 }
 
 /** Builds the module from its sections. Tests of the harness itself add a probe section. */
 export function assembleDomain<const Sections extends readonly Section[]>(
   ports: Ports,
+  config: DomainConfig,
   sections: Sections,
 ) {
   assertExactPorts(ports);
-  const ctx = createContext(ports);
+  const ctx = createContext(ports, config);
   const clocks: Record<string, ClockHandler> = {};
   const api: Record<string, unknown> = {};
   for (const section of sections) {
@@ -39,8 +47,17 @@ export function assembleDomain<const Sections extends readonly Section[]>(
     ...(api as SectionsApi<Sections>),
     /** Entry points the platform calls, not a party. */
     system: {
-      /** Called by the every-minute cron. */
-      runDueClocks: () => runDueClocks(ctx, clocks),
+      /** Called by the every-minute cron. Also sends any Tell's email that has not gone. */
+      async runDueClocks() {
+        try {
+          return await runDueClocks(ctx, clocks);
+        } finally {
+          // Never in place of a clock's failure.
+          await emailTells(ctx).catch((error: unknown) => {
+            console.error("Tell emails did not go", error);
+          });
+        }
+      },
     },
   };
 }

@@ -1,3 +1,7 @@
 # Local secrets. Copy to .dev.vars; staging and production set theirs with
 # `nubx wrangler secret put <NAME> --env <staging|production>`.
 SENTRY_DSN=
+# Signs session cookies. Any long random string locally; `openssl rand -base64 32`.
+BETTER_AUTH_SECRET=
+# Cloudflare's Turnstile test secret, which passes every check.
+TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA

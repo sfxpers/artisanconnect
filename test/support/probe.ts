@@ -6,11 +6,13 @@ import { defineSection } from "@/domain/section";
 import { startClock } from "@/domain/clocks";
 import { ok, refuse } from "@/domain/result";
 import { ledgerEntries } from "@/domain/schema";
-import { createHarness } from "./harness";
+import { emailTells, tell } from "@/domain/tells";
+import { createHarness, TEST_CONFIG } from "./harness";
 
 // A probe section that exists only to test the harness itself: a timer that a
 // signed-in party starts and that rings when its clock fires, unless stopped
-// first, and a way to record money in the ledger. Real sections follow its shape.
+// first, a way to record money in the ledger, and a poke that Tells an Account.
+// Real sections follow its shape.
 
 const probeTimers = sqliteTable("probe_timers", {
   id: text("id").primaryKey(),
@@ -115,6 +117,19 @@ const probe = defineSection({
       return ok({ eventId });
     },
 
+    /** Tells an Account that the actor poked it. */
+    async poke(actor: Actor, input: { accountId: string }) {
+      await ctx.commit(
+        tell(ctx, actor, [input.accountId], {
+          event: "probe.poked",
+          title: "You were poked",
+          link: "/probe",
+        }),
+      );
+      await emailTells(ctx);
+      return ok({});
+    },
+
     async ledgerTotalCents(_viewer: Actor) {
       const [row] = await ctx.db
         .select({ total: sum(ledgerEntries.amountCents) })
@@ -128,5 +143,5 @@ const probe = defineSection({
 export async function createProbeHarness() {
   const harness = await createHarness();
   await env.DB.prepare(PROBE_TABLE).run();
-  return { ...harness, domain: assembleDomain(harness.ports, [...sections, probe]) };
+  return { ...harness, domain: assembleDomain(harness.ports, TEST_CONFIG, [...sections, probe]) };
 }

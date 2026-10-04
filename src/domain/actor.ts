@@ -8,3 +8,11 @@ export type Actor =
 
 export const visitor: Actor = { kind: "visitor" };
 export const system: Actor = { kind: "system" };
+
+/** A signed-in Client or Artisan. */
+export type AccountActor = Extract<Actor, { kind: "client" | "artisan" }>;
+
+/** The Account the actor is, if it is one. */
+export function accountIdOf(actor: Actor): string | null {
+  return actor.kind === "client" || actor.kind === "artisan" ? actor.accountId : null;
+}

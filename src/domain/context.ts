@@ -1,6 +1,6 @@
 import type { BatchItem } from "drizzle-orm/batch";
 import { drizzle, type DrizzleD1Database } from "drizzle-orm/d1";
-import type { Ports } from "./ports";
+import type { DomainConfig, Ports } from "./ports";
 import * as schema from "./schema";
 
 export type Db = DrizzleD1Database<typeof schema>;
@@ -12,6 +12,7 @@ export type Write = BatchItem<"sqlite">;
 export type Context = {
   db: Db;
   ports: Ports;
+  config: DomainConfig;
   now(): Date;
   newId(): string;
   /**
@@ -21,11 +22,12 @@ export type Context = {
   commit(writes: Write[]): Promise<void>;
 };
 
-export function createContext(ports: Ports): Context {
+export function createContext(ports: Ports, config: DomainConfig): Context {
   const db = drizzle(ports.db, { schema });
   return {
     db,
     ports,
+    config,
     now: () => ports.clock.now(),
     newId: () => crypto.randomUUID(),
     async commit(writes) {
