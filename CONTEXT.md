@@ -171,15 +171,15 @@ Sending Materials or Labour to the Artisan, less the Artisan Fee.
 _Avoid_: Approve, Pay out
 
 **Refund**:
-Unreleased money sent back to the Client, without the Protection Fee, by the Artisan's choice at any time, a Cancellation, or the Admin's decision in a Dispute.
+Unreleased money sent back to the Client, without the Protection Fee, by the Artisan's choice at any time, a Cancellation, or the Admin's decision in a Dispute. If the bank cannot take it, it stays owed to the Client and the Admin pays it by hand.
 _Avoid_: Return, Reversal
 
 **Payout**:
-Money sent to the Artisan's Payout account after a Release, in the next daily run. Once sent it does not come back.
+Money sent to the Artisan's Payout account after a Release, in the next daily run. A bank may refuse it, or send it back even days after it arrived; the money is then owed to the Artisan again and waits for a current Payout account.
 _Avoid_: Withdrawal, Settlement
 
 **Payout account**:
-The bank account in the Artisan's own name, proven by a bank letter, that Payouts are sent to. No two Artisans may hold the same one.
+The bank account in the Artisan's own name, proven by a bank letter, that Payouts are sent to. No two Artisans may hold the same one. A bank refusing or sending back a Payout makes it no longer current, and Payouts wait until the Admin accepts a new one.
 _Avoid_: Wallet, Bank details
 
 **Chargeback**:

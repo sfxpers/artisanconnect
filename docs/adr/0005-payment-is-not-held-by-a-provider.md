@@ -1,6 +1,6 @@
 # A Payment is not held by a provider
 
-The platform holds each Client's Payment until it is released, then pays the Artisan in the next daily run. The product records a Payment, each Release, and each Payout. The adapter collects into the platform's processor relationship and pays the Artisan from that relationship or from a float the platform funds; the product does not record that float. Paying the Artisan when the Client pays was rejected because that is before the work.
+The platform holds each Client's Payment until it is released, then pays the Artisan in the next daily run. The product records a Payment, each Release, and each Payout. The adapter collects into the platform's processor relationship and pays the Artisan from that relationship or from a float the platform funds; the product does not record that float, only checks its balance before each daily run. Paying the Artisan when the Client pays was rejected because that is before the work.
 
 TradeSafe, a registered escrow provider, does hold and release, and was rejected for the rule changes it forces: every Client would give an ID number (ADR `0001`); the platform could not accept for the Client, so seven days of silence counting as Approval is in doubt; a Refund would be net of fees and only possible between Work started and Approval; a second Payment for an Updated Quote is not documented; cards are capped at R25,000; and it adds a 1.15% escrow fee. An adapter able to sit on either was rejected because it would carry TradeSafe's limits without its benefit.
 
