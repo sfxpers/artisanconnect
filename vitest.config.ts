@@ -10,6 +10,8 @@ export default defineConfig(async () => {
   const migrations = await readD1Migrations(path.join(import.meta.dirname, "migrations"));
   return {
     resolve: { tsconfigPaths: true },
+    // Test fixtures Vite does not know as assets, imported with ?inline.
+    assetsInclude: ["test/fixtures/**/*.heic"],
     plugins: [
       cloudflareTest({
         wrangler: { configPath: "./wrangler.jsonc" },
