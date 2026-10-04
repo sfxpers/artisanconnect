@@ -9,25 +9,34 @@
   // "routes": [
   //   { "pattern": "artisanconnect.example.com", "custom_domain": true },
   // ],
+  // Workers Logs. Errors also go to Sentry (SENTRY_DSN).
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+  },
+  // Every clock is a row with a due time; this cron runs the due ones (ADR 0017).
+  "triggers": {
+    "crons": ["* * * * *"],
+  },
+
+  // The top level is local. Staging and production below repeat every binding
+  // with their own D1, R2, and secrets; bindings are not inherited.
+  // MAIL_FROM: replace with an address on the domain verified for Email Sending.
   "vars": {
     "APP_NAME": "artisanconnect",
+    "ENVIRONMENT": "local",
+    "MAIL_FROM": "ArtisanConnect <no-reply@example.com>",
+  },
+  "secrets": {
+    "required": ["SENTRY_DSN"],
   },
   // Workers Assets: the Vite plugin injects the client build directory.
   "assets": {
     "binding": "ASSETS",
   },
-  "observability": {
-    "enabled": true,
-    "head_sampling_rate": 1,
-  },
-  "analytics_engine_datasets": [
-    {
-      "binding": "ANALYTICS",
-      "dataset": "artisanconnect_events",
-    },
-  ],
   "ai": {
     "binding": "AI",
+    "remote": true,
   },
   // D1: omit database_id so Wrangler can auto-provision on first deploy.
   "d1_databases": [
@@ -43,28 +52,83 @@
       "bucket_name": "artisanconnect",
     },
   ],
-  "queues": {
-    "producers": [
-      {
-        "binding": "QUEUE",
-        "queue": "artisanconnect",
-      },
-    ],
-    "consumers": [
-      {
-        "queue": "artisanconnect",
-      },
-    ],
-  },
-  "triggers": {
-    "crons": ["0 * * * *"],
-  },
-  // Email Routing inbound uses the `email` handler in src/server.ts.
-  // Outbound send: verify destination addresses in the dashboard, then optionally
-  // set destination_address / allowed_destination_addresses here.
+  // Cloudflare Email Sending, outbound only.
   "send_email": [
     {
       "name": "SEND_EMAIL",
     },
   ],
+
+  "env": {
+    "staging": {
+      "vars": {
+        "APP_NAME": "artisanconnect",
+        "ENVIRONMENT": "staging",
+        "MAIL_FROM": "ArtisanConnect <no-reply@example.com>",
+      },
+      "secrets": {
+        "required": ["SENTRY_DSN"],
+      },
+      "assets": {
+        "binding": "ASSETS",
+      },
+      "ai": {
+        "binding": "AI",
+        "remote": true,
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "artisanconnect-staging",
+          "migrations_dir": "migrations",
+        },
+      ],
+      "r2_buckets": [
+        {
+          "binding": "R2",
+          "bucket_name": "artisanconnect-staging",
+        },
+      ],
+      "send_email": [
+        {
+          "name": "SEND_EMAIL",
+        },
+      ],
+    },
+    "production": {
+      "vars": {
+        "APP_NAME": "artisanconnect",
+        "ENVIRONMENT": "production",
+        "MAIL_FROM": "ArtisanConnect <no-reply@example.com>",
+      },
+      "secrets": {
+        "required": ["SENTRY_DSN"],
+      },
+      "assets": {
+        "binding": "ASSETS",
+      },
+      "ai": {
+        "binding": "AI",
+        "remote": true,
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "artisanconnect-production",
+          "migrations_dir": "migrations",
+        },
+      ],
+      "r2_buckets": [
+        {
+          "binding": "R2",
+          "bucket_name": "artisanconnect-production",
+        },
+      ],
+      "send_email": [
+        {
+          "name": "SEND_EMAIL",
+        },
+      ],
+    },
+  },
 }
