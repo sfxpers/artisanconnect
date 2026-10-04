@@ -51,7 +51,7 @@ export const copy = {
   confirm: {
     title: "Prove your Email",
     lead: (email: string) =>
-      `We sent a ${EMAIL_CODE.length}-digit code to ${email}. It works once, for ${EMAIL_CODE.minutes} minutes.`,
+      `We sent an email to ${email}. Enter the ${EMAIL_CODE.length}-digit code from it. It works once, for ${EMAIL_CODE.minutes} minutes.`,
     code: "Email code",
     submit: "Confirm",
     resend: "Send a new code",

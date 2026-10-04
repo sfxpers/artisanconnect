@@ -1,14 +1,16 @@
 import * as z from "zod";
-import { and, eq } from "drizzle-orm";
+import { and, eq, gt } from "drizzle-orm";
+import { hashPassword } from "better-auth/crypto";
 import { accountIdOf, visitor, type AccountActor, type Actor } from "../actor";
 import { tryWithin } from "../rate-limits";
 import { ok, refuse } from "../result";
-import { accounts, authUsers } from "../schema";
+import { accounts, authUsers, authVerifications } from "../schema";
 import { defineSection } from "../section";
 import { authErrorCode, createAuth, type Auth } from "./auth";
 import {
   acceptance,
   code,
+  EMAIL_CODE,
   email,
   firstProblem,
   password,
@@ -71,6 +73,20 @@ export const accountsSection = defineSection({
       return null;
     }
 
+    /** Whether a sign-up code sent to the Email still works. */
+    async function hasLiveCode(address: string) {
+      const [live] = await ctx.db
+        .select({ id: authVerifications.id })
+        .from(authVerifications)
+        .where(
+          and(
+            eq(authVerifications.identifier, `email-verification-otp-${address}`),
+            gt(authVerifications.expiresAt, ctx.now()),
+          ),
+        );
+      return live !== undefined;
+    }
+
     async function actorFor(identityId: string): Promise<AccountActor | null> {
       const [account] = await ctx.db
         .select({ id: accounts.id, kind: accounts.kind })
@@ -83,7 +99,9 @@ export const accountsSection = defineSection({
       /**
        * A person signs up as a Client or an Artisan. The kind is fixed from
        * here on. An Email code goes to the Email; until it is proven this is a
-       * sign-up, not an Account, and another sign-up with the Email replaces it.
+       * sign-up, not an Account, and once its code stops working another
+       * sign-up with the Email replaces it. An Email already held is refused
+       * by email, with the same answer on screen as a free one.
        */
       async signUp(actor: Actor, input: SignUpDetails & From) {
         if (actor.kind !== "visitor") {
@@ -105,18 +123,37 @@ export const accountsSection = defineSection({
         }
 
         const held = await identityByEmail(details.email);
-        if (held?.emailVerified || held?.role === "admin") {
+        const heldByAnyone = held?.emailVerified || held?.role === "admin";
+        if (held && !heldByAnyone && (await hasLiveCode(details.email))) {
           return refuse(
-            "email-held",
-            "This Email is already used. Sign in, or sign up with another Email.",
+            "sign-up-waiting",
+            `A sign-up with this Email is waiting for its code. Enter that code, or try again once it stops working, ${EMAIL_CODE.minutes} minutes after it was sent.`,
           );
         }
         const refused = await mayRequestCode(details.email, input.ip);
         if (refused) return refused;
 
-        // Nobody has proven this Email, so nobody holds it yet. better-auth
-        // writes the identity itself, so this is not one batch: a sign-up left
-        // half made is unproven, and the next sign-up with the Email replaces it.
+        if (heldByAnyone) {
+          // Refused, but the answer on screen is the same as for a free Email,
+          // so nobody can probe who holds one; the Email is told instead.
+          await hashPassword(details.password);
+          await ctx.ports.mailer.send({
+            to: details.email,
+            subject: "Someone tried to sign up with your Email",
+            text: [
+              "Someone tried to sign up for ArtisanConnect with this Email. It already holds an Account, so no new one was made.",
+              `If it was you, sign in: ${new URL("/sign-in", ctx.config.appUrl).href}`,
+              `Forgot your password? ${new URL("/recover", ctx.config.appUrl).href}`,
+              "If it was not you, you can ignore this email.",
+            ].join("\n\n"),
+          });
+          return ok({ email: details.email });
+        }
+
+        // Nobody has proven this Email, so nobody holds it yet, and its code
+        // has stopped working. better-auth writes the identity itself, so this
+        // is not one batch: a sign-up left half made is unproven, and the next
+        // sign-up with the Email replaces it.
         if (held) await ctx.db.delete(authUsers).where(eq(authUsers.id, held.id));
 
         const created = await getAuth().api.signUpEmail({

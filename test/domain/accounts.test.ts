@@ -55,18 +55,48 @@ describe("signing up", () => {
 
   test("an Email held by any Account is refused, whatever its case and kind", async () => {
     const harness = await createHarness();
-    await harness.given.artisan({ email: "sipho@example.com" });
+    const { domain, clock } = harness;
+    const held = await harness.given.artisan({ email: "sipho@example.com" });
+    clock.advance({ minutes: 1 });
 
-    const refused = await signUp(harness, { kind: "client", email: "Sipho@Example.com" });
+    await signUp(harness, {
+      kind: "client",
+      email: "Sipho@Example.com",
+      password: "a different password",
+    });
 
-    expect(refused).toMatchObject({ ok: false, refusal: { reason: "email-held" } });
+    expect(await domain.accounts.me(held.actor)).toMatchObject({ kind: "artisan" });
+    expect(
+      await domain.accounts.signIn(visitor, {
+        email: "sipho@example.com",
+        password: "a different password",
+        ip: IP,
+      }),
+    ).toMatchObject({ ok: false, refusal: { reason: "wrong-credentials" } });
   });
 
-  test("a sign-up whose Email is not yet proven holds nothing, and a new sign-up replaces it", async () => {
+  test("answers alike whether or not the Email is held, and tells a held one by email", async () => {
+    const harness = await createHarness();
+    const { clock, mailer } = harness;
+    await harness.given.artisan({ email: "sipho@example.com" });
+    clock.advance({ minutes: 1 });
+
+    const held = await signUp(harness, { email: "sipho@example.com" });
+    const free = await signUp(harness, { email: "free@example.com" });
+
+    expect(held).toEqual({ ok: true, value: { email: "sipho@example.com" } });
+    expect(free).toEqual({ ok: true, value: { email: "free@example.com" } });
+    const told = mailer.sentTo("sipho@example.com").at(-1)!;
+    expect(told.subject).toBe("Someone tried to sign up with your Email");
+    expect(told.text).toContain("https://artisanconnect.test/sign-in");
+    expect(told.text).not.toMatch(/\b\d{6}\b/);
+  });
+
+  test("a sign-up whose Email is not yet proven holds nothing, and once its code has stopped working a new sign-up replaces it", async () => {
     const harness = await createHarness();
     const { domain, given } = harness;
     await signUp(harness, { kind: "artisan", name: "Someone Else" });
-    harness.clock.advance({ minutes: 1 });
+    harness.clock.advance({ minutes: 11 });
 
     await signUp(harness, { kind: "client", name: "Thandi Mokoena" });
     const confirmed = await domain.accounts.confirmEmail(visitor, {
@@ -75,6 +105,28 @@ describe("signing up", () => {
       ip: IP,
     });
 
+    if (!confirmed.ok) throw new Error(confirmed.refusal.message);
+    expect(await domain.accounts.me(confirmed.value.actor)).toMatchObject({
+      kind: "client",
+      name: "Thandi Mokoena",
+    });
+  });
+
+  test("a sign-up whose code still works is not replaced", async () => {
+    const harness = await createHarness();
+    const { domain, given } = harness;
+    await signUp(harness, { kind: "client", name: "Thandi Mokoena" });
+    const code = given.codeSentTo("thandi@example.com");
+    harness.clock.advance({ minutes: 2 });
+
+    const refused = await signUp(harness, { kind: "artisan", name: "Someone Else" });
+    const confirmed = await domain.accounts.confirmEmail(visitor, {
+      email: "thandi@example.com",
+      code,
+      ip: IP,
+    });
+
+    expect(refused).toMatchObject({ ok: false, refusal: { reason: "sign-up-waiting" } });
     if (!confirmed.ok) throw new Error(confirmed.refusal.message);
     expect(await domain.accounts.me(confirmed.value.actor)).toMatchObject({
       kind: "client",
