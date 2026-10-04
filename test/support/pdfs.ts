@@ -8,14 +8,20 @@ import { createCipheriv, createHash, randomBytes } from "node:crypto";
 export type TextPdfOptions = {
   /** Each line of text, one under another. */
   lines?: string[];
-  /** A simple font with WinAnsiEncoding, or a composite one (Identity-H) with a ToUnicode map. */
-  font?: "simple" | "composite";
+  /**
+   * A simple font with WinAnsiEncoding; a composite one (Identity-H) with a
+   * ToUnicode map; or a symbolic one with neither, whose codes only its own
+   * glyph tables explain.
+   */
+  font?: "simple" | "composite" | "symbolic";
   /** AES-256 (revision 6), opening without a password unless one is given. */
   aes256?: { userPassword?: string };
   /** A JavaScript action, packed into an object stream. */
   script?: boolean;
   /** The page is a picture and has no text, as a scan is. */
   scanned?: boolean;
+  /** A second page that is a scan, after the page of text. */
+  scannedSecondPage?: boolean;
   /** Operators the page runs before its text, as a damaged or hostile file may hold. */
   before?: string;
   /** A FreeText annotation over the page, whose appearance shows this text. */
@@ -28,20 +34,31 @@ export async function textPdf({
   aes256,
   script = false,
   scanned = false,
+  scannedSecondPage = false,
   before = "",
   note,
 }: TextPdfOptions = {}): Promise<Uint8Array<ArrayBuffer>> {
   const objects = new Map<number, { dict: string; stream?: Uint8Array }>();
   const catalog = `<< /Type /Catalog /Pages 2 0 R${script ? " /OpenAction 6 0 R" : ""} >>`;
   objects.set(1, { dict: catalog });
-  objects.set(2, { dict: "<< /Type /Pages /Kids [3 0 R] /Count 1 >>" });
+  objects.set(2, {
+    dict: scannedSecondPage
+      ? "<< /Type /Pages /Kids [3 0 R 15 0 R] /Count 2 >>"
+      : "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+  });
+  if (scannedSecondPage) {
+    objects.set(15, {
+      dict: "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /XObject << /Im1 7 0 R >> >> /Contents 16 0 R >>",
+    });
+    objects.set(16, { dict: "<< >>", stream: ascii("q 595 0 0 842 0 0 cm /Im1 Do Q") });
+  }
   objects.set(3, {
     dict: `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> /XObject << /Im1 7 0 R >> >> /Contents 5 0 R${note ? " /Annots [13 0 R]" : ""} >>`,
   });
 
   const codes = new Map<string, number>();
   const show = (line: string) => {
-    if (font === "simple") return `(${line.replace(/[\\()]/g, (c) => `\\${c}`)}) Tj`;
+    if (font !== "composite") return `(${line.replace(/[\\()]/g, (c) => `\\${c}`)}) Tj`;
     const hex = [...line]
       .map((char) => {
         if (!codes.has(char)) codes.set(char, codes.size + 3);
@@ -62,6 +79,13 @@ export async function textPdf({
   if (font === "simple") {
     objects.set(4, {
       dict: "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
+    });
+  } else if (font === "symbolic") {
+    objects.set(4, {
+      dict: "<< /Type /Font /Subtype /TrueType /BaseFont /ABCDEF+Sans /FontDescriptor 8 0 R >>",
+    });
+    objects.set(8, {
+      dict: "<< /Type /FontDescriptor /FontName /ABCDEF+Sans /Flags 4 /FontBBox [0 0 1000 1000] /ItalicAngle 0 /Ascent 800 /Descent -200 /CapHeight 700 /StemV 80 >>",
     });
   } else {
     objects.set(4, {
@@ -136,7 +160,7 @@ endcmap CMapName currentdict /CMap defineresource pop end end`;
       parts.push(ascii(`${num} 0 obj\n${dict}\nendobj\n`));
     }
   }
-  const trailer = `<< /Root 1 0 R /Info 11 0 R /Size 15${encryption ? " /Encrypt 12 0 R" : ""} /ID [<${hex(id)}> <${hex(id)}>] >>`;
+  const trailer = `<< /Root 1 0 R /Info 11 0 R /Size 17${encryption ? " /Encrypt 12 0 R" : ""} /ID [<${hex(id)}> <${hex(id)}>] >>`;
   parts.push(ascii(`trailer\n${trailer}\n%%EOF\n`));
   return concat(...parts);
 }

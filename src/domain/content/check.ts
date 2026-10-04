@@ -95,8 +95,8 @@ async function readFiles(ctx: Context, files: readonly StoredFile[]) {
           break;
         case "pdf": {
           const pdf = await pdfText(bytes);
-          // A scan is pictures of text, which text extraction cannot read.
-          if (!pdf.text && pdf.pictures > 0) unread ??= "A PDF of scanned pages cannot be read.";
+          // A scanned page is a picture of text, which text extraction cannot read.
+          if (pdf.scannedPages > 0) unread ??= "A PDF with scanned pages cannot be read.";
           texts.push(pdf.text);
           break;
         }

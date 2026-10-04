@@ -19,8 +19,11 @@ import {
 
 export type PdfText = {
   text: string;
-  /** How many pictures the pages draw: a PDF of pictures and no text is a scan. */
-  pictures: number;
+  /**
+   * How many pages draw pictures and have no text: a scanned page, whose
+   * text is in the picture, where text extraction cannot read it.
+   */
+  scannedPages: number;
 };
 
 /** More than any real document runs; a file built to run forever stops here. */
@@ -36,7 +39,13 @@ export async function pdfText(bytes: Uint8Array): Promise<PdfText> {
   const reader = new TextReader(document);
   const pages = pageList(document);
   const texts: string[] = [];
-  for (const page of pages) texts.push(await reader.page(page));
+  let scannedPages = 0;
+  for (const page of pages) {
+    const pictures = reader.pictures;
+    const text = await reader.page(page);
+    if (reader.pictures > pictures && !text.trim()) scannedPages++;
+    texts.push(text);
+  }
   if (reader.undecoded > reader.shown * MAX_UNDECODED_SHARE) {
     throw new Unreadable("The PDF's fonts do not say what their characters are.");
   }
@@ -47,7 +56,7 @@ export async function pdfText(bytes: Uint8Array): Promise<PdfText> {
     .replace(/ ?\n ?/g, "\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
-  return { text, pictures: reader.pictures };
+  return { text, scannedPages };
 }
 
 type Page = {
@@ -432,10 +441,14 @@ function simpleFont(
   toUnicode: CMap | null,
 ): Font {
   const encoding = document.resolve(dict.get("Encoding"));
-  const base =
+  const descriptor = document.dict(dict.get("FontDescriptor"));
+  // A symbolic font's codes mean what its own glyph tables say, which only a
+  // ToUnicode map or a named encoding tells; without them its text is undecoded.
+  const symbolic = ((numberOf(document.resolve(descriptor?.get("Flags"))) ?? 0) & 4) !== 0;
+  const named =
     namedEncoding(nameOf(encoding)) ??
-    (isDict(encoding) ? namedEncoding(nameOf(encoding.get("BaseEncoding"))) : null) ??
-    (subtype === "TrueType" ? WIN_ANSI : STANDARD);
+    (isDict(encoding) ? namedEncoding(nameOf(encoding.get("BaseEncoding"))) : null);
+  const base = named ?? (symbolic ? [] : subtype === "TrueType" ? WIN_ANSI : STANDARD);
   const codes: (string | null | undefined)[] = [...base];
   const differences = isDict(encoding) ? document.resolve(encoding.get("Differences")) : null;
   if (Array.isArray(differences)) {
@@ -448,7 +461,6 @@ function simpleFont(
 
   const firstChar = numberOf(document.resolve(dict.get("FirstChar"))) ?? 0;
   const widths = document.resolve(dict.get("Widths"));
-  const descriptor = document.dict(dict.get("FontDescriptor"));
   const missing = numberOf(document.resolve(descriptor?.get("MissingWidth"))) ?? 500;
   // A Type 3 font's widths are in its own glyph space, scaled by its matrix.
   const fontMatrix = document.resolve(dict.get("FontMatrix"));

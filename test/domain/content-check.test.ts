@@ -330,8 +330,30 @@ describe("a PDF", () => {
 
     expect(result).toMatchObject({
       ok: true,
-      value: { verdict: "held", reason: "A PDF of scanned pages cannot be read." },
+      value: { verdict: "held", reason: "A PDF with scanned pages cannot be read." },
     });
     expect(contentReader.reads).toEqual([]);
+  });
+
+  test("with text and a scanned page Holds the item, as the scan cannot be read", async () => {
+    const letter = await textPdf({ lines: ["Proof of payment"], scannedSecondPage: true });
+
+    const { result } = await send("", { context: afterPayment, files: [file(letter)] });
+
+    expect(result).toMatchObject({
+      ok: true,
+      value: { verdict: "held", reason: "A PDF with scanned pages cannot be read." },
+    });
+  });
+
+  test("whose symbolic font does not say what its characters are Holds the item", async () => {
+    const letter = await textPdf({ lines: ["Pay into 62812345678"], font: "symbolic" });
+
+    const { result } = await send("", { context: afterPayment, files: [file(letter)] });
+
+    expect(result).toMatchObject({
+      ok: true,
+      value: { verdict: "held", reason: "A PDF could not be read." },
+    });
   });
 });
