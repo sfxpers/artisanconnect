@@ -13,7 +13,7 @@ import { landingFor } from "@/web/me";
 
 export const Route = createFileRoute("/confirm-email")({
   validateSearch: (search: Record<string, unknown>) => ({ email: String(search.email ?? "") }),
-  beforeLoad: ({ context }) => onlyForVisitors(context.me),
+  beforeLoad: ({ context }) => onlyForVisitors(context),
   component: ConfirmEmail,
 });
 

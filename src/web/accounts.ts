@@ -16,11 +16,15 @@ import {
 type Guarded<T> = T & { turnstileToken?: string };
 type Acceptance = { rulesVersion: number; consentsToDataUse: boolean };
 
-/** Who is signed in, as they see themselves, and the Turnstile site key. */
+/** Who is signed in (an Account or an Admin), as they see themselves, and the Turnstile site key. */
 export const getSession = createServerFn({ method: "GET" }).handler(async () => {
   const domain = requestDomain();
   const actor = await requestActor(domain);
-  return { me: await domain.accounts.me(actor), turnstileSiteKey: env.TURNSTILE_SITE_KEY };
+  return {
+    me: await domain.accounts.me(actor),
+    admin: await domain.admins.me(actor),
+    turnstileSiteKey: env.TURNSTILE_SITE_KEY,
+  };
 });
 
 export const getCurrentRules = createServerFn({ method: "GET" }).handler(async () =>

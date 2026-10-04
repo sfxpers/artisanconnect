@@ -448,8 +448,6 @@ describe("rate limits", () => {
 });
 
 describe("the Marketplace rules", () => {
-  const admin = { kind: "admin", adminId: "admin-1" } as const;
-
   test("are accepted at sign-up, with the version and time recorded", async () => {
     const { domain, given, clock } = await createHarness();
 
@@ -470,7 +468,9 @@ describe("the Marketplace rules", () => {
 
   test("must be the current version at sign-up", async () => {
     const harness = await createHarness();
-    await harness.domain.marketplaceRules.publish(admin, { summary: "Version 2." });
+    await harness.domain.marketplaceRules.publish((await harness.given.admin()).actor, {
+      summary: "Version 2.",
+    });
 
     const refused = await signUp(harness, { rulesVersion: 1 });
 
@@ -490,7 +490,7 @@ describe("the Marketplace rules", () => {
   test("once changed, must be accepted before signing in", async () => {
     const { domain, given } = await createHarness();
     const { email, password, actor } = await given.artisan();
-    await domain.marketplaceRules.publish(admin, { summary: "Version 2." });
+    await domain.marketplaceRules.publish((await given.admin()).actor, { summary: "Version 2." });
 
     const refused = await domain.accounts.signIn(visitor, { email, password, ip: IP });
 
@@ -502,7 +502,7 @@ describe("the Marketplace rules", () => {
     const harness = await createHarness();
     const { domain, given } = harness;
     await signUp(harness);
-    await domain.marketplaceRules.publish(admin, { summary: "Version 2." });
+    await domain.marketplaceRules.publish((await given.admin()).actor, { summary: "Version 2." });
 
     const confirmed = await domain.accounts.confirmEmail(visitor, {
       email: "thandi@example.com",
@@ -523,7 +523,7 @@ describe("the Marketplace rules", () => {
   test("once changed, are accepted at sign-in, with the version and time recorded", async () => {
     const { domain, given, clock } = await createHarness();
     const { email, password, actor } = await given.artisan();
-    await domain.marketplaceRules.publish(admin, { summary: "Version 2." });
+    await domain.marketplaceRules.publish((await given.admin()).actor, { summary: "Version 2." });
     clock.advance({ days: 3 });
 
     const signedIn = await domain.accounts.signIn(visitor, {

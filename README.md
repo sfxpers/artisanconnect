@@ -39,6 +39,8 @@ nub run db:generate        # SQL migration from src/domain/schema.ts
 nub run db:migrate:local   # apply migrations to local D1
 nub run deploy:staging     # migrate staging D1, build, and deploy
 nub run deploy:production  # migrate production D1, build, and deploy
+nub run admin:setup -- you@example.com                 # make the first Admin in local D1
+nub run admin:setup -- you@example.com --env staging   # or --env production
 ```
 
 ## Domain module
@@ -52,6 +54,8 @@ Every rule lives in `src/domain` (ADR 0017). It is built with exactly six ports,
 Tests drive the module through `test/support/harness.ts`: real local D1 and R2, with a fake clock, content reader, payment adapter, and mailer. better-auth reads `Date`, so the harness keeps the system time on the fake clock.
 
 - **Sign-in** is better-auth (ADR 0017) inside the `accounts` section, on D1. Its HTTP handler is never mounted: the web app reaches it only through the module's commands, which add the rules (kinds, Marketplace rules, rate limits). Turnstile is checked by the server functions before a command runs.
+- **Admins** (ADR 0015) are better-auth identities with `role = "admin"` and no `accounts` row. They sign in with an Email code only (`/admin/sign-in`). The first is made by `nub run admin:setup`, which calls `system.setUpFirstAdmin` through `getPlatformProxy`; it refuses once there is an Admin. Every Admin decision and every logged read is written to `audit_log` in the same batch (`src/domain/audit.ts`).
+- **Queues**: a section raises an item in one of the Admin's eight queues with a kind from `defineQueueItemKind` (`src/domain/queues.ts`), declared in its `queueItems` like its `clocks`. The kind names the decisions it allows and who each tells, the writes a decision makes, its page's tabs and sidebar, and what opens only on a logged click. A recorded decision cannot be reopened.
 - **Tells** are rows in `notices` written with the event; their one email goes after the commit, and the every-minute cron retries one that did not go (`src/domain/tells.ts`).
 
 Locally, email is not sent: open http://localhost:3000/dev/mail to read it, Email codes included.
@@ -80,13 +84,16 @@ Local secrets go in `.dev.vars` (copy `.dev.vars.example` and set `BETTER_AUTH_S
 
 Custom domain: uncomment `routes` in `wrangler.jsonc` and replace the hostname.
 
-D1 databases are provisioned on first deploy, so the first time an environment is deployed, deploy before migrating:
+D1 databases are provisioned on first deploy, so the first time an environment is deployed, deploy before migrating, then make its first Admin:
 
 ```sh
 nubx wrangler login
 CLOUDFLARE_ENV=staging nub run build && nubx wrangler deploy
 nubx wrangler d1 migrations apply DB --config wrangler.jsonc --env staging --remote
+nub run admin:setup -- you@example.com --env staging
 ```
+
+The setup command looks the environment's D1 up by name and reaches it as a remote binding. The new Admin signs in at `/admin/sign-in` with an Email code; every other Admin is invited from the Admins page.
 
 Workers AI has no local simulation. `vite.config.ts` and the tests set `remoteBindings: false` so `nub run dev` and `nub run test` work offline. After `nubx wrangler login`, set `remoteBindings: true` in `vite.config.ts` for live inference.
 

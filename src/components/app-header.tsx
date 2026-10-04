@@ -1,12 +1,22 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { Bell, Hammer } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import type { Me } from "@/web/me";
+import { Button } from "@/components/ui/button";
+import { signOut } from "@/web/accounts";
+import type { AdminMe, Me } from "@/web/me";
 import { copy } from "@/web/copy";
 
 type NavItem = { to: string; label: string };
 
-function navFor(me: Me | null): NavItem[] {
+function navFor(me: Me | null, admin: AdminMe | null): NavItem[] {
+  if (admin) {
+    const t = copy.header.admin;
+    return [
+      { to: "/admin", label: t.queues },
+      { to: "/admin/admins", label: t.admins },
+      { to: "/admin/audit", label: t.audit },
+    ];
+  }
   if (!me) {
     const t = copy.header.visitor;
     return [
@@ -41,8 +51,8 @@ export function initials(name: string) {
     .toUpperCase();
 }
 
-/** The header in the Contract look (#107): Visitor, Client, or Artisan. */
-export function AppHeader({ me }: { me: Me | null }) {
+/** The header in the Contract look (#107): Visitor, Client, Artisan, or Admin. */
+export function AppHeader({ me, admin }: { me: Me | null; admin: AdminMe | null }) {
   return (
     <header className="border-b bg-background">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4 sm:gap-6">
@@ -51,10 +61,11 @@ export function AppHeader({ me }: { me: Me | null }) {
           <span className="hidden sm:inline">{copy.appName}</span>
         </Link>
         <nav className="flex min-w-0 gap-4 overflow-x-auto text-sm sm:gap-5" aria-label="Main">
-          {navFor(me).map((item) => (
+          {navFor(me, admin).map((item) => (
             <Link
               key={item.to}
               to={item.to}
+              activeOptions={{ exact: item.to === "/admin" }}
               className="shrink-0 text-muted-foreground hover:text-foreground"
               activeProps={{ className: "text-foreground font-medium" }}
             >
@@ -62,6 +73,7 @@ export function AppHeader({ me }: { me: Me | null }) {
             </Link>
           ))}
         </nav>
+        {admin && <AdminCorner admin={admin} />}
         {me && (
           <div className="ml-auto flex shrink-0 items-center gap-3">
             <Link to="/notices" aria-label={copy.header.notices} className="text-muted-foreground">
@@ -76,5 +88,28 @@ export function AppHeader({ me }: { me: Me | null }) {
         )}
       </div>
     </header>
+  );
+}
+
+function AdminCorner({ admin }: { admin: AdminMe }) {
+  const router = useRouter();
+  const navigate = useNavigate();
+  return (
+    <div className="ml-auto flex shrink-0 items-center gap-3">
+      <Avatar size="sm" aria-label={admin.email} title={admin.email}>
+        <AvatarFallback>{initials(admin.email)}</AvatarFallback>
+      </Avatar>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={async () => {
+          await signOut();
+          await router.invalidate();
+          await navigate({ to: "/admin/sign-in" });
+        }}
+      >
+        {copy.header.admin.signOut}
+      </Button>
+    </div>
   );
 }

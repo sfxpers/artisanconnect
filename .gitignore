@@ -16,3 +16,5 @@ dist
 worker-configuration.d.ts
 test-results
 playwright-report
+# Written for a moment by scripts/set-up-admin.mjs
+wrangler.admin-setup.*.jsonc

@@ -13,7 +13,7 @@ import { onlyForVisitors } from "@/web/guards";
 import { landingFor } from "@/web/me";
 
 export const Route = createFileRoute("/sign-in")({
-  beforeLoad: ({ context }) => onlyForVisitors(context.me),
+  beforeLoad: ({ context }) => onlyForVisitors(context),
   component: SignIn,
 });
 

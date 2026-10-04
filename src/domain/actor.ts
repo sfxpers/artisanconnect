@@ -12,6 +12,9 @@ export const system: Actor = { kind: "system" };
 /** A signed-in Client or Artisan. */
 export type AccountActor = Extract<Actor, { kind: "client" | "artisan" }>;
 
+/** A signed-in Admin. */
+export type AdminActor = Extract<Actor, { kind: "admin" }>;
+
 /** The Account the actor is, if it is one. */
 export function accountIdOf(actor: Actor): string | null {
   return actor.kind === "client" || actor.kind === "artisan" ? actor.accountId : null;

@@ -8,7 +8,7 @@ import { copy, formatDate } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
 
 export const Route = createFileRoute("/account")({
-  beforeLoad: ({ context }) => ({ me: onlyFor("account", context.me) }),
+  beforeLoad: ({ context }) => ({ me: onlyFor("account", context) }),
   component: Account,
 });
 

@@ -1,5 +1,6 @@
 import { and, asc, eq, isNull, lte } from "drizzle-orm";
 import type { Context, Write } from "./context";
+import { causedBy } from "./errors";
 import { dueClocks } from "./schema";
 
 export type DueClock = {
@@ -60,7 +61,7 @@ export async function runDueClocks(
       await ctx.commit([markFired, ...writes]);
       fired += 1;
     } catch (error) {
-      if (isAlreadyFired(error)) continue;
+      if (causedBy(error, "clock already fired")) continue;
       failures.push(error);
     }
   }
@@ -68,11 +69,4 @@ export async function runDueClocks(
     throw new AggregateError(failures, `${failures.length} due clocks failed to fire`);
   }
   return { fired };
-}
-
-function isAlreadyFired(error: unknown): boolean {
-  for (let e: unknown = error; e instanceof Error; e = e.cause) {
-    if (e.message.includes("clock already fired")) return true;
-  }
-  return false;
 }

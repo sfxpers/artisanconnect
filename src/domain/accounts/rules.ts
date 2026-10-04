@@ -1,7 +1,8 @@
 import { desc } from "drizzle-orm";
 import type { Actor } from "../actor";
+import { audit } from "../audit";
 import type { Context } from "../context";
-import { ok, refuse } from "../result";
+import { adminOnly, ok, refuse } from "../result";
 import { defineSection } from "../section";
 import { emailTells, tellEveryAccount } from "../tells";
 import { marketplaceRules } from "../schema";
@@ -32,13 +33,17 @@ export const marketplaceRulesSection = defineSection({
      */
     async publish(actor: Actor, input: { summary: string }) {
       if (actor.kind !== "admin") {
-        return refuse("admin-only", "Only the Admin publishes the Marketplace rules.");
+        return adminOnly();
       }
       const summary = input.summary.trim();
       if (!summary) return refuse("invalid", "Say what changed in this version.");
       const version = (await currentRules(ctx)).version + 1;
       await ctx.commit([
         ctx.db.insert(marketplaceRules).values({ version, summary, publishedAt: ctx.now() }),
+        audit(ctx, actor, {
+          action: "marketplace-rules.published",
+          summary: `Published Marketplace rules version ${version}`,
+        }),
         tellEveryAccount(ctx, {
           event: "marketplace-rules-changed",
           title: "The Marketplace rules have changed",

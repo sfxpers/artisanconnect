@@ -31,6 +31,14 @@ export function tell(ctx: Context, actor: Actor, to: string[], told: Tell): Writ
     );
 }
 
+/**
+ * The write that tells an address no Account holds, such as an invited
+ * Admin's: by email only, as there is no Notices stream to show it in.
+ */
+export function tellAddress(ctx: Context, address: string, told: Tell): Write {
+  return ctx.db.insert(notices).values({ id: ctx.newId(), address, toldAt: ctx.now(), ...told });
+}
+
 /** The write that tells every Account (never a sign-up whose Email is unproven). */
 export function tellEveryAccount(ctx: Context, told: Tell): Write {
   return ctx.db.insert(notices).select(
@@ -38,6 +46,7 @@ export function tellEveryAccount(ctx: Context, told: Tell): Write {
       .select({
         id: sql<string>`lower(hex(randomblob(16)))`.as("id"),
         accountId: accounts.id,
+        address: sql<null>`null`.as("address"),
         event: sql<string>`${told.event}`.as("event"),
         title: sql<string>`${told.title}`.as("title"),
         link: sql<string>`${told.link}`.as("link"),
@@ -58,9 +67,14 @@ export function tellEveryAccount(ctx: Context, told: Tell): Write {
  */
 export async function emailTells(ctx: Context): Promise<void> {
   const unsent = await ctx.db
-    .select({ id: notices.id, title: notices.title, link: notices.link, to: authUsers.email })
+    .select({
+      id: notices.id,
+      title: notices.title,
+      link: notices.link,
+      to: sql<string>`coalesce(${notices.address}, ${authUsers.email})`,
+    })
     .from(notices)
-    .innerJoin(authUsers, eq(authUsers.id, notices.accountId))
+    .leftJoin(authUsers, eq(authUsers.id, notices.accountId))
     .where(isNull(notices.emailedAt))
     .orderBy(asc(notices.toldAt))
     .limit(200);

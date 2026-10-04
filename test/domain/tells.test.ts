@@ -6,14 +6,14 @@ import { createProbeHarness } from "../support/probe";
 // A Tell is an in-app notice plus one email naming the event and linking back,
 // with no message text, never to the actor. "Told" means the notice was written.
 
-const admin = { kind: "admin", adminId: "admin-1" } as const;
-
 describe("a Tell", () => {
   test("puts a notice in the Account's Notices stream", async () => {
     const { domain, given, clock } = await createHarness();
     const { actor } = await given.client();
 
-    await domain.marketplaceRules.publish(admin, { summary: "Fees are now shown in bold." });
+    await domain.marketplaceRules.publish((await given.admin()).actor, {
+      summary: "Fees are now shown in bold.",
+    });
 
     expect(await domain.notices.list(actor)).toEqual([
       {
@@ -31,7 +31,9 @@ describe("a Tell", () => {
     const { email } = await given.client();
     const sentBefore = mailer.sentTo(email).length;
 
-    await domain.marketplaceRules.publish(admin, { summary: "Fees are now shown in bold." });
+    await domain.marketplaceRules.publish((await given.admin()).actor, {
+      summary: "Fees are now shown in bold.",
+    });
 
     const sent = mailer.sentTo(email).slice(sentBefore);
     expect(sent).toHaveLength(1);
@@ -55,7 +57,7 @@ describe("a Tell", () => {
       ip: "203.0.113.9",
     });
 
-    await domain.marketplaceRules.publish(admin, { summary: "Version 2." });
+    await domain.marketplaceRules.publish((await given.admin()).actor, { summary: "Version 2." });
 
     expect(await domain.notices.list(client.actor)).toHaveLength(1);
     expect(await domain.notices.list(artisan.actor)).toHaveLength(1);
@@ -102,7 +104,7 @@ describe("the Notices stream", () => {
 
     await domain.probe.poke(poker.actor, { accountId: poked.actor.accountId });
     clock.advance({ minutes: 5 });
-    await domain.marketplaceRules.publish(admin, { summary: "Version 2." });
+    await domain.marketplaceRules.publish((await given.admin()).actor, { summary: "Version 2." });
 
     expect((await domain.notices.list(poked.actor)).map((notice) => notice.event)).toEqual([
       "marketplace-rules-changed",

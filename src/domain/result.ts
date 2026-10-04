@@ -15,6 +15,11 @@ export function ok<T>(value: T): { ok: true; value: T } {
   return { ok: true, value };
 }
 
+/** The refusal of a command only an Admin may give. */
+export function adminOnly() {
+  return refuse("admin-only", "Only an Admin may do this.");
+}
+
 export function refuse<const Reason extends string>(
   reason: Reason,
   message: string,

@@ -1,6 +1,7 @@
 import type { Actor } from "./actor";
 import type { ClockHandler } from "./clocks";
 import type { Context } from "./context";
+import type { QueueItemKind } from "./queues";
 
 /**
  * Takes the acting party (or, for a query, the viewer) first. A command
@@ -10,8 +11,8 @@ import type { Context } from "./context";
 type Operation = (actor: Actor, input?: any) => Promise<unknown>;
 
 /**
- * One group of commands and queries (accounts, jobs, quotes, …) and the clocks
- * it fires.
+ * One group of commands and queries (accounts, jobs, quotes, …), the clocks
+ * it fires, and the queue items it raises.
  */
 export type Section<
   Name extends string = string,
@@ -20,6 +21,8 @@ export type Section<
   name: Name;
   /** Clock handlers by kind. Kinds are unique across the module. */
   clocks?: Record<string, ClockHandler>;
+  /** The kinds of item it raises in the Admin's queues. Kinds are unique across the module. */
+  queueItems?: QueueItemKind[];
   api(ctx: Context): Api;
 };
 

@@ -6,7 +6,7 @@ import { onlyFor } from "@/web/guards";
 
 export const Route = createFileRoute("/verification")({
   beforeLoad: ({ context }) => {
-    onlyFor("artisan", context.me);
+    onlyFor("artisan", context);
   },
   component: Verification,
 });

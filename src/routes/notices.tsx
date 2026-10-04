@@ -7,7 +7,7 @@ import { onlyFor } from "@/web/guards";
 
 export const Route = createFileRoute("/notices")({
   beforeLoad: ({ context }) => {
-    onlyFor("account", context.me);
+    onlyFor("account", context);
   },
   loader: () => getNotices(),
   component: Notices,

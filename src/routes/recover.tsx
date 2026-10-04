@@ -11,7 +11,7 @@ import { copy } from "@/web/copy";
 import { onlyForVisitors } from "@/web/guards";
 
 export const Route = createFileRoute("/recover")({
-  beforeLoad: ({ context }) => onlyForVisitors(context.me),
+  beforeLoad: ({ context }) => onlyForVisitors(context),
   component: Recover,
 });
 

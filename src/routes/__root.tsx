@@ -24,11 +24,11 @@ export const Route = createRootRoute({
 });
 
 function RootComponent() {
-  const { me } = Route.useRouteContext();
+  const { me, admin } = Route.useRouteContext();
   return (
     <RootDocument>
       <div className="min-h-svh bg-muted/40 pb-16">
-        <AppHeader me={me} />
+        <AppHeader me={me} admin={admin} />
         <Outlet />
       </div>
     </RootDocument>

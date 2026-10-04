@@ -23,7 +23,12 @@ import { Route as RulesRouteImport } from './routes/rules'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as VerificationRouteImport } from './routes/verification'
+import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as AdminAdminsRouteImport } from './routes/admin/admins'
+import { Route as AdminAuditRouteImport } from './routes/admin/audit'
+import { Route as AdminSignInRouteImport } from './routes/admin/sign-in'
 import { Route as DevMailRouteImport } from './routes/dev/mail'
+import { Route as AdminItemsItemIdRouteImport } from './routes/admin/items.$itemId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -95,9 +100,34 @@ const VerificationRoute = VerificationRouteImport.update({
   path: '/verification',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminAdminsRoute = AdminAdminsRouteImport.update({
+  id: '/admin/admins',
+  path: '/admin/admins',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminAuditRoute = AdminAuditRouteImport.update({
+  id: '/admin/audit',
+  path: '/admin/audit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminSignInRoute = AdminSignInRouteImport.update({
+  id: '/admin/sign-in',
+  path: '/admin/sign-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DevMailRoute = DevMailRouteImport.update({
   id: '/dev/mail',
   path: '/dev/mail',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminItemsItemIdRoute = AdminItemsItemIdRouteImport.update({
+  id: '/admin/items/$itemId',
+  path: '/admin/items/$itemId',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -116,7 +146,12 @@ export interface FileRoutesByFullPath {
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/verification': typeof VerificationRoute
+  '/admin/admins': typeof AdminAdminsRoute
+  '/admin/audit': typeof AdminAuditRoute
+  '/admin/sign-in': typeof AdminSignInRoute
   '/dev/mail': typeof DevMailRoute
+  '/admin/': typeof AdminIndexRoute
+  '/admin/items/$itemId': typeof AdminItemsItemIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -133,7 +168,12 @@ export interface FileRoutesByTo {
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/verification': typeof VerificationRoute
+  '/admin/admins': typeof AdminAdminsRoute
+  '/admin/audit': typeof AdminAuditRoute
+  '/admin/sign-in': typeof AdminSignInRoute
   '/dev/mail': typeof DevMailRoute
+  '/admin': typeof AdminIndexRoute
+  '/admin/items/$itemId': typeof AdminItemsItemIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -151,7 +191,12 @@ export interface FileRoutesById {
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/verification': typeof VerificationRoute
+  '/admin/admins': typeof AdminAdminsRoute
+  '/admin/audit': typeof AdminAuditRoute
+  '/admin/sign-in': typeof AdminSignInRoute
   '/dev/mail': typeof DevMailRoute
+  '/admin/': typeof AdminIndexRoute
+  '/admin/items/$itemId': typeof AdminItemsItemIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -170,7 +215,12 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/verification'
+    | '/admin/admins'
+    | '/admin/audit'
+    | '/admin/sign-in'
     | '/dev/mail'
+    | '/admin/'
+    | '/admin/items/$itemId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -187,7 +237,12 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/verification'
+    | '/admin/admins'
+    | '/admin/audit'
+    | '/admin/sign-in'
     | '/dev/mail'
+    | '/admin'
+    | '/admin/items/$itemId'
   id:
     | '__root__'
     | '/'
@@ -204,7 +259,12 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/verification'
+    | '/admin/admins'
+    | '/admin/audit'
+    | '/admin/sign-in'
     | '/dev/mail'
+    | '/admin/'
+    | '/admin/items/$itemId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -222,7 +282,12 @@ export interface RootRouteChildren {
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
   VerificationRoute: typeof VerificationRoute
+  AdminAdminsRoute: typeof AdminAdminsRoute
+  AdminAuditRoute: typeof AdminAuditRoute
+  AdminSignInRoute: typeof AdminSignInRoute
   DevMailRoute: typeof DevMailRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+  AdminItemsItemIdRoute: typeof AdminItemsItemIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -325,11 +390,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VerificationRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/': {
+      id: '/admin/'
+      path: '/admin'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/admins': {
+      id: '/admin/admins'
+      path: '/admin/admins'
+      fullPath: '/admin/admins'
+      preLoaderRoute: typeof AdminAdminsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/audit': {
+      id: '/admin/audit'
+      path: '/admin/audit'
+      fullPath: '/admin/audit'
+      preLoaderRoute: typeof AdminAuditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/sign-in': {
+      id: '/admin/sign-in'
+      path: '/admin/sign-in'
+      fullPath: '/admin/sign-in'
+      preLoaderRoute: typeof AdminSignInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dev/mail': {
       id: '/dev/mail'
       path: '/dev/mail'
       fullPath: '/dev/mail'
       preLoaderRoute: typeof DevMailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/items/$itemId': {
+      id: '/admin/items/$itemId'
+      path: '/admin/items/$itemId'
+      fullPath: '/admin/items/$itemId'
+      preLoaderRoute: typeof AdminItemsItemIdRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -350,7 +450,12 @@ const rootRouteChildren: RootRouteChildren = {
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
   VerificationRoute: VerificationRoute,
+  AdminAdminsRoute: AdminAdminsRoute,
+  AdminAuditRoute: AdminAuditRoute,
+  AdminSignInRoute: AdminSignInRoute,
   DevMailRoute: DevMailRoute,
+  AdminIndexRoute: AdminIndexRoute,
+  AdminItemsItemIdRoute: AdminItemsItemIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

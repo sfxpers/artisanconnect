@@ -5,7 +5,7 @@ import { copy } from "@/web/copy";
 import { onlyForVisitors } from "@/web/guards";
 
 export const Route = createFileRoute("/")({
-  beforeLoad: ({ context }) => onlyForVisitors(context.me),
+  beforeLoad: ({ context }) => onlyForVisitors(context),
   component: Landing,
 });
 

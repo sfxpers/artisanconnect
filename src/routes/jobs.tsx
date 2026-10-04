@@ -6,7 +6,7 @@ import { onlyFor } from "@/web/guards";
 
 export const Route = createFileRoute("/jobs")({
   beforeLoad: ({ context }) => {
-    onlyFor("client", context.me);
+    onlyFor("client", context);
   },
   component: Jobs,
 });

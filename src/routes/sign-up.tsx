@@ -16,7 +16,7 @@ import { copy } from "@/web/copy";
 import { onlyForVisitors } from "@/web/guards";
 
 export const Route = createFileRoute("/sign-up")({
-  beforeLoad: ({ context }) => onlyForVisitors(context.me),
+  beforeLoad: ({ context }) => onlyForVisitors(context),
   loader: () => getCurrentRules(),
   component: SignUp,
 });

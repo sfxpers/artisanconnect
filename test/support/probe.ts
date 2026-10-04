@@ -5,14 +5,16 @@ import { assembleDomain, sections, type Actor } from "@/domain";
 import { defineSection } from "@/domain/section";
 import { startClock } from "@/domain/clocks";
 import { ok, refuse } from "@/domain/result";
-import { ledgerEntries } from "@/domain/schema";
+import { defineQueueItemKind } from "@/domain/queues";
+import { accounts, ledgerEntries } from "@/domain/schema";
 import { emailTells, tell } from "@/domain/tells";
 import { createHarness, TEST_CONFIG } from "./harness";
 
 // A probe section that exists only to test the harness itself: a timer that a
 // signed-in party starts and that rings when its clock fires, unless stopped
-// first, a way to record money in the ledger, and a poke that Tells an Account.
-// Real sections follow its shape.
+// first, a way to record money in the ledger, a poke that Tells an Account,
+// and a Report and a Dispute that wait in the Admin's queues. Real sections
+// follow its shape.
 
 const probeTimers = sqliteTable("probe_timers", {
   id: text("id").primaryKey(),
@@ -32,8 +34,71 @@ function partyId(actor: Actor): string | null {
   return actor.kind === "client" || actor.kind === "artisan" ? actor.accountId : null;
 }
 
+/** A Report about an Account, which the Admin dismisses or answers with a warning. */
+const probeReport = defineQueueItemKind("probe.report", {
+  queue: "reports",
+  decisions: {
+    dismiss: { label: "Dismiss", told: "Nobody", reason: "optional" },
+    warn: { label: "Warn", told: "The reported Account", reason: "required" },
+  },
+  async decide(ctx, admin, item, choice) {
+    if (choice.reason === "refuse me") return refuse("probe-refused", "The probe refused.");
+    if (choice.decision !== "warn") return ok([]);
+    return ok(
+      tell(ctx, admin, [item.subjectId], {
+        event: "probe.warned",
+        title: "You were warned",
+        link: "/probe",
+      }),
+    );
+  },
+  async view(ctx, item) {
+    const [reported] = await ctx.db
+      .select({ name: accounts.name })
+      .from(accounts)
+      .where(eq(accounts.id, item.subjectId));
+    return {
+      tabs: [
+        {
+          key: "evidence",
+          label: "Evidence",
+          blocks: [{ kind: "text", text: "Reported by a Client." }],
+        },
+        { key: "conversation", label: "Conversation", read: "conversation" },
+      ],
+      sidebar: [
+        {
+          title: "Parties",
+          blocks: [{ kind: "facts", facts: [{ label: "Reported", value: reported?.name ?? "" }] }],
+        },
+      ],
+    };
+  },
+  reads: {
+    conversation: {
+      label: "the Conversation",
+      async open() {
+        return [{ kind: "text", text: "Hello, can I pay cash?" }];
+      },
+    },
+  },
+});
+
+/** A Dispute, here only to wait in another queue. */
+const probeDispute = defineQueueItemKind("probe.dispute", {
+  queue: "disputes",
+  decisions: { split: { label: "Split", told: "Both", reason: "required" } },
+  async decide() {
+    return ok([]);
+  },
+  async view() {
+    return { tabs: [], sidebar: [] };
+  },
+});
+
 const probe = defineSection({
   name: "probe",
+  queueItems: [probeReport, probeDispute],
   clocks: {
     [TIMER_RINGS]: async (ctx, clock) => {
       const [timer] = await ctx.db
@@ -128,6 +193,23 @@ const probe = defineSection({
       );
       await emailTells(ctx);
       return ok({});
+    },
+
+    /** Reports an Account to the Admin. */
+    async report(_actor: Actor, input: { accountId: string }) {
+      const raised = probeReport.raise(ctx, {
+        subjectId: input.accountId,
+        title: "A probe Report",
+      });
+      await ctx.commit([raised.write]);
+      return ok({ itemId: raised.itemId });
+    },
+
+    /** Opens a Dispute for the Admin. */
+    async dispute(_actor: Actor, input: { title: string }) {
+      const raised = probeDispute.raise(ctx, { subjectId: ctx.newId(), title: input.title });
+      await ctx.commit([raised.write]);
+      return ok({ itemId: raised.itemId });
     },
 
     async ledgerTotalCents(_viewer: Actor) {

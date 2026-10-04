@@ -1,12 +1,24 @@
 import * as z from "zod";
-import { and, eq, gt } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { hashPassword } from "better-auth/crypto";
 import { accountIdOf, visitor, type AccountActor, type Actor } from "../actor";
 import { tryWithin } from "../rate-limits";
 import { ok, refuse } from "../result";
-import { accounts, authUsers, authVerifications } from "../schema";
+import { adminActorFor } from "../admins/identity";
+import { accounts, authUsers } from "../schema";
 import { defineSection } from "../section";
 import { authErrorCode, createAuth, type Auth } from "./auth";
+import {
+  codeRefusal,
+  hasLiveSignUpCode,
+  identityByEmail,
+  LIMITS,
+  mayEnterCode,
+  mayRequestCode,
+  sessionHeaders,
+  slowDown,
+  type From,
+} from "./codes";
 import {
   acceptance,
   code,
@@ -20,72 +32,11 @@ import {
 import { clientShownName, publicName } from "./names";
 import { currentRules } from "./rules";
 
-/** Where the request came from, for rate limits. */
-type From = { ip: string };
-
-const LIMITS = {
-  signUpPerIp: { max: 10, seconds: 60 * 60 },
-  /** A new Email code only after 60 seconds. */
-  codePerEmail: { max: 1, seconds: 60 },
-  codeRequestPerIp: { max: 10, seconds: 15 * 60 },
-  codeEntryPerIp: { max: 30, seconds: 15 * 60 },
-  signInPerIp: { max: 30, seconds: 15 * 60 },
-  signInPerEmail: { max: 10, seconds: 15 * 60 },
-} as const;
-
-function waitForCode(waitSeconds: number) {
-  return refuse(
-    "wait",
-    `A code was sent less than a minute ago. Wait ${waitSeconds} seconds before asking for a new one.`,
-  );
-}
-
-function slowDown(waitSeconds: number) {
-  return refuse(
-    "slow-down",
-    `Too many tries. Wait ${waitSeconds} seconds${waitSeconds >= 120 ? ` (about ${Math.ceil(waitSeconds / 60)} minutes)` : ""} and try again.`,
-  );
-}
-
 export const accountsSection = defineSection({
   name: "accounts",
   api: (ctx) => {
     let auth: Auth | undefined;
     const getAuth = () => (auth ??= createAuth(ctx));
-
-    async function identityByEmail(address: string) {
-      const [identity] = await ctx.db.select().from(authUsers).where(eq(authUsers.email, address));
-      return identity ?? null;
-    }
-
-    /**
-     * Counts a code request for the IP, then the Email, so a request the IP's
-     * limit refuses leaves the Email's 60 seconds alone. Neither depends on
-     * whether anyone holds the Email.
-     */
-    async function mayRequestCode(address: string, ip: string) {
-      const perIp = await tryWithin(ctx, [
-        { key: `code-request:${ip}`, ...LIMITS.codeRequestPerIp },
-      ]);
-      if (!perIp.ok) return slowDown(perIp.waitSeconds);
-      const perEmail = await tryWithin(ctx, [{ key: `code:${address}`, ...LIMITS.codePerEmail }]);
-      if (!perEmail.ok) return waitForCode(perEmail.waitSeconds);
-      return null;
-    }
-
-    /** Whether a sign-up code sent to the Email still works. */
-    async function hasLiveCode(address: string) {
-      const [live] = await ctx.db
-        .select({ id: authVerifications.id })
-        .from(authVerifications)
-        .where(
-          and(
-            eq(authVerifications.identifier, `email-verification-otp-${address}`),
-            gt(authVerifications.expiresAt, ctx.now()),
-          ),
-        );
-      return live !== undefined;
-    }
 
     async function actorFor(identityId: string): Promise<AccountActor | null> {
       const [account] = await ctx.db
@@ -122,15 +73,15 @@ export const accountsSection = defineSection({
           );
         }
 
-        const held = await identityByEmail(details.email);
+        const held = await identityByEmail(ctx, details.email);
         const heldByAnyone = held?.emailVerified || held?.role === "admin";
-        if (held && !heldByAnyone && (await hasLiveCode(details.email))) {
+        if (held && !heldByAnyone && (await hasLiveSignUpCode(ctx, details.email))) {
           return refuse(
             "sign-up-waiting",
             `A sign-up with this Email is waiting for its code. Enter that code, or try again once it stops working, ${EMAIL_CODE.minutes} minutes after it was sent.`,
           );
         }
-        const refused = await mayRequestCode(details.email, input.ip);
+        const refused = await mayRequestCode(ctx, details.email, input.ip);
         if (refused) return refused;
 
         if (heldByAnyone) {
@@ -187,10 +138,10 @@ export const accountsSection = defineSection({
         }
         const address = email.safeParse(input.email);
         if (!address.success) return refuse("invalid", firstProblem(address.error));
-        const refused = await mayRequestCode(address.data, input.ip);
+        const refused = await mayRequestCode(ctx, address.data, input.ip);
         if (refused) return refused;
 
-        const identity = await identityByEmail(address.data);
+        const identity = await identityByEmail(ctx, address.data);
         if (identity && !identity.emailVerified && (await actorFor(identity.id))) {
           await getAuth().api.sendVerificationOTP({
             body: { email: address.data, type: "email-verification" },
@@ -209,10 +160,8 @@ export const accountsSection = defineSection({
         if (!address.success) return refuse("invalid", firstProblem(address.error));
         if (!given.success) return refuse("invalid", firstProblem(given.error));
 
-        const tried = await tryWithin(ctx, [
-          { key: `code-entry:${input.ip}`, ...LIMITS.codeEntryPerIp },
-        ]);
-        if (!tried.ok) return slowDown(tried.waitSeconds);
+        const tooMany = await mayEnterCode(ctx, input.ip);
+        if (tooMany) return tooMany;
 
         let verified;
         try {
@@ -320,7 +269,7 @@ export const accountsSection = defineSection({
       },
 
       /**
-       * The party a session cookie acts for: an Account, or a Visitor. A
+       * The party a session cookie acts for: an Account, an Admin, or a Visitor. A
        * session in use is kept alive, with the cookies that carry it on.
        */
       async whoIs(
@@ -332,8 +281,10 @@ export const accountsSection = defineSection({
           headers: new Headers({ cookie: input.cookie }),
           returnHeaders: true,
         });
-        const signedIn = session.response && (await actorFor(session.response.user.id));
-        return { actor: signedIn ?? visitor, cookies: session.headers.getSetCookie() };
+        const identityId = session.response?.user.id;
+        const signedIn =
+          identityId && ((await actorFor(identityId)) ?? (await adminActorFor(ctx, identityId)));
+        return { actor: signedIn || visitor, cookies: session.headers.getSetCookie() };
       },
 
       /**
@@ -344,10 +295,10 @@ export const accountsSection = defineSection({
         if (actor.kind !== "visitor") return refuse("signed-in", "You are already signed in.");
         const address = email.safeParse(input.email);
         if (!address.success) return refuse("invalid", firstProblem(address.error));
-        const refused = await mayRequestCode(address.data, input.ip);
+        const refused = await mayRequestCode(ctx, address.data, input.ip);
         if (refused) return refused;
 
-        const identity = await identityByEmail(address.data);
+        const identity = await identityByEmail(ctx, address.data);
         if (identity && (await actorFor(identity.id))) {
           await getAuth().api.requestPasswordResetEmailOTP({ body: { email: address.data } });
         }
@@ -364,10 +315,8 @@ export const accountsSection = defineSection({
         if (!given.success) return refuse("invalid", firstProblem(given.error));
         if (!newPassword.success) return refuse("invalid", firstProblem(newPassword.error));
 
-        const tried = await tryWithin(ctx, [
-          { key: `code-entry:${input.ip}`, ...LIMITS.codeEntryPerIp },
-        ]);
-        if (!tried.ok) return slowDown(tried.waitSeconds);
+        const tooMany = await mayEnterCode(ctx, input.ip);
+        if (tooMany) return tooMany;
 
         try {
           await getAuth().api.resetPasswordEmailOTP({
@@ -442,25 +391,4 @@ function rulesChangedAtSignIn() {
 
 function wrongCredentials() {
   return refuse("wrong-credentials", "That Email and password do not match an Account.");
-}
-
-/** Request headers carrying the session a response just set. */
-function sessionHeaders(response: Headers): Headers {
-  return new Headers({
-    cookie: response
-      .getSetCookie()
-      .map((cookie) => cookie.split(";")[0])
-      .join("; "),
-  });
-}
-
-function codeRefusal(errorCode: string) {
-  switch (errorCode) {
-    case "OTP_EXPIRED":
-      return refuse("code-expired", "That code has expired. Ask for a new one.");
-    case "TOO_MANY_ATTEMPTS":
-      return refuse("code-used-up", "That code was tried too many times. Ask for a new one.");
-    default:
-      return refuse("wrong-code", "That code is not right. Check the email and try again.");
-  }
 }

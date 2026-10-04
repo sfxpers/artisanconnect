@@ -5,14 +5,17 @@
 import type { Section, SectionsApi } from "./section";
 import { runDueClocks, type ClockHandler } from "./clocks";
 import { accountsSection } from "./accounts";
+import { adminsSection, setUpFirstAdmin } from "./admins";
 import { marketplaceRulesSection } from "./accounts/rules";
 import { createContext } from "./context";
+import { createQueues, type QueueItemKind } from "./queues";
 import { emailTells, noticesSection } from "./tells";
 import { PORT_NAMES, type DomainConfig, type Ports } from "./ports";
 
 /** Every section of the module. Each ticket adds its section here. */
 export const sections = [
   accountsSection,
+  adminsSection,
   marketplaceRulesSection,
   noticesSection,
 ] as const satisfies readonly Section[];
@@ -32,9 +35,10 @@ export function assembleDomain<const Sections extends readonly Section[]>(
   assertExactPorts(ports);
   const ctx = createContext(ports, config);
   const clocks: Record<string, ClockHandler> = {};
+  const queueItemKinds: Record<string, QueueItemKind> = {};
   const api: Record<string, unknown> = {};
   for (const section of sections) {
-    if (section.name in api || section.name === "system") {
+    if (section.name in api || section.name === "system" || section.name === "queues") {
       throw new Error(`Section "${section.name}" is defined twice`);
     }
     api[section.name] = section.api(ctx);
@@ -42,9 +46,17 @@ export function assembleDomain<const Sections extends readonly Section[]>(
       if (kind in clocks) throw new Error(`Clock kind "${kind}" is defined twice`);
       clocks[kind] = handler;
     }
+    for (const kind of section.queueItems ?? []) {
+      if (kind.kind in queueItemKinds) {
+        throw new Error(`Queue item kind "${kind.kind}" is defined twice`);
+      }
+      queueItemKinds[kind.kind] = kind;
+    }
   }
   return {
     ...(api as SectionsApi<Sections>),
+    /** The Admin's home stream and item pages, over every section's queue items. */
+    queues: createQueues(ctx, queueItemKinds),
     /** Entry points the platform calls, not a party. */
     system: {
       /** Called by the every-minute cron. Also sends any Tell's email that has not gone. */
@@ -58,6 +70,8 @@ export function assembleDomain<const Sections extends readonly Section[]>(
           });
         }
       },
+      /** The deploy-time setup command: makes the first Admin. */
+      setUpFirstAdmin: (input: { email: string }) => setUpFirstAdmin(ctx, input),
     },
   };
 }

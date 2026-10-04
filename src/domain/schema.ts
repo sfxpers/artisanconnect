@@ -1,5 +1,13 @@
 import { sql } from "drizzle-orm";
-import { check, index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { QUEUE_NAMES } from "./queue-names";
+import {
+  check,
+  index,
+  integer,
+  sqliteTable,
+  text,
+  type AnySQLiteColumn,
+} from "drizzle-orm/sqlite-core";
 
 /** Times are stored as milliseconds since the epoch. */
 const instant = (name: string) => integer(name, { mode: "timestamp_ms" });
@@ -156,9 +164,13 @@ export const notices = sqliteTable(
   "notices",
   {
     id: text("id").primaryKey(),
-    accountId: text("account_id")
-      .notNull()
-      .references(() => accounts.id, { onDelete: "cascade" }),
+    /** The Account told; it sees the notice in its Notices stream. */
+    accountId: text("account_id").references(() => accounts.id, { onDelete: "cascade" }),
+    /**
+     * Or an address no Account holds, such as an invited Admin's: told by
+     * email only, with no stream to show it in.
+     */
+    address: text("address"),
     /** What happened, by kind; the title names it for the person. */
     event: text("event").notNull(),
     title: text("title").notNull(),
@@ -171,6 +183,8 @@ export const notices = sqliteTable(
     index("notices_unemailed")
       .on(table.toldAt)
       .where(sql`${table.emailedAt} is null`),
+    // Unqualified, so it survives the table rebuild that added it.
+    check("notices_one_recipient", sql.raw("(account_id is null) <> (address is null)")),
   ],
 );
 
@@ -183,4 +197,81 @@ export const rateLimitHits = sqliteTable(
     at: instant("at").notNull(),
   },
   (table) => [index("rate_limit_hits_key").on(table.key, table.at)],
+);
+
+/**
+ * A staff identity, not an Account (ADR 0015). While it is an Admin its id is
+ * its sign-in identity's; removing it ends that identity, and this row stays
+ * so the audit log can still say who acted. The first is written by setup
+ * (invitedBy null); a trigger in the migration refuses removing the last.
+ */
+export const admins = sqliteTable(
+  "admins",
+  {
+    id: text("id").primaryKey(),
+    email: text("email").notNull(),
+    invitedBy: text("invited_by").references((): AnySQLiteColumn => admins.id),
+    invitedAt: instant("invited_at").notNull(),
+    removedBy: text("removed_by").references((): AnySQLiteColumn => admins.id),
+    removedAt: instant("removed_at"),
+  },
+  (table) => [
+    index("admins_current")
+      .on(table.id)
+      .where(sql`${table.removedAt} is null`),
+  ],
+);
+
+/**
+ * Every Admin decision and every logged read: who, what, and when. Append-only
+ * (a trigger in the migration refuses updates and deletes). A decision's row
+ * is written in the decision's own batch, and a read's before it is shown.
+ */
+export const auditLog = sqliteTable(
+  "audit_log",
+  {
+    id: text("id").primaryKey(),
+    adminId: text("admin_id")
+      .notNull()
+      .references(() => admins.id),
+    /** What was done, by kind, such as "admin.invited" or "read". */
+    action: text("action").notNull(),
+    /** What it was done to, said for the Admin. */
+    summary: text("summary").notNull(),
+    /** The id of what it was done to, if it has one. */
+    subjectId: text("subject_id"),
+    at: instant("at").notNull(),
+  },
+  (table) => [index("audit_log_at").on(table.at)],
+);
+
+/**
+ * One thing waiting on the Admin. Its kind (a Dispute, a Held Quote, …) says
+ * which queue it is in and which decisions it allows. A recorded decision
+ * cannot be reopened: a trigger in the migration refuses it.
+ */
+export const queueItems = sqliteTable(
+  "queue_items",
+  {
+    id: text("id").primaryKey(),
+    queue: text("queue", { enum: QUEUE_NAMES }).notNull(),
+    kind: text("kind").notNull(),
+    /** The id of what the item is about, in its kind's own table. */
+    subjectId: text("subject_id").notNull(),
+    title: text("title").notNull(),
+    raisedAt: instant("raised_at").notNull(),
+    decision: text("decision"),
+    reason: text("reason"),
+    decidedBy: text("decided_by").references(() => admins.id),
+    decidedAt: instant("decided_at"),
+  },
+  (table) => [
+    index("queue_items_open")
+      .on(table.raisedAt)
+      .where(sql`${table.decidedAt} is null`),
+    check(
+      "queue_items_queue",
+      sql.raw(`queue in (${QUEUE_NAMES.map((name) => `'${name}'`).join(", ")})`),
+    ),
+  ],
 );
