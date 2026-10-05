@@ -43,6 +43,7 @@ try {
     configFile: false,
     logLevel: "error",
     resolve: { tsconfigPaths: true },
+    plugins: [wasmModules()],
   });
   const result = await module.setUpFirstAdmin(proxy.env, email);
   if (!result.ok) {
@@ -57,6 +58,26 @@ try {
 } finally {
   await proxy?.dispose();
   if (environment) rmSync(configPath, { force: true });
+}
+
+/**
+ * Loads `*.wasm?module` as a compiled WebAssembly.Module, as the Worker build
+ * does. The domain imports the photo codecs that way, and Vite alone does not
+ * know the suffix.
+ */
+function wasmModules() {
+  return {
+    name: "wasm-modules",
+    enforce: "pre",
+    load(id) {
+      if (!id.endsWith(".wasm?module")) return;
+      const file = id.slice(0, -"?module".length);
+      return [
+        `import { readFileSync } from "node:fs";`,
+        `export default new WebAssembly.Module(readFileSync(${JSON.stringify(file)}));`,
+      ].join("\n");
+    },
+  };
 }
 
 /**
