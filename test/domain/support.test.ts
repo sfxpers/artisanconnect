@@ -75,6 +75,42 @@ describe("sending a Support request, refused", () => {
   });
 });
 
+describe("waiting Support requests", () => {
+  test("are three at most per Account; a fourth is refused until one is answered", async () => {
+    const { domain, given, clock } = await createHarness();
+    const admin = await given.admin();
+    const client = await given.client();
+    const other = await given.client();
+    for (const message of ["One.", "Two.", "Three."]) {
+      await domain.support.send(client.actor, { topic: "other", message });
+    }
+
+    const fourth = await domain.support.send(client.actor, { topic: "other", message: "Four." });
+
+    expect(fourth).toEqual({
+      ok: false,
+      refusal: { reason: "too-many-waiting", message: expect.stringMatching(/3 requests/) },
+    });
+    expect((await domain.queues.home(admin.actor))?.counts.support).toBe(3);
+    // Another Account's are its own. Sent later, so the oldest waiting are the first Account's.
+    clock.advance({ minutes: 1 });
+    expect(
+      await domain.support.send(other.actor, { topic: "other", message: "Mine." }),
+    ).toMatchObject({ ok: true });
+
+    const first = await supportItem(domain, admin);
+    await domain.queues.decide(admin.actor, {
+      itemId: first.id,
+      decision: "answer",
+      reason: "Done.",
+    });
+
+    expect(
+      await domain.support.send(client.actor, { topic: "other", message: "Four." }),
+    ).toMatchObject({ ok: true });
+  });
+});
+
 describe("a Support request's page", () => {
   test("shows the Admin the topic, the message, and the Account", async () => {
     const { domain, given } = await createHarness();

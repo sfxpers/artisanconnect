@@ -21,3 +21,6 @@ export const SUPPORT_TOPIC_NAMES: Record<SupportTopic, string> = {
 
 /** How long a Support request may be, in characters. */
 export const SUPPORT_MESSAGE_MAX = 4000;
+
+/** How many of an Account's requests may wait for an answer at once. */
+export const SUPPORT_WAITING_MAX = 3;

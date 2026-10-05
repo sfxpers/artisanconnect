@@ -1,5 +1,5 @@
 import * as z from "zod";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { accountIdOf, type Actor } from "../actor";
 import { firstProblem } from "../accounts/inputs";
 import type { Context, Write } from "../context";
@@ -8,7 +8,12 @@ import { ok, refuse } from "../result";
 import { accounts, authUsers, queueItems, supportRequests } from "../schema";
 import { defineSection } from "../section";
 import { emailAddress } from "../tells";
-import { SUPPORT_MESSAGE_MAX, SUPPORT_TOPIC_NAMES, SUPPORT_TOPICS } from "./topics";
+import {
+  SUPPORT_MESSAGE_MAX,
+  SUPPORT_TOPIC_NAMES,
+  SUPPORT_TOPICS,
+  SUPPORT_WAITING_MAX,
+} from "./topics";
 
 // A Support request: a signed-in Account's message to the Admin under a fixed
 // topic, which the Admin answers in the product and the answer goes back by
@@ -132,6 +137,13 @@ export const supportSection = defineSection({
       const parsed = requestInput.safeParse(input);
       if (!parsed.success) return refuse("invalid", firstProblem(parsed.error));
       const { topic, message } = parsed.data;
+      // Keeps one Account from filling the queue. Two sends at once may pass it together.
+      if ((await waitingCount(ctx, accountId)) >= SUPPORT_WAITING_MAX) {
+        return refuse(
+          "too-many-waiting",
+          `You have ${SUPPORT_WAITING_MAX} requests waiting for an answer. Write again once one is answered.`,
+        );
+      }
 
       const sender = await accountName(ctx, accountId);
       const requestId = ctx.newId();
@@ -174,6 +186,19 @@ export const supportSection = defineSection({
     },
   }),
 });
+
+/** How many of the Account's own requests wait for an answer. */
+async function waitingCount(ctx: Context, accountId: string) {
+  const [row] = await ctx.db
+    .select({ count: sql<number>`count(*)` })
+    .from(supportRequests)
+    .innerJoin(
+      queueItems,
+      and(eq(queueItems.subjectId, supportRequests.id), eq(queueItems.kind, accountRequest.kind)),
+    )
+    .where(and(eq(supportRequests.accountId, accountId), isNull(queueItems.decidedAt)));
+  return row?.count ?? 0;
+}
 
 async function requestRow(ctx: Context, requestId: string) {
   const [row] = await ctx.db
