@@ -11,6 +11,7 @@ import { createContext } from "./context";
 import { createQueues, type QueueItemKind } from "./queues";
 import { supportSection } from "./support";
 import { emailTells, noticesSection } from "./tells";
+import { verificationSection } from "./verification";
 import { PORT_NAMES, type DomainConfig, type Ports } from "./ports";
 
 /** Every section of the module. Each ticket adds its section here. */
@@ -20,6 +21,7 @@ export const sections = [
   marketplaceRulesSection,
   noticesSection,
   supportSection,
+  verificationSection,
 ] as const satisfies readonly Section[];
 
 export type Domain = ReturnType<typeof createDomain>;

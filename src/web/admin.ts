@@ -49,9 +49,25 @@ export const decideQueueItem = createServerFn({ method: "POST" })
     return domain.queues.decide(await requestActor(domain), data);
   });
 
-/** Opens what an item shows only on a logged click. */
+/** Records the Admin's decision on one row of an item, such as one Verification check. */
+export const decideQueueRow = createServerFn({ method: "POST" })
+  .inputValidator(
+    (input: {
+      itemId: string;
+      rowId: string;
+      decision: string;
+      reason?: string;
+      fields?: Record<string, string>;
+    }) => input,
+  )
+  .handler(async ({ data }) => {
+    const domain = requestDomain();
+    return domain.queues.decideRow(await requestActor(domain), data);
+  });
+
+/** Opens what an item, or one of its rows, shows only on a logged click. */
 export const openLoggedRead = createServerFn({ method: "POST" })
-  .inputValidator((input: { itemId: string; read: string }) => input)
+  .inputValidator((input: { itemId: string; read: string; rowId?: string }) => input)
   .handler(async ({ data }) => {
     const domain = requestDomain();
     return domain.queues.open(await requestActor(domain), data);

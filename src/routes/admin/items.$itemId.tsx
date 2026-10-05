@@ -11,13 +11,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Blocks, QueueCounts } from "@/components/admin";
 import { Page, Refusal } from "@/components/page";
-import type { Block } from "@/domain/queues";
-import { decideQueueItem, getQueueItem, openLoggedRead } from "@/web/admin";
+import type { Block, ItemRow } from "@/domain/queues";
+import { cn } from "@/lib/utils";
+import { decideQueueItem, decideQueueRow, getQueueItem, openLoggedRead } from "@/web/admin";
 import { copy, formatDate } from "@/web/copy";
 import { onlyForAdmins } from "@/web/guards";
 
@@ -60,7 +62,12 @@ function QueueItemPage() {
       </div>
       <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
         <div className="min-w-0 space-y-6">
-          {item.decided ? <DecidedCard decided={item.decided} /> : <DecisionCard item={item} />}
+          {item.decided ? (
+            <DecidedCard decided={item.decided} />
+          ) : (
+            !item.rows && <DecisionCard item={item} />
+          )}
+          {item.rows && <RowsCard itemId={item.id} rows={item.rows} highlighted={!item.decided} />}
           {item.tabs.length > 0 && (
             <Tabs defaultValue={item.tabs[0]!.key}>
               <TabsList variant="line">
@@ -223,8 +230,166 @@ function DecidedCard({ decided }: { decided: NonNullable<Item["decided"]> }) {
   );
 }
 
+/**
+ * An item decided a row at a time, such as a Verification: each row with what
+ * was sent, the automatic reading, its documents on a logged click, and the
+ * decisions allowed on it now.
+ */
+function RowsCard({
+  itemId,
+  rows,
+  highlighted,
+}: {
+  itemId: string;
+  rows: ItemRow[];
+  highlighted: boolean;
+}) {
+  return (
+    <Card className={cn(highlighted && "ring-2 ring-primary/80")}>
+      <CardHeader>
+        <CardDescription>{t.decision}</CardDescription>
+        <CardTitle className="text-lg">{highlighted ? t.eachRow : t.rowsNow}</CardTitle>
+      </CardHeader>
+      <CardContent className="divide-y">
+        {rows.length === 0 && <p className="text-sm text-muted-foreground">{t.noRows}</p>}
+        {rows.map((row) => (
+          <RowDecision key={row.id} itemId={itemId} row={row} />
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
+
+function RowDecision({ itemId, row }: { itemId: string; row: ItemRow }) {
+  const router = useRouter();
+  const [chosen, setChosen] = useState<string | null>(null);
+  const [reason, setReason] = useState("");
+  const [fields, setFields] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState(false);
+  const [refusal, setRefusal] = useState<string | null>(null);
+  const option = row.decisions.find((decision) => decision.key === chosen);
+
+  function choose(key: string) {
+    setChosen(key);
+    setRefusal(null);
+    const decision = row.decisions.find((each) => each.key === key);
+    setFields(
+      Object.fromEntries((decision?.fields ?? []).map((field) => [field.key, field.value])),
+    );
+  }
+
+  async function record() {
+    if (!option) return;
+    setBusy(true);
+    setRefusal(null);
+    const result = await decideQueueRow({
+      data: { itemId, rowId: row.id, decision: option.key, reason, fields },
+    });
+    setBusy(false);
+    if (!result.ok) return setRefusal(result.refusal.message);
+    setChosen(null);
+    setReason("");
+    await router.invalidate();
+  }
+
+  const missing =
+    !option ||
+    (option.reason === "required" && !reason.trim()) ||
+    option.fields.some((field) => field.required && !fields[field.key]?.trim());
+
+  return (
+    <div className="space-y-3 py-4 first:pt-0 last:pb-0">
+      <div className="flex flex-wrap items-center gap-2">
+        <h3 className="font-medium">{row.title}</h3>
+        <Badge variant={row.state === "Waiting" ? "default" : "secondary"}>{row.state}</Badge>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        {row.blocks.map((block, index) => (
+          <Blocks key={index} blocks={[block]} />
+        ))}
+      </div>
+      {row.reads.map((read) => (
+        <LoggedRead
+          key={read.key}
+          itemId={itemId}
+          rowId={row.id}
+          read={read.key}
+          label={read.label}
+        />
+      ))}
+      {row.decisions.length > 0 && (
+        <div className="space-y-3 rounded-lg border bg-muted/30 p-3">
+          <div className="flex flex-wrap gap-2">
+            {row.decisions.map((decision) => (
+              <Button
+                key={decision.key}
+                size="sm"
+                variant={decision.key === chosen ? "default" : "outline"}
+                aria-pressed={decision.key === chosen}
+                onClick={() => choose(decision.key)}
+              >
+                {decision.label}
+              </Button>
+            ))}
+          </div>
+          {option?.fields.map((field) => (
+            <div key={field.key} className="space-y-1.5">
+              <Label htmlFor={`${row.id}-${field.key}`}>
+                {field.required ? field.label : t.optional(field.label)}
+              </Label>
+              <Input
+                id={`${row.id}-${field.key}`}
+                type={field.type === "day" ? "date" : "text"}
+                value={fields[field.key] ?? ""}
+                onChange={(event) =>
+                  setFields((current) => ({ ...current, [field.key]: event.target.value }))
+                }
+              />
+            </div>
+          ))}
+          {option && option.reason !== "none" && (
+            <div className="space-y-1.5">
+              <Label htmlFor={`${row.id}-reason`}>
+                {option.reason === "required"
+                  ? (option.reasonLabel ?? t.reason)
+                  : t.optional(option.reasonLabel ?? t.reason)}
+              </Label>
+              <Textarea
+                id={`${row.id}-reason`}
+                value={reason}
+                onChange={(event) => setReason(event.target.value)}
+              />
+            </div>
+          )}
+          {option && (
+            <p className="text-xs text-muted-foreground">
+              {t.told(option.told)} {t.final}
+            </p>
+          )}
+          <Refusal message={refusal} />
+          {option && (
+            <Button size="sm" disabled={busy || missing} onClick={() => void record()}>
+              {t.record}
+            </Button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /** A Conversation or document, opened only on a click that is written to the audit log. */
-function LoggedRead({ itemId, read, label }: { itemId: string; read: string; label: string }) {
+function LoggedRead({
+  itemId,
+  rowId,
+  read,
+  label,
+}: {
+  itemId: string;
+  rowId?: string;
+  read: string;
+  label: string;
+}) {
   const [opened, setOpened] = useState<{ blocks: Block[]; at: Date } | null>(null);
   const [busy, setBusy] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);
@@ -232,7 +397,7 @@ function LoggedRead({ itemId, read, label }: { itemId: string; read: string; lab
   async function open() {
     setBusy(true);
     setRefusal(null);
-    const result = await openLoggedRead({ data: { itemId, read } });
+    const result = await openLoggedRead({ data: { itemId, read, rowId } });
     setBusy(false);
     if (!result.ok) return setRefusal(result.refusal.message);
     setOpened({ blocks: result.value, at: new Date() });

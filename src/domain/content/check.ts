@@ -71,7 +71,7 @@ export async function checkContent(
  * read leaves the check unable to run, which Holds the item: what nobody read
  * does not go out.
  */
-async function readFiles(ctx: Context, files: readonly StoredFile[]) {
+export async function readFiles(ctx: Context, files: readonly StoredFile[]) {
   const texts: string[] = [];
   const photos: Uint8Array[] = [];
   let unread: string | null = null;

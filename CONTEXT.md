@@ -189,7 +189,7 @@ _Avoid_: Reversal
 ### Trust
 
 **Verification**:
-The Admin's acceptance of an Artisan's documents. Once: an identity document with a selfie holding it, a work permit if it is a foreign passport, and a Payout account. Per Service Category: three photos of their own work and any Credential that category needs.
+The Admin's acceptance of an Artisan's documents. Once: an identity document with a selfie holding it, a work permit if it is a foreign passport, and a Payout account. Per Service Category: three photos of their own work and any Credential that category needs. Documents may be photos or PDFs, at any time, because only the Admin sees them; a selfie and work photos are photos only.
 _Avoid_: Vetting, KYC
 
 **Credential**:

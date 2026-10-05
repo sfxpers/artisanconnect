@@ -1,6 +1,9 @@
 import { sql } from "drizzle-orm";
 import { QUEUE_NAMES } from "./queue-names";
 import { SUPPORT_TOPICS } from "./support/topics";
+import { SERVICE_CATEGORIES } from "./service-categories";
+import { CHECK_KINDS } from "./verification/checks";
+import type { CheckDetails, CheckFile, Reading } from "./verification/stored";
 import {
   check,
   index,
@@ -349,6 +352,63 @@ export const supportRequests = sqliteTable(
     check(
       "support_requests_topic",
       sql.raw(`topic in (${SUPPORT_TOPICS.map((topic) => `'${topic}'`).join(", ")})`),
+    ),
+  ],
+);
+
+export const CHECK_STATES = ["submitted", "accepted", "rejected", "removed", "superseded"] as const;
+
+/**
+ * Each check an Artisan submits for Verification: submitted, then accepted
+ * (a Verification Badge) or rejected with a reason; an accepted one is
+ * removed by the Admin if found false, or superseded once a replacement in
+ * its slot is accepted. Expiry is not a state: a check stops being current on
+ * its expiry date. Triggers in the migration refuse any other change of
+ * state, and an Identity Number or Payout account accepted for two Artisans
+ * at once.
+ */
+export const verificationChecks = sqliteTable(
+  "verification_checks",
+  {
+    id: text("id").primaryKey(),
+    artisanId: text("artisan_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    kind: text("kind", { enum: CHECK_KINDS }).notNull(),
+    /** The category work photos are for, or a Credential's. */
+    category: text("category", { enum: SERVICE_CATEGORIES }),
+    /** Where it sits: its kind, but work photos per category. One may wait at a time. */
+    slot: text("slot").notNull(),
+    state: text("state", { enum: CHECK_STATES }).notNull(),
+    /** What the Artisan typed, and what the Admin recorded on accepting it. */
+    details: text("details", { mode: "json" }).$type<CheckDetails>().notNull(),
+    /** An Identity Number's or a Payout account's, which one Artisan at most may hold. */
+    heldKey: text("held_key"),
+    /** South African calendar days, YYYY-MM-DD. */
+    expiresOn: text("expires_on"),
+    issuedOn: text("issued_on"),
+    files: text("files", { mode: "json" }).$type<CheckFile[]>().notNull(),
+    /** The automatic reading, shown to the Admin beside the document. */
+    reading: text("reading", { mode: "json" }).$type<Reading>().notNull(),
+    submittedAt: instant("submitted_at").notNull(),
+    decidedBy: text("decided_by").references(() => admins.id),
+    decidedAt: instant("decided_at"),
+    /** Why it was rejected. */
+    reason: text("reason"),
+    removedBy: text("removed_by").references(() => admins.id),
+    removedAt: instant("removed_at"),
+    removedReason: text("removed_reason"),
+    supersededAt: instant("superseded_at"),
+  },
+  (table) => [
+    index("verification_checks_artisan").on(table.artisanId, table.slot, table.submittedAt),
+    index("verification_checks_held_key").on(table.heldKey),
+    uniqueIndex("verification_checks_one_waiting")
+      .on(table.artisanId, table.slot)
+      .where(sql.raw("state = 'submitted'")),
+    check(
+      "verification_checks_state",
+      sql.raw(`state in (${CHECK_STATES.map((state) => `'${state}'`).join(", ")})`),
     ),
   ],
 );

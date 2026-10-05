@@ -43,6 +43,13 @@
       "when": 1791119249156,
       "tag": "0005_support-requests",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1791172984694,
+      "tag": "0006_verification",
+      "breakpoints": true
     }
   ]
 }

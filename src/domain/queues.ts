@@ -1,6 +1,7 @@
 import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import type { Actor, AdminActor } from "./actor";
 import { audit, logRead } from "./audit";
+import { keyOfLink } from "./file-links";
 import type { Context, Write } from "./context";
 import { causedBy } from "./errors";
 import { adminOnly, ok, refuse, type Result } from "./result";
@@ -17,7 +18,9 @@ import { emailTells } from "./tells";
 /** What an item page shows in a tab or the sidebar. */
 export type Block =
   | { kind: "text"; text: string }
-  | { kind: "facts"; facts: { label: string; value: string }[] };
+  | { kind: "facts"; facts: { label: string; value: string }[] }
+  /** Stored files, each by a link that works for a while; only a logged read hands them out. */
+  | { kind: "files"; files: { kind: "photo" | "pdf"; label: string; href: string }[] };
 
 /** One decision a kind of item can have. */
 export type DecisionOption = {
@@ -32,6 +35,68 @@ export type DecisionOption = {
 /** A decision allowed on an item now, by its key. */
 export type AllowedDecision = DecisionOption & { key: string };
 
+/** A value the Admin records with a row's decision, such as an Identity Number read from the document. */
+export type DecisionField = {
+  key: string;
+  label: string;
+  /** What it holds before the Admin changes it: what the sender gave. */
+  value: string;
+  /** A text, or a day (YYYY-MM-DD). */
+  type: "text" | "day";
+  required: boolean;
+  /** For a choice, the values allowed and how each is shown. */
+  options?: { value: string; label: string }[];
+};
+
+export type RowDecision = AllowedDecision & { fields: DecisionField[] };
+
+/**
+ * One row of an item whose rows are decided one at a time, such as each
+ * check of a Verification. A row's decision is recorded on the row, and the
+ * item is decided once nothing on it waits.
+ */
+export type ItemRow = {
+  id: string;
+  title: string;
+  /** Where it stands, said for the Admin: "Waiting", "Accepted", … */
+  state: string;
+  blocks: Block[];
+  /** What opens on a logged click on this row. */
+  reads: { key: string; label: string }[];
+  /** The decisions allowed on it now. */
+  decisions: RowDecision[];
+};
+
+type RowsDefinition = {
+  list(ctx: Context, item: QueueItem): Promise<ItemRow[]>;
+  /**
+   * The writes a row's decision makes and how the audit log says it, or a
+   * refusal. Each write must carry the condition it read.
+   */
+  decide(
+    ctx: Context,
+    admin: AdminActor,
+    item: QueueItem,
+    choice: {
+      rowId: string;
+      decision: string;
+      reason: string | null;
+      fields: Record<string, string>;
+    },
+  ): Promise<Result<{ writes: Write[]; summary: string }>>;
+  /** What a row's logged read shows. */
+  open(ctx: Context, item: QueueItem, rowId: string, read: string): Promise<Block[]>;
+  /**
+   * The write that records the item decided once nothing on it waits,
+   * guarded on that; it is committed after every row's decision.
+   */
+  settle(ctx: Context, admin: AdminActor, item: QueueItem): Write;
+  /**
+   * The refusal for a batch a trigger aborted, such as one deciding a row
+   * another Admin decided first; null for any other error.
+   */
+  refusalOf(error: unknown): ReturnType<typeof refuse> | null;
+};
 /** An item as its kind sees it. */
 export type QueueItem = {
   id: string;
@@ -76,6 +141,11 @@ type QueueItemKindDefinition = {
   view(ctx: Context, item: QueueItem): Promise<ItemView>;
   /** What opens on a logged click, by key. Each opening is written to the audit log. */
   reads?: Record<string, { label: string; open(ctx: Context, item: QueueItem): Promise<Block[]> }>;
+  /**
+   * Rows decided one at a time, for a kind whose item holds several things
+   * to decide. Such a kind offers no decision on the item itself.
+   */
+  rows?: RowsDefinition;
 };
 
 export type QueueItemKind = QueueItemKindDefinition & {
@@ -195,10 +265,11 @@ export function createQueues(ctx: Context, kinds: Record<string, QueueItemKind>)
       const row = await find(input.itemId);
       if (!row) return null;
       const kind = kindOf(row);
-      const [view, byQueue, allowed] = await Promise.all([
+      const [view, byQueue, allowed, rows] = await Promise.all([
         kind.view(ctx, row),
         counts(),
         row.decidedAt ? [] : allowedNow(kind, row),
+        kind.rows ? kind.rows.list(ctx, row) : null,
       ]);
       const decided =
         row.decision && row.decidedAt
@@ -233,6 +304,8 @@ export function createQueues(ctx: Context, kinds: Record<string, QueueItemKind>)
         counts: byQueue,
         decided,
         decisions,
+        /** Rows decided one at a time; a row may still be decided once the item is. */
+        rows,
         tabs: view.tabs,
         sidebar: view.sidebar,
         timeline,
@@ -254,10 +327,9 @@ export function createQueues(ctx: Context, kinds: Record<string, QueueItemKind>)
         (allowed) => allowed.key === input.decision,
       );
       if (!option) return refuse("not-allowed", "That decision is not allowed on this item.");
-      const reason = option.reason === "none" ? null : input.reason?.trim() || null;
-      if (option.reason === "required" && !reason) {
-        return refuse("reason-required", "Give the reason for this decision.");
-      }
+      const given = reasonFor(option, input.reason);
+      if (!given.ok) return given;
+      const reason = given.value;
 
       const made = await kind.decide(ctx, actor, row, { decision: option.key, reason });
       if (!made.ok) return made;
@@ -288,12 +360,82 @@ export function createQueues(ctx: Context, kinds: Record<string, QueueItemKind>)
       return ok({ itemId: row.id, decision: option.key });
     },
 
-    /** Opens what an item shows only on a logged click, once the audit log holds it. */
-    async open(actor: Actor, input: { itemId: string; read: string }) {
+    /**
+     * Records the Admin's decision on one row of an item, with the writes it
+     * makes and a line in the audit log, in one batch; the item is decided
+     * once nothing on it waits. A row's decision is never reopened.
+     */
+    async decideRow(
+      actor: Actor,
+      input: {
+        itemId: string;
+        rowId: string;
+        decision: string;
+        reason?: string;
+        fields?: Record<string, string>;
+      },
+    ) {
+      if (actor.kind !== "admin") return adminOnly();
+      const item = await find(input.itemId);
+      if (!item) return notFound();
+      const rows = kindOf(item).rows;
+      const target = rows && (await rows.list(ctx, item)).find((row) => row.id === input.rowId);
+      if (!rows || !target) return refuse("not-found", "That row does not exist.");
+      const option = target.decisions.find((allowed) => allowed.key === input.decision);
+      if (!option) return refuse("not-allowed", "That decision is not allowed on this row.");
+      const given = reasonFor(option, input.reason);
+      if (!given.ok) return given;
+      const reason = given.value;
+
+      const made = await rows.decide(ctx, actor, item, {
+        rowId: target.id,
+        decision: option.key,
+        reason,
+        fields: input.fields ?? {},
+      });
+      if (!made.ok) return made;
+      try {
+        await ctx.commit([
+          ...made.value.writes,
+          audit(ctx, actor, {
+            action: "queue.row-decided",
+            summary: `${made.value.summary}${reason ? `. ${option.reasonLabel ?? "Reason"}: ${reason}` : ""}`,
+            subjectId: item.id,
+          }),
+          rows.settle(ctx, actor, item),
+        ]);
+      } catch (error) {
+        const refused = rows.refusalOf(error);
+        if (refused) return refused;
+        throw error;
+      }
+      await emailTells(ctx);
+      return ok({ itemId: item.id, rowId: target.id, decision: option.key });
+    },
+
+    /**
+     * Opens what an item, or one of its rows, shows only on a logged click,
+     * once the audit log holds it.
+     */
+    async open(actor: Actor, input: { itemId: string; read: string; rowId?: string }) {
       if (actor.kind !== "admin") return adminOnly();
       const row = await find(input.itemId);
       if (!row) return notFound();
-      const read = kindOf(row).reads?.[input.read];
+      const kind = kindOf(row);
+      if (input.rowId !== undefined) {
+        const target =
+          kind.rows && (await kind.rows.list(ctx, row)).find((each) => each.id === input.rowId);
+        const read = target?.reads.find((each) => each.key === input.read);
+        if (!kind.rows || !target || !read) {
+          return refuse("not-found", "This row has nothing to open by that name.");
+        }
+        await logRead(ctx, actor, {
+          summary: `Opened ${read.label} (${target.title}): ${row.title}`,
+          subjectId: row.id,
+        });
+        return ok(await kind.rows.open(ctx, row, target.id, read.key));
+      }
+      const read = kind.reads?.[input.read];
       if (!read) return refuse("not-found", "This item has nothing to open by that name.");
       await logRead(ctx, actor, {
         summary: `Opened ${read.label}: ${row.title}`,
@@ -301,7 +443,34 @@ export function createQueues(ctx: Context, kinds: Record<string, QueueItemKind>)
       });
       return ok(await read.open(ctx, row));
     },
+
+    /**
+     * A stored file, by a link a logged read handed out, while it works.
+     * Only an Admin is served one.
+     */
+    async file(viewer: Actor, input: { token: string }) {
+      if (viewer.kind !== "admin") return null;
+      const key = await keyOfLink(ctx, input.token);
+      if (!key) return null;
+      const object = await ctx.ports.files.get(key);
+      if (!object) return null;
+      return {
+        body: object.body,
+        contentType: object.httpMetadata?.contentType ?? "application/octet-stream",
+        size: object.size,
+      };
+    },
   };
+}
+
+/** The reason a decision is recorded with: none, or the one given, which it may require. */
+function reasonFor(option: DecisionOption, given: string | undefined) {
+  if (option.reason === "none") return ok(null);
+  const reason = given?.trim() || null;
+  if (option.reason === "required" && !reason) {
+    return refuse("reason-required", "Give the reason for this decision.");
+  }
+  return ok(reason);
 }
 
 function alreadyDecided() {

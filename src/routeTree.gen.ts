@@ -29,6 +29,7 @@ import { Route as AdminAdminsRouteImport } from './routes/admin/admins'
 import { Route as AdminAuditRouteImport } from './routes/admin/audit'
 import { Route as AdminSignInRouteImport } from './routes/admin/sign-in'
 import { Route as DevMailRouteImport } from './routes/dev/mail'
+import { Route as AdminFilesTokenRouteImport } from './routes/admin/files.$token'
 import { Route as AdminItemsItemIdRouteImport } from './routes/admin/items.$itemId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -131,6 +132,11 @@ const DevMailRoute = DevMailRouteImport.update({
   path: '/dev/mail',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminFilesTokenRoute = AdminFilesTokenRouteImport.update({
+  id: '/admin/files/$token',
+  path: '/admin/files/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminItemsItemIdRoute = AdminItemsItemIdRouteImport.update({
   id: '/admin/items/$itemId',
   path: '/admin/items/$itemId',
@@ -158,6 +164,7 @@ export interface FileRoutesByFullPath {
   '/admin/sign-in': typeof AdminSignInRoute
   '/dev/mail': typeof DevMailRoute
   '/admin/': typeof AdminIndexRoute
+  '/admin/files/$token': typeof AdminFilesTokenRoute
   '/admin/items/$itemId': typeof AdminItemsItemIdRoute
 }
 export interface FileRoutesByTo {
@@ -181,6 +188,7 @@ export interface FileRoutesByTo {
   '/admin/sign-in': typeof AdminSignInRoute
   '/dev/mail': typeof DevMailRoute
   '/admin': typeof AdminIndexRoute
+  '/admin/files/$token': typeof AdminFilesTokenRoute
   '/admin/items/$itemId': typeof AdminItemsItemIdRoute
 }
 export interface FileRoutesById {
@@ -205,6 +213,7 @@ export interface FileRoutesById {
   '/admin/sign-in': typeof AdminSignInRoute
   '/dev/mail': typeof DevMailRoute
   '/admin/': typeof AdminIndexRoute
+  '/admin/files/$token': typeof AdminFilesTokenRoute
   '/admin/items/$itemId': typeof AdminItemsItemIdRoute
 }
 export interface FileRouteTypes {
@@ -230,6 +239,7 @@ export interface FileRouteTypes {
     | '/admin/sign-in'
     | '/dev/mail'
     | '/admin/'
+    | '/admin/files/$token'
     | '/admin/items/$itemId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -253,6 +263,7 @@ export interface FileRouteTypes {
     | '/admin/sign-in'
     | '/dev/mail'
     | '/admin'
+    | '/admin/files/$token'
     | '/admin/items/$itemId'
   id:
     | '__root__'
@@ -276,6 +287,7 @@ export interface FileRouteTypes {
     | '/admin/sign-in'
     | '/dev/mail'
     | '/admin/'
+    | '/admin/files/$token'
     | '/admin/items/$itemId'
   fileRoutesById: FileRoutesById
 }
@@ -300,6 +312,7 @@ export interface RootRouteChildren {
   AdminSignInRoute: typeof AdminSignInRoute
   DevMailRoute: typeof DevMailRoute
   AdminIndexRoute: typeof AdminIndexRoute
+  AdminFilesTokenRoute: typeof AdminFilesTokenRoute
   AdminItemsItemIdRoute: typeof AdminItemsItemIdRoute
 }
 
@@ -445,6 +458,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DevMailRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/files/$token': {
+      id: '/admin/files/$token'
+      path: '/admin/files/$token'
+      fullPath: '/admin/files/$token'
+      preLoaderRoute: typeof AdminFilesTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/items/$itemId': {
       id: '/admin/items/$itemId'
       path: '/admin/items/$itemId'
@@ -476,6 +496,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminSignInRoute: AdminSignInRoute,
   DevMailRoute: DevMailRoute,
   AdminIndexRoute: AdminIndexRoute,
+  AdminFilesTokenRoute: AdminFilesTokenRoute,
   AdminItemsItemIdRoute: AdminItemsItemIdRoute,
 }
 export const routeTree = rootRouteImport

@@ -1,5 +1,14 @@
 import type { Domain } from "@/domain";
 import type { FakeMailer } from "@/domain/fakes/mailer";
+import type { ServiceCategory } from "@/domain/service-categories";
+import {
+  document,
+  identity,
+  payoutAccount,
+  saIdNumber,
+  workPhotos,
+  type Submission,
+} from "./verification";
 
 /**
  * Builds test data through the module's public commands only, never by writing
@@ -80,6 +89,71 @@ export function given({ domain, mailer }: { domain: Domain; mailer: FakeMailer }
     return signedInAdmin(email);
   }
 
+  /**
+   * An Artisan verified for each category, and for gas work if asked: every
+   * check it needs submitted and accepted by an Admin.
+   */
+  async function verifiedArtisan(
+    details: Parameters<typeof account>[1] & {
+      categories?: ServiceCategory[];
+      gasWork?: boolean;
+    } = {},
+  ) {
+    const { categories = ["plumbing"], gasWork = false, ...names } = details;
+    const artisan = await account("artisan", names);
+    const staff = firstAdmin ?? (await admin());
+    const submissions: Submission[] = [
+      await identity({ number: saIdNumber(count) }),
+      await payoutAccount({ accountNumber: `62${String(count).padStart(8, "0")}` }),
+    ];
+    for (const category of categories) {
+      submissions.push(await workPhotos(category));
+      if (category === "plumbing") {
+        submissions.push(await document({ kind: "trained-plumber" }));
+        if (gasWork) {
+          submissions.push(
+            await document({
+              kind: "gas-practitioner",
+              registrationNumber: "GAS-1234",
+              expiresOn: "2028-12-31",
+            }),
+          );
+        }
+      }
+      if (category === "electrical") {
+        submissions.push(
+          await document({ kind: "registered-person", registrationNumber: "IE-5678" }),
+          await document({
+            kind: "electrical-contractor",
+            registrationNumber: "EC-9012",
+            expiresOn: "2028-12-31",
+          }),
+        );
+      }
+    }
+    const checkIds: string[] = [];
+    for (const submission of submissions) {
+      const sent = await domain.verification.submit(artisan.actor, submission);
+      if (!sent.ok) throw new Error(sent.refusal.message);
+      checkIds.push(sent.value.checkId);
+    }
+    const home = await domain.queues.home(staff.actor, { queue: "verification" });
+    for (const { id: itemId } of home?.items ?? []) {
+      const item = await domain.queues.item(staff.actor, { itemId });
+      if (!item?.rows?.some((row) => checkIds.includes(row.id))) continue;
+      for (const checkId of checkIds) {
+        const accepted = await domain.queues.decideRow(staff.actor, {
+          itemId,
+          rowId: checkId,
+          decision: "accept",
+        });
+        if (!accepted.ok) throw new Error(accepted.refusal.message);
+      }
+      return artisan;
+    }
+    throw new Error("The Artisan's Verification item was not raised");
+  }
+
   return {
     codeSentTo,
     admin,
@@ -89,5 +163,6 @@ export function given({ domain, mailer }: { domain: Domain; mailer: FakeMailer }
     client: (details?: Parameters<typeof account>[1]) => account("client", details),
     /** An Artisan who has signed up, proved the Email, and is signed in. Not yet verified. */
     artisan: (details?: Parameters<typeof account>[1]) => account("artisan", details),
+    verifiedArtisan,
   };
 }

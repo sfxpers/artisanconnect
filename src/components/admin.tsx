@@ -50,22 +50,53 @@ export function QueueBadge({ queue }: { queue: QueueName }) {
 export function Blocks({ blocks }: { blocks: Block[] }) {
   return (
     <div className="space-y-3 text-sm">
-      {blocks.map((block, index) =>
-        block.kind === "text" ? (
-          <p key={index} className="whitespace-pre-line">
-            {block.text}
-          </p>
-        ) : (
-          <dl key={index} className="space-y-1">
-            {block.facts.map((fact) => (
-              <div key={fact.label} className="flex justify-between gap-3">
-                <dt className="text-muted-foreground">{fact.label}</dt>
-                <dd className="text-right tabular-nums">{fact.value}</dd>
-              </div>
-            ))}
-          </dl>
-        ),
-      )}
+      {blocks.map((block, index) => {
+        switch (block.kind) {
+          case "text":
+            return (
+              <p key={index} className="whitespace-pre-line">
+                {block.text}
+              </p>
+            );
+          case "facts":
+            return (
+              <dl key={index} className="space-y-1">
+                {block.facts.map((fact) => (
+                  <div key={fact.label} className="flex justify-between gap-3">
+                    <dt className="text-muted-foreground">{fact.label}</dt>
+                    <dd className="text-right tabular-nums">{fact.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            );
+          case "files":
+            return <Files key={index} files={block.files} />;
+        }
+      })}
     </div>
+  );
+}
+
+/** Stored files: photos shown, PDFs opened in a new tab. Their links work for a while. */
+function Files({ files }: { files: Extract<Block, { kind: "files" }>["files"] }) {
+  return (
+    <ul className="grid gap-3 sm:grid-cols-2">
+      {files.map((file) => (
+        <li key={file.href} className="space-y-1">
+          <a
+            href={file.href}
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+          >
+            {file.label}
+            {file.kind === "pdf" && ` (${copy.admin.item.pdf})`}
+          </a>
+          {file.kind === "photo" && (
+            <img src={file.href} alt={file.label} className="w-full rounded-md border" />
+          )}
+        </li>
+      ))}
+    </ul>
   );
 }
