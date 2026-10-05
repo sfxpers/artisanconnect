@@ -21,8 +21,15 @@ type HeldKindDefinition = {
   release(ctx: Context, admin: AdminActor, subjectId: string): Promise<Write[]>;
   /** The writes that refuse it, each guarded on it still being Held. */
   refuse(ctx: Context, admin: AdminActor, subjectId: string, reason: string): Promise<Write[]>;
-  /** What the sender is told, and the page it links to, where a refusal shows its reason. */
-  told: { released: string; refused: string; link: string };
+  /**
+   * What the sender is told, and the page it links to (for this item, if it
+   * has its own page), where a refusal shows its reason.
+   */
+  told: {
+    released: string;
+    refused: string;
+    link: string | ((ctx: Context, subjectId: string) => Promise<string>);
+  };
   view(ctx: Context, item: QueueItem): Promise<ItemView>;
 };
 
@@ -56,11 +63,12 @@ export function defineHeldKind(kind: string, definition: HeldKindDefinition): He
       const writes = released
         ? await definition.release(ctx, admin, item.subjectId)
         : await definition.refuse(ctx, admin, item.subjectId, choice.reason ?? "");
+      const { link } = definition.told;
       const told = sender
         ? tell(ctx, admin, [sender], {
             event: `${kind}.${released ? "released" : "refused"}`,
             title: released ? definition.told.released : definition.told.refused,
-            link: definition.told.link,
+            link: typeof link === "string" ? link : await link(ctx, item.subjectId),
           })
         : [];
       return ok([...writes, ...told]);

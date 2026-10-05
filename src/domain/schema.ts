@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import { MATCHINGS, SITE_TYPES } from "./jobs/inputs";
 import { QUEUE_NAMES } from "./queue-names";
 import { SUPPORT_TOPICS } from "./support/topics";
 import { SERVICE_CATEGORIES } from "./service-categories";
@@ -506,6 +507,95 @@ export const profileEdits = sqliteTable(
     check(
       "profile_edits_state",
       sql.raw(`state in (${PROFILE_EDIT_STATES.map((state) => `'${state}'`).join(", ")})`),
+    ),
+  ],
+);
+
+export const JOB_STATES = ["draft", "held", "open", "expired", "closed", "hired"] as const;
+
+/**
+ * A Client's request for work. A Draft may omit anything; posting it reads it
+ * with the Content check and opens it, or Holds it for the Admin. The trade,
+ * the site, the gas answer, and the matching choice lock at posting. Triggers
+ * in the migration refuse any other change of state.
+ */
+export const jobs = sqliteTable(
+  "jobs",
+  {
+    id: text("id").primaryKey(),
+    clientId: text("client_id")
+      .notNull()
+      .references(() => accounts.id),
+    state: text("state", { enum: JOB_STATES }).notNull(),
+    category: text("category", { enum: SERVICE_CATEGORIES }),
+    siteType: text("site_type", { enum: SITE_TYPES }),
+    /** Its Region is the suburb's. */
+    suburbId: text("suburb_id").references(() => suburbs.id),
+    /** Withheld from every Artisan until Payment. */
+    street: text("street").notNull(),
+    title: text("title").notNull(),
+    description: text("description").notNull(),
+    photos: text("photos", { mode: "json" })
+      .$type<Extract<StoredFile, { kind: "photo" }>[]>()
+      .notNull(),
+    /** A Plumbing Job's answer: does the work install or remove gas? Null for any other trade. */
+    gasWork: integer("gas_work", { mode: "boolean" }),
+    /** A South African calendar day, YYYY-MM-DD. */
+    preferredStart: text("preferred_start"),
+    matching: text("matching", { enum: MATCHINGS }),
+    /** Why the Content check Held it at posting, for the Admin. */
+    heldFor: text("held_for"),
+    createdAt: instant("created_at").notNull(),
+    /** When the Client last changed it, or it last changed state. */
+    updatedAt: instant("updated_at").notNull(),
+    /** Counts the Client's saves, so posting opens only the version the Content check read. */
+    revision: integer("revision").notNull().default(0),
+    /** When it last became Open, at posting, release, or Renew. Quotes count from here. */
+    openedAt: instant("opened_at"),
+    /** When it Expires without a Hire: 14 days after it opened. */
+    expiresAt: instant("expires_at"),
+  },
+  (table) => [
+    index("jobs_client").on(table.clientId, table.updatedAt),
+    check("jobs_state", sql.raw(`state in (${JOB_STATES.map((s) => `'${s}'`).join(", ")})`)),
+  ],
+);
+
+export const JOB_EDIT_STATES = ["held", "released", "refused", "withdrawn"] as const;
+
+/**
+ * Each edit a Client makes to a posted Job, before its first Quote: the new
+ * title, description, photos, Site type, and Preferred start. One the
+ * Content check clears is released at once; one it is unsure about is Held
+ * for the Admin's Pre-check, and the Job shows as it was meanwhile.
+ */
+export const jobEdits = sqliteTable(
+  "job_edits",
+  {
+    id: text("id").primaryKey(),
+    jobId: text("job_id")
+      .notNull()
+      .references(() => jobs.id),
+    title: text("title").notNull(),
+    description: text("description").notNull(),
+    /** Its photos, in order: those kept from the Job, then those added. */
+    photos: text("photos", { mode: "json" })
+      .$type<Extract<StoredFile, { kind: "photo" }>[]>()
+      .notNull(),
+    siteType: text("site_type", { enum: SITE_TYPES }).notNull(),
+    preferredStart: text("preferred_start"),
+    state: text("state", { enum: JOB_EDIT_STATES }).notNull(),
+    /** Why the Content check Held it, for the Admin. */
+    heldFor: text("held_for"),
+    sentAt: instant("sent_at").notNull(),
+  },
+  (table) => [
+    index("job_edits_job").on(table.jobId, table.sentAt),
+    // One edit waits at a time.
+    uniqueIndex("job_edits_one_held").on(table.jobId).where(sql.raw("state = 'held'")),
+    check(
+      "job_edits_state",
+      sql.raw(`state in (${JOB_EDIT_STATES.map((state) => `'${state}'`).join(", ")})`),
     ),
   ],
 );

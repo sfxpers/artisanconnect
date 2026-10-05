@@ -8,6 +8,7 @@ import { accountsSection } from "./accounts";
 import { adminsSection, setUpFirstAdmin } from "./admins";
 import { marketplaceRulesSection } from "./accounts/rules";
 import { createContext } from "./context";
+import { jobsSection } from "./jobs";
 import { createQueues, type QueueItemKind } from "./queues";
 import { profilesSection } from "./profiles";
 import { regionsSection } from "./regions";
@@ -22,6 +23,7 @@ export const sections = [
   accountsSection,
   adminsSection,
   availabilitySection,
+  jobsSection,
   marketplaceRulesSection,
   noticesSection,
   profilesSection,

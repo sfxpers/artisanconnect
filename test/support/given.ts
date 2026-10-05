@@ -1,10 +1,12 @@
 import type { Domain } from "@/domain";
+import type { Actor } from "@/domain/actor";
 import type { FakeMailer } from "@/domain/fakes/mailer";
 import type { ServiceCategory } from "@/domain/service-categories";
 import {
   document,
   identity,
   payoutAccount,
+  photo,
   saIdNumber,
   workPhotos,
   type Submission,
@@ -154,6 +156,37 @@ export function given({ domain, mailer }: { domain: Domain; mailer: FakeMailer }
     throw new Error("The Artisan's Verification item was not raised");
   }
 
+  type JobFields = Partial<Parameters<Domain["jobs"]["saveDraft"]>[1]>;
+
+  /**
+   * A Draft with everything a posted Job needs: a matched Painting Job at a
+   * home in Sea Point, with one photo, less or more what is given.
+   */
+  async function jobDraft(client: { actor: Actor }, fields: JobFields = {}) {
+    const saved = await domain.jobs.saveDraft(client.actor, {
+      category: "painting",
+      siteType: "home",
+      suburbId: "sea-point",
+      street: "12 Main Road",
+      title: "Paint the lounge",
+      description: "Two walls, about 20 square metres.",
+      matching: "matched",
+      add: [await photo()],
+      ...fields,
+    });
+    if (!saved.ok) throw new Error(saved.refusal.message);
+    return saved.value.jobId;
+  }
+
+  /** A Job its Client posted, which the Content check let open. */
+  async function openJob(client: { actor: Actor }, fields: JobFields = {}) {
+    const jobId = await jobDraft(client, fields);
+    const posted = await domain.jobs.post(client.actor, { jobId });
+    if (!posted.ok) throw new Error(posted.refusal.message);
+    if (posted.value.state !== "open") throw new Error("Expected the Job to open");
+    return jobId;
+  }
+
   return {
     codeSentTo,
     admin,
@@ -164,5 +197,7 @@ export function given({ domain, mailer }: { domain: Domain; mailer: FakeMailer }
     /** An Artisan who has signed up, proved the Email, and is signed in. Not yet verified. */
     artisan: (details?: Parameters<typeof account>[1]) => account("artisan", details),
     verifiedArtisan,
+    jobDraft,
+    openJob,
   };
 }

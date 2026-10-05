@@ -15,4 +15,8 @@ declare module "@tanstack/react-router" {
   interface Register {
     router: ReturnType<typeof getRouter>;
   }
+  interface HistoryState {
+    /** Why posting a new Job was refused, shown on the Draft's own page. */
+    postRefusal?: string;
+  }
 }

@@ -13,7 +13,6 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as ConfirmEmailRouteImport } from './routes/confirm-email'
 import { Route as HomeRouteImport } from './routes/home'
-import { Route as JobsRouteImport } from './routes/jobs'
 import { Route as NoticesRouteImport } from './routes/notices'
 import { Route as PayoutsRouteImport } from './routes/payouts'
 import { Route as ProfileRouteImport } from './routes/profile'
@@ -33,6 +32,10 @@ import { Route as AdminSignInRouteImport } from './routes/admin/sign-in'
 import { Route as ArtisansIndexRouteImport } from './routes/artisans.index'
 import { Route as ArtisansArtisanIdRouteImport } from './routes/artisans.$artisanId'
 import { Route as DevMailRouteImport } from './routes/dev/mail'
+import { Route as JobPhotosPhotoIdRouteImport } from './routes/job-photos.$photoId'
+import { Route as JobsIndexRouteImport } from './routes/jobs.index'
+import { Route as JobsJobIdRouteImport } from './routes/jobs.$jobId'
+import { Route as JobsNewRouteImport } from './routes/jobs.new'
 import { Route as ProfilePhotosPhotoIdRouteImport } from './routes/profile-photos.$photoId'
 import { Route as AdminFilesTokenRouteImport } from './routes/admin/files.$token'
 import { Route as AdminItemsItemIdRouteImport } from './routes/admin/items.$itemId'
@@ -55,11 +58,6 @@ const ConfirmEmailRoute = ConfirmEmailRouteImport.update({
 const HomeRoute = HomeRouteImport.update({
   id: '/home',
   path: '/home',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const JobsRoute = JobsRouteImport.update({
-  id: '/jobs',
-  path: '/jobs',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NoticesRoute = NoticesRouteImport.update({
@@ -157,6 +155,26 @@ const DevMailRoute = DevMailRouteImport.update({
   path: '/dev/mail',
   getParentRoute: () => rootRouteImport,
 } as any)
+const JobPhotosPhotoIdRoute = JobPhotosPhotoIdRouteImport.update({
+  id: '/job-photos/$photoId',
+  path: '/job-photos/$photoId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JobsIndexRoute = JobsIndexRouteImport.update({
+  id: '/jobs/',
+  path: '/jobs/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JobsJobIdRoute = JobsJobIdRouteImport.update({
+  id: '/jobs/$jobId',
+  path: '/jobs/$jobId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JobsNewRoute = JobsNewRouteImport.update({
+  id: '/jobs/new',
+  path: '/jobs/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProfilePhotosPhotoIdRoute = ProfilePhotosPhotoIdRouteImport.update({
   id: '/profile-photos/$photoId',
   path: '/profile-photos/$photoId',
@@ -178,7 +196,6 @@ export interface FileRoutesByFullPath {
   '/account': typeof AccountRoute
   '/confirm-email': typeof ConfirmEmailRoute
   '/home': typeof HomeRoute
-  '/jobs': typeof JobsRoute
   '/notices': typeof NoticesRoute
   '/payouts': typeof PayoutsRoute
   '/profile': typeof ProfileRoute
@@ -196,9 +213,13 @@ export interface FileRoutesByFullPath {
   '/admin/sign-in': typeof AdminSignInRoute
   '/artisans/$artisanId': typeof ArtisansArtisanIdRoute
   '/dev/mail': typeof DevMailRoute
+  '/job-photos/$photoId': typeof JobPhotosPhotoIdRoute
+  '/jobs/$jobId': typeof JobsJobIdRoute
+  '/jobs/new': typeof JobsNewRoute
   '/profile-photos/$photoId': typeof ProfilePhotosPhotoIdRoute
   '/admin/': typeof AdminIndexRoute
   '/artisans/': typeof ArtisansIndexRoute
+  '/jobs/': typeof JobsIndexRoute
   '/admin/files/$token': typeof AdminFilesTokenRoute
   '/admin/items/$itemId': typeof AdminItemsItemIdRoute
 }
@@ -207,7 +228,6 @@ export interface FileRoutesByTo {
   '/account': typeof AccountRoute
   '/confirm-email': typeof ConfirmEmailRoute
   '/home': typeof HomeRoute
-  '/jobs': typeof JobsRoute
   '/notices': typeof NoticesRoute
   '/payouts': typeof PayoutsRoute
   '/profile': typeof ProfileRoute
@@ -225,9 +245,13 @@ export interface FileRoutesByTo {
   '/admin/sign-in': typeof AdminSignInRoute
   '/artisans/$artisanId': typeof ArtisansArtisanIdRoute
   '/dev/mail': typeof DevMailRoute
+  '/job-photos/$photoId': typeof JobPhotosPhotoIdRoute
+  '/jobs/$jobId': typeof JobsJobIdRoute
+  '/jobs/new': typeof JobsNewRoute
   '/profile-photos/$photoId': typeof ProfilePhotosPhotoIdRoute
   '/admin': typeof AdminIndexRoute
   '/artisans': typeof ArtisansIndexRoute
+  '/jobs': typeof JobsIndexRoute
   '/admin/files/$token': typeof AdminFilesTokenRoute
   '/admin/items/$itemId': typeof AdminItemsItemIdRoute
 }
@@ -237,7 +261,6 @@ export interface FileRoutesById {
   '/account': typeof AccountRoute
   '/confirm-email': typeof ConfirmEmailRoute
   '/home': typeof HomeRoute
-  '/jobs': typeof JobsRoute
   '/notices': typeof NoticesRoute
   '/payouts': typeof PayoutsRoute
   '/profile': typeof ProfileRoute
@@ -255,9 +278,13 @@ export interface FileRoutesById {
   '/admin/sign-in': typeof AdminSignInRoute
   '/artisans/$artisanId': typeof ArtisansArtisanIdRoute
   '/dev/mail': typeof DevMailRoute
+  '/job-photos/$photoId': typeof JobPhotosPhotoIdRoute
+  '/jobs/$jobId': typeof JobsJobIdRoute
+  '/jobs/new': typeof JobsNewRoute
   '/profile-photos/$photoId': typeof ProfilePhotosPhotoIdRoute
   '/admin/': typeof AdminIndexRoute
   '/artisans/': typeof ArtisansIndexRoute
+  '/jobs/': typeof JobsIndexRoute
   '/admin/files/$token': typeof AdminFilesTokenRoute
   '/admin/items/$itemId': typeof AdminItemsItemIdRoute
 }
@@ -268,7 +295,6 @@ export interface FileRouteTypes {
     | '/account'
     | '/confirm-email'
     | '/home'
-    | '/jobs'
     | '/notices'
     | '/payouts'
     | '/profile'
@@ -286,9 +312,13 @@ export interface FileRouteTypes {
     | '/admin/sign-in'
     | '/artisans/$artisanId'
     | '/dev/mail'
+    | '/job-photos/$photoId'
+    | '/jobs/$jobId'
+    | '/jobs/new'
     | '/profile-photos/$photoId'
     | '/admin/'
     | '/artisans/'
+    | '/jobs/'
     | '/admin/files/$token'
     | '/admin/items/$itemId'
   fileRoutesByTo: FileRoutesByTo
@@ -297,7 +327,6 @@ export interface FileRouteTypes {
     | '/account'
     | '/confirm-email'
     | '/home'
-    | '/jobs'
     | '/notices'
     | '/payouts'
     | '/profile'
@@ -315,9 +344,13 @@ export interface FileRouteTypes {
     | '/admin/sign-in'
     | '/artisans/$artisanId'
     | '/dev/mail'
+    | '/job-photos/$photoId'
+    | '/jobs/$jobId'
+    | '/jobs/new'
     | '/profile-photos/$photoId'
     | '/admin'
     | '/artisans'
+    | '/jobs'
     | '/admin/files/$token'
     | '/admin/items/$itemId'
   id:
@@ -326,7 +359,6 @@ export interface FileRouteTypes {
     | '/account'
     | '/confirm-email'
     | '/home'
-    | '/jobs'
     | '/notices'
     | '/payouts'
     | '/profile'
@@ -344,9 +376,13 @@ export interface FileRouteTypes {
     | '/admin/sign-in'
     | '/artisans/$artisanId'
     | '/dev/mail'
+    | '/job-photos/$photoId'
+    | '/jobs/$jobId'
+    | '/jobs/new'
     | '/profile-photos/$photoId'
     | '/admin/'
     | '/artisans/'
+    | '/jobs/'
     | '/admin/files/$token'
     | '/admin/items/$itemId'
   fileRoutesById: FileRoutesById
@@ -356,7 +392,6 @@ export interface RootRouteChildren {
   AccountRoute: typeof AccountRoute
   ConfirmEmailRoute: typeof ConfirmEmailRoute
   HomeRoute: typeof HomeRoute
-  JobsRoute: typeof JobsRoute
   NoticesRoute: typeof NoticesRoute
   PayoutsRoute: typeof PayoutsRoute
   ProfileRoute: typeof ProfileRoute
@@ -374,9 +409,13 @@ export interface RootRouteChildren {
   AdminSignInRoute: typeof AdminSignInRoute
   ArtisansArtisanIdRoute: typeof ArtisansArtisanIdRoute
   DevMailRoute: typeof DevMailRoute
+  JobPhotosPhotoIdRoute: typeof JobPhotosPhotoIdRoute
+  JobsJobIdRoute: typeof JobsJobIdRoute
+  JobsNewRoute: typeof JobsNewRoute
   ProfilePhotosPhotoIdRoute: typeof ProfilePhotosPhotoIdRoute
   AdminIndexRoute: typeof AdminIndexRoute
   ArtisansIndexRoute: typeof ArtisansIndexRoute
+  JobsIndexRoute: typeof JobsIndexRoute
   AdminFilesTokenRoute: typeof AdminFilesTokenRoute
   AdminItemsItemIdRoute: typeof AdminItemsItemIdRoute
 }
@@ -409,13 +448,6 @@ declare module '@tanstack/react-router' {
       path: '/home'
       fullPath: '/home'
       preLoaderRoute: typeof HomeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/jobs': {
-      id: '/jobs'
-      path: '/jobs'
-      fullPath: '/jobs'
-      preLoaderRoute: typeof JobsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/notices': {
@@ -551,6 +583,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DevMailRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/job-photos/$photoId': {
+      id: '/job-photos/$photoId'
+      path: '/job-photos/$photoId'
+      fullPath: '/job-photos/$photoId'
+      preLoaderRoute: typeof JobPhotosPhotoIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/jobs/': {
+      id: '/jobs/'
+      path: '/jobs'
+      fullPath: '/jobs/'
+      preLoaderRoute: typeof JobsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/jobs/$jobId': {
+      id: '/jobs/$jobId'
+      path: '/jobs/$jobId'
+      fullPath: '/jobs/$jobId'
+      preLoaderRoute: typeof JobsJobIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/jobs/new': {
+      id: '/jobs/new'
+      path: '/jobs/new'
+      fullPath: '/jobs/new'
+      preLoaderRoute: typeof JobsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/profile-photos/$photoId': {
       id: '/profile-photos/$photoId'
       path: '/profile-photos/$photoId'
@@ -580,7 +640,6 @@ const rootRouteChildren: RootRouteChildren = {
   AccountRoute: AccountRoute,
   ConfirmEmailRoute: ConfirmEmailRoute,
   HomeRoute: HomeRoute,
-  JobsRoute: JobsRoute,
   NoticesRoute: NoticesRoute,
   PayoutsRoute: PayoutsRoute,
   ProfileRoute: ProfileRoute,
@@ -598,9 +657,13 @@ const rootRouteChildren: RootRouteChildren = {
   AdminSignInRoute: AdminSignInRoute,
   ArtisansArtisanIdRoute: ArtisansArtisanIdRoute,
   DevMailRoute: DevMailRoute,
+  JobPhotosPhotoIdRoute: JobPhotosPhotoIdRoute,
+  JobsJobIdRoute: JobsJobIdRoute,
+  JobsNewRoute: JobsNewRoute,
   ProfilePhotosPhotoIdRoute: ProfilePhotosPhotoIdRoute,
   AdminIndexRoute: AdminIndexRoute,
   ArtisansIndexRoute: ArtisansIndexRoute,
+  JobsIndexRoute: JobsIndexRoute,
   AdminFilesTokenRoute: AdminFilesTokenRoute,
   AdminItemsItemIdRoute: AdminItemsItemIdRoute,
 }
