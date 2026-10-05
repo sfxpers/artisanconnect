@@ -1,4 +1,4 @@
-import { and, asc, eq, exists, inArray, sql, type SQLWrapper } from "drizzle-orm";
+import { and, asc, eq, exists, inArray, like, sql, type SQL, type SQLWrapper } from "drizzle-orm";
 import { accountIdOf, type Actor } from "../actor";
 import { firstProblem } from "../accounts/inputs";
 import { publicName } from "../accounts/names";
@@ -56,11 +56,20 @@ export const profilesSection = defineSection({
 
     /**
      * An Artisan's public Profile, the same for anyone who opens it, or null
-     * while the Artisan is verified for no Service Category. It never holds
-     * a way to reach the Artisan.
+     * until the Artisan has been verified for a Service Category. It never
+     * holds a way to reach the Artisan.
      */
     async view(_viewer: Actor, input: { artisanId: string }) {
       return publicProfile(ctx, input.artisanId);
+    },
+
+    /** Every Profile anyone may open, for search engines to find. */
+    async listed(_viewer: Actor) {
+      return ctx.db
+        .select({ artisanId: accounts.id })
+        .from(accounts)
+        .innerJoin(authUsers, eq(authUsers.id, accounts.id))
+        .where(and(mayBeListed(), wasVerified(ctx)));
     },
 
     /**
@@ -187,7 +196,10 @@ export const profilesSection = defineSection({
       };
     },
 
-    /** Withdraws the edit being checked, leaving the version shown until now. */
+    /**
+     * Withdraws the edit being checked, leaving the version shown until now,
+     * and deletes the photos it added.
+     */
     async withdraw(actor: Actor) {
       if (actor.kind !== "artisan") {
         return refuse("artisans-only", ARTISANS_ONLY);
@@ -201,6 +213,12 @@ export const profilesSection = defineSection({
         if (isAlreadyDecided(error)) return alreadyChecked();
         throw error;
       }
+      // The photos it added are nobody's now; those it kept are still shown.
+      const shown = new Set((await shownVersion(ctx, actor.accountId)).photos.map((p) => p.id));
+      await discardPhotos(
+        ctx,
+        beingChecked.photos.filter((photo) => !shown.has(photo.id)),
+      );
       return ok({});
     },
   }),
@@ -255,18 +273,44 @@ function mayBeListed() {
 }
 
 /**
- * The Artisan, if anyone may open its Profile: an Artisan whose names others
- * may see, verified now for at least one Service Category.
+ * Whether the Admin has accepted the Artisan's identity document and work
+ * photos for a Service Category, as verifying it needs. A Profile opens then
+ * and stays open when a check later expires, so a link shared keeps working.
+ */
+function wasVerified(ctx: Context) {
+  const accepted = (slot: SQL) =>
+    exists(
+      ctx.db
+        .select({ one: sql`1` })
+        .from(verificationChecks)
+        .where(
+          and(
+            eq(verificationChecks.artisanId, accounts.id),
+            slot,
+            eq(verificationChecks.state, "accepted"),
+          ),
+        ),
+    );
+  return and(
+    accepted(eq(verificationChecks.slot, slotOf("identity", null))),
+    // Work photos sit in one slot per category.
+    accepted(like(verificationChecks.slot, "work-photos:%")),
+  );
+}
+
+/**
+ * The Artisan, if anyone may open its Profile, with what it is verified for
+ * now, which may be nothing once a check has expired.
  */
 async function openableArtisan(ctx: Context, artisanId: string) {
   const [row] = await ctx.db
     .select(LISTED_COLUMNS)
     .from(accounts)
     .innerJoin(authUsers, eq(authUsers.id, accounts.id))
-    .where(and(eq(accounts.id, artisanId), mayBeListed()));
+    .where(and(eq(accounts.id, artisanId), mayBeListed(), wasVerified(ctx)));
   if (!row) return null;
   const categories = (await verifiedCategoriesOf(ctx, [row.id])).get(row.id) ?? [];
-  return categories.length > 0 ? { ...row, categories } : null;
+  return { ...row, categories };
 }
 
 async function publicProfile(ctx: Context, artisanId: string) {

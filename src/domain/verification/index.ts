@@ -428,7 +428,7 @@ export const verificationSection = defineSection({
       return input.gasWork ? status.gasWork : status.verified;
     },
 
-    /** The Artisan's Verification Badges: every check current now. Anyone may see them. */
+    /** The Artisan's Verification Badges, which anyone may see. */
     async badges(_viewer: Actor, input: { artisanId: string }) {
       return badgesOf(ctx, input.artisanId);
     },
@@ -469,18 +469,31 @@ export async function verifiedCategoriesOf(
   );
 }
 
-/** The Artisan's Verification Badges: every check current now. */
+/**
+ * Checks that are not shown as badges: a work permit says the Artisan holds
+ * a foreign passport, and a Payout account is the Artisan's own business.
+ */
+const UNSHOWN_BADGES: readonly CheckKind[] = ["work-permit", "payout-account"];
+
+/**
+ * The Artisan's Verification Badges, which anyone may see: every check
+ * current now, but not a work permit or a Payout account, nor an identity
+ * document's expiry date.
+ */
 export async function badgesOf(ctx: Context, artisanId: string) {
   const standing = await standingOf(ctx, artisanId);
   return allSlots().flatMap(({ slot, kind, category }) => {
     const current = standing.current(slot);
-    if (!current) return [];
+    if (!current || UNSHOWN_BADGES.includes(kind)) return [];
+    const identity = kind === "identity";
     return [
       {
         kind,
         category,
-        name: checkTitle(kind, category && SERVICE_CATEGORY_NAMES[category]),
-        expiresOn: current.expiresOn,
+        name: identity
+          ? "Identity verified"
+          : checkTitle(kind, category && SERVICE_CATEGORY_NAMES[category]),
+        expiresOn: identity ? null : current.expiresOn,
         issuedOn: current.issuedOn,
       },
     ];

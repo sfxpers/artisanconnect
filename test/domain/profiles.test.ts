@@ -148,8 +148,7 @@ describe("an Artisan Profile", () => {
         { category: "painting", name: "Painting", gasWork: false },
       ],
       badges: [
-        expect.objectContaining({ name: "Identity document" }),
-        expect.objectContaining({ name: "Payout account" }),
+        expect.objectContaining({ name: "Identity verified", expiresOn: null }),
         expect.objectContaining({ name: "Work photos, Plumbing" }),
         expect.objectContaining({ name: "Trained plumber" }),
         expect.objectContaining({ name: "Gas practitioner registration", expiresOn: "2028-12-31" }),
@@ -180,6 +179,24 @@ describe("an Artisan Profile", () => {
     for (const viewer of [client.actor, other.actor, artisan.actor, admin.actor]) {
       expect(await domain.profiles.view(viewer, input)).toEqual(asVisitor);
     }
+  });
+
+  test("stays open once the Artisan's Verification lapses, showing no category, out of Browse", async () => {
+    const { domain, given, clock } = await createHarness();
+    const artisan = await given.verifiedArtisan({
+      name: "Sipho Dlamini",
+      categories: ["electrical"],
+    });
+
+    // The electrical contractor registration expires on 2028-12-31.
+    clock.set(new Date("2028-12-31T00:00:00+02:00"));
+
+    const profile = await domain.profiles.view(visitor, { artisanId: artisan.actor.accountId });
+    expect(profile).toMatchObject({ publicName: "Sipho Dlamini", categories: [] });
+    expect(profile!.badges.map((badge) => badge.name)).not.toContain(
+      "Electrical contractor registration",
+    );
+    expect(await browsed(domain, { category: "electrical" })).toEqual([]);
   });
 
   test("does not exist for an Artisan verified for nothing, a Client, or an unknown id", async () => {
@@ -506,6 +523,30 @@ describe("editing the Profile", () => {
   });
 });
 
+describe("the Profiles anyone may open", () => {
+  test("are listed for search engines, lapsed ones too, and nobody else's", async () => {
+    const harness = await createHarness();
+    const { domain, given, clock, contentReader } = harness;
+    const plumber = await given.verifiedArtisan({ name: "Sipho Dlamini" });
+    const electrician = await given.verifiedArtisan({
+      name: "Ayesha Khan",
+      categories: ["electrical"],
+    });
+    await given.artisan({ name: "Lerato Nkosi" });
+    await given.client();
+    contentReader.force({ kind: "unsure", reason: "The trading name may be a handle." });
+    await given.verifiedArtisan({ name: "Johan Botha", tradingName: "JohanFixes" });
+    contentReader.force({ kind: "clear" });
+    clock.set(new Date("2028-12-31T00:00:00+02:00"));
+
+    const listed = await domain.profiles.listed(visitor);
+
+    expect(listed.map((profile) => profile.artisanId).sort()).toEqual(
+      [plumber.actor.accountId, electrician.actor.accountId].sort(),
+    );
+  });
+});
+
 describe("a Profile photo", () => {
   test("is served to anyone once shown, and before that only to its Artisan and the Admin", async () => {
     const harness = await createHarness();
@@ -547,6 +588,24 @@ describe("a Profile photo", () => {
     await decide(harness, admin, "release");
 
     expect(await domain.profiles.photo(visitor, { photoId: shown!.id })).toBeNull();
+  });
+
+  test("added by an edit the Artisan withdraws is deleted, and one kept stays", async () => {
+    const harness = await createHarness();
+    const { domain, given } = harness;
+    const admin = await given.admin();
+    const artisan = await artisanShowing(harness, admin, { about: "Mine.", add: [await photo()] });
+    const [kept] = (await domain.profiles.mine(artisan.actor))!.shown.photos;
+    await edit(harness, artisan, { about: "Mine.", keep: [kept!.id], add: [await photo()] });
+    const [, added] = (await domain.profiles.mine(artisan.actor))!.beingChecked!.photos;
+
+    await domain.profiles.withdraw(artisan.actor);
+
+    expect(await domain.profiles.photo(artisan.actor, { photoId: added!.id })).toBeNull();
+    expect(
+      await domain.profiles.photo(artisan.actor, { photoId: added!.id, thumbnail: true }),
+    ).toBeNull();
+    expect(await domain.profiles.photo(visitor, { photoId: kept!.id })).not.toBeNull();
   });
 
   test("of an Artisan verified for nothing is served to nobody else", async () => {

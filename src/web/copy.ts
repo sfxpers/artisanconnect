@@ -81,6 +81,7 @@ export const copy = {
     rating: (average: number, count: number) =>
       `${average.toFixed(1)} out of 5, from ${count} ${count === 1 ? "Review" : "Reviews"}`,
     noRating: "No Reviews yet",
+    notVerifiedNow: "Not verified for any trade right now, so cannot Quote.",
     reviews: "Reviews",
     noReviews: "No Reviews yet. A Client reviews an Artisan once a Job is Completed.",
     noContact:
@@ -94,10 +95,11 @@ export const copy = {
     copied: "Link copied",
     back: "Find Artisans",
     description: (name: string, categories: string[]) =>
-      `${name}: ${categories.join(", ")} in Cape Town, verified on ArtisanConnect.`,
+      categories.length > 0
+        ? `${name}: ${categories.join(", ")} in Cape Town, verified on ArtisanConnect.`
+        : `${name}, an Artisan in Cape Town on ArtisanConnect.`,
     notFound: "No such Profile",
-    notFoundLead:
-      "This Artisan is not on ArtisanConnect, or is not verified for any trade right now.",
+    notFoundLead: "This Artisan is not on ArtisanConnect.",
   },
   myProfile: {
     title: "Profile",

@@ -393,8 +393,9 @@ export const accountsSection = defineSection({
 
       /**
        * Gives the Account new names, checked like everything sent. A sure hit
-       * is refused and changes nothing; unsure ones are Held, and the names
-       * shown until now stay shown until the Admin releases the new ones.
+       * is refused and changes nothing; unsure ones are Held, as is every
+       * change of an Artisan's names, and the names shown until now stay
+       * shown until the Admin releases the new ones.
        */
       async changeNames(actor: Actor, input: { name: string; tradingName?: string }) {
         const accountId = accountIdOf(actor);
@@ -406,11 +407,17 @@ export const accountsSection = defineSection({
 
         const checked = await checkNames(ctx, given);
         if (!checked.ok) return checked;
-        if (checked.value.verdict === "clear") {
+        // An Artisan's names head its Profile, every edit of which waits for the Admin.
+        if (checked.value.verdict === "clear" && actor.kind !== "artisan") {
           await ctx.commit(showNames(ctx, accountId, given));
           return ok({ names: "shown" as const });
         }
-        const held = holdNames(ctx, accountId, given, checked.value.reason);
+        const held = holdNames(
+          ctx,
+          accountId,
+          given,
+          checked.value.verdict === "held" ? checked.value.reason : null,
+        );
         try {
           await ctx.commit([held.write, raiseNames(ctx, { id: held.id, ...given })]);
         } catch (error) {

@@ -8,7 +8,8 @@ import { accounts, authUsers, namesSent, queueItems } from "../schema";
 // everything else sent (#116), so a name cannot carry contact details. Names
 // the check is sure about are refused at once; names it is unsure about are
 // Held: the Account keeps them, and nobody else sees them until the Admin
-// releases them.
+// releases them. A change of an Artisan's names is Held even when clear, as
+// they head the Artisan Profile, every edit of which waits for the Admin (#120).
 
 export type Names = { name: string; tradingName: string | null };
 
@@ -53,7 +54,7 @@ export function holdNames(
   ctx: Context,
   accountId: string,
   names: Names,
-  heldFor: string,
+  heldFor: string | null,
 ): { write: Write; id: string } {
   const id = ctx.newId();
   return {
@@ -218,7 +219,14 @@ export const heldNames = defineHeldKind("held.names", {
         {
           key: "check",
           label: "Content check",
-          blocks: [{ kind: "text", text: held.heldFor ?? "Held by the Content check." }],
+          blocks: [
+            {
+              kind: "text",
+              text:
+                held.heldFor ??
+                "The Content check found nothing. An Artisan's names head their Profile, so every change waits for the Admin.",
+            },
+          ],
         },
       ],
       sidebar: [

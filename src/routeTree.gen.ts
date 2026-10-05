@@ -19,9 +19,11 @@ import { Route as PayoutsRouteImport } from './routes/payouts'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as RecoverRouteImport } from './routes/recover'
 import { Route as RegionsRouteImport } from './routes/regions'
+import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as RulesRouteImport } from './routes/rules'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as SignUpRouteImport } from './routes/sign-up'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SupportRouteImport } from './routes/support'
 import { Route as VerificationRouteImport } from './routes/verification'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
@@ -85,6 +87,11 @@ const RegionsRoute = RegionsRouteImport.update({
   path: '/regions',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
+  id: '/robots.txt',
+  path: '/robots.txt',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RulesRoute = RulesRouteImport.update({
   id: '/rules',
   path: '/rules',
@@ -98,6 +105,11 @@ const SignInRoute = SignInRouteImport.update({
 const SignUpRoute = SignUpRouteImport.update({
   id: '/sign-up',
   path: '/sign-up',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SupportRoute = SupportRouteImport.update({
@@ -172,9 +184,11 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRoute
   '/recover': typeof RecoverRoute
   '/regions': typeof RegionsRoute
+  '/robots.txt': typeof RobotsDottxtRoute
   '/rules': typeof RulesRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/support': typeof SupportRoute
   '/verification': typeof VerificationRoute
   '/admin/admins': typeof AdminAdminsRoute
@@ -199,9 +213,11 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/recover': typeof RecoverRoute
   '/regions': typeof RegionsRoute
+  '/robots.txt': typeof RobotsDottxtRoute
   '/rules': typeof RulesRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/support': typeof SupportRoute
   '/verification': typeof VerificationRoute
   '/admin/admins': typeof AdminAdminsRoute
@@ -227,9 +243,11 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRoute
   '/recover': typeof RecoverRoute
   '/regions': typeof RegionsRoute
+  '/robots.txt': typeof RobotsDottxtRoute
   '/rules': typeof RulesRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/support': typeof SupportRoute
   '/verification': typeof VerificationRoute
   '/admin/admins': typeof AdminAdminsRoute
@@ -256,9 +274,11 @@ export interface FileRouteTypes {
     | '/profile'
     | '/recover'
     | '/regions'
+    | '/robots.txt'
     | '/rules'
     | '/sign-in'
     | '/sign-up'
+    | '/sitemap.xml'
     | '/support'
     | '/verification'
     | '/admin/admins'
@@ -283,9 +303,11 @@ export interface FileRouteTypes {
     | '/profile'
     | '/recover'
     | '/regions'
+    | '/robots.txt'
     | '/rules'
     | '/sign-in'
     | '/sign-up'
+    | '/sitemap.xml'
     | '/support'
     | '/verification'
     | '/admin/admins'
@@ -310,9 +332,11 @@ export interface FileRouteTypes {
     | '/profile'
     | '/recover'
     | '/regions'
+    | '/robots.txt'
     | '/rules'
     | '/sign-in'
     | '/sign-up'
+    | '/sitemap.xml'
     | '/support'
     | '/verification'
     | '/admin/admins'
@@ -338,9 +362,11 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRoute
   RecoverRoute: typeof RecoverRoute
   RegionsRoute: typeof RegionsRoute
+  RobotsDottxtRoute: typeof RobotsDottxtRoute
   RulesRoute: typeof RulesRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SupportRoute: typeof SupportRoute
   VerificationRoute: typeof VerificationRoute
   AdminAdminsRoute: typeof AdminAdminsRoute
@@ -427,6 +453,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RegionsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/robots.txt': {
+      id: '/robots.txt'
+      path: '/robots.txt'
+      fullPath: '/robots.txt'
+      preLoaderRoute: typeof RobotsDottxtRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/rules': {
       id: '/rules'
       path: '/rules'
@@ -446,6 +479,13 @@ declare module '@tanstack/react-router' {
       path: '/sign-up'
       fullPath: '/sign-up'
       preLoaderRoute: typeof SignUpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/support': {
@@ -546,9 +586,11 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRoute,
   RecoverRoute: RecoverRoute,
   RegionsRoute: RegionsRoute,
+  RobotsDottxtRoute: RobotsDottxtRoute,
   RulesRoute: RulesRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   SupportRoute: SupportRoute,
   VerificationRoute: VerificationRoute,
   AdminAdminsRoute: AdminAdminsRoute,

@@ -380,6 +380,46 @@ describe("changing names", () => {
     expect(await domain.accounts.shownName(artisan.actor, client.actor)).toBe("TM_fixes");
   });
 
+  test("of an Artisan waits for the Admin even when clear, as the names head the Profile", async () => {
+    const harness = await createHarness();
+    const { domain, given } = harness;
+    const admin = await given.admin();
+    const artisan = await given.verifiedArtisan({ name: "Sipho Dlamini" });
+    const client = await given.client();
+
+    expect(
+      await domain.accounts.changeNames(artisan.actor, {
+        name: "Sipho Dlamini",
+        tradingName: "Bright Pipes",
+      }),
+    ).toEqual({ ok: true, value: { names: "being-checked" } });
+
+    expect(await domain.accounts.shownName(client.actor, artisan.actor)).toBe("Sipho Dlamini");
+    expect(
+      await domain.profiles.view(visitor, { artisanId: artisan.actor.accountId }),
+    ).toMatchObject({ publicName: "Sipho Dlamini" });
+    const { id } = await preCheckItem(harness, admin);
+    const item = await domain.queues.item(admin.actor, { itemId: id });
+    expect(item).toMatchObject({
+      tabs: [
+        { key: "names" },
+        {
+          key: "check",
+          blocks: [
+            {
+              kind: "text",
+              text: "The Content check found nothing. An Artisan's names head their Profile, so every change waits for the Admin.",
+            },
+          ],
+        },
+      ],
+    });
+    await domain.queues.decide(admin.actor, { itemId: id, decision: "release" });
+    expect(
+      await domain.profiles.view(visitor, { artisanId: artisan.actor.accountId }),
+    ).toMatchObject({ publicName: "Bright Pipes" });
+  });
+
   test("after a refusal gives the Account names that are shown", async () => {
     const harness = await createHarness();
     const { domain, given } = harness;

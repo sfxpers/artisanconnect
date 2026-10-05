@@ -41,6 +41,9 @@ export function ArtisanProfileView({
             </Badge>
           </div>
           <div className="flex flex-wrap gap-1.5">
+            {profile.categories.length === 0 && (
+              <span className="text-sm text-muted-foreground">{t.notVerifiedNow}</span>
+            )}
             {profile.categories.map(({ category, name, gasWork }) => (
               <Badge key={category} variant="secondary">
                 {gasWork ? `${name}, ${t.gasWork}` : name}

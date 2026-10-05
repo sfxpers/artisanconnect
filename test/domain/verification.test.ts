@@ -1,4 +1,5 @@
 import { describe, expect, test } from "vitest";
+import { visitor } from "@/domain/actor";
 import type { Block } from "@/domain/queues";
 import { createHarness, type Harness } from "../support/harness";
 import {
@@ -613,6 +614,46 @@ describe("being verified for a Service Category", () => {
         category: null,
         name: "Business insurance",
         expiresOn: "2027-08-31",
+        issuedOn: null,
+      },
+    ]);
+  });
+
+  test("shows anyone what it checked, but not a work permit, a Payout account, or an identity document's dates", async () => {
+    const { domain, given } = await createHarness();
+    const admin = await given.admin();
+    const artisan = await given.artisan();
+    await acceptAll(domain, admin, [
+      await submit(
+        domain,
+        artisan,
+        identity({
+          documentType: "passport",
+          number: "P1111111111",
+          country: "ZW",
+          expiresOn: "2030-01-01",
+        }),
+      ),
+      await submit(domain, artisan, payoutAccount()),
+      await submit(domain, artisan, workPhotos("roofing")),
+      await submit(domain, artisan, document({ kind: "work-permit", expiresOn: "2027-05-28" })),
+    ]);
+
+    expect(
+      await domain.verification.badges(visitor, { artisanId: artisan.actor.accountId }),
+    ).toEqual([
+      {
+        kind: "identity",
+        category: null,
+        name: "Identity verified",
+        expiresOn: null,
+        issuedOn: null,
+      },
+      {
+        kind: "work-photos",
+        category: "roofing",
+        name: "Work photos, Roofing",
+        expiresOn: null,
         issuedOn: null,
       },
     ]);
