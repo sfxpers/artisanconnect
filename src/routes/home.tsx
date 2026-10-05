@@ -44,6 +44,19 @@ function Home() {
           </section>
         </div>
         <aside className="space-y-6">
+          <Card size="sm">
+            <CardHeader>
+              <CardTitle>{t.profile}</CardTitle>
+              <CardAction>
+                <Link to="/profile" className={buttonVariants({ size: "xs", variant: "ghost" })}>
+                  {t.openProfile}
+                </Link>
+              </CardAction>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">{t.profileLead}</p>
+            </CardContent>
+          </Card>
           <Availability available={work.availableForJobs} />
           <Card size="sm">
             <CardHeader>

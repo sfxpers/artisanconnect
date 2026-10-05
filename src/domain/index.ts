@@ -9,6 +9,7 @@ import { adminsSection, setUpFirstAdmin } from "./admins";
 import { marketplaceRulesSection } from "./accounts/rules";
 import { createContext } from "./context";
 import { createQueues, type QueueItemKind } from "./queues";
+import { profilesSection } from "./profiles";
 import { regionsSection } from "./regions";
 import { availabilitySection } from "./regions/availability";
 import { supportSection } from "./support";
@@ -23,6 +24,7 @@ export const sections = [
   availabilitySection,
   marketplaceRulesSection,
   noticesSection,
+  profilesSection,
   regionsSection,
   supportSection,
   verificationSection,

@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AccountRouteImport } from './routes/account'
-import { Route as ArtisansRouteImport } from './routes/artisans'
 import { Route as ConfirmEmailRouteImport } from './routes/confirm-email'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as JobsRouteImport } from './routes/jobs'
@@ -29,7 +28,10 @@ import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminAdminsRouteImport } from './routes/admin/admins'
 import { Route as AdminAuditRouteImport } from './routes/admin/audit'
 import { Route as AdminSignInRouteImport } from './routes/admin/sign-in'
+import { Route as ArtisansIndexRouteImport } from './routes/artisans.index'
+import { Route as ArtisansArtisanIdRouteImport } from './routes/artisans.$artisanId'
 import { Route as DevMailRouteImport } from './routes/dev/mail'
+import { Route as ProfilePhotosPhotoIdRouteImport } from './routes/profile-photos.$photoId'
 import { Route as AdminFilesTokenRouteImport } from './routes/admin/files.$token'
 import { Route as AdminItemsItemIdRouteImport } from './routes/admin/items.$itemId'
 
@@ -41,11 +43,6 @@ const IndexRoute = IndexRouteImport.update({
 const AccountRoute = AccountRouteImport.update({
   id: '/account',
   path: '/account',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ArtisansRoute = ArtisansRouteImport.update({
-  id: '/artisans',
-  path: '/artisans',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ConfirmEmailRoute = ConfirmEmailRouteImport.update({
@@ -133,9 +130,24 @@ const AdminSignInRoute = AdminSignInRouteImport.update({
   path: '/admin/sign-in',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ArtisansIndexRoute = ArtisansIndexRouteImport.update({
+  id: '/artisans/',
+  path: '/artisans/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ArtisansArtisanIdRoute = ArtisansArtisanIdRouteImport.update({
+  id: '/artisans/$artisanId',
+  path: '/artisans/$artisanId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DevMailRoute = DevMailRouteImport.update({
   id: '/dev/mail',
   path: '/dev/mail',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfilePhotosPhotoIdRoute = ProfilePhotosPhotoIdRouteImport.update({
+  id: '/profile-photos/$photoId',
+  path: '/profile-photos/$photoId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminFilesTokenRoute = AdminFilesTokenRouteImport.update({
@@ -152,7 +164,6 @@ const AdminItemsItemIdRoute = AdminItemsItemIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
-  '/artisans': typeof ArtisansRoute
   '/confirm-email': typeof ConfirmEmailRoute
   '/home': typeof HomeRoute
   '/jobs': typeof JobsRoute
@@ -169,15 +180,17 @@ export interface FileRoutesByFullPath {
   '/admin/admins': typeof AdminAdminsRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/sign-in': typeof AdminSignInRoute
+  '/artisans/$artisanId': typeof ArtisansArtisanIdRoute
   '/dev/mail': typeof DevMailRoute
+  '/profile-photos/$photoId': typeof ProfilePhotosPhotoIdRoute
   '/admin/': typeof AdminIndexRoute
+  '/artisans/': typeof ArtisansIndexRoute
   '/admin/files/$token': typeof AdminFilesTokenRoute
   '/admin/items/$itemId': typeof AdminItemsItemIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
-  '/artisans': typeof ArtisansRoute
   '/confirm-email': typeof ConfirmEmailRoute
   '/home': typeof HomeRoute
   '/jobs': typeof JobsRoute
@@ -194,8 +207,11 @@ export interface FileRoutesByTo {
   '/admin/admins': typeof AdminAdminsRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/sign-in': typeof AdminSignInRoute
+  '/artisans/$artisanId': typeof ArtisansArtisanIdRoute
   '/dev/mail': typeof DevMailRoute
+  '/profile-photos/$photoId': typeof ProfilePhotosPhotoIdRoute
   '/admin': typeof AdminIndexRoute
+  '/artisans': typeof ArtisansIndexRoute
   '/admin/files/$token': typeof AdminFilesTokenRoute
   '/admin/items/$itemId': typeof AdminItemsItemIdRoute
 }
@@ -203,7 +219,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
-  '/artisans': typeof ArtisansRoute
   '/confirm-email': typeof ConfirmEmailRoute
   '/home': typeof HomeRoute
   '/jobs': typeof JobsRoute
@@ -220,8 +235,11 @@ export interface FileRoutesById {
   '/admin/admins': typeof AdminAdminsRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/sign-in': typeof AdminSignInRoute
+  '/artisans/$artisanId': typeof ArtisansArtisanIdRoute
   '/dev/mail': typeof DevMailRoute
+  '/profile-photos/$photoId': typeof ProfilePhotosPhotoIdRoute
   '/admin/': typeof AdminIndexRoute
+  '/artisans/': typeof ArtisansIndexRoute
   '/admin/files/$token': typeof AdminFilesTokenRoute
   '/admin/items/$itemId': typeof AdminItemsItemIdRoute
 }
@@ -230,7 +248,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/account'
-    | '/artisans'
     | '/confirm-email'
     | '/home'
     | '/jobs'
@@ -247,15 +264,17 @@ export interface FileRouteTypes {
     | '/admin/admins'
     | '/admin/audit'
     | '/admin/sign-in'
+    | '/artisans/$artisanId'
     | '/dev/mail'
+    | '/profile-photos/$photoId'
     | '/admin/'
+    | '/artisans/'
     | '/admin/files/$token'
     | '/admin/items/$itemId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/account'
-    | '/artisans'
     | '/confirm-email'
     | '/home'
     | '/jobs'
@@ -272,15 +291,17 @@ export interface FileRouteTypes {
     | '/admin/admins'
     | '/admin/audit'
     | '/admin/sign-in'
+    | '/artisans/$artisanId'
     | '/dev/mail'
+    | '/profile-photos/$photoId'
     | '/admin'
+    | '/artisans'
     | '/admin/files/$token'
     | '/admin/items/$itemId'
   id:
     | '__root__'
     | '/'
     | '/account'
-    | '/artisans'
     | '/confirm-email'
     | '/home'
     | '/jobs'
@@ -297,8 +318,11 @@ export interface FileRouteTypes {
     | '/admin/admins'
     | '/admin/audit'
     | '/admin/sign-in'
+    | '/artisans/$artisanId'
     | '/dev/mail'
+    | '/profile-photos/$photoId'
     | '/admin/'
+    | '/artisans/'
     | '/admin/files/$token'
     | '/admin/items/$itemId'
   fileRoutesById: FileRoutesById
@@ -306,7 +330,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccountRoute: typeof AccountRoute
-  ArtisansRoute: typeof ArtisansRoute
   ConfirmEmailRoute: typeof ConfirmEmailRoute
   HomeRoute: typeof HomeRoute
   JobsRoute: typeof JobsRoute
@@ -323,8 +346,11 @@ export interface RootRouteChildren {
   AdminAdminsRoute: typeof AdminAdminsRoute
   AdminAuditRoute: typeof AdminAuditRoute
   AdminSignInRoute: typeof AdminSignInRoute
+  ArtisansArtisanIdRoute: typeof ArtisansArtisanIdRoute
   DevMailRoute: typeof DevMailRoute
+  ProfilePhotosPhotoIdRoute: typeof ProfilePhotosPhotoIdRoute
   AdminIndexRoute: typeof AdminIndexRoute
+  ArtisansIndexRoute: typeof ArtisansIndexRoute
   AdminFilesTokenRoute: typeof AdminFilesTokenRoute
   AdminItemsItemIdRoute: typeof AdminItemsItemIdRoute
 }
@@ -343,13 +369,6 @@ declare module '@tanstack/react-router' {
       path: '/account'
       fullPath: '/account'
       preLoaderRoute: typeof AccountRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/artisans': {
-      id: '/artisans'
-      path: '/artisans'
-      fullPath: '/artisans'
-      preLoaderRoute: typeof ArtisansRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/confirm-email': {
@@ -471,11 +490,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSignInRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/artisans/': {
+      id: '/artisans/'
+      path: '/artisans'
+      fullPath: '/artisans/'
+      preLoaderRoute: typeof ArtisansIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/artisans/$artisanId': {
+      id: '/artisans/$artisanId'
+      path: '/artisans/$artisanId'
+      fullPath: '/artisans/$artisanId'
+      preLoaderRoute: typeof ArtisansArtisanIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dev/mail': {
       id: '/dev/mail'
       path: '/dev/mail'
       fullPath: '/dev/mail'
       preLoaderRoute: typeof DevMailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile-photos/$photoId': {
+      id: '/profile-photos/$photoId'
+      path: '/profile-photos/$photoId'
+      fullPath: '/profile-photos/$photoId'
+      preLoaderRoute: typeof ProfilePhotosPhotoIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/files/$token': {
@@ -498,7 +538,6 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountRoute: AccountRoute,
-  ArtisansRoute: ArtisansRoute,
   ConfirmEmailRoute: ConfirmEmailRoute,
   HomeRoute: HomeRoute,
   JobsRoute: JobsRoute,
@@ -515,8 +554,11 @@ const rootRouteChildren: RootRouteChildren = {
   AdminAdminsRoute: AdminAdminsRoute,
   AdminAuditRoute: AdminAuditRoute,
   AdminSignInRoute: AdminSignInRoute,
+  ArtisansArtisanIdRoute: ArtisansArtisanIdRoute,
   DevMailRoute: DevMailRoute,
+  ProfilePhotosPhotoIdRoute: ProfilePhotosPhotoIdRoute,
   AdminIndexRoute: AdminIndexRoute,
+  ArtisansIndexRoute: ArtisansIndexRoute,
   AdminFilesTokenRoute: AdminFilesTokenRoute,
   AdminItemsItemIdRoute: AdminItemsItemIdRoute,
 }

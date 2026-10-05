@@ -1,4 +1,4 @@
-import { and, asc, eq, isNull, ne, notExists, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, ne, notExists, sql, type SQLWrapper } from "drizzle-orm";
 import type { Actor, AdminActor } from "../actor";
 import { firstProblem } from "../accounts/inputs";
 import { publicName } from "../accounts/names";
@@ -430,20 +430,7 @@ export const verificationSection = defineSection({
 
     /** The Artisan's Verification Badges: every check current now. Anyone may see them. */
     async badges(_viewer: Actor, input: { artisanId: string }) {
-      const standing = await standingOf(ctx, input.artisanId);
-      return allSlots().flatMap(({ slot, kind, category }) => {
-        const current = standing.current(slot);
-        if (!current) return [];
-        return [
-          {
-            kind,
-            category,
-            name: checkTitle(kind, category && SERVICE_CATEGORY_NAMES[category]),
-            expiresOn: current.expiresOn,
-            issuedOn: current.issuedOn,
-          },
-        ];
-      });
+      return badgesOf(ctx, input.artisanId);
     },
   }),
 });
@@ -451,6 +438,53 @@ export const verificationSection = defineSection({
 /** Whether the Artisan is verified for the category now, and for gas work in it. */
 export async function verifiedFor(ctx: Context, artisanId: string, category: ServiceCategory) {
   return (await standingOf(ctx, artisanId)).verifiedFor(category);
+}
+
+/**
+ * What each of these Artisans is verified for now, by id. It reads accepted
+ * checks only, so it answers what is current and nothing about what waits.
+ */
+export async function verifiedCategoriesOf(
+  ctx: Context,
+  artisanIds: SQLWrapper | string[],
+): Promise<Map<string, { category: ServiceCategory; gasWork: boolean }[]>> {
+  const rows = await ctx.db
+    .select()
+    .from(verificationChecks)
+    .where(
+      and(
+        inArray(verificationChecks.artisanId, artisanIds),
+        eq(verificationChecks.state, "accepted"),
+      ),
+    );
+  const byArtisan = new Map<string, CheckRow[]>();
+  for (const row of rows)
+    byArtisan.set(row.artisanId, [...(byArtisan.get(row.artisanId) ?? []), row]);
+  const today = saDay(ctx.now());
+  return new Map(
+    [...byArtisan].map(([artisanId, checks]) => [
+      artisanId,
+      new Standing(checks, today).verifiedCategories(),
+    ]),
+  );
+}
+
+/** The Artisan's Verification Badges: every check current now. */
+export async function badgesOf(ctx: Context, artisanId: string) {
+  const standing = await standingOf(ctx, artisanId);
+  return allSlots().flatMap(({ slot, kind, category }) => {
+    const current = standing.current(slot);
+    if (!current) return [];
+    return [
+      {
+        kind,
+        category,
+        name: checkTitle(kind, category && SERVICE_CATEGORY_NAMES[category]),
+        expiresOn: current.expiresOn,
+        issuedOn: current.issuedOn,
+      },
+    ];
+  });
 }
 
 // Submitting

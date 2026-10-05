@@ -64,6 +64,13 @@
       "when": 1791182335652,
       "tag": "0008_cape-town",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1791188912690,
+      "tag": "0009_profiles",
+      "breakpoints": true
     }
   ]
 }

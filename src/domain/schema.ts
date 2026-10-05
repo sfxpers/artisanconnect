@@ -4,6 +4,7 @@ import { SUPPORT_TOPICS } from "./support/topics";
 import { SERVICE_CATEGORIES } from "./service-categories";
 import { CHECK_KINDS } from "./verification/checks";
 import type { CheckDetails, CheckFile, Reading } from "./verification/stored";
+import type { StoredFile } from "./uploads";
 import {
   check,
   index,
@@ -466,5 +467,45 @@ export const artisanRegions = sqliteTable(
   (table) => [
     primaryKey({ columns: [table.artisanId, table.regionId] }),
     index("artisan_regions_region").on(table.regionId),
+  ],
+);
+
+export const PROFILE_EDIT_STATES = ["held", "released", "refused", "withdrawn"] as const;
+
+/**
+ * Each edit an Artisan makes to their Profile: the whole new version, Held
+ * for the Admin's Pre-check whatever the Content check made of it, then
+ * released, refused, or withdrawn. The newest one released is the Profile
+ * shown; until the first, it shows no About text and no photos.
+ */
+export const profileEdits = sqliteTable(
+  "profile_edits",
+  {
+    id: text("id").primaryKey(),
+    artisanId: text("artisan_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    about: text("about").notNull(),
+    /** Its work photos, in the order shown: those kept from the version shown, then those added. */
+    photos: text("photos", { mode: "json" })
+      .$type<Extract<StoredFile, { kind: "photo" }>[]>()
+      .notNull(),
+    state: text("state", { enum: PROFILE_EDIT_STATES }).notNull(),
+    /** Why the Content check was unsure, for the Admin; null if it found nothing. */
+    heldFor: text("held_for"),
+    sentAt: instant("sent_at").notNull(),
+    releasedAt: instant("released_at"),
+  },
+  (table) => [
+    index("profile_edits_artisan").on(table.artisanId, table.sentAt),
+    index("profile_edits_released")
+      .on(table.artisanId, table.releasedAt)
+      .where(sql.raw("state = 'released'")),
+    // One edit waits at a time.
+    uniqueIndex("profile_edits_one_held").on(table.artisanId).where(sql.raw("state = 'held'")),
+    check(
+      "profile_edits_state",
+      sql.raw(`state in (${PROFILE_EDIT_STATES.map((state) => `'${state}'`).join(", ")})`),
+    ),
   ],
 );

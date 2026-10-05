@@ -5,6 +5,7 @@
 // Nothing is stored until every check has passed.
 
 import type { Context } from "../context";
+import { PROFILE_PHOTOS_MAX } from "../profiles/inputs";
 import { ok, refuse, type Result } from "../result";
 import { Locked, startsWith, Unreadable } from "./bytes";
 import { mediaContainer, readMedia, type MediaContainer } from "./media";
@@ -218,6 +219,10 @@ export const FILE_COUNT_LIMITS = {
   completionPhotos: { max: 10, message: "A Completion has at most 10 photos." },
   completionDocuments: { max: 5, message: "A Completion has at most 5 documents." },
   messageAttachments: { max: 5, message: "A message has at most 5 attachments." },
+  profilePhotos: {
+    max: PROFILE_PHOTOS_MAX,
+    message: `A Profile has at most ${PROFILE_PHOTOS_MAX} photos.`,
+  },
 } as const;
 
 export type FileCountLimit = keyof typeof FILE_COUNT_LIMITS;
