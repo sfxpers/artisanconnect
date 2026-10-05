@@ -8,6 +8,7 @@ import {
   check,
   index,
   integer,
+  primaryKey,
   sqliteTable,
   text,
   uniqueIndex,
@@ -155,6 +156,11 @@ export const accounts = sqliteTable(
      * here that is not shown is the Account's and the Admin's only.
      */
     namesShown: integer("names_shown", { mode: "boolean" }).notNull().default(true),
+    /**
+     * An Artisan's switch for receiving Job Matches. Off hides nothing, and
+     * turning it off and on keeps the Artisan's place in the offer order.
+     */
+    availableForJobs: integer("available_for_jobs", { mode: "boolean" }).notNull().default(true),
   },
   (table) => [check("accounts_kind", sql`${table.kind} in ('client', 'artisan')`)],
 );
@@ -410,5 +416,55 @@ export const verificationChecks = sqliteTable(
       "verification_checks_state",
       sql.raw(`state in (${CHECK_STATES.map((state) => `'${state}'`).join(", ")})`),
     ),
+  ],
+);
+
+/**
+ * One of a city's districts, seeded with its suburbs by a migration (a later
+ * city is another seed). Never renamed or removed: triggers in the migration
+ * refuse both.
+ */
+export const regions = sqliteTable("regions", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull().unique(),
+});
+
+/**
+ * One of the City's official suburbs, in exactly one Region. The Admin may
+ * add one the City creates, but never move, rename, or remove one: triggers
+ * in the migration refuse it.
+ */
+export const suburbs = sqliteTable(
+  "suburbs",
+  {
+    id: text("id").primaryKey(),
+    /** As the City publishes it. */
+    name: text("name").notNull().unique(),
+    /** The name without case, spaces, or punctuation (`suburbKey`), which two may share. */
+    searchKey: text("search_key").notNull(),
+    regionId: text("region_id")
+      .notNull()
+      .references(() => regions.id),
+  },
+  (table) => [
+    index("suburbs_region").on(table.regionId, table.name),
+    index("suburbs_search_key").on(table.searchKey),
+  ],
+);
+
+/** The one to three Regions an Artisan works in and is offered Jobs in. */
+export const artisanRegions = sqliteTable(
+  "artisan_regions",
+  {
+    artisanId: text("artisan_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    regionId: text("region_id")
+      .notNull()
+      .references(() => regions.id),
+  },
+  (table) => [
+    primaryKey({ columns: [table.artisanId, table.regionId] }),
+    index("artisan_regions_region").on(table.regionId),
   ],
 );

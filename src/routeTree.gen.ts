@@ -19,6 +19,7 @@ import { Route as NoticesRouteImport } from './routes/notices'
 import { Route as PayoutsRouteImport } from './routes/payouts'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as RecoverRouteImport } from './routes/recover'
+import { Route as RegionsRouteImport } from './routes/regions'
 import { Route as RulesRouteImport } from './routes/rules'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as SignUpRouteImport } from './routes/sign-up'
@@ -80,6 +81,11 @@ const ProfileRoute = ProfileRouteImport.update({
 const RecoverRoute = RecoverRouteImport.update({
   id: '/recover',
   path: '/recover',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RegionsRoute = RegionsRouteImport.update({
+  id: '/regions',
+  path: '/regions',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RulesRoute = RulesRouteImport.update({
@@ -154,6 +160,7 @@ export interface FileRoutesByFullPath {
   '/payouts': typeof PayoutsRoute
   '/profile': typeof ProfileRoute
   '/recover': typeof RecoverRoute
+  '/regions': typeof RegionsRoute
   '/rules': typeof RulesRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
@@ -178,6 +185,7 @@ export interface FileRoutesByTo {
   '/payouts': typeof PayoutsRoute
   '/profile': typeof ProfileRoute
   '/recover': typeof RecoverRoute
+  '/regions': typeof RegionsRoute
   '/rules': typeof RulesRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
@@ -203,6 +211,7 @@ export interface FileRoutesById {
   '/payouts': typeof PayoutsRoute
   '/profile': typeof ProfileRoute
   '/recover': typeof RecoverRoute
+  '/regions': typeof RegionsRoute
   '/rules': typeof RulesRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
@@ -229,6 +238,7 @@ export interface FileRouteTypes {
     | '/payouts'
     | '/profile'
     | '/recover'
+    | '/regions'
     | '/rules'
     | '/sign-in'
     | '/sign-up'
@@ -253,6 +263,7 @@ export interface FileRouteTypes {
     | '/payouts'
     | '/profile'
     | '/recover'
+    | '/regions'
     | '/rules'
     | '/sign-in'
     | '/sign-up'
@@ -277,6 +288,7 @@ export interface FileRouteTypes {
     | '/payouts'
     | '/profile'
     | '/recover'
+    | '/regions'
     | '/rules'
     | '/sign-in'
     | '/sign-up'
@@ -302,6 +314,7 @@ export interface RootRouteChildren {
   PayoutsRoute: typeof PayoutsRoute
   ProfileRoute: typeof ProfileRoute
   RecoverRoute: typeof RecoverRoute
+  RegionsRoute: typeof RegionsRoute
   RulesRoute: typeof RulesRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
@@ -386,6 +399,13 @@ declare module '@tanstack/react-router' {
       path: '/recover'
       fullPath: '/recover'
       preLoaderRoute: typeof RecoverRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/regions': {
+      id: '/regions'
+      path: '/regions'
+      fullPath: '/regions'
+      preLoaderRoute: typeof RegionsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/rules': {
@@ -486,6 +506,7 @@ const rootRouteChildren: RootRouteChildren = {
   PayoutsRoute: PayoutsRoute,
   ProfileRoute: ProfileRoute,
   RecoverRoute: RecoverRoute,
+  RegionsRoute: RegionsRoute,
   RulesRoute: RulesRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,

@@ -50,6 +50,20 @@
       "when": 1791172984694,
       "tag": "0006_verification",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1791182327877,
+      "tag": "0007_regions",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1791182335652,
+      "tag": "0008_cape-town",
+      "breakpoints": true
     }
   ]
 }

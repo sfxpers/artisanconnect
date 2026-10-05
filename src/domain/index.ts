@@ -9,6 +9,8 @@ import { adminsSection, setUpFirstAdmin } from "./admins";
 import { marketplaceRulesSection } from "./accounts/rules";
 import { createContext } from "./context";
 import { createQueues, type QueueItemKind } from "./queues";
+import { regionsSection } from "./regions";
+import { availabilitySection } from "./regions/availability";
 import { supportSection } from "./support";
 import { emailTells, noticesSection } from "./tells";
 import { verificationSection } from "./verification";
@@ -18,8 +20,10 @@ import { PORT_NAMES, type DomainConfig, type Ports } from "./ports";
 export const sections = [
   accountsSection,
   adminsSection,
+  availabilitySection,
   marketplaceRulesSection,
   noticesSection,
+  regionsSection,
   supportSection,
   verificationSection,
 ] as const satisfies readonly Section[];
