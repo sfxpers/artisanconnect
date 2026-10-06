@@ -16,6 +16,7 @@ import { REGIONS_MAX } from "@/domain/regions/places";
 import { getNotices } from "@/web/accounts";
 import { copy, formatDate } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
+import { passInvitation } from "@/web/invitations";
 import { passMatch } from "@/web/matches";
 import { getMyWork, setAvailableForJobs } from "@/web/regions";
 
@@ -36,6 +37,7 @@ type Work = Awaited<ReturnType<typeof getMyWork>>;
 type Match = Work["matches"][number];
 type Invitation = Work["invitations"][number];
 type Tab = "matches" | "invitations" | "active" | "notices";
+type Result = { ok: true } | { ok: false; refusal: { message: string } };
 
 /**
  * The Artisan home (#107): a highlighted card for what is waiting, tabs for
@@ -153,7 +155,12 @@ function Matches({ matches, available }: { matches: Match[]; available: boolean 
     <Card className="py-0">
       <ul className="divide-y">
         {matches.map((match) => (
-          <MatchRow key={match.jobId} match={match} />
+          <PassableRow
+            key={match.jobId}
+            job={match}
+            when={t.offered(formatDate(match.offeredAt))}
+            pass={passMatch}
+          />
         ))}
       </ul>
     </Card>
@@ -166,10 +173,11 @@ function Invitations({ invitations }: { invitations: Invitation[] }) {
     <Card className="py-0">
       <ul className="divide-y">
         {invitations.map((invitation) => (
-          <JobListRow
+          <PassableRow
             key={invitation.jobId}
             job={invitation}
             when={t.invited(formatDate(invitation.invitedAt))}
+            pass={passInvitation}
           />
         ))}
       </ul>
@@ -177,24 +185,32 @@ function Invitations({ invitations }: { invitations: Invitation[] }) {
   );
 }
 
-/** One Job Match, which the Artisan may pass. */
-function MatchRow({ match }: { match: Match }) {
+/** A Job Match or an Invitation, which the Artisan may pass, telling nobody. */
+function PassableRow({
+  job,
+  when,
+  pass,
+}: {
+  job: Match | Invitation;
+  when: string;
+  pass: (input: { data: { jobId: string } }) => Promise<Result>;
+}) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);
 
-  async function pass() {
+  async function passIt() {
     setBusy(true);
     setRefusal(null);
-    const result = await passMatch({ data: { jobId: match.jobId } });
+    const result = await pass({ data: { jobId: job.jobId } });
     if (!result.ok) setRefusal(result.refusal.message);
     await router.invalidate();
     setBusy(false);
   }
 
   return (
-    <JobListRow job={match} when={t.offered(formatDate(match.offeredAt))} refusal={refusal}>
-      <Button size="sm" variant="ghost" disabled={busy} onClick={() => void pass()}>
+    <JobListRow job={job} when={when} refusal={refusal}>
+      <Button size="sm" variant="ghost" disabled={busy} onClick={() => void passIt()}>
         {t.pass}
       </Button>
     </JobListRow>

@@ -79,7 +79,7 @@ The offer of a Job to one Artisan in a Batch. The Artisan may Quote or pass.
 _Avoid_: Lead, Dispatch, Assignment
 
 **Invitation**:
-A Client's request to one Artisan to Quote on a Job. It reaches the Artisan even if they passed on a Job Match for it.
+A Client's request to one Artisan to Quote on a Job. It reaches the Artisan even if they passed on a Job Match for it. The Artisan may Quote or pass, and passing tells nobody.
 _Avoid_: Lead, Direct hire
 
 **Available for Jobs**:

@@ -171,6 +171,86 @@ describe("an Invitation and a Job Match", () => {
   });
 });
 
+describe("passing an Invitation", () => {
+  test("tells nobody, takes the Job from the Artisan, and leaves the Client's list as it was", async () => {
+    const { domain, given } = await createHarness();
+    const artisan = await given.matchableArtisan();
+    const client = await given.client();
+    const jobId = await given.openJob(client, { matching: "invite-only" });
+    const artisanId = artisan.actor.accountId;
+    await domain.invitations.invite(client.actor, { jobId, artisanId });
+    const [photo] = (await domain.jobs.viewAsArtisan(artisan.actor, { jobId }))!.photos;
+    const told = {
+      client: await domain.notices.list(client.actor),
+      artisan: await domain.notices.list(artisan.actor),
+    };
+    const listed = await domain.invitations.list(client.actor, { jobId });
+
+    expect(await domain.invitations.pass(artisan.actor, { jobId })).toEqual({
+      ok: true,
+      value: {},
+    });
+
+    expect(await domain.invitations.mine(artisan.actor)).toEqual([]);
+    expect(await domain.jobs.viewAsArtisan(artisan.actor, { jobId })).toBeNull();
+    expect(await domain.jobs.photo(artisan.actor, { photoId: photo!.id })).toBeNull();
+    expect(await domain.notices.list(client.actor)).toEqual(told.client);
+    expect(await domain.notices.list(artisan.actor)).toEqual(told.artisan);
+    expect(await domain.invitations.list(client.actor, { jobId })).toEqual(listed);
+    expect(await domain.invitations.invite(client.actor, { jobId, artisanId })).toMatchObject({
+      ok: false,
+      refusal: { reason: "already-invited" },
+    });
+    expect(await domain.invitations.pass(artisan.actor, { jobId })).toMatchObject({
+      ok: false,
+      refusal: { reason: "not-found" },
+    });
+  });
+
+  test("that was a Job Match passes the Job Match too", async () => {
+    const { domain, given, clock } = await createHarness();
+    const artisan = await given.matchableArtisan();
+    const client = await given.client();
+    const jobId = await given.openJob(client);
+    await domain.invitations.invite(client.actor, { jobId, artisanId: artisan.actor.accountId });
+
+    expect(await domain.invitations.pass(artisan.actor, { jobId })).toMatchObject({ ok: true });
+
+    expect(await domain.matches.mine(artisan.actor)).toEqual([]);
+    expect(await domain.jobs.viewAsArtisan(artisan.actor, { jobId })).toBeNull();
+    clock.advance({ days: 1 });
+    await domain.system.runDueClocks();
+    expect(await domain.matches.mine(artisan.actor)).toEqual([]);
+  });
+
+  test("is refused to anyone not holding it, and once the Job is not Open", async () => {
+    const { domain, given, clock } = await createHarness();
+    const artisan = await given.matchableArtisan();
+    const other = await given.matchableArtisan();
+    const client = await given.client();
+    const jobId = await given.openJob(client, { matching: "invite-only" });
+    await domain.invitations.invite(client.actor, { jobId, artisanId: artisan.actor.accountId });
+
+    for (const actor of [visitor, client.actor, other.actor]) {
+      expect(await domain.invitations.pass(actor, { jobId })).toMatchObject({
+        ok: false,
+        refusal: { reason: "not-found" },
+      });
+    }
+    clock.advance({ days: 14 });
+    await domain.system.runDueClocks();
+    expect(await domain.invitations.pass(artisan.actor, { jobId })).toMatchObject({
+      ok: false,
+      refusal: { reason: "not-found" },
+    });
+    // Renew shows it again, not passed.
+    expect(await domain.jobs.renew(client.actor, { jobId })).toMatchObject({ ok: true });
+    expect(await domain.invitations.mine(artisan.actor)).toEqual([
+      expect.objectContaining({ jobId }),
+    ]);
+  });
+});
+
 describe("a Batch", () => {
   test("leaves out an Artisan invited to the Job", async () => {
     const { domain, given, clock } = await createHarness();

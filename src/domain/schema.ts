@@ -629,9 +629,9 @@ export const jobMatches = sqliteTable(
 );
 
 /**
- * Each Invitation a Client sends one Artisan to Quote on a Job. It stands
- * beside any Job Match the Artisan holds for the Job, which keeps its offer
- * time and so the Artisan's place in the offer order.
+ * Each Invitation a Client sends one Artisan to Quote on a Job, which the
+ * Artisan may pass. It stands beside any Job Match the Artisan holds for the
+ * Job, which keeps its offer time and so the Artisan's place in the offer order.
  */
 export const invitations = sqliteTable(
   "invitations",
@@ -644,6 +644,7 @@ export const invitations = sqliteTable(
       .notNull()
       .references(() => accounts.id, { onDelete: "cascade" }),
     invitedAt: instant("invited_at").notNull(),
+    passedAt: instant("passed_at"),
   },
   (table) => [
     uniqueIndex("invitations_once_per_job").on(table.jobId, table.artisanId),

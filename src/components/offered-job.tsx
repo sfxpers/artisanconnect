@@ -10,6 +10,7 @@ import { Details, Fact } from "@/components/job-details";
 import { NextStepCard, Page, Refusal } from "@/components/page";
 import { copy } from "@/web/copy";
 import type { getJob } from "@/web/jobs";
+import { passInvitation } from "@/web/invitations";
 import { passMatch } from "@/web/matches";
 
 /** A Job as an Artisan offered it sees it. */
@@ -20,8 +21,8 @@ const t = copy.match;
 /**
  * The Job page as an Artisan holding a Job Match or an Invitation sees it
  * (#107): the Region, never the suburb or street, the details and photos, and
- * the Client by shown name and record. A Job Match may be passed; an
- * Invitation is not. Writing a Quote comes with Quotes (#124).
+ * the Client by shown name and record. Either may be passed, telling nobody.
+ * Writing a Quote comes with Quotes (#124).
  */
 export function OfferedJob({ job }: { job: OfferedJobView }) {
   const navigate = useNavigate();
@@ -31,7 +32,8 @@ export function OfferedJob({ job }: { job: OfferedJobView }) {
   async function pass() {
     setBusy(true);
     setRefusal(null);
-    const result = await passMatch({ data: { jobId: job.jobId } });
+    const passing = job.invitedAt !== null ? passInvitation : passMatch;
+    const result = await passing({ data: { jobId: job.jobId } });
     if (!result.ok) {
       setRefusal(result.refusal.message);
       setBusy(false);
@@ -63,23 +65,16 @@ export function OfferedJob({ job }: { job: OfferedJobView }) {
       </div>
       <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
         <div className="min-w-0 space-y-6">
-          <NextStepCard
-            label={copy.jobs.nextStep}
-            title={invited ? t.invitationNextStep : t.nextStep}
-          >
+          <NextStepCard label={copy.jobs.nextStep} title={t.nextStep}>
             {invited && <p className="text-sm">{t.invitationLead}</p>}
             <p className="text-sm text-muted-foreground">{t.lead}</p>
-            {!invited && (
-              <>
-                <Refusal message={refusal} />
-                <div className="flex flex-wrap items-center gap-3">
-                  <Button variant="outline" disabled={busy} onClick={() => void pass()}>
-                    {t.pass}
-                  </Button>
-                  <span className="text-xs text-muted-foreground">{t.passLead}</span>
-                </div>
-              </>
-            )}
+            <Refusal message={refusal} />
+            <div className="flex flex-wrap items-center gap-3">
+              <Button variant="outline" disabled={busy} onClick={() => void pass()}>
+                {t.pass}
+              </Button>
+              <span className="text-xs text-muted-foreground">{t.passLead}</span>
+            </div>
           </NextStepCard>
           <Card>
             <CardHeader>

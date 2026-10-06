@@ -389,7 +389,7 @@ export const copy = {
       ]
         .filter(Boolean)
         .join(" and ") + (invitations + matches === 1 ? " is waiting" : " are waiting"),
-    invitationsLead: "A Client chose you and asked you to Quote.",
+    invitationsLead: "A Client chose you and asked you to Quote. You may pass; nobody is told.",
     seeInvitations: "See Invitations",
     nothingWaiting: "Nothing is waiting on you",
     nothingWaitingLead: "New Job Matches and Invitations show here.",
@@ -424,7 +424,6 @@ export const copy = {
     badge: "Job Match",
     invitationBadge: "Invitation",
     nextStep: "Quote or pass",
-    invitationNextStep: "Quote",
     invitationLead: "The Client chose you and invited you to Quote on this Job.",
     lead: "Only your trade and Region are shown before Payment: the suburb and street stay private until the Client hires.",
     passLead: "Passing tells nobody.",

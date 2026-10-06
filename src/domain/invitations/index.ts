@@ -1,11 +1,11 @@
-import { and, desc, eq, exists, sql, type SQLWrapper } from "drizzle-orm";
+import { and, desc, eq, exists, isNull, sql, type SQLWrapper } from "drizzle-orm";
 import { accountIdOf, type Actor } from "../actor";
 import type { Context } from "../context";
 import { causedBy } from "../errors";
 import { JOB_AS_ARTISAN_COLUMNS, jobAsArtisanView, jobRow, type JobRow } from "../jobs/rows";
 import { browse, type Narrowing } from "../profiles";
 import { ok, refuse } from "../result";
-import { invitations, jobs, regions, suburbs } from "../schema";
+import { invitations, jobMatches, jobs, regions, suburbs } from "../schema";
 import { defineSection } from "../section";
 import { emailTells, tellWhile } from "../tells";
 
@@ -41,6 +41,7 @@ export const invitationsSection = defineSection({
                   jobId: jobs.id,
                   artisanId: sql<string>`${input.artisanId}`.as("artisan_id"),
                   invitedAt: sql<number>`${ctx.now().getTime()}`.as("invited_at"),
+                  passedAt: sql<null>`null`.as("passed_at"),
                 })
                 .from(jobs)
                 .where(stillOpen),
@@ -96,6 +97,60 @@ export const invitationsSection = defineSection({
       }));
     },
 
+    /**
+     * Passes on an Invitation the Artisan holds for an Open Job, and on the
+     * Job Match it may have been. Nobody is told, and the Client's list still
+     * marks the Artisan invited.
+     */
+    async pass(actor: Actor, input: { jobId: string }) {
+      if (actor.kind !== "artisan") return noInvitation();
+      const now = ctx.now();
+      const held = and(
+        eq(invitations.jobId, input.jobId),
+        eq(invitations.artisanId, actor.accountId),
+        isNull(invitations.passedAt),
+        // One on a Job no longer Open is not shown, and Renew shows it again.
+        exists(
+          ctx.db
+            .select({ one: sql`1` })
+            .from(jobs)
+            .where(and(eq(jobs.id, input.jobId), eq(jobs.state, "open"))),
+        ),
+      );
+      const [passed] = await ctx.db.batch([
+        ctx.db
+          .update(invitations)
+          .set({ passedAt: now })
+          .where(held)
+          .returning({ id: invitations.id }),
+        // Only if the pass above landed: a Job Match it was is passed with it.
+        ctx.db
+          .update(jobMatches)
+          .set({ passedAt: now })
+          .where(
+            and(
+              eq(jobMatches.jobId, input.jobId),
+              eq(jobMatches.artisanId, actor.accountId),
+              isNull(jobMatches.passedAt),
+              exists(
+                ctx.db
+                  .select({ one: sql`1` })
+                  .from(invitations)
+                  .where(
+                    and(
+                      eq(invitations.jobId, input.jobId),
+                      eq(invitations.artisanId, actor.accountId),
+                      eq(invitations.passedAt, now),
+                    ),
+                  ),
+              ),
+            ),
+          ),
+      ]);
+      if (passed.length === 0) return noInvitation();
+      return ok({});
+    },
+
     /** The Invitations the Artisan holds on Open Jobs, the newest first. */
     async mine(viewer: Actor) {
       if (viewer.kind !== "artisan") return null;
@@ -105,7 +160,13 @@ export const invitationsSection = defineSection({
         .innerJoin(jobs, eq(jobs.id, invitations.jobId))
         .leftJoin(suburbs, eq(suburbs.id, jobs.suburbId))
         .leftJoin(regions, eq(regions.id, suburbs.regionId))
-        .where(and(eq(invitations.artisanId, viewer.accountId), eq(jobs.state, "open")))
+        .where(
+          and(
+            eq(invitations.artisanId, viewer.accountId),
+            isNull(invitations.passedAt),
+            eq(jobs.state, "open"),
+          ),
+        )
         .orderBy(desc(invitations.invitedAt), desc(jobs.openedAt));
       return rows.map(jobAsArtisanView);
     },
@@ -133,12 +194,18 @@ export function invitationOf(ctx: Context, jobId: SQLWrapper | string, artisanId
     .where(and(eq(invitations.jobId, jobId), eq(invitations.artisanId, artisanId)));
 }
 
-/** The Invitation the Artisan holds for the Job; null if none. */
+/** The Invitation the Artisan holds for the Job, not passed; null if none. */
 export async function heldInvitation(ctx: Context, jobId: string, artisanId: string) {
   const [row] = await ctx.db
     .select({ invitedAt: invitations.invitedAt })
     .from(invitations)
-    .where(and(eq(invitations.jobId, jobId), eq(invitations.artisanId, artisanId)));
+    .where(
+      and(
+        eq(invitations.jobId, jobId),
+        eq(invitations.artisanId, artisanId),
+        isNull(invitations.passedAt),
+      ),
+    );
   return row ?? null;
 }
 
@@ -161,6 +228,10 @@ function notOpen() {
 
 function notListed() {
   return refuse("not-listed", "That Artisan cannot be invited to Quote on this Job.");
+}
+
+function noInvitation() {
+  return refuse("not-found", "You hold no Invitation for that Job.");
 }
 
 function alreadyInvited() {

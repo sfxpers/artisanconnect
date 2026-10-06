@@ -19,3 +19,11 @@ export const inviteArtisan = createServerFn({ method: "POST" })
     const domain = requestDomain();
     return domain.invitations.invite(await requestActor(domain), data);
   });
+
+/** Passes on an Invitation the Artisan holds. Nobody is told. */
+export const passInvitation = createServerFn({ method: "POST" })
+  .inputValidator((input: { jobId: string }) => input)
+  .handler(async ({ data }) => {
+    const domain = requestDomain();
+    return domain.invitations.pass(await requestActor(domain), data);
+  });
