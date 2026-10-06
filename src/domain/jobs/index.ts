@@ -12,6 +12,7 @@ import { accounts, jobs, suburbs, type JOB_STATES } from "../schema";
 import { defineSection } from "../section";
 import { SERVICE_CATEGORY_NAMES } from "../service-categories";
 import { checkFileCount, uploadFile, UPLOAD_CONTEXTS } from "../uploads";
+import { heldInvitation } from "../invitations";
 import { heldMatch } from "../matches";
 import { sendDueBatch } from "../matches/batches";
 import { emailTells } from "../tells";
@@ -342,7 +343,7 @@ export const jobsSection = defineSection({
     /**
      * A Job photo's stored copy, or its thumbnail, a Draft's or an edit's
      * too: to the Job's Client and the Admin. An Artisan holding a Job Match
-     * for an Open Job sees the photos it shows, never an edit's.
+     * or an Invitation for an Open Job sees the photos it shows, never an edit's.
      */
     async photo(viewer: Actor, input: { photoId: string; thumbnail?: boolean }) {
       const onJob = await jobPhotoById(ctx, input.photoId);
@@ -350,9 +351,9 @@ export const jobsSection = defineSection({
       if (!found) return null;
       if (viewer.kind !== "admin") {
         const job = await jobRow(ctx, found.jobId);
-        const offered =
-          !!onJob && !!job && viewer.kind === "artisan" && !!(await offeredTo(ctx, job, viewer));
-        if (!job || (job.clientId !== accountIdOf(viewer) && !offered)) return null;
+        const holding =
+          !!onJob && !!job && viewer.kind === "artisan" && !!(await heldOnJob(ctx, job, viewer));
+        if (!job || (job.clientId !== accountIdOf(viewer) && !holding)) return null;
       }
       const object = await ctx.ports.files.get(
         input.thumbnail ? found.photo.thumbnailKey : found.photo.key,
@@ -400,17 +401,17 @@ export const jobsSection = defineSection({
     },
 
     /**
-     * The Job as an Artisan holding a Job Match for it sees it while it is
-     * Open: the Region, never the suburb or street, and the Client by shown
-     * name and record; null for anyone else. Invitations and Quotes show it
-     * too, once there are those (#123, #124).
+     * The Job as an Artisan holding a Job Match or an Invitation for it sees
+     * it while it is Open: the Region, never the suburb or street, and the
+     * Client by shown name and record; null for anyone else. Quotes show it
+     * too, once there are those (#124).
      */
     async viewAsArtisan(viewer: Actor, input: { jobId: string }) {
       if (viewer.kind !== "artisan") return null;
       const job = await jobRow(ctx, input.jobId);
       if (!job) return null;
-      const [offer, [client]] = await Promise.all([
-        offeredTo(ctx, job, viewer),
+      const [held, [client]] = await Promise.all([
+        heldOnJob(ctx, job, viewer),
         ctx.db
           .select({
             name: accounts.name,
@@ -420,7 +421,7 @@ export const jobsSection = defineSection({
           .from(accounts)
           .where(eq(accounts.id, job.clientId)),
       ]);
-      if (!offer) return null;
+      if (!held) return null;
       return {
         jobId: job.id,
         state: job.state,
@@ -432,7 +433,10 @@ export const jobsSection = defineSection({
         photos: job.photos.map(photoView),
         gasWork: job.gasWork,
         preferredStart: job.preferredStart,
-        offeredAt: offer.offeredAt,
+        /** When a Batch offered it the Artisan, if one did and they have not passed. */
+        offeredAt: held.offeredAt,
+        /** When the Client invited the Artisan, if they did. */
+        invitedAt: held.invitedAt,
         client: {
           // Names the Content check has not passed are nobody else's to see.
           shownName: client?.namesShown ? clientShownName(publicName(client)) : null,
@@ -447,9 +451,18 @@ export const jobsSection = defineSection({
 
 const CLIENTS_ONLY = "Only a Client posts a Job.";
 
-/** The Job Match the Artisan holds for the Job while it is Open; null if none. */
-async function offeredTo(ctx: Context, job: JobRow, artisan: { accountId: string }) {
-  return job.state === "open" ? heldMatch(ctx, job.id, artisan.accountId) : null;
+/**
+ * What the Artisan holds for the Job while it is Open, a Job Match not passed
+ * or an Invitation, with when each came; null if neither.
+ */
+async function heldOnJob(ctx: Context, job: JobRow, artisan: { accountId: string }) {
+  if (job.state !== "open") return null;
+  const [match, invitation] = await Promise.all([
+    heldMatch(ctx, job.id, artisan.accountId),
+    heldInvitation(ctx, job.id, artisan.accountId),
+  ]);
+  if (!match && !invitation) return null;
+  return { offeredAt: match?.offeredAt ?? null, invitedAt: invitation?.invitedAt ?? null };
 }
 
 /** Sends a Job just opened its first Batch, if it is matched, and the Tells' emails. */

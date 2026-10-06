@@ -18,9 +18,10 @@ export type OfferedJobView = Extract<Awaited<ReturnType<typeof getJob>>, { as: "
 const t = copy.match;
 
 /**
- * The Job page as an Artisan holding a Job Match sees it (#107): the Region,
- * never the suburb or street, the details and photos, and the Client by shown
- * name and record. Writing a Quote comes with Quotes (#124).
+ * The Job page as an Artisan holding a Job Match or an Invitation sees it
+ * (#107): the Region, never the suburb or street, the details and photos, and
+ * the Client by shown name and record. A Job Match may be passed; an
+ * Invitation is not. Writing a Quote comes with Quotes (#124).
  */
 export function OfferedJob({ job }: { job: OfferedJobView }) {
   const navigate = useNavigate();
@@ -40,6 +41,7 @@ export function OfferedJob({ job }: { job: OfferedJobView }) {
   }
 
   const clientName = job.client.shownName ?? t.noName;
+  const invited = job.invitedAt !== null;
   return (
     <Page>
       <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -51,7 +53,7 @@ export function OfferedJob({ job }: { job: OfferedJobView }) {
       <div className="space-y-1">
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-semibold tracking-tight">{job.title}</h1>
-          <Badge>{t.badge}</Badge>
+          <Badge>{invited ? t.invitationBadge : t.badge}</Badge>
         </div>
         <p className="text-sm text-muted-foreground">
           {[job.category?.name, job.region?.name, job.siteType && copy.job.siteTypes[job.siteType]]
@@ -61,15 +63,23 @@ export function OfferedJob({ job }: { job: OfferedJobView }) {
       </div>
       <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
         <div className="min-w-0 space-y-6">
-          <NextStepCard label={copy.jobs.nextStep} title={t.nextStep}>
+          <NextStepCard
+            label={copy.jobs.nextStep}
+            title={invited ? t.invitationNextStep : t.nextStep}
+          >
+            {invited && <p className="text-sm">{t.invitationLead}</p>}
             <p className="text-sm text-muted-foreground">{t.lead}</p>
-            <Refusal message={refusal} />
-            <div className="flex flex-wrap items-center gap-3">
-              <Button variant="outline" disabled={busy} onClick={() => void pass()}>
-                {t.pass}
-              </Button>
-              <span className="text-xs text-muted-foreground">{t.passLead}</span>
-            </div>
+            {!invited && (
+              <>
+                <Refusal message={refusal} />
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button variant="outline" disabled={busy} onClick={() => void pass()}>
+                    {t.pass}
+                  </Button>
+                  <span className="text-xs text-muted-foreground">{t.passLead}</span>
+                </div>
+              </>
+            )}
           </NextStepCard>
           <Card>
             <CardHeader>

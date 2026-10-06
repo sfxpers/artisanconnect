@@ -13,9 +13,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DraftForm, EditForm, type JobView } from "@/components/job-form";
 import { NextStepCard, Page, Refusal } from "@/components/page";
 import { Details, Fact } from "@/components/job-details";
+import { InviteList, type InviteListView } from "@/components/invite-list";
 import { OfferedJob } from "@/components/offered-job";
 import { copy, formatDate } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
+import { getInviteList } from "@/web/invitations";
+import { getRegionNames } from "@/web/profiles";
 import {
   closeJob,
   discardJob,
@@ -28,12 +31,30 @@ import {
 } from "@/web/jobs";
 
 export const Route = createFileRoute("/jobs/$jobId")({
+  // The one Region the invite list shows, if one is chosen, as on Browse.
+  validateSearch: (search: Record<string, unknown>): { region?: string } => ({
+    region: typeof search.region === "string" && search.region ? search.region : undefined,
+  }),
   beforeLoad: ({ context }) => {
     onlyFor("account", context);
   },
-  loader: ({ params }) => getJob({ data: { jobId: params.jobId } }),
+  loaderDeps: ({ search }) => ({ region: search.region }),
+  loader: async ({ params, deps }) => {
+    const job = await getJob({ data: { jobId: params.jobId } });
+    return { job, invite: job.as === "client" ? await inviteListFor(job, deps.region) : null };
+  },
   component: JobPage,
 });
+
+/** Whom the Client may invite while the Job is Open, in the Region chosen if any. */
+async function inviteListFor(job: JobView, region: string | undefined) {
+  if (job.state !== "open") return null;
+  const [artisans, regions] = await Promise.all([
+    getInviteList({ data: { jobId: job.jobId, regionId: region } }),
+    getRegionNames(),
+  ]);
+  return artisans && { artisans, regions, region };
+}
 
 const t = copy.job;
 
@@ -67,12 +88,12 @@ function useAction() {
  * offered it sees it.
  */
 function JobPage() {
-  const job = Route.useLoaderData();
-  return job.as === "artisan" ? <OfferedJob job={job} /> : <ClientJob job={job} />;
+  const { job, invite } = Route.useLoaderData();
+  return job.as === "artisan" ? <OfferedJob job={job} /> : <ClientJob job={job} invite={invite} />;
 }
 
 /** The Job as its Client sees it. A Draft is its form. */
-function ClientJob({ job }: { job: JobView }) {
+function ClientJob({ job, invite }: { job: JobView; invite: InviteListView | null }) {
   return (
     <Page>
       <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -96,7 +117,7 @@ function ClientJob({ job }: { job: JobView }) {
             .join(" · ")}
         </p>
       </div>
-      {job.state === "draft" ? <Draft job={job} /> : <Posted job={job} />}
+      {job.state === "draft" ? <Draft job={job} /> : <Posted job={job} invite={invite} />}
     </Page>
   );
 }
@@ -152,8 +173,8 @@ function Draft({ job }: { job: JobView }) {
   );
 }
 
-/** A posted Job: its next step beside its details. */
-function Posted({ job }: { job: JobView }) {
+/** A posted Job: its next step, and while it is Open whom to invite, beside its details. */
+function Posted({ job, invite }: { job: JobView; invite: InviteListView | null }) {
   const action = useAction();
   const [editing, setEditing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -222,6 +243,10 @@ function Posted({ job }: { job: JobView }) {
             )}
           </div>
         </NextStepCard>
+
+        {invite && (
+          <InviteList jobId={job.jobId} inviteOnly={job.matching === "invite-only"} list={invite} />
+        )}
 
         {beingChecked && (
           <Card>

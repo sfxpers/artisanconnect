@@ -300,6 +300,17 @@ export const copy = {
     details: "Job details",
     none: "None given",
   },
+  invite: {
+    title: "Invite Artisans",
+    lead: "We offer this Job in turn as well. Invite anyone you would like to Quote.",
+    leadInviteOnly:
+      "Only the Artisans you invite see this Job. Invite those you would like to Quote.",
+    region: "Region",
+    allRegions: "All Regions",
+    empty: "No Artisan verified for this trade works here yet.",
+    invite: "Invite",
+    invited: "Invited",
+  },
   verification: {
     title: "Verification",
     nextStep: "Next step",
@@ -367,15 +378,24 @@ export const copy = {
     verificationLead: "You are offered Jobs only in the Service Categories you are verified for.",
     chooseYourRegions: "Choose your Regions",
     chooseRegionsLead: "You are offered Jobs only in the Regions you choose.",
-    matchesWaiting: (count: number) =>
-      count === 1 ? "A Job Match is waiting" : `${count} Job Matches are waiting`,
     matchesLead: "Quote on a Job Match, or pass. Nobody is told you passed.",
     seeMatches: "See Job Matches",
+    invitationsWaiting: (count: number) =>
+      count === 1 ? "An Invitation is waiting" : `${count} Invitations are waiting`,
+    jobsWaiting: (invitations: number, matches: number) =>
+      [
+        invitations === 1 ? "1 Invitation" : invitations > 1 ? `${invitations} Invitations` : "",
+        matches === 1 ? "1 Job Match" : matches > 1 ? `${matches} Job Matches` : "",
+      ]
+        .filter(Boolean)
+        .join(" and ") + (invitations + matches === 1 ? " is waiting" : " are waiting"),
+    invitationsLead: "A Client chose you and asked you to Quote.",
+    seeInvitations: "See Invitations",
     nothingWaiting: "Nothing is waiting on you",
     nothingWaitingLead: "New Job Matches and Invitations show here.",
     tabs: {
       matches: (count: number) => `Job Matches (${count})`,
-      invitations: "Invitations",
+      invitations: (count: number) => `Invitations (${count})`,
       active: "Active Jobs",
       notices: "Notices",
     },
@@ -384,7 +404,8 @@ export const copy = {
     noInvitations: "No Invitations.",
     noActive: "No Active Jobs.",
     offered: (when: string) => `Offered ${when}`,
-    openMatch: "Open",
+    invited: (when: string) => `Invited ${when}`,
+    openJob: "Open",
     pass: "Pass",
     available: "Available for Jobs",
     availableOn: "You receive Job Matches.",
@@ -401,7 +422,10 @@ export const copy = {
   match: {
     breadcrumb: "Home",
     badge: "Job Match",
+    invitationBadge: "Invitation",
     nextStep: "Quote or pass",
+    invitationNextStep: "Quote",
+    invitationLead: "The Client chose you and invited you to Quote on this Job.",
     lead: "Only your trade and Region are shown before Payment: the suburb and street stay private until the Client hires.",
     passLead: "Passing tells nobody.",
     pass: "Pass",

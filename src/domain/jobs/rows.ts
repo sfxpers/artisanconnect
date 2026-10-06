@@ -2,6 +2,7 @@ import { and, desc, eq, sql, type SQL } from "drizzle-orm";
 import { startClock } from "../clocks";
 import type { Context } from "../context";
 import { jobs, regions, suburbs } from "../schema";
+import { SERVICE_CATEGORY_NAMES, type ServiceCategory } from "../service-categories";
 import type { StoredFile } from "../uploads";
 import { OPEN_DAYS } from "./inputs";
 
@@ -134,6 +135,34 @@ export function photoView(photo: JobPhoto) {
     height: photo.height,
     href: jobPhotoPath(photo),
     thumbnailHref: jobPhotoPath(photo, true),
+  };
+}
+
+/**
+ * What an Artisan holding a Job Match or an Invitation sees of a Job in a
+ * list, before Payment: the Region, never the suburb.
+ */
+export const JOB_AS_ARTISAN_COLUMNS = {
+  jobId: jobs.id,
+  title: jobs.title,
+  description: jobs.description,
+  category: jobs.category,
+  siteType: jobs.siteType,
+  regionName: regions.name,
+  gasWork: jobs.gasWork,
+  preferredStart: jobs.preferredStart,
+  photos: jobs.photos,
+};
+
+/** A row of `JOB_AS_ARTISAN_COLUMNS` as the Artisan sees it, with its first photo. */
+export function jobAsArtisanView<
+  Row extends { photos: JobPhoto[]; category: ServiceCategory | null; regionName: string | null },
+>({ photos, category, regionName, ...row }: Row) {
+  return {
+    ...row,
+    category: category && { id: category, name: SERVICE_CATEGORY_NAMES[category] },
+    region: regionName,
+    photo: photos[0] ? photoView(photos[0]) : null,
   };
 }
 

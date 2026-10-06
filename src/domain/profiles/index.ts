@@ -46,12 +46,7 @@ export const profilesSection = defineSection({
      */
     async browse(_viewer: Actor, input: { category: string; regionId?: string }) {
       if (!isServiceCategory(input.category)) return [];
-      const listed = await listedArtisans(ctx, input.category, input.regionId);
-      return listed.sort(
-        (a, b) =>
-          Number(b.availableForJobs) - Number(a.availableForJobs) ||
-          a.publicName.localeCompare(b.publicName, "en-ZA", { sensitivity: "base" }),
-      );
+      return browse(ctx, input.category, { regionId: input.regionId });
     },
 
     /**
@@ -339,8 +334,28 @@ async function publicProfile(ctx: Context, artisanId: string) {
   };
 }
 
-/** The Artisans verified now for the category, in the Region if one is given. */
-async function listedArtisans(ctx: Context, category: ServiceCategory, regionId?: string) {
+/**
+ * Browse: the Artisans verified now for the category, in the Region or only
+ * the Artisan if one is given, Available for Jobs first, then by public name
+ * A to Z.
+ */
+export async function browse(ctx: Context, category: ServiceCategory, narrow: Narrowing = {}) {
+  const listed = await listedArtisans(ctx, category, narrow);
+  return listed.sort(
+    (a, b) =>
+      Number(b.availableForJobs) - Number(a.availableForJobs) ||
+      a.publicName.localeCompare(b.publicName, "en-ZA", { sensitivity: "base" }),
+  );
+}
+
+export type Narrowing = { regionId?: string; artisanId?: string };
+
+/** The Artisans verified now for the category, narrowed as given. */
+async function listedArtisans(
+  ctx: Context,
+  category: ServiceCategory,
+  { regionId, artisanId }: Narrowing,
+) {
   // Only an Artisan holding an accepted check of the category's work photos
   // can be verified for it; whether it is now is worked out from its checks.
   const candidates = ctx.db
@@ -350,6 +365,7 @@ async function listedArtisans(ctx: Context, category: ServiceCategory, regionId?
     .where(
       and(
         mayBeListed(),
+        artisanId === undefined ? undefined : eq(accounts.id, artisanId),
         exists(
           ctx.db
             .select({ one: sql`1` })

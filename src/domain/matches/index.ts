@@ -1,11 +1,11 @@
-import { and, desc, eq, exists, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, exists, isNull, notExists, sql } from "drizzle-orm";
 import type { Actor } from "../actor";
 import type { Context } from "../context";
-import { photoView } from "../jobs/rows";
+import { invitationOf } from "../invitations";
+import { JOB_AS_ARTISAN_COLUMNS, jobAsArtisanView } from "../jobs/rows";
 import { ok, refuse } from "../result";
 import { jobMatches, jobs, regions, suburbs } from "../schema";
 import { defineSection } from "../section";
-import { SERVICE_CATEGORY_NAMES } from "../service-categories";
 import { batchClocks } from "./batches";
 
 // Job Matches (#122): each offer of a Job to one Artisan in a Batch. The
@@ -16,22 +16,14 @@ export const matchesSection = defineSection({
   name: "matches",
   clocks: batchClocks,
   api: (ctx) => ({
-    /** The Job Matches the Artisan holds on Open Jobs, the newest offered first. */
+    /**
+     * The Job Matches the Artisan holds on Open Jobs, the newest offered
+     * first. One the Client has since invited the Artisan to is an Invitation.
+     */
     async mine(viewer: Actor) {
       if (viewer.kind !== "artisan") return null;
       const rows = await ctx.db
-        .select({
-          jobId: jobs.id,
-          title: jobs.title,
-          description: jobs.description,
-          category: jobs.category,
-          siteType: jobs.siteType,
-          regionName: regions.name,
-          gasWork: jobs.gasWork,
-          preferredStart: jobs.preferredStart,
-          photos: jobs.photos,
-          offeredAt: jobMatches.offeredAt,
-        })
+        .select({ ...JOB_AS_ARTISAN_COLUMNS, offeredAt: jobMatches.offeredAt })
         .from(jobMatches)
         .innerJoin(jobs, eq(jobs.id, jobMatches.jobId))
         .leftJoin(suburbs, eq(suburbs.id, jobs.suburbId))
@@ -41,18 +33,17 @@ export const matchesSection = defineSection({
             eq(jobMatches.artisanId, viewer.accountId),
             isNull(jobMatches.passedAt),
             eq(jobs.state, "open"),
+            notInvited(ctx),
           ),
         )
         .orderBy(desc(jobMatches.offeredAt), desc(jobs.openedAt));
-      return rows.map(({ photos, category, regionName, ...row }) => ({
-        ...row,
-        category: category && { id: category, name: SERVICE_CATEGORY_NAMES[category] },
-        region: regionName,
-        photo: photos[0] ? photoView(photos[0]) : null,
-      }));
+      return rows.map(jobAsArtisanView);
     },
 
-    /** Passes on a Job Match the Artisan holds for an Open Job. Nobody is told. */
+    /**
+     * Passes on a Job Match the Artisan holds for an Open Job, and not one
+     * that is an Invitation now. Nobody is told.
+     */
     async pass(actor: Actor, input: { jobId: string }) {
       if (actor.kind !== "artisan") return noMatch();
       const passed = await ctx.db
@@ -63,6 +54,7 @@ export const matchesSection = defineSection({
             eq(jobMatches.jobId, input.jobId),
             eq(jobMatches.artisanId, actor.accountId),
             isNull(jobMatches.passedAt),
+            notInvited(ctx),
             // One on a Job no longer Open is not shown, and Renew shows it again.
             exists(
               ctx.db
@@ -78,6 +70,14 @@ export const matchesSection = defineSection({
     },
   }),
 });
+
+/**
+ * That the Client has not invited the Artisan holding the Job Match: once
+ * they do, it is an Invitation, and its row stays to keep the offer time.
+ */
+function notInvited(ctx: Context) {
+  return notExists(invitationOf(ctx, jobMatches.jobId, jobMatches.artisanId));
+}
 
 function noMatch() {
   return refuse("not-found", "You hold no Job Match for that Job.");

@@ -1,6 +1,7 @@
 import { and, asc, eq, exists, notExists, sql, type SQL } from "drizzle-orm";
 import { system } from "../actor";
 import { fireDueClock, startClock, type ClockHandler } from "../clocks";
+import { invitationOf } from "../invitations";
 import type { Context, Write } from "../context";
 import { BATCH_CLOCK, jobRow, type JobRow } from "../jobs/rows";
 import {
@@ -75,8 +76,8 @@ export async function sendDueBatch(ctx: Context, jobId: string): Promise<void> {
  * those never offered a Job first, then the one offered least recently, ties
  * to the older Account. Eligible: verified for the Job's category (and for
  * gas work on a gas Job), working in its Region, Available for Jobs, and not
- * yet offered this Job. Not Suspended, once there are Suspensions (#136);
- * not invited or Quoted on it, once there are Invitations and Quotes (#123, #124).
+ * yet offered or invited to this Job. Not Suspended, once there are
+ * Suspensions (#136); not Quoted on it, once there are Quotes (#124).
  */
 async function batchFor(ctx: Context, job: JobRow): Promise<string[]> {
   const { category, regionId } = job;
@@ -124,6 +125,7 @@ async function batchFor(ctx: Context, job: JobRow): Promise<string[]> {
               .from(jobMatches)
               .where(and(eq(jobMatches.jobId, job.id), eq(jobMatches.artisanId, accounts.id))),
           ),
+          notExists(invitationOf(ctx, job.id, accounts.id)),
         ),
       );
   // By subquery, not by id: D1 binds at most 100 values to a query.

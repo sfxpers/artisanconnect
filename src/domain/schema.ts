@@ -627,3 +627,26 @@ export const jobMatches = sqliteTable(
     index("job_matches_artisan").on(table.artisanId, table.offeredAt),
   ],
 );
+
+/**
+ * Each Invitation a Client sends one Artisan to Quote on a Job. It stands
+ * beside any Job Match the Artisan holds for the Job, which keeps its offer
+ * time and so the Artisan's place in the offer order.
+ */
+export const invitations = sqliteTable(
+  "invitations",
+  {
+    id: text("id").primaryKey(),
+    jobId: text("job_id")
+      .notNull()
+      .references(() => jobs.id),
+    artisanId: text("artisan_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    invitedAt: instant("invited_at").notNull(),
+  },
+  (table) => [
+    uniqueIndex("invitations_once_per_job").on(table.jobId, table.artisanId),
+    index("invitations_artisan").on(table.artisanId, table.invitedAt),
+  ],
+);

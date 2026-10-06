@@ -85,6 +85,13 @@
       "when": 1791323843021,
       "tag": "0011_batches",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1791328008867,
+      "tag": "0012_invitations",
+      "breakpoints": true
     }
   ]
 }
