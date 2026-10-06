@@ -23,7 +23,8 @@ import { shrinkPhoto } from "@/web/shrink-photo";
 
 const t = copy.job;
 
-export type JobView = Awaited<ReturnType<typeof getJob>>;
+/** A Job as its Client sees it. */
+export type JobView = Extract<Awaited<ReturnType<typeof getJob>>, { as: "client" }>;
 type Photo = JobView["photos"][number];
 type Suburb = { id: string; name: string; region: { id: string; name: string } };
 

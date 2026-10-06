@@ -156,6 +156,21 @@ export function given({ domain, mailer }: { domain: Domain; mailer: FakeMailer }
     throw new Error("The Artisan's Verification item was not raised");
   }
 
+  /**
+   * An Artisan a Batch may offer the default Job to: verified for Painting
+   * (or the categories given) and working in Table Bay (or the Regions given),
+   * Sea Point's Region.
+   */
+  async function matchableArtisan(
+    details: Parameters<typeof verifiedArtisan>[0] & { regions?: string[] } = {},
+  ) {
+    const { regions = ["table-bay"], categories = ["painting"], ...rest } = details;
+    const artisan = await verifiedArtisan({ categories, ...rest });
+    const chosen = await domain.regions.choose(artisan.actor, { regionIds: regions });
+    if (!chosen.ok) throw new Error(chosen.refusal.message);
+    return artisan;
+  }
+
   type JobFields = Partial<Parameters<Domain["jobs"]["saveDraft"]>[1]>;
 
   /**
@@ -197,6 +212,7 @@ export function given({ domain, mailer }: { domain: Domain; mailer: FakeMailer }
     /** An Artisan who has signed up, proved the Email, and is signed in. Not yet verified. */
     artisan: (details?: Parameters<typeof account>[1]) => account("artisan", details),
     verifiedArtisan,
+    matchableArtisan,
     jobDraft,
     openJob,
   };

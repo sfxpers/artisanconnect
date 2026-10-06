@@ -16,7 +16,10 @@ export const heldJob = defineHeldKind("held.job", {
     return (await jobRow(ctx, subjectId))?.clientId ?? null;
   },
   async release(ctx, _admin, subjectId) {
-    return [...openWrites(ctx, subjectId, eq(jobs.state, "held"))];
+    const job = await jobRow(ctx, subjectId);
+    if (!job) return [];
+    // Its first Batch goes within the minute, when the clocks next run.
+    return [...openWrites(ctx, job, eq(jobs.state, "held"))];
   },
   async refuse(ctx, _admin, subjectId) {
     return [backToDraft(ctx, subjectId)];

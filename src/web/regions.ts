@@ -28,17 +28,26 @@ export const chooseRegions = createServerFn({ method: "POST" })
     return domain.regions.choose(await requestActor(domain), data);
   });
 
-/** What the Artisan home's sidebar shows: Available for Jobs and the Regions chosen. */
+/**
+ * What the Artisan home shows: whether Verification and Regions are still
+ * waiting, the Job Matches held, Available for Jobs, and the Regions chosen.
+ */
 export const getMyWork = createServerFn({ method: "GET" }).handler(async () => {
   const domain = requestDomain();
   const actor = await requestActor(domain);
-  const [availability, mine] = await Promise.all([
+  const [availability, mine, verification, matches, profile] = await Promise.all([
     domain.availability.mine(actor),
     domain.regions.mine(actor),
+    domain.verification.mine(actor),
+    domain.matches.mine(actor),
+    domain.profiles.mine(actor),
   ]);
   return {
     availableForJobs: availability?.availableForJobs ?? false,
     regions: mine?.regions ?? [],
+    verified: (verification?.verified.length ?? 0) > 0,
+    matches: matches ?? [],
+    profile: profile?.profile ?? null,
   };
 });
 

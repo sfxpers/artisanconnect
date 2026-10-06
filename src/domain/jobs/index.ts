@@ -7,10 +7,14 @@ import type { Context } from "../context";
 import { causedBy } from "../errors";
 import { ok, refuse } from "../result";
 import { saDay } from "../sa-days";
-import { jobs, suburbs, type JOB_STATES } from "../schema";
+import { clientShownName, publicName } from "../accounts/names";
+import { accounts, jobs, suburbs, type JOB_STATES } from "../schema";
 import { defineSection } from "../section";
 import { SERVICE_CATEGORY_NAMES } from "../service-categories";
 import { checkFileCount, uploadFile, UPLOAD_CONTEXTS } from "../uploads";
+import { heldMatch } from "../matches";
+import { sendDueBatch } from "../matches/batches";
+import { emailTells } from "../tells";
 import { expiryClocks } from "./expiry";
 import { heldJob, holdWrites, refusalOf, stillDraft, withdrawHeldJob } from "./held";
 import {
@@ -142,8 +146,9 @@ export const jobsSection = defineSection({
       const [moved] =
         verdict.verdict === "held"
           ? await ctx.db.batch(holdWrites(ctx, job, verdict.reason))
-          : await ctx.db.batch(openWrites(ctx, job.id, stillDraft(job)));
+          : await ctx.db.batch(openWrites(ctx, job, stillDraft(job)));
       if (moved.length === 0) return changed();
+      if (!held) await offer(ctx, job.id);
       return ok({ state: held ? ("held" as const) : ("open" as const) });
     },
 
@@ -290,11 +295,12 @@ export const jobsSection = defineSection({
       if (job.state !== "expired") return notExpired();
       try {
         // Unguarded on purpose: on a Job no longer Expired a trigger aborts the batch.
-        await ctx.commit([...openWrites(ctx, job.id)]);
+        await ctx.commit([...openWrites(ctx, job)]);
       } catch (error) {
         if (isRefusedMove(error)) return notExpired();
         throw error;
       }
+      await offer(ctx, job.id);
       return ok({});
     },
 
@@ -335,16 +341,18 @@ export const jobsSection = defineSection({
 
     /**
      * A Job photo's stored copy, or its thumbnail, a Draft's or an edit's
-     * too: to the Job's Client and the Admin only. Artisans offered or
-     * invited to the Job see its photos once there are Job Matches (#122).
+     * too: to the Job's Client and the Admin. An Artisan holding a Job Match
+     * for an Open Job sees the photos it shows, never an edit's.
      */
     async photo(viewer: Actor, input: { photoId: string; thumbnail?: boolean }) {
-      const found =
-        (await jobPhotoById(ctx, input.photoId)) ?? (await editPhotoById(ctx, input.photoId));
+      const onJob = await jobPhotoById(ctx, input.photoId);
+      const found = onJob ?? (await editPhotoById(ctx, input.photoId));
       if (!found) return null;
       if (viewer.kind !== "admin") {
         const job = await jobRow(ctx, found.jobId);
-        if (!job || job.clientId !== accountIdOf(viewer)) return null;
+        const offered =
+          !!onJob && !!job && viewer.kind === "artisan" && !!(await offeredTo(ctx, job, viewer));
+        if (!job || (job.clientId !== accountIdOf(viewer) && !offered)) return null;
       }
       const object = await ctx.ports.files.get(
         input.thumbnail ? found.photo.thumbnailKey : found.photo.key,
@@ -357,11 +365,7 @@ export const jobsSection = defineSection({
       };
     },
 
-    /**
-     * The Job as its Client sees it, with the street; null for anyone else.
-     * An Artisan offered or invited to it sees the Region only, never the
-     * suburb or street, once there are Job Matches (#122).
-     */
+    /** The Job as its Client sees it, with the street; null for anyone else. */
     async view(viewer: Actor, input: { jobId: string }) {
       const job = await jobRow(ctx, input.jobId);
       if (!job || job.clientId !== accountIdOf(viewer)) return null;
@@ -394,10 +398,68 @@ export const jobsSection = defineSection({
         },
       };
     },
+
+    /**
+     * The Job as an Artisan holding a Job Match for it sees it while it is
+     * Open: the Region, never the suburb or street, and the Client by shown
+     * name and record; null for anyone else. Invitations and Quotes show it
+     * too, once there are those (#123, #124).
+     */
+    async viewAsArtisan(viewer: Actor, input: { jobId: string }) {
+      if (viewer.kind !== "artisan") return null;
+      const job = await jobRow(ctx, input.jobId);
+      if (!job) return null;
+      const [offer, [client]] = await Promise.all([
+        offeredTo(ctx, job, viewer),
+        ctx.db
+          .select({
+            name: accounts.name,
+            tradingName: accounts.tradingName,
+            namesShown: accounts.namesShown,
+          })
+          .from(accounts)
+          .where(eq(accounts.id, job.clientId)),
+      ]);
+      if (!offer) return null;
+      return {
+        jobId: job.id,
+        state: job.state,
+        category: job.category && { id: job.category, name: SERVICE_CATEGORY_NAMES[job.category] },
+        siteType: job.siteType,
+        region: job.regionId ? { id: job.regionId, name: job.regionName ?? "" } : null,
+        title: job.title,
+        description: job.description,
+        photos: job.photos.map(photoView),
+        gasWork: job.gasWork,
+        preferredStart: job.preferredStart,
+        offeredAt: offer.offeredAt,
+        client: {
+          // Names the Content check has not passed are nobody else's to see.
+          shownName: client?.namesShown ? clientShownName(publicName(client)) : null,
+          // Reviews and Completed Engagements come with their tickets (#138, #130).
+          reviews: { average: null, count: 0 },
+          completed: 0,
+        },
+      };
+    },
   }),
 });
 
 const CLIENTS_ONLY = "Only a Client posts a Job.";
+
+/** The Job Match the Artisan holds for the Job while it is Open; null if none. */
+async function offeredTo(ctx: Context, job: JobRow, artisan: { accountId: string }) {
+  return job.state === "open" ? heldMatch(ctx, job.id, artisan.accountId) : null;
+}
+
+/** Sends a Job just opened its first Batch, if it is matched, and the Tells' emails. */
+async function offer(ctx: Context, jobId: string) {
+  await sendDueBatch(ctx, jobId);
+  // The Job is open whatever happens to an email; the clocks retry one that did not go.
+  await emailTells(ctx).catch((error: unknown) => {
+    console.error("Tell emails did not go", error);
+  });
+}
 
 /**
  * Where each Job sits in My Jobs. An Expired Job is Finished: nothing waits

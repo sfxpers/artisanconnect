@@ -554,6 +554,8 @@ export const jobs = sqliteTable(
     openedAt: instant("opened_at"),
     /** When it Expires without a Hire: 14 days after it opened. */
     expiresAt: instant("expires_at"),
+    /** When an Open matched Job's next Batch is due; null for an Invite-only one. */
+    nextBatchAt: instant("next_batch_at"),
   },
   (table) => [
     index("jobs_client").on(table.clientId, table.updatedAt),
@@ -597,5 +599,31 @@ export const jobEdits = sqliteTable(
       "job_edits_state",
       sql.raw(`state in (${JOB_EDIT_STATES.map((state) => `'${state}'`).join(", ")})`),
     ),
+  ],
+);
+
+/**
+ * The offer of a Job to one Artisan in a Batch, at most once per Job. The
+ * newest offer time of each Artisan places them in the offer order: those
+ * offered least recently come first, so nothing else may move it. Passing is
+ * recorded once (a trigger in the migration refuses undoing it).
+ */
+export const jobMatches = sqliteTable(
+  "job_matches",
+  {
+    id: text("id").primaryKey(),
+    jobId: text("job_id")
+      .notNull()
+      .references(() => jobs.id),
+    artisanId: text("artisan_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    /** When its Batch was sent. */
+    offeredAt: instant("offered_at").notNull(),
+    passedAt: instant("passed_at"),
+  },
+  (table) => [
+    uniqueIndex("job_matches_once_per_job").on(table.jobId, table.artisanId),
+    index("job_matches_artisan").on(table.artisanId, table.offeredAt),
   ],
 );

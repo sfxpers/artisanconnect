@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, sql, type SQL } from "drizzle-orm";
 import { accountIdOf, type Actor } from "./actor";
 import type { Context, Write } from "./context";
 import { accounts, authUsers, notices } from "./schema";
@@ -50,23 +50,53 @@ export function emailAddress(ctx: Context, address: string, email: Tell & { body
 
 /** The write that tells every Account (never a sign-up whose Email is unproven). */
 export function tellEveryAccount(ctx: Context, told: Tell): Write {
-  return ctx.db.insert(notices).select(
-    ctx.db
-      .select({
-        id: sql<string>`lower(hex(randomblob(16)))`.as("id"),
-        accountId: accounts.id,
-        address: sql<null>`null`.as("address"),
-        event: sql<string>`${told.event}`.as("event"),
-        title: sql<string>`${told.title}`.as("title"),
-        link: sql<string>`${told.link}`.as("link"),
-        body: sql<null>`null`.as("body"),
-        toldAt: sql<number>`${ctx.now().getTime()}`.as("told_at"),
-        emailedAt: sql<null>`null`.as("emailed_at"),
-      })
-      .from(accounts)
-      .innerJoin(authUsers, eq(authUsers.id, accounts.id))
-      .where(eq(authUsers.emailVerified, true)),
-  );
+  return ctx.db
+    .insert(notices)
+    .select(
+      noticesOfAccounts(ctx, told)
+        .innerJoin(authUsers, eq(authUsers.id, accounts.id))
+        .where(eq(authUsers.emailVerified, true)),
+    );
+}
+
+/**
+ * The writes that tell these Accounts, leaving out the actor, only if the
+ * condition still holds when they are written: for a clock, whose writes
+ * must carry the condition it read.
+ */
+export function tellWhile(
+  ctx: Context,
+  actor: Actor,
+  to: string[],
+  told: Tell,
+  condition: SQL,
+): Write[] {
+  const actorId = accountIdOf(actor);
+  return [...new Set(to)]
+    .filter((accountId) => accountId !== actorId)
+    .map((accountId) =>
+      ctx.db
+        .insert(notices)
+        .select(noticesOfAccounts(ctx, told).where(and(eq(accounts.id, accountId), condition))),
+    );
+}
+
+/** A notice of the Tell for each Account selected, to insert. */
+function noticesOfAccounts(ctx: Context, told: Tell) {
+  return ctx.db
+    .select({
+      id: sql<string>`lower(hex(randomblob(16)))`.as("id"),
+      accountId: accounts.id,
+      address: sql<null>`null`.as("address"),
+      event: sql<string>`${told.event}`.as("event"),
+      title: sql<string>`${told.title}`.as("title"),
+      link: sql<string>`${told.link}`.as("link"),
+      body: sql<null>`null`.as("body"),
+      toldAt: sql<number>`${ctx.now().getTime()}`.as("told_at"),
+      emailedAt: sql<null>`null`.as("emailed_at"),
+    })
+    .from(accounts)
+    .$dynamic();
 }
 
 /**

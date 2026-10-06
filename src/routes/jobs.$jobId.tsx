@@ -12,7 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DraftForm, EditForm, type JobView } from "@/components/job-form";
 import { NextStepCard, Page, Refusal } from "@/components/page";
-import { formatDay } from "@/domain/sa-days";
+import { Details, Fact } from "@/components/job-details";
+import { OfferedJob } from "@/components/offered-job";
 import { copy, formatDate } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
 import {
@@ -28,7 +29,7 @@ import {
 
 export const Route = createFileRoute("/jobs/$jobId")({
   beforeLoad: ({ context }) => {
-    onlyFor("client", context);
+    onlyFor("account", context);
   },
   loader: ({ params }) => getJob({ data: { jobId: params.jobId } }),
   component: JobPage,
@@ -62,10 +63,16 @@ function useAction() {
 
 /**
  * A Job's one page for its whole life (#107): breadcrumb, the title with one
- * status badge, the next step, and the details. A Draft is its form.
+ * status badge, the next step, and the details, as its Client or an Artisan
+ * offered it sees it.
  */
 function JobPage() {
   const job = Route.useLoaderData();
+  return job.as === "artisan" ? <OfferedJob job={job} /> : <ClientJob job={job} />;
+}
+
+/** The Job as its Client sees it. A Draft is its form. */
+function ClientJob({ job }: { job: JobView }) {
   return (
     <Page>
       <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -291,53 +298,6 @@ function Posted({ job }: { job: JobView }) {
           </CardContent>
         </Card>
       </aside>
-    </div>
-  );
-}
-
-function Fact({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd>{children}</dd>
-    </div>
-  );
-}
-
-/** What changes until the first Quote: the details, photos, Site type, and Preferred start. */
-function Details({
-  job,
-}: {
-  job: Pick<JobView, "title" | "description" | "photos" | "siteType" | "preferredStart">;
-}) {
-  return (
-    <div className="space-y-4">
-      <div className="space-y-1">
-        <h3 className="font-medium">{job.title}</h3>
-        <p className="text-sm whitespace-pre-line">{job.description}</p>
-      </div>
-      <dl className="flex flex-wrap gap-6 text-sm">
-        <Fact label={t.siteType}>{job.siteType && t.siteTypes[job.siteType]}</Fact>
-        <Fact label={t.preferredStartShown}>
-          {job.preferredStart ? formatDay(job.preferredStart) : t.none}
-        </Fact>
-      </dl>
-      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {job.photos.map((photo, index) => (
-          <li key={photo.id}>
-            <a href={photo.href} target="_blank" rel="noreferrer">
-              <img
-                src={photo.thumbnailHref}
-                alt={t.photo(index + 1)}
-                width={photo.width}
-                height={photo.height}
-                loading="lazy"
-                className="aspect-[4/3] w-full rounded-lg border object-cover"
-              />
-            </a>
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }

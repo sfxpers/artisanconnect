@@ -31,6 +31,7 @@ const JOB_COLUMNS = {
   revision: jobs.revision,
   openedAt: jobs.openedAt,
   expiresAt: jobs.expiresAt,
+  nextBatchAt: jobs.nextBatchAt,
 };
 
 /** A Job, with its suburb's name and Region. */
@@ -74,28 +75,43 @@ export const EXPIRY_CLOCKS = {
   expiry: "job.expires",
 } as const;
 
+/** The kind of the clock that sends a matched Job's next Batch, fired by the Matches section. */
+export const BATCH_CLOCK = "job.next-batch";
+
 /**
  * The writes that open a Job now, for 14 days, and start its clocks: the
- * Client's reminder 24 hours before it Expires, and the Expiry. The first is
- * guarded on what else is given and returns the Job's id if it opened; a
- * clock started for a Job that did not open does nothing when it fires.
- * A matched Job's first Batch goes when it opens, once there are Batches (#122).
+ * Client's reminder 24 hours before it Expires, the Expiry, and a matched
+ * Job's first Batch, due at once. The first is guarded on what else is given
+ * and returns the Job's id if it opened; a clock started for a Job that did
+ * not open does nothing when it fires.
  */
-export function openWrites(ctx: Context, jobId: string, guard?: SQL) {
+export function openWrites(
+  ctx: Context,
+  job: { id: string; matching: JobRow["matching"] },
+  guard?: SQL,
+) {
   const now = ctx.now();
   const expiresAt = new Date(now.getTime() + OPEN_DAYS * DAY_MS);
+  const matched = job.matching === "matched";
   return [
     ctx.db
       .update(jobs)
-      .set({ state: "open", openedAt: now, expiresAt, updatedAt: now })
-      .where(and(eq(jobs.id, jobId), guard))
+      .set({
+        state: "open",
+        openedAt: now,
+        expiresAt,
+        nextBatchAt: matched ? now : null,
+        updatedAt: now,
+      })
+      .where(and(eq(jobs.id, job.id), guard))
       .returning({ id: jobs.id }),
     startClock(ctx, {
       kind: EXPIRY_CLOCKS.reminder,
-      subjectId: jobId,
+      subjectId: job.id,
       dueAt: new Date(expiresAt.getTime() - REMINDER_LEAD_MS),
     }),
-    startClock(ctx, { kind: EXPIRY_CLOCKS.expiry, subjectId: jobId, dueAt: expiresAt }),
+    startClock(ctx, { kind: EXPIRY_CLOCKS.expiry, subjectId: job.id, dueAt: expiresAt }),
+    ...(matched ? [startClock(ctx, { kind: BATCH_CLOCK, subjectId: job.id, dueAt: now })] : []),
   ] as const;
 }
 

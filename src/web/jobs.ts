@@ -11,14 +11,23 @@ export const getMyJobs = createServerFn({ method: "GET" }).handler(async () => {
   return domain.jobs.mine(await requestActor(domain));
 });
 
-/** A Job as its Client sees it; one the viewer may not see is a page that does not exist. */
+/**
+ * A Job as its Client sees it, or as an Artisan offered it does; one the
+ * viewer may not see is a page that does not exist.
+ */
 export const getJob = createServerFn({ method: "GET" })
   .inputValidator((input: { jobId: string }) => input)
   .handler(async ({ data }) => {
     const domain = requestDomain();
-    const job = await domain.jobs.view(await requestActor(domain), data);
+    const actor = await requestActor(domain);
+    if (actor.kind === "artisan") {
+      const offered = await domain.jobs.viewAsArtisan(actor, data);
+      if (!offered) throw notFound();
+      return { as: "artisan" as const, ...offered };
+    }
+    const job = await domain.jobs.view(actor, data);
     if (!job) throw notFound();
-    return job;
+    return { as: "client" as const, ...job };
   });
 
 /** A form's text, or undefined when it was left out. */
