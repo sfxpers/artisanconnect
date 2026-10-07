@@ -5,7 +5,9 @@ import { createFakeContentReader } from "@/domain/fakes/content-reader";
 import { createFakeMailer } from "@/domain/fakes/mailer";
 import { saDay } from "@/domain/sa-days";
 import { configFromEnv, fakePaymentsFromEnv, portsFromEnv } from "@/worker/ports";
+import { webmOpus } from "../../test/support/files";
 import { given } from "../../test/support/given";
+import { textPdf } from "../../test/support/pdfs";
 
 // What a smoke test needs in the local app's D1, made by the domain tests'
 // own builders through the module's commands. The Content check passes
@@ -54,6 +56,32 @@ export async function markedComplete(env: Env, engagementId: string) {
     { note: "Both walls have two coats, and the room is cleaned." },
   );
   return { engagementId };
+}
+
+/**
+ * The Hired Artisan of an Engagement writes in its Conversation (#131): a
+ * phone number, a voice note, and a PDF, which only the Engagement's takes.
+ */
+export async function engagementMessage(env: Env, engagementId: string) {
+  const { domain } = await world(env);
+  const row = await env.DB.prepare(
+    `select c.id as conversation_id, e.artisan_id from engagements e
+     join conversations c on c.job_id = e.job_id and c.artisan_id = e.artisan_id
+     where e.id = ?`,
+  )
+    .bind(engagementId)
+    .first<{ conversation_id: string; artisan_id: string }>();
+  if (!row) throw new Error(`No Engagement ${engagementId}`);
+  const sent = await domain.conversations.send(
+    { kind: "artisan", accountId: row.artisan_id },
+    {
+      conversationId: row.conversation_id,
+      text: "Call me on 082 555 1234 when you're home. The colour chart is attached.",
+      files: [new Blob([webmOpus(12)]), new Blob([await textPdf({ lines: ["Colour chart"] })])],
+    },
+  );
+  if (!sent.ok) throw new Error(sent.refusal.message);
+  return { conversationId: row.conversation_id };
 }
 
 /**

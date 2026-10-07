@@ -2,13 +2,16 @@ import { env } from "cloudflare:test";
 import { describe, expect, test } from "vitest";
 import type { Actor, AdminActor } from "@/domain/actor";
 import { createHarness, type Harness } from "../support/harness";
+import { m4a, paddedTo, webmOpus } from "../support/files";
+import { textPdf } from "../support/pdfs";
 import { photo } from "../support/verification";
 
-// Conversations before Payment (#125, ADR 0010, ADR 0011): each Client and
-// Artisan on a Job talk in one Conversation, opened by the first Quote Sent or
-// the Invitation. Only text and photos go, every message is read by the
-// Content check first, and nothing that could take the Job off the platform
-// gets through.
+// Conversations (#125, #131, ADR 0010, ADR 0011): each Client and Artisan on a
+// Job talk in one Conversation, opened by the first Quote Sent or the
+// Invitation. Before Payment only text and photos go, every message is read
+// by the Content check first, and nothing that could take the Job off the
+// platform gets through. Once Hired, the Engagement's Conversation also takes
+// voice notes and PDFs, and contact details, but never payment off the platform.
 
 describe("a Conversation", () => {
   test("opens when the first Quote is Sent, with a row for it that is not speech", async () => {
@@ -159,7 +162,7 @@ describe("a message", () => {
     const sent = await domain.conversations.send(artisan.actor, {
       conversationId,
       text: "",
-      photos: [await photo(), await photo()],
+      files: [await photo(), await photo()],
     });
 
     expect(sent).toMatchObject({ ok: true, value: { state: "delivered" } });
@@ -171,12 +174,12 @@ describe("a message", () => {
     ]);
     const photoId = photos[0]!.id;
     for (const party of [client, artisan]) {
-      expect(await domain.conversations.photo(party.actor, { photoId })).toMatchObject({
+      expect(await domain.conversations.file(party.actor, { fileId: photoId })).toMatchObject({
         contentType: "image/webp",
       });
     }
-    expect(await domain.conversations.photo(stranger.actor, { photoId })).toBeNull();
-    expect(await domain.conversations.photo({ kind: "visitor" }, { photoId })).toBeNull();
+    expect(await domain.conversations.file(stranger.actor, { fileId: photoId })).toBeNull();
+    expect(await domain.conversations.file({ kind: "visitor" }, { fileId: photoId })).toBeNull();
   });
 
   test("is refused with six photos, a voice note or a PDF, or nothing in it", async () => {
@@ -185,7 +188,7 @@ describe("a message", () => {
     const six = await Promise.all(Array.from({ length: 6 }, () => photo()));
 
     expect(
-      await domain.conversations.send(client.actor, { conversationId, text: "", photos: six }),
+      await domain.conversations.send(client.actor, { conversationId, text: "", files: six }),
     ).toEqual({
       ok: false,
       refusal: { reason: "too-many-files", message: "A message has at most 5 attachments." },
@@ -194,12 +197,19 @@ describe("a message", () => {
       await domain.conversations.send(client.actor, {
         conversationId,
         text: "The quote",
-        photos: [new Blob([PDF], { type: "application/pdf" })],
+        files: [new Blob([PDF], { type: "application/pdf" })],
       }),
     ).toEqual({
       ok: false,
       refusal: { reason: "not-taken-here", message: "Only photos can be sent here." },
     });
+    expect(
+      await domain.conversations.send(client.actor, {
+        conversationId,
+        text: "Listen",
+        files: [new Blob([webmOpus(10)])],
+      }),
+    ).toMatchObject({ ok: false, refusal: { reason: "not-taken-here" } });
     expect(await domain.conversations.send(client.actor, { conversationId, text: "  " })).toEqual({
       ok: false,
       refusal: { reason: "invalid", message: "Write a message or add a photo." },
@@ -267,7 +277,7 @@ describe("the Content check of a message", () => {
       await domain.conversations.send(artisan.actor, {
         conversationId,
         text: "My card",
-        photos: [await photo()],
+        files: [await photo()],
       }),
     ).toMatchObject({ ok: false, refusal: { reason: "content" } });
   });
@@ -588,6 +598,258 @@ describe("an Invitation passed", () => {
   });
 });
 
+describe("the Engagement's Conversation", () => {
+  test("shows the Hire as a row that is not speech", async () => {
+    const { domain, given, clock } = await createHarness();
+    const { client, artisan, conversationId, quoteId } = await talking(given, domain);
+    clock.advance({ hours: 3 });
+
+    await given.hired(client, quoteId);
+
+    for (const party of [client, artisan]) {
+      expect(await domain.conversations.view(party.actor, { conversationId })).toMatchObject({
+        takesMessages: true,
+        afterPayment: true,
+        items: [
+          { kind: "event", event: "quote.sent" },
+          { kind: "event", event: "hire", at: clock.now() },
+        ],
+      });
+    }
+  });
+
+  test.each([
+    ["a phone number", "Call me on 082 555 1234"],
+    ["an email address", "Mail thandi@example.com"],
+    ["the Job's street", "I'm at 12 Main Road"],
+    ["the Job's suburb", "Right here in sea point"],
+    ["the Client's surname", "Mrs Mokoena will let you in"],
+  ])("takes %s, read as after Payment", async (_, text) => {
+    const { domain, given, contentReader } = await createHarness();
+    const { artisan, client, conversationId, engagementId } = await engaged(given, domain);
+
+    const sent = await domain.conversations.send(artisan.actor, { conversationId, text });
+
+    expect(sent).toMatchObject({ ok: true, value: { state: "delivered" } });
+    expect(contentReader.reads.at(-1)).toMatchObject({
+      text,
+      context: { kind: "engagement-conversation", engagementId },
+    });
+    expect(
+      (await domain.conversations.view(client.actor, { conversationId }))!.items.at(-1),
+    ).toMatchObject({ kind: "message", text, mine: false });
+  });
+
+  test.each([
+    ["a bank account number", "Pay to account 62812345678", "Take out the bank account number."],
+    ["a card number", "Use card 4111 1111 1111 1111", "Take out the bank account number."],
+    ["a payment link", "Pay at pay.example.com/sipho", "Take out the link."],
+  ])("still refuses %s", async (_, text, message) => {
+    const { domain, given } = await createHarness();
+    const { client, conversationId } = await engaged(given, domain);
+
+    expect(await domain.conversations.send(client.actor, { conversationId, text })).toMatchObject({
+      ok: false,
+      refusal: { reason: "content", message: expect.stringContaining(message) },
+    });
+  });
+
+  test("still refuses what the content reader is sure of: a payment QR code, an ask to pay off the platform", async () => {
+    const { domain, given, contentReader } = await createHarness();
+    const { artisan, conversationId } = await engaged(given, domain);
+    contentReader.force({ kind: "sure-hit", reason: "It shows a payment QR code." });
+
+    expect(
+      await domain.conversations.send(artisan.actor, {
+        conversationId,
+        text: "Scan this",
+        files: [await photo()],
+      }),
+    ).toEqual({
+      ok: false,
+      refusal: { reason: "content", message: "It shows a payment QR code." },
+    });
+    expect(contentReader.reads.at(-1)?.photos).toHaveLength(1);
+  });
+
+  test("takes a voice note of up to five minutes, turned into text and checked", async () => {
+    const { domain, given, contentReader } = await createHarness();
+    const { artisan, client, conversationId } = await engaged(given, domain);
+    const stranger = await given.client();
+    contentReader.voiceNotesSay("I'll be there at eight with the ladder.");
+
+    const sent = await domain.conversations.send(artisan.actor, {
+      conversationId,
+      text: "",
+      files: [new Blob([m4a(5 * 60)])],
+    });
+
+    expect(sent).toMatchObject({ ok: true, value: { state: "delivered" } });
+    expect(contentReader.reads.at(-1)?.text).toBe("I'll be there at eight with the ladder.");
+    const last = (await domain.conversations.view(client.actor, { conversationId }))!.items.at(-1);
+    const files = last?.kind === "message" ? last.files : [];
+    expect(files).toEqual([
+      { id: expect.any(String), kind: "voice-note", seconds: 300, href: expect.any(String) },
+    ]);
+    const fileId = files[0]!.id;
+    for (const party of [client, artisan]) {
+      expect(await domain.conversations.file(party.actor, { fileId })).toMatchObject({
+        contentType: "audio/mp4",
+      });
+    }
+    expect(await domain.conversations.file(stranger.actor, { fileId })).toBeNull();
+  });
+
+  test("refuses a voice note over five minutes, and a voice note asking for payment off the platform", async () => {
+    const { domain, given, contentReader } = await createHarness();
+    const { artisan, conversationId } = await engaged(given, domain);
+
+    expect(
+      await domain.conversations.send(artisan.actor, {
+        conversationId,
+        text: "",
+        files: [new Blob([webmOpus(5 * 60 + 1)])],
+      }),
+    ).toEqual({
+      ok: false,
+      refusal: { reason: "too-long", message: "A voice note can be at most 5 minutes." },
+    });
+
+    contentReader.voiceNotesSay("Send it to account number 62812345678 and skip the fee.");
+    expect(
+      await domain.conversations.send(artisan.actor, {
+        conversationId,
+        text: "",
+        files: [new Blob([webmOpus(20)])],
+      }),
+    ).toMatchObject({ ok: false, refusal: { reason: "content" } });
+  });
+
+  test("takes a PDF of up to 10 MB, its text extracted and checked", async () => {
+    const { domain, given, contentReader } = await createHarness();
+    const { artisan, client, conversationId } = await engaged(given, domain);
+
+    const sent = await domain.conversations.send(client.actor, {
+      conversationId,
+      text: "The paint colours",
+      files: [new Blob([await textPdf({ lines: ["Dulux Timeless, two coats"] })])],
+    });
+
+    expect(sent).toMatchObject({ ok: true, value: { state: "delivered" } });
+    expect(contentReader.reads.at(-1)?.text).toContain("Dulux Timeless, two coats");
+    const last = (await domain.conversations.view(artisan.actor, { conversationId }))!.items.at(-1);
+    const files = last?.kind === "message" ? last.files : [];
+    expect(files).toEqual([{ id: expect.any(String), kind: "pdf", href: expect.any(String) }]);
+    expect(await domain.conversations.file(artisan.actor, { fileId: files[0]!.id })).toMatchObject({
+      contentType: "application/pdf",
+    });
+
+    expect(
+      await domain.conversations.send(client.actor, {
+        conversationId,
+        text: "My invoice",
+        files: [new Blob([await textPdf({ lines: ["Bank account 62812345678"] })])],
+      }),
+    ).toMatchObject({ ok: false, refusal: { reason: "content" } });
+    expect(
+      await domain.conversations.send(client.actor, {
+        conversationId,
+        text: "The plans",
+        files: [new Blob([paddedTo(PDF, 10 * 1024 * 1024 + 1)])],
+      }),
+    ).toEqual({
+      ok: false,
+      refusal: { reason: "too-large", message: "A file can be at most 10 MB." },
+    });
+  });
+
+  test("takes no video", async () => {
+    const { domain, given } = await createHarness();
+    const { artisan, conversationId } = await engaged(given, domain);
+
+    expect(
+      await domain.conversations.send(artisan.actor, {
+        conversationId,
+        text: "",
+        files: [new Blob([webmOpus(10, { video: true })])],
+      }),
+    ).toEqual({ ok: false, refusal: { reason: "video", message: "Video cannot be sent." } });
+  });
+
+  test("shows the Admin a Held voice note or PDF to decide it", async () => {
+    const harness = await createHarness();
+    const { domain, given } = harness;
+    const admin = await given.admin();
+    const { client, conversationId } = await engaged(given, domain);
+    harness.contentReader.force({ kind: "unsure", reason: "It may ask for cash." });
+
+    const sent = await domain.conversations.send(client.actor, {
+      conversationId,
+      text: "Listen",
+      files: [new Blob([webmOpus(20)]), new Blob([await textPdf({ lines: ["Plans"] })])],
+    });
+
+    expect(sent).toMatchObject({ ok: true, value: { state: "held" } });
+    const { id: itemId } = await preCheck(harness, admin);
+    const item = await domain.queues.item(admin.actor, { itemId });
+    expect(item).toMatchObject({
+      tabs: [
+        {
+          label: "The message",
+          blocks: [
+            { kind: "text", text: "Listen" },
+            {
+              kind: "files",
+              files: [
+                { kind: "voice-note", label: "Voice note 1" },
+                { kind: "pdf", label: "PDF 1" },
+              ],
+            },
+          ],
+        },
+        {},
+        {},
+      ],
+    });
+    const viewed = (await domain.conversations.view(client.actor, { conversationId }))!.items.at(
+      -1,
+    );
+    const fileId = viewed?.kind === "message" ? viewed.files[0]!.id : "";
+    expect(await domain.conversations.file(admin.actor, { fileId })).toMatchObject({
+      contentType: "audio/webm",
+    });
+  });
+
+  test("goes read-only once the Engagement is Completed, and its messages stay", async () => {
+    const { domain, given } = await createHarness();
+    const { client, artisan, conversationId, engagementId, jobId } = await engaged(given, domain);
+    await domain.conversations.send(client.actor, { conversationId, text: "Thanks!" });
+    await given.workStarted(client, engagementId);
+    await given.markedComplete(artisan, engagementId);
+
+    await domain.engagements.approve(client.actor, { engagementId });
+
+    for (const party of [client, artisan]) {
+      expect(await domain.conversations.view(party.actor, { conversationId })).toMatchObject({
+        takesMessages: false,
+        items: expect.arrayContaining([
+          expect.objectContaining({ text: "Thanks!" }),
+          expect.objectContaining({ kind: "event", event: "approved" }),
+        ]),
+      });
+      expect(
+        await domain.conversations.send(party.actor, { conversationId, text: "One more thing" }),
+      ).toEqual({
+        ok: false,
+        refusal: { reason: "read-only", message: "This Conversation has ended." },
+      });
+    }
+    expect(await domain.conversations.forJob(client.actor, { jobId })).toEqual([
+      expect.objectContaining({ conversationId, takesMessages: false }),
+    ]);
+  });
+});
+
 /** A Quote's fields, as the Artisan's form sends them. */
 const QUOTE = {
   scope: "Prepare and paint two walls with two coats of washable white.",
@@ -615,6 +877,13 @@ async function talking(given: Harness["given"], domain: Harness["domain"]) {
   const [conversation] = (await domain.conversations.forJob(client.actor, { jobId }))!;
   if (!conversation) throw new Error("Expected the Quote to open a Conversation");
   return { artisan, client, jobId, quoteId, conversationId: conversation.conversationId };
+}
+
+/** As `talking`, then the Client Hires the Quote: their Conversation is the Engagement's. */
+async function engaged(given: Harness["given"], domain: Harness["domain"]) {
+  const talk = await talking(given, domain);
+  await given.hired(talk.client, talk.quoteId);
+  return { ...talk, engagementId: await given.engagementOf(talk.client, talk.jobId) };
 }
 
 async function invite(

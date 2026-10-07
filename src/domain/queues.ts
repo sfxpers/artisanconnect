@@ -21,7 +21,10 @@ export type Block =
   | { kind: "text"; text: string }
   | { kind: "facts"; facts: { label: string; value: string }[] }
   /** Stored files, each by a link that works for a while; only a logged read hands them out. */
-  | { kind: "files"; files: { kind: "photo" | "pdf"; label: string; href: string }[] };
+  | {
+      kind: "files";
+      files: { kind: "photo" | "pdf" | "voice-note"; label: string; href: string }[];
+    };
 
 /** One decision a kind of item can have. */
 export type DecisionOption = {

@@ -22,7 +22,7 @@ export const getConversation = createServerFn({ method: "GET" })
     return domain.conversations.view(await requestActor(domain), data);
   });
 
-/** Sends a message: "conversationId", "text", and up to five "photos". */
+/** Sends a message: "conversationId", "text", and up to five "files" (photos, voice notes, PDFs). */
 export const sendMessage = createServerFn({ method: "POST" })
   .validator((input: FormData) => {
     if (!(input instanceof FormData)) throw new Error("Expected a form");
@@ -30,7 +30,7 @@ export const sendMessage = createServerFn({ method: "POST" })
     return {
       conversationId: String(input.get("conversationId") ?? ""),
       text: typeof text === "string" ? text : "",
-      photos: input.getAll("photos").filter((value): value is File => value instanceof File),
+      files: input.getAll("files").filter((value): value is File => value instanceof File),
     };
   })
   .handler(async ({ data }) => {

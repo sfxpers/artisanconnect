@@ -7,7 +7,7 @@ import { jobRow } from "../jobs/rows";
 import { accountSidebar } from "../quotes/held";
 import type { Block } from "../queues";
 import { messages } from "../schema";
-import { messagePhotoPath } from "./parties";
+import { messageFilePath } from "./parties";
 import {
   conversationRow,
   messageRow,
@@ -88,22 +88,29 @@ export const heldMessage = defineHeldKind("held.message", {
   },
 });
 
-/** What the Admin reads of a message: its text and its photos. */
+/** What the Admin reads of a message: its text, its photos, and its voice notes and PDFs. */
 function messageBlocks(message: MessageRow): Block[] {
   const blocks: Block[] = [];
   if (message.text) blocks.push({ kind: "text", text: message.text });
-  if (message.photos.length > 0) {
+  const files = [...message.photos, ...message.files];
+  if (files.length > 0) {
+    const counted: Partial<Record<(typeof files)[number]["kind"], number>> = {};
     blocks.push({
       kind: "files",
-      files: message.photos.map((photo, index) => ({
-        kind: "photo",
-        label: `Photo ${index + 1}`,
-        href: messagePhotoPath(photo),
-      })),
+      files: files.map((file) => {
+        counted[file.kind] = (counted[file.kind] ?? 0) + 1;
+        return {
+          kind: file.kind,
+          label: `${FILE_LABELS[file.kind]} ${counted[file.kind]}`,
+          href: messageFilePath(file),
+        };
+      }),
     });
   }
   return blocks;
 }
+
+const FILE_LABELS = { photo: "Photo", "voice-note": "Voice note", pdf: "PDF" } as const;
 
 /** The writes that Hold a message for the Admin's Pre-check. */
 export function holdWrites(

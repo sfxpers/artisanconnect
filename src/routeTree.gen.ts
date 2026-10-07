@@ -38,7 +38,7 @@ import { Route as JobPhotosPhotoIdRouteImport } from './routes/job-photos.$photo
 import { Route as JobsIndexRouteImport } from './routes/jobs.index'
 import { Route as JobsJobIdRouteImport } from './routes/jobs.$jobId'
 import { Route as JobsNewRouteImport } from './routes/jobs.new'
-import { Route as MessagePhotosPhotoIdRouteImport } from './routes/message-photos.$photoId'
+import { Route as MessageFilesFileIdRouteImport } from './routes/message-files.$fileId'
 import { Route as ProfilePhotosPhotoIdRouteImport } from './routes/profile-photos.$photoId'
 import { Route as WebhooksPaymentsRouteImport } from './routes/webhooks/payments'
 import { Route as AdminFilesTokenRouteImport } from './routes/admin/files.$token'
@@ -192,9 +192,9 @@ const JobsNewRoute = JobsNewRouteImport.update({
   path: '/jobs/new',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MessagePhotosPhotoIdRoute = MessagePhotosPhotoIdRouteImport.update({
-  id: '/message-photos/$photoId',
-  path: '/message-photos/$photoId',
+const MessageFilesFileIdRoute = MessageFilesFileIdRouteImport.update({
+  id: '/message-files/$fileId',
+  path: '/message-files/$fileId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfilePhotosPhotoIdRoute = ProfilePhotosPhotoIdRouteImport.update({
@@ -255,7 +255,7 @@ export interface FileRoutesByFullPath {
   '/job-photos/$photoId': typeof JobPhotosPhotoIdRoute
   '/jobs/$jobId': typeof JobsJobIdRoute
   '/jobs/new': typeof JobsNewRoute
-  '/message-photos/$photoId': typeof MessagePhotosPhotoIdRoute
+  '/message-files/$fileId': typeof MessageFilesFileIdRoute
   '/profile-photos/$photoId': typeof ProfilePhotosPhotoIdRoute
   '/webhooks/payments': typeof WebhooksPaymentsRoute
   '/admin/': typeof AdminIndexRoute
@@ -293,7 +293,7 @@ export interface FileRoutesByTo {
   '/job-photos/$photoId': typeof JobPhotosPhotoIdRoute
   '/jobs/$jobId': typeof JobsJobIdRoute
   '/jobs/new': typeof JobsNewRoute
-  '/message-photos/$photoId': typeof MessagePhotosPhotoIdRoute
+  '/message-files/$fileId': typeof MessageFilesFileIdRoute
   '/profile-photos/$photoId': typeof ProfilePhotosPhotoIdRoute
   '/webhooks/payments': typeof WebhooksPaymentsRoute
   '/admin': typeof AdminIndexRoute
@@ -332,7 +332,7 @@ export interface FileRoutesById {
   '/job-photos/$photoId': typeof JobPhotosPhotoIdRoute
   '/jobs/$jobId': typeof JobsJobIdRoute
   '/jobs/new': typeof JobsNewRoute
-  '/message-photos/$photoId': typeof MessagePhotosPhotoIdRoute
+  '/message-files/$fileId': typeof MessageFilesFileIdRoute
   '/profile-photos/$photoId': typeof ProfilePhotosPhotoIdRoute
   '/webhooks/payments': typeof WebhooksPaymentsRoute
   '/admin/': typeof AdminIndexRoute
@@ -372,7 +372,7 @@ export interface FileRouteTypes {
     | '/job-photos/$photoId'
     | '/jobs/$jobId'
     | '/jobs/new'
-    | '/message-photos/$photoId'
+    | '/message-files/$fileId'
     | '/profile-photos/$photoId'
     | '/webhooks/payments'
     | '/admin/'
@@ -410,7 +410,7 @@ export interface FileRouteTypes {
     | '/job-photos/$photoId'
     | '/jobs/$jobId'
     | '/jobs/new'
-    | '/message-photos/$photoId'
+    | '/message-files/$fileId'
     | '/profile-photos/$photoId'
     | '/webhooks/payments'
     | '/admin'
@@ -448,7 +448,7 @@ export interface FileRouteTypes {
     | '/job-photos/$photoId'
     | '/jobs/$jobId'
     | '/jobs/new'
-    | '/message-photos/$photoId'
+    | '/message-files/$fileId'
     | '/profile-photos/$photoId'
     | '/webhooks/payments'
     | '/admin/'
@@ -487,7 +487,7 @@ export interface RootRouteChildren {
   JobPhotosPhotoIdRoute: typeof JobPhotosPhotoIdRoute
   JobsJobIdRoute: typeof JobsJobIdRoute
   JobsNewRoute: typeof JobsNewRoute
-  MessagePhotosPhotoIdRoute: typeof MessagePhotosPhotoIdRoute
+  MessageFilesFileIdRoute: typeof MessageFilesFileIdRoute
   ProfilePhotosPhotoIdRoute: typeof ProfilePhotosPhotoIdRoute
   WebhooksPaymentsRoute: typeof WebhooksPaymentsRoute
   AdminIndexRoute: typeof AdminIndexRoute
@@ -704,11 +704,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JobsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/message-photos/$photoId': {
-      id: '/message-photos/$photoId'
-      path: '/message-photos/$photoId'
-      fullPath: '/message-photos/$photoId'
-      preLoaderRoute: typeof MessagePhotosPhotoIdRouteImport
+    '/message-files/$fileId': {
+      id: '/message-files/$fileId'
+      path: '/message-files/$fileId'
+      fullPath: '/message-files/$fileId'
+      preLoaderRoute: typeof MessageFilesFileIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profile-photos/$photoId': {
@@ -783,7 +783,7 @@ const rootRouteChildren: RootRouteChildren = {
   JobPhotosPhotoIdRoute: JobPhotosPhotoIdRoute,
   JobsJobIdRoute: JobsJobIdRoute,
   JobsNewRoute: JobsNewRoute,
-  MessagePhotosPhotoIdRoute: MessagePhotosPhotoIdRoute,
+  MessageFilesFileIdRoute: MessageFilesFileIdRoute,
   ProfilePhotosPhotoIdRoute: ProfilePhotosPhotoIdRoute,
   WebhooksPaymentsRoute: WebhooksPaymentsRoute,
   AdminIndexRoute: AdminIndexRoute,

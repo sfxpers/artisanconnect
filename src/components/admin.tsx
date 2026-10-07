@@ -77,7 +77,7 @@ export function Blocks({ blocks }: { blocks: Block[] }) {
   );
 }
 
-/** Stored files: photos shown, PDFs opened in a new tab. Their links work for a while. */
+/** Stored files: photos shown, voice notes played, PDFs opened in a new tab. Their links work for a while. */
 function Files({ files }: { files: Extract<Block, { kind: "files" }>["files"] }) {
   return (
     <ul className="grid gap-3 sm:grid-cols-2">
@@ -94,6 +94,9 @@ function Files({ files }: { files: Extract<Block, { kind: "files" }>["files"] })
           </a>
           {file.kind === "photo" && (
             <img src={file.href} alt={file.label} className="w-full rounded-md border" />
+          )}
+          {file.kind === "voice-note" && (
+            <audio controls preload="none" src={file.href} className="w-full" />
           )}
         </li>
       ))}

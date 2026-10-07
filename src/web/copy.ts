@@ -727,12 +727,24 @@ export const copy = {
     empty: "No messages yet.",
     adminMayRead:
       "The Admin may read this Conversation, for a Report, a Dispute, or a Chargeback. Before Payment, share no contact details, links, address, or surname, and pay only through ArtisanConnect.",
+    adminMayReadAfterPayment:
+      "The Admin may read this Conversation, for a Report, a Dispute, or a Chargeback. Now that the Job is paid, you may share phone numbers, emails, and the address. Share no bank details or payment links, and pay only through ArtisanConnect.",
     placeholder: "Write a message",
     photos: "Add photos",
     photosHint: (max: number) =>
       `Up to ${max} photos. No video, voice notes, or PDFs before Payment.`,
     photosChosen: (count: number) => (count === 1 ? "1 photo" : `${count} photos`),
     clearPhotos: "Remove photos",
+    attach: "Attach",
+    filesHint: (max: number) =>
+      `Up to ${max} photos, PDFs, or voice notes of up to 5 minutes, each at most 10 MB. No video.`,
+    filesChosen: (count: number) => (count === 1 ? "1 file" : `${count} files`),
+    clearFiles: "Remove files",
+    record: "Record a voice note",
+    stopRecording: (seconds: number) => `Stop recording (${formatSeconds(seconds)})`,
+    cannotRecord: "Your browser did not let ArtisanConnect use the microphone.",
+    voiceNote: (seconds: number) => `Voice note, ${formatSeconds(seconds)}`,
+    pdf: (index: number) => `PDF ${index}`,
     send: "Send",
     beingChecked: "Being checked",
     beingCheckedLead: "Only you see this until the Admin has checked it.",
@@ -741,6 +753,7 @@ export const copy = {
     readOnly: "This Conversation has ended. It stays here to read.",
     events: {
       "quote.sent": "Quote sent",
+      hire: "Hired and paid",
       "work.started": "Work started",
       "completion.made": "Marked complete",
       "fix.requested": "Fix requested",
@@ -946,6 +959,12 @@ export const copy = {
 } as const;
 
 /** A date as South Africans read it. */
+/** A length of time as minutes and seconds: "4:05". */
+export function formatSeconds(seconds: number): string {
+  const whole = Math.round(seconds);
+  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, "0")}`;
+}
+
 export function formatDate(date: Date | string): string {
   return formatTime(new Date(date));
 }

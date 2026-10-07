@@ -3,6 +3,7 @@ import { system, type Actor } from "../actor";
 import { publicName } from "../accounts/names";
 import { isAlreadyDecided } from "../content/held";
 import type { Context, Write } from "../context";
+import { eventWrite } from "../conversations/rows";
 import { causedBy } from "../errors";
 import { insertWhile } from "../guarded";
 import { addedBy, editsStanding, withdrawEdit } from "../jobs/edits";
@@ -176,8 +177,8 @@ async function notHiredReason(
 /**
  * The writes of the Hire, in one batch: the Engagement, with the Artisan Fee
  * fixed now; the Payment and the Protection Fee in the ledger; the Quote and
- * the Job Hired; every other Quote ended, their Artisans told; the Artisan
- * told; and the Client's Receipt. The Engagement is written only while the
+ * the Job Hired, shown in their Conversation; every other Quote ended, their
+ * Artisans told; the Artisan told; and the Client's Receipt. The Engagement is written only while the
  * Payment, Quote, and Job are as read, and the ledger rows name it, so a
  * change meanwhile aborts the whole batch.
  */
@@ -224,6 +225,12 @@ async function hireWrites(
       .where(eq(payments.id, payment.id)),
     ctx.db.update(quotes).set({ state: "hired" }).where(eq(quotes.id, quote.id)),
     ctx.db.update(jobs).set({ state: "hired", updatedAt: now }).where(eq(jobs.id, job.id)),
+    eventWrite(
+      ctx,
+      { jobId: job.id, artisanId: quote.artisanId },
+      "hire",
+      sql`exists (select 1 from ${engagements} where ${engagements.id} = ${engagementId})`,
+    ),
     ...(await closeJobWrites(ctx, system, job, { quoteId: quote.id })),
     // An edit waiting on a Hired Job has nothing to show on.
     ...(beingChecked ? await withdrawEdit(ctx, beingChecked.id) : []),

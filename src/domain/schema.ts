@@ -809,10 +809,13 @@ export const conversations = sqliteTable(
   (table) => [uniqueIndex("conversations_once_per_job").on(table.jobId, table.artisanId)],
 );
 
+/** A file in a message that is not a photo. */
+export type MessageFile = Extract<StoredFile, { kind: "voice-note" | "pdf" }>;
+
 export const MESSAGE_STATES = ["held", "delivered", "refused", "withdrawn", "unsent"] as const;
 
 /**
- * A message, or a row for an event that is not speech (a Quote Sent). A Held
+ * A message, or a row for an event that is not speech (a Quote Sent, the Hire). A Held
  * one exists only for its sender and the Admin until it is delivered or
  * refused; one delivered is never changed or removed (a trigger in the
  * migration refuses both).
@@ -832,6 +835,11 @@ export const messages = sqliteTable(
     photos: text("photos", { mode: "json" })
       .$type<Extract<StoredFile, { kind: "photo" }>[]>()
       .notNull(),
+    /** Its voice notes and PDFs, which only the Engagement's Conversation takes (#131). */
+    files: text("files", { mode: "json" })
+      .$type<MessageFile[]>()
+      .notNull()
+      .default(sql`'[]'`),
     state: text("state", { enum: MESSAGE_STATES }).notNull(),
     /** Why the Content check Held it, for the Admin. */
     heldFor: text("held_for"),

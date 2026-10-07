@@ -6,9 +6,10 @@ export const MESSAGE_MAX = 2000;
 /** The most files one message may carry. */
 export const MESSAGE_ATTACHMENTS_MAX = 5;
 
-/** The events a Conversation shows as rows that are not speech. Hire comes with #131. */
+/** The events a Conversation shows as rows that are not speech. */
 export const MESSAGE_EVENTS = [
   "quote.sent",
+  "hire",
   "work.started",
   "completion.made",
   "fix.requested",

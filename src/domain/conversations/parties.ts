@@ -3,16 +3,14 @@ import { clientShownName, publicName } from "../accounts/names";
 import type { Withheld } from "../content/patterns";
 import type { Context } from "../context";
 import { accounts } from "../schema";
-import { holdsNow, seenByArtisan, type conversationRow, type Party } from "./rows";
+import { holdsNow, seenByArtisan, type ConversationRow, type Party } from "./rows";
 
 // Who is in a Conversation, and what each may see and say of the other.
-
-type Conversation = NonNullable<Awaited<ReturnType<typeof conversationRow>>>;
 
 /** Which party of the Conversation the Account is, if it sees it; null if neither. */
 export async function viewerOf(
   ctx: Context,
-  conversation: Conversation,
+  conversation: ConversationRow,
   accountId: string | null,
 ): Promise<Party | null> {
   if (accountId === conversation.job.clientId) return "client";
@@ -26,7 +24,7 @@ export async function viewerOf(
 }
 
 /** The names each party goes by in the Conversation: those the Content check has passed, or none. */
-export async function namesOf(ctx: Context, conversation: Conversation) {
+export async function namesOf(ctx: Context, conversation: ConversationRow) {
   const [client, artisan] = await Promise.all([
     namesRow(ctx, conversation.job.clientId),
     namesRow(ctx, conversation.artisanId),
@@ -42,7 +40,7 @@ export async function namesOf(ctx: Context, conversation: Conversation) {
  * What neither party may say before Payment: the Job's street and suburb,
  * and either party's surname where the platform does not show it.
  */
-export async function withheldOf(ctx: Context, conversation: Conversation): Promise<Withheld> {
+export async function withheldOf(ctx: Context, conversation: ConversationRow): Promise<Withheld> {
   const { rows } = await namesOf(ctx, conversation);
   const surnames = [
     rows.client && unshownSurname(rows.client.name, clientShownName(publicName(rows.client))),
@@ -76,7 +74,7 @@ async function namesRow(ctx: Context, accountId: string) {
   return row ?? null;
 }
 
-/** The web app's path to a photo in a message, or its thumbnail. */
-export function messagePhotoPath(photo: { id: string }, thumbnail = false): string {
-  return `/message-photos/${photo.id}${thumbnail ? "?size=thumbnail" : ""}`;
+/** The web app's path to a file in a message, or a photo's thumbnail. */
+export function messageFilePath(file: { id: string }, thumbnail = false): string {
+  return `/message-files/${file.id}${thumbnail ? "?size=thumbnail" : ""}`;
 }

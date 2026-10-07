@@ -107,7 +107,7 @@ The Client's choice of a Sent Quote, made by paying for it. Other Sent Quotes on
 _Avoid_: Accept, Booking
 
 **Conversation**:
-The messages between one Client and one Artisan on one Job, opened by the first Quote Sent or the Invitation. The Admin may read it and not write in it. Before Payment it takes text and photos; after Payment also voice notes and PDFs; never video. It goes read-only once the Quote is Declined, Withdrawn, or Expired, or the Job closes; a delivered message is never changed or removed.
+The messages between one Client and one Artisan on one Job, opened by the first Quote Sent or the Invitation. The Admin may read it and not write in it. Before Payment it takes text and photos; after Payment also voice notes and PDFs; never video. It goes read-only once the Quote is Declined, Withdrawn, or Expired, the Job closes, or its Engagement is Completed or Cancelled; a delivered message is never changed or removed.
 _Avoid_: Chat, Inbox, DM
 
 ### Doing the work
