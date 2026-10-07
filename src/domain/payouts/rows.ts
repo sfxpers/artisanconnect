@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import type { Context } from "../context";
+import { bankReference } from "../references";
 import { accounts, engagements, jobs, ledgerEntries, payouts, verificationChecks } from "../schema";
 
 // What the daily run, a Payout's events, and the Payouts views share.
@@ -9,7 +10,7 @@ export const UNPAID_STATES = ["created", "pending", "paused"] as const;
 
 /** On the Artisan's bank statement: our id, shortened to at most 20 characters. */
 export function payoutReference(payoutId: string): string {
-  return `AC ${payoutId.replaceAll("-", "").slice(0, 16).toUpperCase()}`;
+  return bankReference(payoutId, 16);
 }
 
 /**

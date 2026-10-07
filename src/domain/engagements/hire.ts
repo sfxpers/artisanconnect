@@ -16,6 +16,7 @@ import { closeJobWrites } from "../quotes/ends";
 import { startPassed, verifiedForJob } from "../quotes/rules";
 import { isLive, quoteRow, type QuoteRow } from "../quotes/rows";
 import { notHiredRefundWrite, sendRefunds } from "../refunds";
+import { bankReference, shortId } from "../references";
 import { ok, refuse } from "../result";
 import { saDay, formatDay } from "../sa-days";
 import {
@@ -100,7 +101,7 @@ export async function openCheckout(
     id: payment.id,
     amountCents: payment.amountCents,
     methods: METHODS,
-    payerReference: paymentReference(payment.id),
+    payerReference: bankReference(payment.id),
     beneficiaryReference: `ArtisanConnect ${shortId(payment.id)}`.slice(0, 20),
     returnUrl: new URL(`/jobs/${job.id}`, ctx.config.appUrl).href,
   });
@@ -339,7 +340,7 @@ async function receiptText(
     `Job: ${job.title}`,
     `Artisan: ${artisan?.namesShown ? publicName(artisan) : "your Artisan"}`,
     `Paid on: ${formatDay(saDay(paidAt))}`,
-    `Reference: ${paymentReference(payment.id)}`,
+    `Reference: ${bankReference(payment.id)}`,
     "",
     `Quote: ${formatRands(totalCents)} (Labour ${formatRands(payment.labourCents)}, Materials ${formatRands(payment.materialsCents)})`,
     `Protection Fee (${PROTECTION_FEE_PERCENT}%, not refunded): ${formatRands(payment.protectionFeeCents)}`,
@@ -365,15 +366,6 @@ async function emailOf(ctx: Context, accountId: string) {
     .where(eq(authUsers.id, accountId));
   if (!row) throw new Error(`Account ${accountId} has no Email`);
   return row.email;
-}
-
-/** On the Client's bank statement: at most 12 characters. */
-function paymentReference(paymentId: string) {
-  return `AC ${shortId(paymentId)}`;
-}
-
-function shortId(id: string) {
-  return id.replaceAll("-", "").slice(0, 8).toUpperCase();
 }
 
 /** Whether a batch aborted because what it read changed before it ran. */

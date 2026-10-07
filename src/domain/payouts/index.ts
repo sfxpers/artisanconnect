@@ -18,7 +18,7 @@ import { emailTells, tellWhile } from "../tells";
 import { currentPayoutAccount } from "../verification";
 import { payoutClocks } from "./events";
 import { payoutReference } from "./rows";
-import { latestRun, unpaidCents } from "./run";
+import { floatNeededCents, latestRun } from "./run";
 
 // Payouts (#128): money sent to the Artisan's Payout account after a
 // Release, in the next daily run. The Artisan follows each Release to its
@@ -98,13 +98,13 @@ export const payoutsSection = defineSection({
     /**
      * The Admin home's banner: shown from a run whose float check found the
      * float could not cover it, until the float can cover every Payout sent
-     * and not yet paid.
+     * and not yet paid, and every Refund on its way.
      */
     async float(viewer: Actor) {
       if (viewer.kind !== "admin") return null;
       const run = await latestRun(ctx);
       if (!run || run.floatCents >= run.neededCents) return { short: false as const };
-      const neededCents = await unpaidCents(ctx);
+      const neededCents = await floatNeededCents(ctx);
       const floatCents = await ctx.ports.payments
         .getFloatBalance()
         .then(({ cents }) => cents)

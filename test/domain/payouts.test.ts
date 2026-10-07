@@ -653,7 +653,7 @@ describe("the float check", () => {
       expect(mailer.sentTo(email).at(-1)).toMatchObject({
         subject: "The float cannot cover today's Payouts",
         text: expect.stringContaining(
-          `The float holds ${formatRands(10_000)}, and today's Payouts need ${formatRands(45_000)}.`,
+          `The float holds ${formatRands(10_000)}, and today's Payouts and the Refunds on their way need ${formatRands(45_000)}.`,
         ),
       });
     }
@@ -699,6 +699,35 @@ describe("the float check", () => {
       floatCents: 50_000,
       neededCents: 90_000,
     });
+  });
+
+  test("counts the Refunds on their way, which the float pays too", async () => {
+    const { domain, given, payments, mailer, clock } = await createHarness();
+    const admin = await given.admin();
+    const { artisan, engagementId } = await releasedJob(given);
+    const refunded = await domain.engagements.refund(artisan.actor, {
+      engagementId,
+      labour: "300",
+    });
+    if (!refunded.ok) throw new Error(refunded.refusal.message);
+    payments.setFloat(60_000);
+    clock.set(RUN_AT);
+
+    // R450 of Payouts and R300 of Refund need R750.
+    expect(await domain.system.runPayouts()).toMatchObject({ floatShort: true });
+    expect(mailer.sentTo(admin.email).at(-1)?.text).toContain(
+      `The float holds ${formatRands(60_000)}, and today's Payouts and the Refunds on their way need ${formatRands(75_000)}.`,
+    );
+    expect(await domain.payouts.float(admin.actor)).toMatchObject({
+      short: true,
+      neededCents: 75_000,
+    });
+
+    // Once the Refund is paid, the float need only cover the Payout.
+    const [refund] = payments.calls.filter((call) => call.operation === "refund");
+    await receive(domain, await payments.succeedRefund((refund!.input as { id: string }).id));
+    payments.setFloat(50_000);
+    expect(await domain.payouts.float(admin.actor)).toEqual({ short: false });
   });
 
   test("is the Admin's only to see", async () => {

@@ -23,12 +23,14 @@ import {
   ledgerEntries,
   payoutRuns,
   payouts,
+  refunds,
   STOPPED_PAYOUT_STATES,
   verificationChecks,
 } from "../schema";
 import { emailAddress } from "../tells";
 import { currentPayoutAccount } from "../verification";
 import { payoutStopped } from "./events";
+import { UNSETTLED_STATES } from "../refunds/rows";
 import { payoutReference, UNPAID_STATES } from "./rows";
 
 // The daily Payout run (#128): once a day, at one South African time, every
@@ -62,7 +64,8 @@ export async function runPayouts(ctx: Context) {
   let owed: Release[] | null = null;
   if (!run) {
     owed = await releasesToSend(ctx);
-    const neededCents = (await unpaidCents(ctx)) + owed.reduce((sum, r) => sum + r.amountCents, 0);
+    const neededCents =
+      (await floatNeededCents(ctx)) + owed.reduce((sum, r) => sum + r.amountCents, 0);
     const { cents: floatCents } = await ctx.ports.payments.getFloatBalance();
     // Claims the day, so two runs at once send nothing twice, and the float is checked once.
     const [claimed] = await ctx.db
@@ -118,13 +121,17 @@ export async function latestRun(ctx: Context) {
   return run ?? null;
 }
 
-/** What the Payouts sent and not yet paid come to. */
-export async function unpaidCents(ctx: Context): Promise<number> {
-  const [row] = await ctx.db
-    .select({ cents: sql<number>`coalesce(sum(${payouts.amountCents}), 0)` })
-    .from(payouts)
-    .where(inArray(payouts.state, UNPAID_STATES));
-  return row?.cents ?? 0;
+/**
+ * What the float must still pay out: the Payouts sent and not yet paid, and
+ * the Refunds on their way, which it pays too (#132).
+ */
+export async function floatNeededCents(ctx: Context): Promise<number> {
+  const cents = sql<number>`coalesce(sum(amount_cents), 0)`;
+  const [[unpaid], [refunding]] = await Promise.all([
+    ctx.db.select({ cents }).from(payouts).where(inArray(payouts.state, UNPAID_STATES)),
+    ctx.db.select({ cents }).from(refunds).where(inArray(refunds.state, UNSETTLED_STATES)),
+  ]);
+  return (unpaid?.cents ?? 0) + (refunding?.cents ?? 0);
 }
 
 /**
@@ -367,7 +374,7 @@ async function floatShortEmails(ctx: Context, floatCents: number, neededCents: n
       title: "The float cannot cover today's Payouts",
       link: "/admin",
       body: [
-        `The float holds ${formatRands(floatCents)}, and today's Payouts need ${formatRands(neededCents)}.`,
+        `The float holds ${formatRands(floatCents)}, and today's Payouts and the Refunds on their way need ${formatRands(neededCents)}.`,
         "The Payouts were sent all the same. The provider pauses what it cannot pay until the float is topped up; nobody is told meanwhile.",
         "The Admin home shows a banner until the float can cover them.",
       ].join("\n\n"),

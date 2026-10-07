@@ -1,6 +1,7 @@
 import { and, eq, exists, sql } from "drizzle-orm";
 import type { Context } from "../context";
 import { formatRands } from "../money";
+import { bankReference } from "../references";
 import { formatDay, saDay } from "../sa-days";
 import { accounts, jobs, payments, refunds } from "../schema";
 
@@ -50,7 +51,7 @@ export function refundIs(
 
 /** On the Client's bank statement, and in their Receipt: at most 12 characters. */
 export function refundReference(refundId: string) {
-  return `AC ${refundId.replaceAll("-", "").slice(0, 8).toUpperCase()}`;
+  return bankReference(refundId);
 }
 
 /**

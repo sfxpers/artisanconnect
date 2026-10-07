@@ -218,6 +218,11 @@ export async function sendRefunds(ctx: Context, paymentId: string) {
   const next = rows.find(({ refund }) => refund.state === "waiting");
   if (!next) return;
   const { refund, notHiredFor } = next;
+  // A throw leaves it waiting, asked again every minute, as for a provider that
+  // is down. The fake never refuses a Refund for good; a real adapter must
+  // answer one it will never take as a refund.failed event instead, so it
+  // stays owed and the Admin pays it by hand, rather than holding back every
+  // later Refund of this Payment.
   await ctx.ports.payments.refund({
     id: refund.id,
     collectionId: paymentId,

@@ -903,9 +903,9 @@ export const copy = {
     home: {
       title: "Queues",
       lead: "Every queue in one stream, oldest first.",
-      floatShort: "The float cannot cover the Payouts sent",
+      floatShort: "The float cannot cover the Payouts and Refunds sent",
       floatShortLead: (float: string, needed: string, when: string) =>
-        `The float holds ${float}, and the Payouts sent and not yet paid need ${needed} (checked before the run, ${when}). The provider pauses what it cannot pay until the float is topped up.`,
+        `The float holds ${float}, and the Payouts sent and not yet paid and the Refunds on their way need ${needed} (checked before the run, ${when}). The provider pauses what it cannot pay until the float is topped up.`,
       all: "All",
       empty: "Nothing is waiting. Every queue is clear.",
       emptyQueue: "Nothing is waiting in this queue.",
