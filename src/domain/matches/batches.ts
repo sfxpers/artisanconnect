@@ -4,6 +4,7 @@ import { fireDueClock, startClock, type ClockHandler } from "../clocks";
 import { invitationOf } from "../invitations";
 import type { Context, Write } from "../context";
 import { BATCH_CLOCK, jobRow, type JobRow } from "../jobs/rows";
+import { belowFive, liveQuoteOf, takesQuotesNow } from "../quotes/rows";
 import {
   accounts,
   artisanRegions,
@@ -43,12 +44,15 @@ const nextBatch: ClockHandler = async (ctx, clock) => {
   const nextAt = new Date(now.getTime() + DAY_MS);
   // Each write is guarded on the Batch still being due, as a command may
   // close the Job between this read and the batch.
+  // At five Quotes the Job takes no more Job Matches, and the clock stops:
+  // only Renew, which counts Quotes from zero, starts it again.
   const stillDue = and(
     eq(jobs.id, job.id),
     eq(jobs.state, "open"),
     eq(jobs.nextBatchAt, clock.dueAt),
+    belowFive(),
   )!;
-  // No Batch once the Job has five Quotes, once there are Quotes (#124).
+  if (!(await takesQuotesNow(ctx, job.id))) return [];
   const artisanIds = await batchFor(ctx, job);
   return [
     ...artisanIds.flatMap((artisanId) => offerWrites(ctx, job, artisanId, stillDue)),
@@ -76,8 +80,8 @@ export async function sendDueBatch(ctx: Context, jobId: string): Promise<void> {
  * those never offered a Job first, then the one offered least recently, ties
  * to the older Account. Eligible: verified for the Job's category (and for
  * gas work on a gas Job), working in its Region, Available for Jobs, and not
- * yet offered or invited to this Job. Not Suspended, once there are
- * Suspensions (#136); not Quoted on it, once there are Quotes (#124).
+ * yet offered, invited to, or Quoted on this Job. Not Suspended, once
+ * there are Suspensions (#136).
  */
 async function batchFor(ctx: Context, job: JobRow): Promise<string[]> {
   const { category, regionId } = job;
@@ -126,6 +130,7 @@ async function batchFor(ctx: Context, job: JobRow): Promise<string[]> {
               .where(and(eq(jobMatches.jobId, job.id), eq(jobMatches.artisanId, accounts.id))),
           ),
           notExists(invitationOf(ctx, job.id, accounts.id)),
+          notExists(liveQuoteOf(ctx, job.id, accounts.id)),
         ),
       );
   // By subquery, not by id: D1 binds at most 100 values to a query.

@@ -13,6 +13,7 @@ import { initials } from "@/components/app-header";
 import { NoticeList } from "@/components/notice-list";
 import { NextStepCard, Page, Refusal } from "@/components/page";
 import { REGIONS_MAX } from "@/domain/regions/places";
+import { formatRands } from "@/domain/money";
 import { getNotices } from "@/web/accounts";
 import { copy, formatDate } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
@@ -36,14 +37,16 @@ const t = copy.home;
 type Work = Awaited<ReturnType<typeof getMyWork>>;
 type Match = Work["matches"][number];
 type Invitation = Work["invitations"][number];
+type Quoted = Work["quotes"][number];
 type Tab = "matches" | "invitations" | "active" | "notices";
 type Result = { ok: true } | { ok: false; refusal: { message: string } };
 
 /**
  * The Artisan home (#107): a highlighted card for what is waiting, tabs for
  * Job Matches, Invitations, Active Jobs, and Notices, and a sidebar with the
- * Profile and the Available for Jobs switch, and the Regions. Active Jobs
- * come with their ticket.
+ * Profile and the Available for Jobs switch, and the Regions. Active Jobs are
+ * those the Artisan has a Quote on being checked or Sent; Hired ones join
+ * them with their ticket (#126).
  */
 function Home() {
   const { notices, work } = Route.useLoaderData();
@@ -59,7 +62,7 @@ function Home() {
               <TabsTrigger value="invitations">
                 {t.tabs.invitations(work.invitations.length)}
               </TabsTrigger>
-              <TabsTrigger value="active">{t.tabs.active}</TabsTrigger>
+              <TabsTrigger value="active">{t.tabs.active(work.quotes.length)}</TabsTrigger>
               <TabsTrigger value="notices">{t.tabs.notices}</TabsTrigger>
             </TabsList>
             <TabsContent value="matches" className="pt-4">
@@ -69,7 +72,7 @@ function Home() {
               <Invitations invitations={work.invitations} />
             </TabsContent>
             <TabsContent value="active" className="pt-4">
-              <Empty>{t.noActive}</Empty>
+              <Active quotes={work.quotes} />
             </TabsContent>
             <TabsContent value="notices" className="pt-4">
               <NoticeList notices={notices} />
@@ -185,6 +188,27 @@ function Invitations({ invitations }: { invitations: Invitation[] }) {
   );
 }
 
+/** The Jobs the Artisan has a Quote on, being checked or Sent, the newest first. */
+function Active({ quotes }: { quotes: Quoted[] }) {
+  if (quotes.length === 0) return <Empty>{t.noActive}</Empty>;
+  return (
+    <Card className="py-0">
+      <ul className="divide-y">
+        {quotes.map((quote) => (
+          <JobListRow
+            key={quote.quoteId}
+            job={quote}
+            when={quote.sentAt ? t.quoteSent(formatDate(quote.sentAt)) : t.quoteHeld}
+          >
+            <Badge variant="secondary">{copy.quote.states[quote.state]}</Badge>
+            <span className="self-center text-sm font-medium">{formatRands(quote.totalCents)}</span>
+          </JobListRow>
+        ))}
+      </ul>
+    </Card>
+  );
+}
+
 /** A Job Match or an Invitation, which the Artisan may pass, telling nobody. */
 function PassableRow({
   job,
@@ -217,14 +241,14 @@ function PassableRow({
   );
 }
 
-/** One Job the Artisan holds a Job Match or an Invitation for: the Region, never the suburb, and what the Client wrote. */
+/** One Job the Artisan holds or has Quoted on: the Region, never the suburb, and what the Client wrote. */
 function JobListRow({
   job,
   when,
   refusal = null,
   children,
 }: {
-  job: Match | Invitation;
+  job: Match | Invitation | Quoted;
   when: string;
   refusal?: string | null;
   children?: React.ReactNode;

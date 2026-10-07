@@ -26,7 +26,8 @@ type HeldKindDefinition = {
    * has its own page), where a refusal shows its reason.
    */
   told: {
-    released: string;
+    /** Or, for a kind whose release may not put it live, what its release did. */
+    released: string | ((ctx: Context, subjectId: string) => Promise<string>);
     refused: string;
     link: string | ((ctx: Context, subjectId: string) => Promise<string>);
   };
@@ -60,6 +61,13 @@ export function defineHeldKind(kind: string, definition: HeldKindDefinition): He
     async decide(ctx, admin, item, choice) {
       const sender = await definition.sender(ctx, item.subjectId);
       const released = choice.decision === "release";
+      const { released: releasedTitle } = definition.told;
+      // Read before the writes are made, as their release reads the same.
+      const title = !released
+        ? definition.told.refused
+        : typeof releasedTitle === "string"
+          ? releasedTitle
+          : await releasedTitle(ctx, item.subjectId);
       const writes = released
         ? await definition.release(ctx, admin, item.subjectId)
         : await definition.refuse(ctx, admin, item.subjectId, choice.reason ?? "");
@@ -67,7 +75,7 @@ export function defineHeldKind(kind: string, definition: HeldKindDefinition): He
       const told = sender
         ? tell(ctx, admin, [sender], {
             event: `${kind}.${released ? "released" : "refused"}`,
-            title: released ? definition.told.released : definition.told.refused,
+            title,
             link: typeof link === "string" ? link : await link(ctx, item.subjectId),
           })
         : [];

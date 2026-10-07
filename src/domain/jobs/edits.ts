@@ -1,6 +1,7 @@
-import { and, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, inArray, notExists, sql, type SQL } from "drizzle-orm";
 import type { Context, Write } from "../context";
 import { defineHeldKind } from "../content/held";
+import { quotesSentOn } from "../quotes/rows";
 import { jobEdits, jobs, queueItems } from "../schema";
 import { clientSidebar, jobBlocks } from "./held";
 import { jobRow, photoView, type JobPhoto } from "./rows";
@@ -64,12 +65,22 @@ export function holdEditWrites(
   ];
 }
 
-/** The update that shows a version on the Job, while it may still be edited. */
+/**
+ * The update that shows a version on the Job, while it may still be edited:
+ * a Held edit the Admin releases after the first Quote shows nothing.
+ */
 function applyWrite(ctx: Context, jobId: string, version: JobVersion, guard?: SQL) {
   return ctx.db
     .update(jobs)
     .set({ ...version, updatedAt: ctx.now(), revision: sql`${jobs.revision} + 1` })
-    .where(and(eq(jobs.id, jobId), inArray(jobs.state, EDITABLE_STATES), guard));
+    .where(
+      and(
+        eq(jobs.id, jobId),
+        inArray(jobs.state, EDITABLE_STATES),
+        notExists(quotesSentOn(ctx, jobs.id)),
+        guard,
+      ),
+    );
 }
 
 /**

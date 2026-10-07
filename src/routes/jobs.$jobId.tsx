@@ -1,23 +1,20 @@
 import { useState } from "react";
-import {
-  Link,
-  createFileRoute,
-  useNavigate,
-  useRouter,
-  useRouterState,
-} from "@tanstack/react-router";
+import { Link, createFileRoute, useNavigate, useRouterState } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DraftForm, EditForm, type JobView } from "@/components/job-form";
 import { NextStepCard, Page, Refusal } from "@/components/page";
+import { useAction } from "@/components/use-action";
 import { Details, Fact } from "@/components/job-details";
 import { InviteList, type InviteListView } from "@/components/invite-list";
 import { OfferedJob } from "@/components/offered-job";
+import { ClientQuotes } from "@/components/quotes";
 import { copy, formatDate } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
 import { getInviteList } from "@/web/invitations";
+import { getJobQuotes } from "@/web/quotes";
 import { getRegionNames } from "@/web/profiles";
 import {
   closeJob,
@@ -35,20 +32,23 @@ export const Route = createFileRoute("/jobs/$jobId")({
   validateSearch: (search: Record<string, unknown>): { region?: string } => ({
     region: typeof search.region === "string" && search.region ? search.region : undefined,
   }),
-  beforeLoad: ({ context }) => {
-    onlyFor("account", context);
-  },
+  beforeLoad: ({ context }) => ({ me: onlyFor("account", context) }),
   loaderDeps: ({ search }) => ({ region: search.region }),
   loader: async ({ params, deps }) => {
     const job = await getJob({ data: { jobId: params.jobId } });
-    return { job, invite: job.as === "client" ? await inviteListFor(job, deps.region) : null };
+    if (job.as !== "client") return { job, invite: null, quotes: [] };
+    const [invite, quotes] = await Promise.all([
+      inviteListFor(job, deps.region),
+      job.state === "draft" ? null : getJobQuotes({ data: { jobId: job.jobId } }),
+    ]);
+    return { job, invite, quotes: quotes ?? [] };
   },
   component: JobPage,
 });
 
-/** Whom the Client may invite while the Job is Open, in the Region chosen if any. */
+/** Whom the Client may invite while the Job takes Quotes, in the Region chosen if any. */
 async function inviteListFor(job: JobView, region: string | undefined) {
-  if (job.state !== "open") return null;
+  if (!job.takesQuotes) return null;
   const [artisans, regions] = await Promise.all([
     getInviteList({ data: { jobId: job.jobId, regionId: region } }),
     getRegionNames(),
@@ -58,29 +58,7 @@ async function inviteListFor(job: JobView, region: string | undefined) {
 
 const t = copy.job;
 
-type Result = { ok: true } | { ok: false; refusal: { message: string } };
-
-/** Runs one action at a time, keeping its refusal to show where the Client acted. */
-function useAction() {
-  const router = useRouter();
-  const [busy, setBusy] = useState(false);
-  const [refusal, setRefusal] = useState<string | null>(null);
-  async function run(action: () => Promise<Result>, then?: () => void | Promise<void>) {
-    setBusy(true);
-    setRefusal(null);
-    const result = await action();
-    if (!result.ok) {
-      setBusy(false);
-      setRefusal(result.refusal.message);
-      return false;
-    }
-    await then?.();
-    await router.invalidate();
-    setBusy(false);
-    return true;
-  }
-  return { busy, refusal, setRefusal, run };
-}
+type ClientQuote = NonNullable<Awaited<ReturnType<typeof getJobQuotes>>>[number];
 
 /**
  * A Job's one page for its whole life (#107): breadcrumb, the title with one
@@ -88,12 +66,25 @@ function useAction() {
  * offered it sees it.
  */
 function JobPage() {
-  const { job, invite } = Route.useLoaderData();
-  return job.as === "artisan" ? <OfferedJob job={job} /> : <ClientJob job={job} invite={invite} />;
+  const { job, invite, quotes } = Route.useLoaderData();
+  const { me } = Route.useRouteContext();
+  return job.as === "artisan" ? (
+    <OfferedJob job={job} vatNumber={me.vatNumber} />
+  ) : (
+    <ClientJob job={job} invite={invite} quotes={quotes} />
+  );
 }
 
 /** The Job as its Client sees it. A Draft is its form. */
-function ClientJob({ job, invite }: { job: JobView; invite: InviteListView | null }) {
+function ClientJob({
+  job,
+  invite,
+  quotes,
+}: {
+  job: JobView;
+  invite: InviteListView | null;
+  quotes: ClientQuote[];
+}) {
   return (
     <Page>
       <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -117,7 +108,11 @@ function ClientJob({ job, invite }: { job: JobView; invite: InviteListView | nul
             .join(" · ")}
         </p>
       </div>
-      {job.state === "draft" ? <Draft job={job} /> : <Posted job={job} invite={invite} />}
+      {job.state === "draft" ? (
+        <Draft job={job} />
+      ) : (
+        <Posted job={job} invite={invite} quotes={quotes} />
+      )}
     </Page>
   );
 }
@@ -173,18 +168,33 @@ function Draft({ job }: { job: JobView }) {
   );
 }
 
-/** A posted Job: its next step, and while it is Open whom to invite, beside its details. */
-function Posted({ job, invite }: { job: JobView; invite: InviteListView | null }) {
+/**
+ * A posted Job: its next step with its Quotes, and while it takes Quotes
+ * whom to invite, beside its details.
+ */
+function Posted({
+  job,
+  invite,
+  quotes,
+}: {
+  job: JobView;
+  invite: InviteListView | null;
+  quotes: ClientQuote[];
+}) {
   const action = useAction();
   const [editing, setEditing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
-  const editable = job.state === "open" || job.state === "expired";
+  const { editable } = job;
   const { beingChecked, refused } = job.edit;
+  const sent = quotes.filter((quote) => quote.state === "sent").length;
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
       <div className="min-w-0 space-y-6">
-        <NextStepCard label={copy.jobs.nextStep} title={copy.jobs.states[job.state]}>
+        <NextStepCard
+          label={copy.jobs.nextStep}
+          title={sent > 0 ? copy.quotes.title(sent) : copy.jobs.states[job.state]}
+        >
           {job.state === "held" && <p className="text-sm text-muted-foreground">{t.heldLead}</p>}
           {job.state === "open" && job.expiresAt && (
             <p className="text-sm text-muted-foreground">{t.openLead(formatDate(job.expiresAt))}</p>
@@ -195,6 +205,10 @@ function Posted({ job, invite }: { job: JobView; invite: InviteListView | null }
           {job.state === "closed" && (
             <p className="text-sm text-muted-foreground">{t.closedLead}</p>
           )}
+          {job.state === "open" && !job.takesQuotes && (
+            <p className="text-sm text-muted-foreground">{t.fullLead}</p>
+          )}
+          {job.state !== "held" && <ClientQuotes quotes={quotes} />}
           {notice && <p className="text-sm text-muted-foreground">{notice}</p>}
           {refused && !beingChecked && <Refusal message={t.editRefused(refused.reason)} />}
           {!editing && <Refusal message={action.refusal} />}
@@ -320,6 +334,9 @@ function Posted({ job, invite }: { job: JobView; invite: InviteListView | null }
               <Fact label={t.matching}>{job.matching && t.matchings[job.matching]}</Fact>
             </dl>
             <p className="mt-3 text-xs text-muted-foreground">{t.locked}</p>
+            {!editable && quotes.length > 0 && (
+              <p className="mt-2 text-xs text-muted-foreground">{t.editLocked}</p>
+            )}
           </CardContent>
         </Card>
       </aside>

@@ -13,6 +13,7 @@ import { jobsSection } from "./jobs";
 import { matchesSection } from "./matches";
 import { createQueues, type QueueItemKind } from "./queues";
 import { profilesSection } from "./profiles";
+import { quotesSection } from "./quotes";
 import { regionsSection } from "./regions";
 import { availabilitySection } from "./regions/availability";
 import { supportSection } from "./support";
@@ -31,6 +32,7 @@ export const sections = [
   matchesSection,
   noticesSection,
   profilesSection,
+  quotesSection,
   regionsSection,
   supportSection,
   verificationSection,

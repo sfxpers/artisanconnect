@@ -166,6 +166,10 @@ _Avoid_: Service fee, Platform fee, Commission
 The platform's share of each Release, set at Hire: 10% if the Client Relationship has no Completed Engagement yet, 5% if it has one. It is never refunded.
 _Avoid_: Commission, Service fee
 
+**VAT number**:
+The number a VAT-registered Artisan states. Their Quotes carry it, and their amounts include VAT.
+_Avoid_: Tax number
+
 **Release**:
 Sending Materials or Labour to the Artisan, less the Artisan Fee.
 _Avoid_: Approve, Pay out

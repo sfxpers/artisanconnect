@@ -105,6 +105,14 @@ export const changeNames = createServerFn({ method: "POST" })
     return domain.accounts.changeNames(await requestActor(domain), data);
   });
 
+/** States the signed-in Artisan's VAT number, or clears it. */
+export const setVatNumber = createServerFn({ method: "POST" })
+  .inputValidator((input: { vatNumber: string }) => input)
+  .handler(async ({ data }) => {
+    const domain = requestDomain();
+    return domain.accounts.setVatNumber(await requestActor(domain), data);
+  });
+
 /** Withdraws the signed-in Account's names that are being checked. */
 export const withdrawNames = createServerFn({ method: "POST" }).handler(async () => {
   const domain = requestDomain();

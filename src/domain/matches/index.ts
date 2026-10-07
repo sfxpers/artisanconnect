@@ -3,6 +3,7 @@ import type { Actor } from "../actor";
 import type { Context } from "../context";
 import { invitationOf } from "../invitations";
 import { JOB_AS_ARTISAN_COLUMNS, jobAsArtisanView } from "../jobs/rows";
+import { liveQuoteOf } from "../quotes/rows";
 import { ok, refuse } from "../result";
 import { jobMatches, jobs, regions, suburbs } from "../schema";
 import { defineSection } from "../section";
@@ -18,7 +19,8 @@ export const matchesSection = defineSection({
   api: (ctx) => ({
     /**
      * The Job Matches the Artisan holds on Open Jobs, the newest offered
-     * first. One the Client has since invited the Artisan to is an Invitation.
+     * first. One the Client has since invited the Artisan to is an
+     * Invitation, and one they have Quoted on is among their Quotes.
      */
     async mine(viewer: Actor) {
       if (viewer.kind !== "artisan") return null;
@@ -34,6 +36,7 @@ export const matchesSection = defineSection({
             isNull(jobMatches.passedAt),
             eq(jobs.state, "open"),
             notInvited(ctx),
+            notQuoted(ctx),
           ),
         )
         .orderBy(desc(jobMatches.offeredAt), desc(jobs.openedAt));
@@ -42,7 +45,7 @@ export const matchesSection = defineSection({
 
     /**
      * Passes on a Job Match the Artisan holds for an Open Job, and not one
-     * that is an Invitation now. Nobody is told.
+     * that is an Invitation now or that they have Quoted on. Nobody is told.
      */
     async pass(actor: Actor, input: { jobId: string }) {
       if (actor.kind !== "artisan") return noMatch();
@@ -55,6 +58,7 @@ export const matchesSection = defineSection({
             eq(jobMatches.artisanId, actor.accountId),
             isNull(jobMatches.passedAt),
             notInvited(ctx),
+            notQuoted(ctx),
             // One on a Job no longer Open is not shown, and Renew shows it again.
             exists(
               ctx.db
@@ -77,6 +81,11 @@ export const matchesSection = defineSection({
  */
 function notInvited(ctx: Context) {
   return notExists(invitationOf(ctx, jobMatches.jobId, jobMatches.artisanId));
+}
+
+/** That the Artisan holding the Job Match has not Quoted on the Job: once they have, it is answered. */
+function notQuoted(ctx: Context) {
+  return notExists(liveQuoteOf(ctx, jobMatches.jobId, jobMatches.artisanId));
 }
 
 function noMatch() {

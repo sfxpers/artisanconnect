@@ -202,6 +202,30 @@ export function given({ domain, mailer }: { domain: Domain; mailer: FakeMailer }
     return jobId;
   }
 
+  type QuoteFields = Partial<Parameters<Domain["quotes"]["send"]>[1]>;
+
+  /**
+   * A Quote the Artisan sent on a Job they hold, which the Content check let
+   * through: R1 500 of Labour and R500 of Materials, starting 2 November 2026
+   * for three days, less or more what is given.
+   */
+  async function sentQuote(artisan: { actor: Actor }, jobId: string, fields: QuoteFields = {}) {
+    const sent = await domain.quotes.send(artisan.actor, {
+      jobId,
+      scope: "Prepare and paint two walls with two coats of washable white.",
+      labour: "1500",
+      materials: "500",
+      materialsBy: "artisan",
+      startOn: "2026-11-02",
+      durationDays: 3,
+      warranty: "Twelve months on peeling.",
+      ...fields,
+    });
+    if (!sent.ok) throw new Error(sent.refusal.message);
+    if (sent.value.state !== "sent") throw new Error("Expected the Quote to be Sent");
+    return sent.value.quoteId;
+  }
+
   return {
     codeSentTo,
     admin,
@@ -215,5 +239,6 @@ export function given({ domain, mailer }: { domain: Domain; mailer: FakeMailer }
     matchableArtisan,
     jobDraft,
     openJob,
+    sentQuote,
   };
 }

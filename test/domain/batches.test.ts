@@ -285,6 +285,8 @@ describe("a Job Match", () => {
       preferredStart: "2026-10-20",
       offeredAt: clock.now(),
       invitedAt: null,
+      quote: null,
+      takesQuotes: true,
       client: { shownName: "Thandi M.", reviews: { average: null, count: 0 }, completed: 0 },
     });
     const [photo] = job!.photos;

@@ -22,7 +22,7 @@ const t = copy.invite;
 /**
  * The invite list (#123): Browse narrowed to the Job's trade, and to
  * gas-registered Artisans on a gas Job, optionally in one Region, each marked
- * once invited. Nothing on it says who holds or passed a Job Match.
+ * once invited or Quoted. Nothing on it says who holds or passed a Job Match.
  */
 export function InviteList({
   jobId,
@@ -102,8 +102,8 @@ export function InviteList({
                     {!artisan.availableForJobs && ` · ${copy.browse.notAvailable}`}
                   </p>
                 </div>
-                {artisan.mark === "invited" ? (
-                  <Badge variant="secondary">{t.invited}</Badge>
+                {artisan.mark ? (
+                  <Badge variant="secondary">{t[artisan.mark]}</Badge>
                 ) : (
                   <Button
                     size="sm"

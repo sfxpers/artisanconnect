@@ -67,3 +67,15 @@ export const code = z
 export function firstProblem(error: z.ZodError): string {
   return error.issues[0]?.message ?? "Check what you entered.";
 }
+
+/**
+ * A VAT-registered Artisan's VAT number, as SARS issues it: ten digits
+ * starting with 4. Spaces are dropped; nothing given means not registered.
+ */
+export const vatNumber = z
+  .string()
+  .transform((value) => value.replace(/\s/g, ""))
+  .refine((value) => value === "" || /^4\d{9}$/.test(value), {
+    error: "A VAT number is ten digits starting with 4, like 4123456789.",
+  })
+  .transform((value) => value || null);

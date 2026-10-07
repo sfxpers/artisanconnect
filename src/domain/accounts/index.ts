@@ -30,6 +30,7 @@ import {
   names,
   password,
   signUpDetails,
+  vatNumber,
   type SignUpDetails,
 } from "./inputs";
 import { clientShownName, publicName } from "./names";
@@ -444,6 +445,23 @@ export const accountsSection = defineSection({
         return ok({});
       },
 
+      /**
+       * States the Artisan's VAT number, or clears it once they are not
+       * VAT-registered. Their Quotes sent or revised from now on carry it.
+       */
+      async setVatNumber(actor: Actor, input: { vatNumber: string }) {
+        if (actor.kind !== "artisan") {
+          return refuse("artisans-only", "Only an Artisan states a VAT number.");
+        }
+        const parsed = vatNumber.safeParse(input.vatNumber);
+        if (!parsed.success) return refuse("invalid", firstProblem(parsed.error));
+        await ctx.db
+          .update(accounts)
+          .set({ vatNumber: parsed.data })
+          .where(eq(accounts.id, actor.accountId));
+        return ok({});
+      },
+
       /** The signed-in Account as it sees itself. */
       async me(viewer: Actor) {
         const accountId = accountIdOf(viewer);
@@ -458,6 +476,7 @@ export const accountsSection = defineSection({
             rulesVersion: accounts.rulesVersion,
             rulesAcceptedAt: accounts.rulesAcceptedAt,
             namesShown: accounts.namesShown,
+            vatNumber: accounts.vatNumber,
           })
           .from(accounts)
           .innerJoin(authUsers, eq(authUsers.id, accounts.id))
@@ -476,6 +495,8 @@ export const accountsSection = defineSection({
           names: { shown: row.namesShown, ...(await namesStanding(ctx, row.id)) },
           email: row.email,
           rules: { version: row.rulesVersion, acceptedAt: row.rulesAcceptedAt },
+          /** An Artisan's VAT number, if they are VAT-registered. */
+          vatNumber: row.vatNumber,
           // A Client may post a Job at once; an Artisan is verified first.
           nextStep: row.kind === "client" ? ("post-first-job" as const) : ("verification" as const),
         };

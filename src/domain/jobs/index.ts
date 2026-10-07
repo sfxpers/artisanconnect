@@ -14,6 +14,9 @@ import { SERVICE_CATEGORY_NAMES } from "../service-categories";
 import { checkFileCount, uploadFile, UPLOAD_CONTEXTS } from "../uploads";
 import { heldInvitation } from "../invitations";
 import { heldMatch } from "../matches";
+import { closeJobWrites } from "../quotes/ends";
+import { hasHadQuote, isLive, newestQuote, takesQuotesNow } from "../quotes/rows";
+import { ownQuoteView } from "../quotes/views";
 import { sendDueBatch } from "../matches/batches";
 import { emailTells } from "../tells";
 import { expiryClocks } from "./expiry";
@@ -162,9 +165,11 @@ export const jobsSection = defineSection({
     async edit(actor: Actor, input: EditFields & PhotosInput & { jobId: string }) {
       const job = await jobRow(ctx, input.jobId);
       if (!job || job.clientId !== accountIdOf(actor)) return noJob();
-      // The first Quote locks these too, once there are Quotes (#124).
       if (!isEditable(job.state)) {
         return refuse("not-editable", "Only an Open or Expired Job can be edited.");
+      }
+      if (await hasHadQuote(ctx, job.id)) {
+        return refuse("not-editable", "A Job that has had a Quote cannot be edited.");
       }
       const parsed = editFields.safeParse(input);
       if (!parsed.success) return refuse("invalid", firstProblem(parsed.error));
@@ -260,7 +265,7 @@ export const jobsSection = defineSection({
 
     /**
      * Closes the Client's Open Job before Hire. Its Sent Quotes are Declined,
-     * and their Artisans told, once there are Quotes (#124).
+     * and their Artisans told; its Held ones are never Sent.
      */
     async close(actor: Actor, input: { jobId: string }) {
       const job = await jobRow(ctx, input.jobId);
@@ -276,6 +281,7 @@ export const jobsSection = defineSection({
             .where(eq(jobs.id, job.id)),
           // An edit waiting on a closed Job has nothing to show on.
           ...(beingChecked ? await withdrawEdit(ctx, beingChecked.id) : []),
+          ...(await closeJobWrites(ctx, actor, job)),
         ]);
       } catch (error) {
         if (isRefusedMove(error)) return notOpen();
@@ -283,6 +289,9 @@ export const jobsSection = defineSection({
         throw error;
       }
       if (beingChecked) await discardPhotos(ctx, addedBy(beingChecked, job));
+      await emailTells(ctx).catch((error: unknown) => {
+        console.error("Tell emails did not go", error);
+      });
       return ok({});
     },
 
@@ -342,8 +351,8 @@ export const jobsSection = defineSection({
 
     /**
      * A Job photo's stored copy, or its thumbnail, a Draft's or an edit's
-     * too: to the Job's Client and the Admin. An Artisan holding a Job Match
-     * or an Invitation for an Open Job sees the photos it shows, never an edit's.
+     * too: to the Job's Client and the Admin. An Artisan who sees the Job
+     * sees the photos it shows, never an edit's.
      */
     async photo(viewer: Actor, input: { photoId: string; thumbnail?: boolean }) {
       const onJob = await jobPhotoById(ctx, input.photoId);
@@ -352,7 +361,7 @@ export const jobsSection = defineSection({
       if (viewer.kind !== "admin") {
         const job = await jobRow(ctx, found.jobId);
         const holding =
-          !!onJob && !!job && viewer.kind === "artisan" && !!(await heldOnJob(ctx, job, viewer));
+          !!onJob && !!job && viewer.kind === "artisan" && (await seesJob(ctx, job, viewer));
         if (!job || (job.clientId !== accountIdOf(viewer) && !holding)) return null;
       }
       const object = await ctx.ports.files.get(
@@ -370,7 +379,12 @@ export const jobsSection = defineSection({
     async view(viewer: Actor, input: { jobId: string }) {
       const job = await jobRow(ctx, input.jobId);
       if (!job || job.clientId !== accountIdOf(viewer)) return null;
-      const [refusal, edits] = await Promise.all([refusalOf(ctx, job), editsStanding(ctx, job.id)]);
+      const [refusal, edits, quoted, takesQuotes] = await Promise.all([
+        refusalOf(ctx, job),
+        editsStanding(ctx, job.id),
+        hasHadQuote(ctx, job.id),
+        takesQuotesNow(ctx, job.id),
+      ]);
       return {
         jobId: job.id,
         state: job.state,
@@ -387,6 +401,10 @@ export const jobsSection = defineSection({
         matching: job.matching,
         openedAt: job.openedAt,
         expiresAt: job.expiresAt,
+        /** Whether the Client may edit it: Open or Expired, before its first Quote. */
+        editable: isEditable(job.state) && !quoted,
+        /** Whether the Job takes Quotes, and so Invitations: Open, with fewer than five. */
+        takesQuotes,
         /** Why the Admin refused it when it was last posted, while it is a Draft again. */
         refused: refusal === null ? null : { reason: refusal },
         /** An edit being checked, which only the Client and the Admin see, or one refused. */
@@ -401,17 +419,18 @@ export const jobsSection = defineSection({
     },
 
     /**
-     * The Job as an Artisan holding a Job Match or an Invitation for it sees
-     * it while it is Open: the Region, never the suburb or street, and the
-     * Client by shown name and record; null for anyone else. Quotes show it
-     * too, once there are those (#124).
+     * The Job as an Artisan sees it while they hold a Job Match or an
+     * Invitation for it and it is Open, or once they have Quoted on it: the
+     * Region, never the suburb or street, and the Client by shown name and
+     * record; null for anyone else.
      */
     async viewAsArtisan(viewer: Actor, input: { jobId: string }) {
       if (viewer.kind !== "artisan") return null;
       const job = await jobRow(ctx, input.jobId);
       if (!job) return null;
-      const [held, [client]] = await Promise.all([
+      const [held, quote, [client]] = await Promise.all([
         heldOnJob(ctx, job, viewer),
+        newestQuote(ctx, job.id, viewer.accountId),
         ctx.db
           .select({
             name: accounts.name,
@@ -421,7 +440,8 @@ export const jobsSection = defineSection({
           .from(accounts)
           .where(eq(accounts.id, job.clientId)),
       ]);
-      if (!held) return null;
+      // A Quote keeps the Job in view, whatever becomes of it or the Job.
+      if (!held && !isLive(quote)) return null;
       return {
         jobId: job.id,
         state: job.state,
@@ -434,9 +454,13 @@ export const jobsSection = defineSection({
         gasWork: job.gasWork,
         preferredStart: job.preferredStart,
         /** When a Batch offered it the Artisan, if one did and they have not passed. */
-        offeredAt: held.offeredAt,
+        offeredAt: held?.offeredAt ?? null,
         /** When the Client invited the Artisan, if they did. */
-        invitedAt: held.invitedAt,
+        invitedAt: held?.invitedAt ?? null,
+        /** The Artisan's own Quote, if they have one. */
+        quote: await ownQuoteView(ctx, quote),
+        /** Whether the Job takes Quotes now: Open, with fewer than five. */
+        takesQuotes: await takesQuotesNow(ctx, job.id),
         client: {
           // Names the Content check has not passed are nobody else's to see.
           shownName: client?.namesShown ? clientShownName(publicName(client)) : null,
@@ -463,6 +487,15 @@ async function heldOnJob(ctx: Context, job: JobRow, artisan: { accountId: string
   ]);
   if (!match && !invitation) return null;
   return { offeredAt: match?.offeredAt ?? null, invitedAt: invitation?.invitedAt ?? null };
+}
+
+/** Whether the Artisan sees the Job: they hold it while it is Open, or they have Quoted on it. */
+async function seesJob(ctx: Context, job: JobRow, artisan: { accountId: string }) {
+  const [held, quote] = await Promise.all([
+    heldOnJob(ctx, job, artisan),
+    newestQuote(ctx, job.id, artisan.accountId),
+  ]);
+  return !!held || isLive(quote);
 }
 
 /** Sends a Job just opened its first Batch, if it is matched, and the Tells' emails. */

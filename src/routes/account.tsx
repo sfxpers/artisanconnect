@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Page, Refusal } from "@/components/page";
-import { changeNames, signOut, withdrawNames } from "@/web/accounts";
+import { changeNames, setVatNumber, signOut, withdrawNames } from "@/web/accounts";
 import { copy, formatDate } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
 import type { Me } from "@/web/me";
@@ -32,6 +32,11 @@ function Account() {
           <SettingsRow label={t.tradingName}>{me.tradingName ?? t.none}</SettingsRow>
           <NamesRow me={me} />
           <SettingsRow label={t.email}>{me.email}</SettingsRow>
+          {me.kind === "artisan" && (
+            <SettingsRow label={t.vat.label}>
+              <VatNumber vatNumber={me.vatNumber} />
+            </SettingsRow>
+          )}
           <SettingsRow label={t.rules}>
             <Link to="/rules" className="underline">
               {t.accepted(me.rules.version, formatDate(me.rules.acceptedAt))}
@@ -162,6 +167,83 @@ function NamesRow({ me }: { me: Me }) {
           <Refusal message={refusal} />
         </>
       )}
+    </div>
+  );
+}
+
+/** An Artisan's VAT number, stated or cleared: their Quotes' amounts include VAT. */
+function VatNumber({ vatNumber }: { vatNumber: string | null }) {
+  const router = useRouter();
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(vatNumber ?? "");
+  const [busy, setBusy] = useState(false);
+  const [refusal, setRefusal] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+
+  async function save(next: string) {
+    setBusy(true);
+    setRefusal(null);
+    const result = await setVatNumber({ data: { vatNumber: next } });
+    setBusy(false);
+    if (!result.ok) return setRefusal(result.refusal.message);
+    setEditing(false);
+    setDone(true);
+    await router.invalidate();
+  }
+
+  if (editing) {
+    return (
+      <form
+        className="space-y-2"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void save(value);
+        }}
+      >
+        <Input
+          aria-label={t.vat.label}
+          inputMode="numeric"
+          placeholder={t.vat.placeholder}
+          className="max-w-48"
+          value={value}
+          onChange={(event) => setValue(event.target.value)}
+        />
+        <p className="text-xs text-muted-foreground">{t.vat.lead}</p>
+        <Refusal message={refusal} />
+        <div className="flex gap-2">
+          <Button type="submit" size="sm" disabled={busy}>
+            {t.vat.save}
+          </Button>
+          <Button type="button" size="sm" variant="ghost" onClick={() => setEditing(false)}>
+            {t.vat.cancel}
+          </Button>
+        </div>
+      </form>
+    );
+  }
+  return (
+    <div className="space-y-2">
+      <div>{vatNumber ?? t.vat.none}</div>
+      {done && <p className="text-xs text-muted-foreground">{t.vat.saved}</p>}
+      <Refusal message={refusal} />
+      <div className="flex gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setDone(false);
+            setValue(vatNumber ?? "");
+            setEditing(true);
+          }}
+        >
+          {vatNumber ? t.vat.change : t.vat.add}
+        </Button>
+        {vatNumber && (
+          <Button variant="ghost" size="sm" disabled={busy} onClick={() => void save("")}>
+            {t.vat.remove}
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

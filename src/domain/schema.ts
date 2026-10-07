@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { MATCHINGS, SITE_TYPES } from "./jobs/inputs";
+import { MATERIALS_BY } from "./quotes/inputs";
 import { QUEUE_NAMES } from "./queue-names";
 import { SUPPORT_TOPICS } from "./support/topics";
 import { SERVICE_CATEGORIES } from "./service-categories";
@@ -163,6 +164,11 @@ export const accounts = sqliteTable(
      * turning it off and on keeps the Artisan's place in the offer order.
      */
     availableForJobs: integer("available_for_jobs", { mode: "boolean" }).notNull().default(true),
+    /**
+     * A VAT-registered Artisan's VAT number; their amounts include VAT. Each
+     * Quote carries the one given when it was sent or last revised.
+     */
+    vatNumber: text("vat_number"),
   },
   (table) => [check("accounts_kind", sql`${table.kind} in ('client', 'artisan')`)],
 );
@@ -649,5 +655,119 @@ export const invitations = sqliteTable(
   (table) => [
     uniqueIndex("invitations_once_per_job").on(table.jobId, table.artisanId),
     index("invitations_artisan").on(table.artisanId, table.invitedAt),
+  ],
+);
+
+export const QUOTE_STATES = [
+  "held",
+  "refused",
+  "unsent",
+  "sent",
+  "declined",
+  "withdrawn",
+  "expired",
+  "hired",
+] as const;
+
+/**
+ * An Artisan's fixed price on a Job, one per Artisan per Job. The Content
+ * check clears it and it is Sent, or Holds it for the Admin, who releases it
+ * (Sent, if the Job still takes it) or refuses it. A Held one its Artisan
+ * withdraws, or one the Job no longer takes once released, is unsent: like a
+ * refused one it was never Sent, and the Artisan may send another. A Sent one
+ * is Hired, Declined, Withdrawn, or Expires. Triggers in the migration refuse
+ * any other change of state.
+ */
+export const quotes = sqliteTable(
+  "quotes",
+  {
+    id: text("id").primaryKey(),
+    jobId: text("job_id")
+      .notNull()
+      .references(() => jobs.id),
+    artisanId: text("artisan_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    state: text("state", { enum: QUOTE_STATES }).notNull(),
+    scope: text("scope").notNull(),
+    /** Whole cents, as are Materials; a VAT-registered Artisan's include VAT. */
+    labourCents: integer("labour_cents").notNull(),
+    materialsCents: integer("materials_cents").notNull(),
+    materialsBy: text("materials_by", { enum: MATERIALS_BY }).notNull(),
+    /** A South African calendar day, YYYY-MM-DD, counted as day 1 of the duration. */
+    startOn: text("start_on").notNull(),
+    durationDays: integer("duration_days").notNull(),
+    warranty: text("warranty"),
+    /** The Artisan's VAT number when they sent it, if they are VAT-registered. */
+    vatNumber: text("vat_number"),
+    /** Why the Content check Held it, for the Admin. */
+    heldFor: text("held_for"),
+    /** When the Artisan sent it. */
+    createdAt: instant("created_at").notNull(),
+    /** When it was Sent, at once or on release. The Job's five count from here. */
+    sentAt: instant("sent_at"),
+    /** When it Expires if still Sent: 14 days after it was Sent, whatever revisions. */
+    expiresAt: instant("expires_at"),
+    /** When a revision was last shown on it. */
+    revisedAt: instant("revised_at"),
+    /** When it was Declined, Withdrawn, or Expired. */
+    endedAt: instant("ended_at"),
+  },
+  (table) => [
+    index("quotes_job").on(table.jobId, table.sentAt),
+    index("quotes_artisan").on(table.artisanId, table.createdAt),
+    // One per Artisan per Job, but one never Sent leaves room for another.
+    uniqueIndex("quotes_once_per_job")
+      .on(table.jobId, table.artisanId)
+      .where(sql.raw("state not in ('refused', 'unsent')")),
+    check(
+      "quotes_state",
+      sql.raw(`state in (${QUOTE_STATES.map((state) => `'${state}'`).join(", ")})`),
+    ),
+    check(
+      "quotes_amounts",
+      sql.raw(
+        "typeof(labour_cents) = 'integer' and typeof(materials_cents) = 'integer' and labour_cents > 0 and materials_cents >= 0",
+      ),
+    ),
+  ],
+);
+
+export const QUOTE_REVISION_STATES = ["held", "released", "refused", "withdrawn"] as const;
+
+/**
+ * Each revision an Artisan makes to a Sent Quote, whole. One the Content
+ * check clears is shown at once; one it is unsure about is Held for the
+ * Admin's Pre-check, and the Quote shows as it was meanwhile, as a Job edit
+ * does. Its 14 days never restart.
+ */
+export const quoteRevisions = sqliteTable(
+  "quote_revisions",
+  {
+    id: text("id").primaryKey(),
+    quoteId: text("quote_id")
+      .notNull()
+      .references(() => quotes.id),
+    scope: text("scope").notNull(),
+    labourCents: integer("labour_cents").notNull(),
+    materialsCents: integer("materials_cents").notNull(),
+    materialsBy: text("materials_by", { enum: MATERIALS_BY }).notNull(),
+    startOn: text("start_on").notNull(),
+    durationDays: integer("duration_days").notNull(),
+    warranty: text("warranty"),
+    vatNumber: text("vat_number"),
+    state: text("state", { enum: QUOTE_REVISION_STATES }).notNull(),
+    /** Why the Content check Held it, for the Admin. */
+    heldFor: text("held_for"),
+    sentAt: instant("sent_at").notNull(),
+  },
+  (table) => [
+    index("quote_revisions_quote").on(table.quoteId, table.sentAt),
+    // One revision waits at a time.
+    uniqueIndex("quote_revisions_one_held").on(table.quoteId).where(sql.raw("state = 'held'")),
+    check(
+      "quote_revisions_state",
+      sql.raw(`state in (${QUOTE_REVISION_STATES.map((state) => `'${state}'`).join(", ")})`),
+    ),
   ],
 );

@@ -1,11 +1,22 @@
-import { and, desc, eq, exists, isNull, sql, type SQLWrapper } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  exists,
+  inArray,
+  isNull,
+  notExists,
+  sql,
+  type SQLWrapper,
+} from "drizzle-orm";
 import { accountIdOf, type Actor } from "../actor";
 import type { Context } from "../context";
 import { causedBy } from "../errors";
 import { JOB_AS_ARTISAN_COLUMNS, jobAsArtisanView, jobRow, type JobRow } from "../jobs/rows";
 import { browse, type Narrowing } from "../profiles";
+import { belowFive, COUNTED_STATES, jobFull, liveQuoteOf, takesQuotesNow } from "../quotes/rows";
 import { ok, refuse } from "../result";
-import { invitations, jobMatches, jobs, regions, suburbs } from "../schema";
+import { invitations, jobMatches, jobs, quotes, regions, suburbs } from "../schema";
 import { defineSection } from "../section";
 import { emailTells, tellWhile } from "../tells";
 
@@ -22,14 +33,14 @@ export const invitationsSection = defineSection({
       const job = await jobRow(ctx, input.jobId);
       if (!job || job.clientId !== accountIdOf(actor)) return noJob();
       if (job.state !== "open") return notOpen();
-      // Not once the Job has five Quotes, once there are Quotes (#124); not
-      // by or to a Suspended Account, once there are Suspensions (#136).
+      if (!(await takesQuotesNow(ctx, job.id))) return jobFull();
+      // Not by or to a Suspended Account, once there are Suspensions (#136).
       if ((await invitable(ctx, job, { artisanId: input.artisanId })).length === 0) {
         return notListed();
       }
-      // Each write is guarded on the Job still being Open. The Invitation
+      // Each write is guarded on the Job still taking Quotes. The Invitation
       // opens a Conversation too, once there are Conversations (#125).
-      const stillOpen = and(eq(jobs.id, job.id), eq(jobs.state, "open"))!;
+      const stillOpen = and(eq(jobs.id, job.id), eq(jobs.state, "open"), belowFive())!;
       try {
         const [invited] = await ctx.db.batch([
           ctx.db
@@ -64,7 +75,9 @@ export const invitationsSection = defineSection({
             ),
           ),
         ]);
-        if (invited.length === 0) return notOpen();
+        if (invited.length === 0) {
+          return (await jobRow(ctx, job.id))?.state === "open" ? jobFull() : notOpen();
+        }
       } catch (error) {
         if (causedBy(error, "UNIQUE constraint failed: invitations.job_id"))
           return alreadyInvited();
@@ -80,27 +93,31 @@ export const invitationsSection = defineSection({
     /**
      * Whom the Job's Client may invite: Browse narrowed to the Job's category,
      * and to gas-registered Artisans on a gas Job, optionally in one Region,
-     * each marked once invited. Null for anyone else. Whether an Artisan
+     * each marked once invited or once their Quote is Sent. Null for anyone else. Whether an Artisan
      * holds or passed a Job Match for the Job shows nowhere.
      */
     async list(viewer: Actor, input: { jobId: string; regionId?: string }) {
       const job = await jobRow(ctx, input.jobId);
       if (!job || job.clientId !== accountIdOf(viewer)) return null;
-      const [listed, invited] = await Promise.all([
+      const [listed, invited, quoted] = await Promise.all([
         invitable(ctx, job, { regionId: input.regionId }),
         invitedTo(ctx, job.id),
+        quotedOn(ctx, job.id),
       ]);
       return listed.map((artisan) => ({
         ...artisan,
-        // Marked "Quoted" too, once there are Quotes (#124).
-        mark: invited.has(artisan.artisanId) ? ("invited" as const) : null,
+        mark: quoted.has(artisan.artisanId)
+          ? ("quoted" as const)
+          : invited.has(artisan.artisanId)
+            ? ("invited" as const)
+            : null,
       }));
     },
 
     /**
-     * Passes on an Invitation the Artisan holds for an Open Job, and on the
-     * Job Match it may have been. Nobody is told, and the Client's list still
-     * marks the Artisan invited.
+     * Passes on an Invitation the Artisan holds for an Open Job, and has not
+     * Quoted on, and on the Job Match it may have been. Nobody is told, and
+     * the Client's list still marks the Artisan invited.
      */
     async pass(actor: Actor, input: { jobId: string }) {
       if (actor.kind !== "artisan") return noInvitation();
@@ -109,6 +126,7 @@ export const invitationsSection = defineSection({
         eq(invitations.jobId, input.jobId),
         eq(invitations.artisanId, actor.accountId),
         isNull(invitations.passedAt),
+        notExists(liveQuoteOf(ctx, invitations.jobId, invitations.artisanId)),
         // One on a Job no longer Open is not shown, and Renew shows it again.
         exists(
           ctx.db
@@ -151,7 +169,10 @@ export const invitationsSection = defineSection({
       return ok({});
     },
 
-    /** The Invitations the Artisan holds on Open Jobs, the newest first. */
+    /**
+     * The Invitations the Artisan holds on Open Jobs, the newest first. One
+     * they have Quoted on is among their Quotes.
+     */
     async mine(viewer: Actor) {
       if (viewer.kind !== "artisan") return null;
       const rows = await ctx.db
@@ -165,6 +186,7 @@ export const invitationsSection = defineSection({
             eq(invitations.artisanId, viewer.accountId),
             isNull(invitations.passedAt),
             eq(jobs.state, "open"),
+            notExists(liveQuoteOf(ctx, invitations.jobId, invitations.artisanId)),
           ),
         )
         .orderBy(desc(invitations.invitedAt), desc(jobs.openedAt));
@@ -207,6 +229,15 @@ export async function heldInvitation(ctx: Context, jobId: string, artisanId: str
       ),
     );
   return row ?? null;
+}
+
+/** The Artisans whose Quote on the Job was Sent, by id: a Held one is nobody else's to see. */
+async function quotedOn(ctx: Context, jobId: string) {
+  const rows = await ctx.db
+    .select({ artisanId: quotes.artisanId })
+    .from(quotes)
+    .where(and(eq(quotes.jobId, jobId), inArray(quotes.state, COUNTED_STATES)));
+  return new Set(rows.map((row) => row.artisanId));
 }
 
 /** The Artisans invited to the Job, by id. */
