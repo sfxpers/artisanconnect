@@ -63,7 +63,7 @@ _Avoid_: Property type
 ### Finding an Artisan
 
 **Job**:
-A Client's request for work, which is Draft, Open, Expired, Closed, or Hired. It is never shown to a Visitor.
+A Client's request for work, which is Draft, Open, Expired, Closed, or Hired. An Expired Job may still be Hired from a Quote that is still Sent, without a Renew. It is never shown to a Visitor.
 _Avoid_: Lead, Project, Order, Booking
 
 **Invite-only Job**:
