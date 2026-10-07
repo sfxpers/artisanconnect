@@ -1,12 +1,14 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { QueueBadge, QueueCounts } from "@/components/admin";
 import { Page } from "@/components/page";
 import { QUEUE_NAMES, type QueueName } from "@/domain/queue-names";
+import { formatRands } from "@/domain/money";
 import { getAdminHome } from "@/web/admin";
 import { copy, formatDate } from "@/web/copy";
 import { onlyForAdmins } from "@/web/guards";
+import { getFloat } from "@/web/payouts";
 
 export const Route = createFileRoute("/admin/")({
   validateSearch: (search: Record<string, unknown>): { queue?: QueueName } =>
@@ -15,15 +17,21 @@ export const Route = createFileRoute("/admin/")({
     onlyForAdmins(context);
   },
   loaderDeps: ({ search }) => search,
-  loader: ({ deps }) => getAdminHome({ data: deps }),
+  loader: async ({ deps }) => {
+    const [home, float] = await Promise.all([getAdminHome({ data: deps }), getFloat()]);
+    return { ...home, float };
+  },
   component: AdminHome,
 });
 
 const t = copy.admin.home;
 
-/** The Admin home: one stream of the eight queues, oldest first, with counts. */
+/**
+ * The Admin home: a banner while the float cannot cover the Payouts sent,
+ * then one stream of the eight queues, oldest first, with counts.
+ */
 function AdminHome() {
-  const { counts, items } = Route.useLoaderData();
+  const { counts, items, float } = Route.useLoaderData();
   const { queue } = Route.useSearch();
   const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
   return (
@@ -32,6 +40,22 @@ function AdminHome() {
         <h1 className="text-2xl font-semibold tracking-tight">{t.title}</h1>
         <p className="text-sm text-muted-foreground">{t.lead}</p>
       </div>
+      {float.short && (
+        <Card role="alert" className="border-destructive ring-2 ring-destructive/60">
+          <CardHeader>
+            <CardTitle className="text-destructive">{t.floatShort}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm">
+              {t.floatShortLead(
+                formatRands(float.floatCents),
+                formatRands(float.neededCents),
+                formatDate(float.checkedAt),
+              )}
+            </p>
+          </CardContent>
+        </Card>
+      )}
       <div className="flex flex-wrap items-center gap-2">
         <Link
           to="/admin"

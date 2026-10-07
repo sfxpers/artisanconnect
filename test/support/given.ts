@@ -273,6 +273,12 @@ export function given({
     return engagement.engagementId;
   }
 
+  /** The Client marks Work started on their Engagement, releasing the Materials. */
+  async function workStarted(client: { actor: Actor }, engagementId: string) {
+    const started = await domain.engagements.workStarted(client.actor, { engagementId });
+    if (!started.ok) throw new Error(started.refusal.message);
+  }
+
   return {
     codeSentTo,
     admin,
@@ -291,6 +297,7 @@ export function given({
     paid,
     hired,
     engagementOf,
+    workStarted,
   };
 }
 

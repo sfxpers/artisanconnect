@@ -19,6 +19,7 @@ import { copy, formatDate } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
 import { passInvitation } from "@/web/invitations";
 import { passMatch } from "@/web/matches";
+import { getMyPayouts } from "@/web/payouts";
 import { getMyWork, setAvailableForJobs } from "@/web/regions";
 
 export const Route = createFileRoute("/home")({
@@ -26,8 +27,8 @@ export const Route = createFileRoute("/home")({
     onlyFor("artisan", context);
   },
   loader: async () => {
-    const [notices, work] = await Promise.all([getNotices(), getMyWork()]);
-    return { notices, work };
+    const [notices, work, payouts] = await Promise.all([getNotices(), getMyWork(), getMyPayouts()]);
+    return { notices, work, payouts };
   },
   component: Home,
 });
@@ -48,7 +49,7 @@ type Result = { ok: true } | { ok: false; refusal: { message: string } };
  * those the Artisan has a Quote on being checked, Sent, or Hired.
  */
 function Home() {
-  const { notices, work } = Route.useLoaderData();
+  const { notices, work, payouts } = Route.useLoaderData();
   const [tab, setTab] = useState<Tab>("matches");
   return (
     <Page>
@@ -81,6 +82,7 @@ function Home() {
         <aside className="space-y-6">
           <ProfileCard work={work} />
           <RegionsCard regions={work.regions} />
+          <PayoutsCard payouts={payouts} />
         </aside>
       </div>
     </Page>
@@ -303,6 +305,33 @@ function Empty({ children }: { children: React.ReactNode }) {
     <Card>
       <CardContent>
         <p className="text-sm text-muted-foreground">{children}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+/** What is still to be paid and what was paid, and whether the Admin holds the Payouts. */
+function PayoutsCard({ payouts }: { payouts: Awaited<ReturnType<typeof getMyPayouts>> }) {
+  return (
+    <Card size="sm">
+      <CardHeader>
+        <CardTitle>{t.payouts}</CardTitle>
+        <CardAction>
+          <Link to="/payouts" className={buttonVariants({ size: "xs", variant: "ghost" })}>
+            {t.openPayouts}
+          </Link>
+        </CardAction>
+      </CardHeader>
+      <CardContent className="space-y-2 text-sm">
+        <div className="flex justify-between gap-3">
+          <span className="text-muted-foreground">{t.unpaid}</span>
+          <span className="font-medium tabular-nums">{formatRands(payouts.unpaidCents)}</span>
+        </div>
+        <div className="flex justify-between gap-3">
+          <span className="text-muted-foreground">{t.paid}</span>
+          <span className="tabular-nums">{formatRands(payouts.paidCents)}</span>
+        </div>
+        {payouts.held && <Badge variant="destructive">{t.payoutsHeld}</Badge>}
       </CardContent>
     </Card>
   );

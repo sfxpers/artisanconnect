@@ -14,7 +14,8 @@
     "enabled": true,
     "head_sampling_rate": 1,
   },
-  // Every clock is a row with a due time; this cron runs the due ones (ADR 0017).
+  // Every clock is a row with a due time; this cron runs the due ones (ADR 0017),
+  // and the daily Payout run once its time of day comes.
   "triggers": {
     "crons": ["* * * * *"],
   },
@@ -23,12 +24,14 @@
   // with their own D1, R2, and secrets; bindings are not inherited.
   // MAIL_FROM: replace with an address on the domain verified for Email Sending.
   // APP_URL: the web app's origin, which links in emails point to.
+  // PAYOUT_RUN_TIME: when the daily Payout run goes, as a South African time of day.
   // TURNSTILE_SITE_KEY: locally, Cloudflare's test key that always passes.
   "vars": {
     "APP_NAME": "artisanconnect",
     "ENVIRONMENT": "local",
     "MAIL_FROM": "ArtisanConnect <no-reply@example.com>",
     "APP_URL": "http://localhost:3000",
+    "PAYOUT_RUN_TIME": "10:00",
     "TURNSTILE_SITE_KEY": "1x00000000000000000000AA",
   },
   "secrets": {
@@ -70,6 +73,7 @@
         "ENVIRONMENT": "staging",
         "MAIL_FROM": "ArtisanConnect <no-reply@example.com>",
         "APP_URL": "https://staging.artisanconnect.example.com",
+        "PAYOUT_RUN_TIME": "10:00",
         "TURNSTILE_SITE_KEY": "replace-with-the-staging-turnstile-site-key",
       },
       "secrets": {
@@ -107,6 +111,7 @@
         "ENVIRONMENT": "production",
         "MAIL_FROM": "ArtisanConnect <no-reply@example.com>",
         "APP_URL": "https://artisanconnect.example.com",
+        "PAYOUT_RUN_TIME": "10:00",
         "TURNSTILE_SITE_KEY": "replace-with-the-production-turnstile-site-key",
       },
       "secrets": {

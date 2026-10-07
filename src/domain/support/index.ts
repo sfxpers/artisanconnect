@@ -1,8 +1,9 @@
 import * as z from "zod";
-import { and, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, sql, type SQL } from "drizzle-orm";
 import { accountIdOf, type Actor } from "../actor";
 import { firstProblem } from "../accounts/inputs";
 import type { Context, Write } from "../context";
+import { insertWhile } from "../guarded";
 import { defineQueueItemKind, type ItemView } from "../queues";
 import { ok, refuse } from "../result";
 import { accounts, authUsers, queueItems, supportRequests } from "../schema";
@@ -103,22 +104,31 @@ const systemRequest = defineQueueItemKind("support.system", {
 
 /**
  * The writes that raise a system Support request, such as for a failed
- * Refund; commit them with the event that raises it.
+ * Refund; commit them with the event that raises it. With a condition, they
+ * are written only while it holds when the batch runs, as a clock's must be.
  */
-export function raiseSupportRequest(ctx: Context, input: SystemSupportRequest): Write[] {
-  const requestId = ctx.newId();
+export function raiseSupportRequest(
+  ctx: Context,
+  input: SystemSupportRequest,
+  condition?: SQL,
+): Write[] {
+  const request = {
+    id: ctx.newId(),
+    accountId: input.accountId ?? null,
+    topic: null,
+    tag: input.tag,
+    message: input.details,
+    sentAt: ctx.now(),
+  };
   return [
-    ctx.db.insert(supportRequests).values({
-      id: requestId,
-      accountId: input.accountId ?? null,
-      tag: input.tag,
-      message: input.details,
-      sentAt: ctx.now(),
-    }),
-    systemRequest.raise(ctx, {
-      subjectId: requestId,
-      title: `${SUPPORT_TAGS[input.tag]}: ${input.about}`,
-    }).write,
+    condition
+      ? insertWhile(ctx, supportRequests, request, condition)
+      : ctx.db.insert(supportRequests).values(request),
+    systemRequest.raise(
+      ctx,
+      { subjectId: request.id, title: `${SUPPORT_TAGS[input.tag]}: ${input.about}` },
+      condition,
+    ).write,
   ];
 }
 

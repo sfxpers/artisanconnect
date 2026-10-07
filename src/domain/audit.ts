@@ -1,5 +1,7 @@
+import type { SQL } from "drizzle-orm";
 import type { AdminActor } from "./actor";
 import type { Context, Write } from "./context";
+import { insertWhile } from "./guarded";
 import { auditLog } from "./schema";
 
 /** One line of the audit log: what an Admin did or read. */
@@ -12,16 +14,23 @@ export type AuditEntry = {
   subjectId?: string;
 };
 
-/** The write that logs an Admin's decision; commit it in the decision's batch. */
-export function audit(ctx: Context, admin: AdminActor, entry: AuditEntry): Write {
-  return ctx.db.insert(auditLog).values({
+/**
+ * The write that logs an Admin's decision; commit it in the decision's batch.
+ * With a condition, written only while it holds when the batch runs, so a
+ * decision another Admin's made moot is not logged as made.
+ */
+export function audit(ctx: Context, admin: AdminActor, entry: AuditEntry, condition?: SQL): Write {
+  const row = {
     id: ctx.newId(),
     adminId: admin.adminId,
     action: entry.action,
     summary: entry.summary,
     subjectId: entry.subjectId ?? null,
     at: ctx.now(),
-  });
+  };
+  return condition
+    ? insertWhile(ctx, auditLog, row, condition)
+    : ctx.db.insert(auditLog).values(row);
 }
 
 /**

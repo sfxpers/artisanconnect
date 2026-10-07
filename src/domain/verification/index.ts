@@ -1004,6 +1004,11 @@ async function checksOf(ctx: Context, artisanId: string): Promise<CheckRow[]> {
     .orderBy(asc(verificationChecks.submittedAt), asc(verificationChecks.id));
 }
 
+/** The Artisan's current Payout account, which Payouts are sent to; null if they have none. */
+export async function currentPayoutAccount(ctx: Context, artisanId: string) {
+  return (await standingOf(ctx, artisanId)).current("payout-account");
+}
+
 async function standingOf(ctx: Context, artisanId: string): Promise<Standing> {
   return new Standing(await checksOf(ctx, artisanId), saDay(ctx.now()));
 }

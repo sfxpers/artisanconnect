@@ -7,6 +7,10 @@ import { portsFromEnv } from "./ports";
  */
 export function setUpFirstAdmin(env: Env, email: string) {
   // Setting up signs no session in, so it needs no BETTER_AUTH_SECRET.
-  const domain = createDomain(portsFromEnv(env), { appUrl: env.APP_URL, authSecret: "" });
+  const domain = createDomain(portsFromEnv(env), {
+    appUrl: env.APP_URL,
+    authSecret: "",
+    payoutRunTime: env.PAYOUT_RUN_TIME,
+  });
   return domain.system.setUpFirstAdmin({ email });
 }

@@ -81,8 +81,25 @@ export function tellWhile(
     );
 }
 
+/**
+ * The write that tells an Account with an email that carries its own text,
+ * such as a Receipt, only if the condition still holds when it is written.
+ * The notice names the event; the email is the text. For what the system
+ * does, so it has no actor to leave out.
+ */
+export function tellWithEmailWhile(
+  ctx: Context,
+  accountId: string,
+  told: Tell & { body: string },
+  condition: SQL,
+): Write {
+  return ctx.db
+    .insert(notices)
+    .select(noticesOfAccounts(ctx, told).where(and(eq(accounts.id, accountId), condition)));
+}
+
 /** A notice of the Tell for each Account selected, to insert. */
-function noticesOfAccounts(ctx: Context, told: Tell) {
+function noticesOfAccounts(ctx: Context, told: Tell & { body?: string }) {
   return ctx.db
     .select({
       id: sql<string>`lower(hex(randomblob(16)))`.as("id"),
@@ -91,7 +108,7 @@ function noticesOfAccounts(ctx: Context, told: Tell) {
       event: sql<string>`${told.event}`.as("event"),
       title: sql<string>`${told.title}`.as("title"),
       link: sql<string>`${told.link}`.as("link"),
-      body: sql<null>`null`.as("body"),
+      body: sql<string | null>`${told.body ?? null}`.as("body"),
       toldAt: sql<number>`${ctx.now().getTime()}`.as("told_at"),
       emailedAt: sql<null>`null`.as("emailed_at"),
     })

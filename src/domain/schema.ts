@@ -176,6 +176,8 @@ export const accounts = sqliteTable(
      * Quote carries the one given when it was sent or last revised.
      */
     vatNumber: text("vat_number"),
+    /** When the Admin held an Artisan's Payouts, while they are held (#128); they wait meanwhile. */
+    payoutsHeldAt: instant("payouts_held_at"),
   },
   (table) => [check("accounts_kind", sql`${table.kind} in ('client', 'artisan')`)],
 );
@@ -960,6 +962,69 @@ export const engagements = sqliteTable(
     check("engagements_artisan_fee", sql.raw("artisan_fee_percent in (5, 10)")),
   ],
 );
+
+export const PAYOUT_STATES = ["created", "pending", "paused", "paid", "refused"] as const;
+
+/**
+ * Each Release owed to an Artisan, sent to their current Payout account by
+ * the daily run (#128): one Payout per `payout.owed` ledger row. Our id is
+ * the payment adapter's idempotency key and, shortened, the reference on the
+ * Artisan's bank statement. It is created before the adapter is asked, so
+ * its events always find it; pending once the adapter has it; paused while
+ * the float is low; and paid, or refused at once by the bank. A trigger in
+ * the migration refuses any other change.
+ */
+export const payouts = sqliteTable(
+  "payouts",
+  {
+    id: text("id").primaryKey(),
+    /** The Release's `payout.owed` ledger row. */
+    owedEntryId: text("owed_entry_id")
+      .notNull()
+      .unique()
+      .references(() => ledgerEntries.id),
+    artisanId: text("artisan_id")
+      .notNull()
+      .references(() => accounts.id),
+    engagementId: text("engagement_id")
+      .notNull()
+      .references(() => engagements.id),
+    /** The accepted Payout account check it is sent to. */
+    payoutAccountId: text("payout_account_id")
+      .notNull()
+      .references(() => verificationChecks.id),
+    amountCents: integer("amount_cents").notNull(),
+    state: text("state", { enum: PAYOUT_STATES }).notNull(),
+    /** Why the bank refused it when it was sent. */
+    refusedFor: text("refused_for"),
+    createdAt: instant("created_at").notNull(),
+    pausedAt: instant("paused_at"),
+    paidAt: instant("paid_at"),
+  },
+  (table) => [
+    index("payouts_artisan").on(table.artisanId, table.createdAt),
+    index("payouts_unpaid")
+      .on(table.state)
+      .where(sql.raw("state in ('created', 'pending', 'paused')")),
+    check(
+      "payouts_state",
+      sql.raw(`state in (${PAYOUT_STATES.map((state) => `'${state}'`).join(", ")})`),
+    ),
+    check("payouts_amount", sql.raw("typeof(amount_cents) = 'integer' and amount_cents > 0")),
+  ],
+);
+
+/**
+ * Each day's Payout run, once per South African day, and its float check:
+ * the float's balance and what the run needed of it.
+ */
+export const payoutRuns = sqliteTable("payout_runs", {
+  /** The South African calendar day, YYYY-MM-DD. */
+  day: text("day").primaryKey(),
+  ranAt: instant("ran_at").notNull(),
+  floatCents: integer("float_cents").notNull(),
+  neededCents: integer("needed_cents").notNull(),
+});
 
 /**
  * The fake payment adapter's state, in the Worker (#126): launch money is

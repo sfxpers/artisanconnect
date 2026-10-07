@@ -127,6 +127,13 @@
       "when": 1791375680098,
       "tag": "0017_work-started",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1791382634179,
+      "tag": "0018_payouts",
+      "breakpoints": true
     }
   ]
 }

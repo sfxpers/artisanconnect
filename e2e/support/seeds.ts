@@ -1,4 +1,4 @@
-import { createDomain } from "@/domain";
+import { createDomain, type DomainConfig } from "@/domain";
 import type { AdminActor } from "@/domain/actor";
 import { createFakeContentReader } from "@/domain/fakes/content-reader";
 import { createFakeMailer } from "@/domain/fakes/mailer";
@@ -37,12 +37,58 @@ export async function hired(env: Env) {
   };
 }
 
+/**
+ * An Artisan with two Releases owed: one paid by today's Payout run, with its
+ * Receipt, unless the run already went today, and one Released after the run,
+ * waiting for the next. Prints the Artisan's sign-in.
+ */
+export async function payouts(env: Env) {
+  // Today's run goes now, whatever the configured time.
+  const { domain, make } = await world(env, { payoutRunTime: "00:00" });
+  const payments = fakePaymentsFromEnv(env);
+  const { client, artisan, jobId, quoteId } = await quoted(domain, make);
+  await make.hired(client, quoteId);
+  await make.workStarted(client, await make.engagementOf(client, jobId));
+  const run = await domain.system.runPayouts();
+  const [paid] = await sentPayouts(env, artisan.actor.accountId);
+  if (paid) {
+    const received = await domain.system.receivePaymentEvent(await payments.succeedPayout(paid));
+    if (!received.ok) throw new Error(received.refusal.message);
+  }
+  const second = await make.openJob(client, { matching: "invite-only", title: "Paint the stoep" });
+  const invited = await domain.invitations.invite(client.actor, {
+    jobId: second,
+    artisanId: artisan.actor.accountId,
+  });
+  if (!invited.ok) throw new Error(invited.refusal.message);
+  const secondQuote = await make.sentQuote(artisan, second, {
+    startOn: saDay(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)),
+  });
+  await make.hired(client, secondQuote);
+  await make.workStarted(client, await make.engagementOf(client, second));
+  return {
+    ran: run.ran,
+    paid: !!paid,
+    artisan: { email: artisan.email, password: artisan.password },
+  };
+}
+
+/** The ids of the Payouts the run sent the Artisan and the bank has not yet paid. */
+async function sentPayouts(env: Env, artisanId: string) {
+  const { results } = await env.DB.prepare(
+    "select id from payouts where artisan_id = ? and state = 'pending'",
+  )
+    .bind(artisanId)
+    .all<{ id: string }>();
+  return results.map((row) => row.id);
+}
+
 /** The module on the local app's D1, and the builders over it. */
-async function world(env: Env) {
+async function world(env: Env, config: Partial<DomainConfig> = {}) {
   const mailer = createFakeMailer();
   const domain = createDomain(
     { ...portsFromEnv(env), contentReader: createFakeContentReader(), mailer },
-    configFromEnv(env),
+    { ...configFromEnv(env), ...config },
   );
   const make = given({
     domain,

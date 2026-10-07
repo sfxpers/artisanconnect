@@ -14,6 +14,8 @@ import { invitationsSection } from "./invitations";
 import { jobsSection } from "./jobs";
 import { matchesSection } from "./matches";
 import { receivePaymentEvent } from "./payments";
+import { payoutsSection } from "./payouts";
+import { runPayouts } from "./payouts/run";
 import { createQueues, type QueueItemKind } from "./queues";
 import { profilesSection } from "./profiles";
 import { quotesSection } from "./quotes";
@@ -36,6 +38,7 @@ export const sections = [
   marketplaceRulesSection,
   matchesSection,
   noticesSection,
+  payoutsSection,
   profilesSection,
   quotesSection,
   regionsSection,
@@ -88,6 +91,19 @@ export function assembleDomain<const Sections extends readonly Section[]>(
           return await runDueClocks(ctx, clocks);
         } finally {
           // Never in place of a clock's failure.
+          await emailTells(ctx).catch((error: unknown) => {
+            console.error("Tell emails did not go", error);
+          });
+        }
+      },
+      /**
+       * Also called by the every-minute cron: runs today's Payouts once their
+       * South African time of day has come, after the float check.
+       */
+      async runPayouts() {
+        try {
+          return await runPayouts(ctx);
+        } finally {
           await emailTells(ctx).catch((error: unknown) => {
             console.error("Tell emails did not go", error);
           });

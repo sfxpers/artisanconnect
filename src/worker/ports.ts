@@ -23,7 +23,11 @@ export function portsFromEnv(env: Env): Ports {
 
 export function configFromEnv(env: Env): DomainConfig {
   if (!env.BETTER_AUTH_SECRET) throw new Error("Set the BETTER_AUTH_SECRET secret");
-  return { appUrl: env.APP_URL, authSecret: env.BETTER_AUTH_SECRET };
+  return {
+    appUrl: env.APP_URL,
+    authSecret: env.BETTER_AUTH_SECRET,
+    payoutRunTime: env.PAYOUT_RUN_TIME,
+  };
 }
 
 /**

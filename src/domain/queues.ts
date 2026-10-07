@@ -1,9 +1,10 @@
-import { and, asc, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, isNull, sql, type SQL } from "drizzle-orm";
 import type { Actor, AdminActor } from "./actor";
 import { audit, logRead } from "./audit";
 import { keyOfLink } from "./file-links";
 import type { Context, Write } from "./context";
 import { causedBy } from "./errors";
+import { insertWhile } from "./guarded";
 import { adminOnly, ok, refuse, type Result } from "./result";
 import { QUEUE_NAMES, type QueueName } from "./queue-names";
 import { admins, queueItems } from "./schema";
@@ -150,8 +151,16 @@ type QueueItemKindDefinition = {
 
 export type QueueItemKind = QueueItemKindDefinition & {
   kind: string;
-  /** The write that puts an item in its queue; commit it with the event that raises it. */
-  raise(ctx: Context, item: { subjectId: string; title: string }): { write: Write; itemId: string };
+  /**
+   * The write that puts an item in its queue; commit it with the event that
+   * raises it. With a condition, written only while it holds when the batch
+   * runs, as a clock's writes must be.
+   */
+  raise(
+    ctx: Context,
+    item: { subjectId: string; title: string },
+    condition?: SQL,
+  ): { write: Write; itemId: string };
 };
 
 /** A kind of queue item, by a name unique across the module. */
@@ -162,16 +171,23 @@ export function defineQueueItemKind(
   return {
     ...definition,
     kind,
-    raise(ctx, item) {
+    raise(ctx, item, condition) {
       const itemId = ctx.newId();
-      const write = ctx.db.insert(queueItems).values({
+      const row = {
         id: itemId,
         queue: definition.queue,
         kind,
         subjectId: item.subjectId,
         title: item.title,
         raisedAt: ctx.now(),
-      });
+        decision: null,
+        reason: null,
+        decidedBy: null,
+        decidedAt: null,
+      };
+      const write = condition
+        ? insertWhile(ctx, queueItems, row, condition)
+        : ctx.db.insert(queueItems).values(row);
       return { write, itemId };
     },
   };

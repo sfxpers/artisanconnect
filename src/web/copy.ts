@@ -11,7 +11,13 @@ export const copy = {
     visitor: { findArtisans: "Find Artisans", signUp: "Sign up", signIn: "Sign in" },
     client: { jobs: "Jobs", findArtisans: "Find Artisans", account: "Account" },
     artisan: { home: "Home", profile: "Profile", payouts: "Payouts", account: "Account" },
-    admin: { queues: "Queues", admins: "Admins", audit: "Audit log", signOut: "Sign out" },
+    admin: {
+      queues: "Queues",
+      payouts: "Payouts",
+      admins: "Admins",
+      audit: "Audit log",
+      signOut: "Sign out",
+    },
     notices: "Notices",
   },
   notFound: {
@@ -430,6 +436,38 @@ export const copy = {
     profile: "Profile",
     profileLead: "Your public page, with your work photos, badges, and Reviews.",
     openProfile: "Open",
+    payouts: "Payouts",
+    openPayouts: "Open",
+    unpaid: "Still to be paid",
+    paid: "Paid to you",
+    payoutsHeld: "Held by the Admin",
+  },
+  payouts: {
+    title: "Payouts",
+    lead: "Each Release is paid to your Payout account in the next daily run, less the Artisan Fee. A Receipt is emailed for each Payout.",
+    unpaid: "Still to be paid",
+    paid: "Paid to you",
+    held: "The Admin holds your Payouts. They wait until the hold is lifted; you are told when it is.",
+    noAccount:
+      "You have no current Payout account, so your Payouts wait. Send a bank letter in Verification.",
+    openVerification: "Open Verification",
+    empty:
+      "No Releases yet. The Materials are released at Work started, and the Labour at Approval.",
+    released: (part: string, when: string) => `${part} released ${when}`,
+    parts: { materials: "Materials", labour: "Labour" },
+    releasedAmount: "Released",
+    artisanFee: "Artisan Fee",
+    amount: "Paid to you",
+    reference: (reference: string) => `Reference ${reference}`,
+    paidOn: (when: string) => `Paid ${when}`,
+    states: { waiting: "Waiting", sent: "On its way", paid: "Paid", refused: "Refused" },
+    waitingFor: {
+      "next-run": "Goes in the next daily run",
+      hold: "Held by the Admin",
+      "payout-account": "Waiting for a Payout account",
+    },
+    sent: "Sent to your bank.",
+    refused: "Your bank refused this Payout.",
   },
   quote: {
     write: "Write a Quote",
@@ -739,6 +777,9 @@ export const copy = {
     home: {
       title: "Queues",
       lead: "Every queue in one stream, oldest first.",
+      floatShort: "The float cannot cover the Payouts sent",
+      floatShortLead: (float: string, needed: string, when: string) =>
+        `The float holds ${float}, and the Payouts sent and not yet paid need ${needed} (checked before the run, ${when}). The provider pauses what it cannot pay until the float is topped up.`,
       all: "All",
       empty: "Nothing is waiting. Every queue is clear.",
       emptyQueue: "Nothing is waiting in this queue.",
@@ -787,6 +828,15 @@ export const copy = {
       removeLead: (email: string) =>
         `${email} stops being an Admin and is signed out at once. This is written to the audit log.`,
       last: "The last Admin cannot be removed.",
+    },
+    payouts: {
+      title: "Payouts",
+      lead: "Each Artisan still owed money, and each whose Payouts are held. A held Artisan's Payouts wait; lifting the hold sends them in the next daily run. Each is written to the audit log and told to the Artisan.",
+      empty: "No Artisan is owed money, and none is held.",
+      unpaid: "Unpaid",
+      held: "Held",
+      hold: "Hold Payouts",
+      lift: "Lift the hold",
     },
     audit: {
       title: "Audit log",

@@ -110,6 +110,7 @@ describe("the Worker", () => {
         "APP_URL",
         "ENVIRONMENT",
         "MAIL_FROM",
+        "PAYOUT_RUN_TIME",
         "TURNSTILE_SITE_KEY",
       ]);
       // Sentry, better-auth's session signing, and Turnstile (ADR 0017).

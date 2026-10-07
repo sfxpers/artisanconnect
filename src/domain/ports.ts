@@ -33,6 +33,8 @@ export type DomainConfig = {
   appUrl: string;
   /** Signs session cookies. */
   authSecret: string;
+  /** When the daily Payout run goes, as a South African time of day: "10:00". */
+  payoutRunTime: string;
 };
 
 export type Clock = {

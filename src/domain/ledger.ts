@@ -23,9 +23,18 @@ export const LEDGER_KINDS = {
   artisanFee: "release.artisan-fee",
   /** A Release less its Artisan Fee, owed to the Artisan until a Payout sends it (#128). */
   payoutOwed: "payout.owed",
+  /** A Payout of what a Release owes, sent to the payment adapter by the daily run. */
+  payoutCreated: "payout.created",
+  /** A Payout the bank paid into the Artisan's Payout account: no longer owed. */
+  payoutPaid: "payout.paid",
 } as const;
 
-type LedgerKind = (typeof LEDGER_KINDS)[keyof typeof LEDGER_KINDS];
+export type LedgerKind = (typeof LEDGER_KINDS)[keyof typeof LEDGER_KINDS];
+
+/** The part of the Hired Quote each Release kind releases. The Labour's comes with #130. */
+export const RELEASED_PARTS: Partial<Record<LedgerKind, "materials" | "labour">> = {
+  [LEDGER_KINDS.materialsReleased]: "materials",
+};
 
 /** One row of an event. A zero amount is left out: nothing moved. */
 export type LedgerRow = {

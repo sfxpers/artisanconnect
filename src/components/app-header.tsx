@@ -13,6 +13,7 @@ function navFor(me: Me | null, admin: AdminMe | null): NavItem[] {
     const t = copy.header.admin;
     return [
       { to: "/admin", label: t.queues },
+      { to: "/admin/payouts", label: t.payouts },
       { to: "/admin/admins", label: t.admins },
       { to: "/admin/audit", label: t.audit },
     ];

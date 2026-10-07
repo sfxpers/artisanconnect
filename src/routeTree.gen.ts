@@ -28,6 +28,7 @@ import { Route as VerificationRouteImport } from './routes/verification'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminAdminsRouteImport } from './routes/admin/admins'
 import { Route as AdminAuditRouteImport } from './routes/admin/audit'
+import { Route as AdminPayoutsRouteImport } from './routes/admin/payouts'
 import { Route as AdminSignInRouteImport } from './routes/admin/sign-in'
 import { Route as ArtisansIndexRouteImport } from './routes/artisans.index'
 import { Route as ArtisansArtisanIdRouteImport } from './routes/artisans.$artisanId'
@@ -138,6 +139,11 @@ const AdminAuditRoute = AdminAuditRouteImport.update({
   path: '/admin/audit',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminPayoutsRoute = AdminPayoutsRouteImport.update({
+  id: '/admin/payouts',
+  path: '/admin/payouts',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminSignInRoute = AdminSignInRouteImport.update({
   id: '/admin/sign-in',
   path: '/admin/sign-in',
@@ -229,6 +235,7 @@ export interface FileRoutesByFullPath {
   '/verification': typeof VerificationRoute
   '/admin/admins': typeof AdminAdminsRoute
   '/admin/audit': typeof AdminAuditRoute
+  '/admin/payouts': typeof AdminPayoutsRoute
   '/admin/sign-in': typeof AdminSignInRoute
   '/artisans/$artisanId': typeof ArtisansArtisanIdRoute
   '/dev/mail': typeof DevMailRoute
@@ -264,6 +271,7 @@ export interface FileRoutesByTo {
   '/verification': typeof VerificationRoute
   '/admin/admins': typeof AdminAdminsRoute
   '/admin/audit': typeof AdminAuditRoute
+  '/admin/payouts': typeof AdminPayoutsRoute
   '/admin/sign-in': typeof AdminSignInRoute
   '/artisans/$artisanId': typeof ArtisansArtisanIdRoute
   '/dev/mail': typeof DevMailRoute
@@ -300,6 +308,7 @@ export interface FileRoutesById {
   '/verification': typeof VerificationRoute
   '/admin/admins': typeof AdminAdminsRoute
   '/admin/audit': typeof AdminAuditRoute
+  '/admin/payouts': typeof AdminPayoutsRoute
   '/admin/sign-in': typeof AdminSignInRoute
   '/artisans/$artisanId': typeof ArtisansArtisanIdRoute
   '/dev/mail': typeof DevMailRoute
@@ -337,6 +346,7 @@ export interface FileRouteTypes {
     | '/verification'
     | '/admin/admins'
     | '/admin/audit'
+    | '/admin/payouts'
     | '/admin/sign-in'
     | '/artisans/$artisanId'
     | '/dev/mail'
@@ -372,6 +382,7 @@ export interface FileRouteTypes {
     | '/verification'
     | '/admin/admins'
     | '/admin/audit'
+    | '/admin/payouts'
     | '/admin/sign-in'
     | '/artisans/$artisanId'
     | '/dev/mail'
@@ -407,6 +418,7 @@ export interface FileRouteTypes {
     | '/verification'
     | '/admin/admins'
     | '/admin/audit'
+    | '/admin/payouts'
     | '/admin/sign-in'
     | '/artisans/$artisanId'
     | '/dev/mail'
@@ -443,6 +455,7 @@ export interface RootRouteChildren {
   VerificationRoute: typeof VerificationRoute
   AdminAdminsRoute: typeof AdminAdminsRoute
   AdminAuditRoute: typeof AdminAuditRoute
+  AdminPayoutsRoute: typeof AdminPayoutsRoute
   AdminSignInRoute: typeof AdminSignInRoute
   ArtisansArtisanIdRoute: typeof ArtisansArtisanIdRoute
   DevMailRoute: typeof DevMailRoute
@@ -595,6 +608,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAuditRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/payouts': {
+      id: '/admin/payouts'
+      path: '/admin/payouts'
+      fullPath: '/admin/payouts'
+      preLoaderRoute: typeof AdminPayoutsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/sign-in': {
       id: '/admin/sign-in'
       path: '/admin/sign-in'
@@ -715,6 +735,7 @@ const rootRouteChildren: RootRouteChildren = {
   VerificationRoute: VerificationRoute,
   AdminAdminsRoute: AdminAdminsRoute,
   AdminAuditRoute: AdminAuditRoute,
+  AdminPayoutsRoute: AdminPayoutsRoute,
   AdminSignInRoute: AdminSignInRoute,
   ArtisansArtisanIdRoute: ArtisansArtisanIdRoute,
   DevMailRoute: DevMailRoute,

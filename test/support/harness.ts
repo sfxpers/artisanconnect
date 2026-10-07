@@ -10,6 +10,7 @@ import { given } from "./given";
 export const TEST_CONFIG: DomainConfig = {
   appUrl: "https://artisanconnect.test",
   authSecret: "a-test-secret-that-is-long-enough-for-better-auth",
+  payoutRunTime: "10:00",
 };
 
 /**
