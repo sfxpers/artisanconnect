@@ -189,7 +189,10 @@ function Invitations({ invitations }: { invitations: Invitation[] }) {
   );
 }
 
-/** The Jobs the Artisan has a Quote on, being checked, Sent, or Hired, the newest first. */
+/**
+ * The Jobs the Artisan has a Quote on, being checked, Sent, or Hired, the
+ * newest first; a Hired one shows where its Engagement stands.
+ */
 function Active({ quotes }: { quotes: Quoted[] }) {
   if (quotes.length === 0) return <Empty>{t.noActive}</Empty>;
   return (
@@ -201,7 +204,11 @@ function Active({ quotes }: { quotes: Quoted[] }) {
             job={quote}
             when={quote.sentAt ? t.quoteSent(formatDate(quote.sentAt)) : t.quoteHeld}
           >
-            <Badge variant="secondary">{copy.quote.states[quote.state]}</Badge>
+            <Badge variant="secondary">
+              {quote.engagementState
+                ? copy.engagement.states[quote.engagementState]
+                : copy.quote.states[quote.state]}
+            </Badge>
             <span className="self-center text-sm font-medium">{formatRands(quote.totalCents)}</span>
           </JobListRow>
         ))}

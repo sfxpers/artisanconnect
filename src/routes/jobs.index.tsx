@@ -64,7 +64,9 @@ function Group({ title, jobs }: { title: string; jobs: Summary[] }) {
                       {job.title || t.untitled}
                     </Link>
                     <Badge variant={job.state === "open" ? "default" : "secondary"}>
-                      {t.states[job.state]}
+                      {job.engagementState
+                        ? copy.engagement.states[job.engagementState]
+                        : t.states[job.state]}
                     </Badge>
                   </div>
                   <div className="text-xs text-muted-foreground">

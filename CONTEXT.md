@@ -221,7 +221,7 @@ A 1 to 5 rating with an optional comment, one from each party once an Engagement
 _Avoid_: Feedback, Score, Reputation
 
 **Artisan record**:
-The Admin's view of an Artisan's Cancellations, Cancellations by Clients before Work started, and Disputes decided against them. No Account sees it.
+The Admin's view of an Artisan's Cancellations, each with who cancelled and the reason either party gave, Cancellations by Clients before Work started, and Disputes decided against them. No Account sees it.
 _Avoid_: Reliability score, Reputation
 
 **Content check**:

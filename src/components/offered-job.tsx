@@ -79,13 +79,15 @@ export function OfferedJob({
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-semibold tracking-tight">{job.title}</h1>
           <Badge>
-            {quote && quote.state !== "refused"
-              ? tq.states[quote.state]
-              : job.state !== "open"
-                ? copy.jobs.states[job.state]
-                : invited
-                  ? t.invitationBadge
-                  : t.badge}
+            {engagement
+              ? copy.engagement.states[engagement.state]
+              : quote && quote.state !== "refused"
+                ? tq.states[quote.state]
+                : job.state !== "open"
+                  ? copy.jobs.states[job.state]
+                  : invited
+                    ? t.invitationBadge
+                    : t.badge}
           </Badge>
         </div>
         <p className="text-sm text-muted-foreground">

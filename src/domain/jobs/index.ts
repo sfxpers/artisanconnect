@@ -8,7 +8,7 @@ import { causedBy } from "../errors";
 import { ok, refuse } from "../result";
 import { saDay } from "../sa-days";
 import { clientShownName, publicName } from "../accounts/names";
-import { accounts, jobs, suburbs, type JOB_STATES } from "../schema";
+import { accounts, jobs, suburbs, type ENGAGEMENT_STATES, type JOB_STATES } from "../schema";
 import { defineSection } from "../section";
 import { SERVICE_CATEGORY_NAMES } from "../service-categories";
 import { checkFileCount, discardFiles, uploadFile, UPLOAD_CONTEXTS } from "../uploads";
@@ -46,6 +46,7 @@ import {
 } from "./rows";
 
 type JobState = (typeof JOB_STATES)[number];
+type EngagementState = (typeof ENGAGEMENT_STATES)[number];
 
 // Posting a Job (#121, ADR 0003): a Client gives a Job its trade, site,
 // details, and photos, and chooses matched or Invite-only. A Draft may omit
@@ -337,15 +338,17 @@ export const jobsSection = defineSection({
         jobId: row.id,
         title: row.title,
         state: row.state,
+        /** Once Hired, where its Engagement stands, which the list shows instead. */
+        engagementState: row.engagementState,
         category: row.category && SERVICE_CATEGORY_NAMES[row.category],
         region: row.regionName,
         updatedAt: row.updatedAt,
         expiresAt: row.expiresAt,
       }));
       return {
-        needsYou: summaries.filter((job) => GROUPS[job.state] === "needsYou"),
-        inProgress: summaries.filter((job) => GROUPS[job.state] === "inProgress"),
-        finished: summaries.filter((job) => GROUPS[job.state] === "finished"),
+        needsYou: summaries.filter((job) => groupOf(job) === "needsYou"),
+        inProgress: summaries.filter((job) => groupOf(job) === "inProgress"),
+        finished: summaries.filter((job) => groupOf(job) === "finished"),
       };
     },
 
@@ -538,6 +541,13 @@ const GROUPS: Record<JobState, "needsYou" | "inProgress" | "finished"> = {
   expired: "finished",
   closed: "finished",
 };
+
+/** Where a Job sits in My Jobs: a Hired one is Finished once its Engagement is Completed or Cancelled. */
+function groupOf(job: { state: JobState; engagementState: EngagementState | null }) {
+  return job.engagementState === "completed" || job.engagementState === "cancelled"
+    ? "finished"
+    : GROUPS[job.state];
+}
 
 function notOpen() {
   return refuse("not-open", "Only an Open Job can be closed.");

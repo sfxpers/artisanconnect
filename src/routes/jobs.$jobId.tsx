@@ -171,7 +171,9 @@ function ClientJob({
             {job.title || copy.jobs.untitled}
           </h1>
           <Badge variant={job.state === "open" ? "default" : "secondary"}>
-            {copy.jobs.states[job.state]}
+            {job.engagement
+              ? copy.engagement.states[job.engagement.state]
+              : copy.jobs.states[job.state]}
           </Badge>
         </div>
         <p className="text-sm text-muted-foreground">

@@ -8,7 +8,7 @@ import { heldInvitation } from "../invitations";
 import { JOB_AS_ARTISAN_COLUMNS, jobAsArtisanView, jobRow } from "../jobs/rows";
 import { heldMatch } from "../matches";
 import { ok, refuse } from "../result";
-import { accounts, jobs, quotes, regions, suburbs } from "../schema";
+import { accounts, engagements, jobs, quotes, regions, suburbs } from "../schema";
 import { defineSection } from "../section";
 import { badgesOf } from "../verification";
 import { protectionFeeCents } from "../money";
@@ -265,16 +265,18 @@ export const quotesSection = defineSection({
 
     /**
      * The Artisan's Quotes being checked, Sent, or Hired, the newest first,
-     * each with its Job as they see it in a list: the Region, never the address.
+     * each with its Job as they see it in a list: the Region, never the
+     * address; and a Hired one's Engagement's state.
      */
     async mine(viewer: Actor) {
       if (viewer.kind !== "artisan") return null;
       const rows = await ctx.db
-        .select({ ...JOB_AS_ARTISAN_COLUMNS, quote: quotes })
+        .select({ ...JOB_AS_ARTISAN_COLUMNS, quote: quotes, engagementState: engagements.state })
         .from(quotes)
         .innerJoin(jobs, eq(jobs.id, quotes.jobId))
         .leftJoin(suburbs, eq(suburbs.id, jobs.suburbId))
         .leftJoin(regions, eq(regions.id, suburbs.regionId))
+        .leftJoin(engagements, eq(engagements.quoteId, quotes.id))
         .where(
           and(
             eq(quotes.artisanId, viewer.accountId),
@@ -282,10 +284,11 @@ export const quotesSection = defineSection({
           ),
         )
         .orderBy(desc(quotes.createdAt), desc(sql.raw(`"quotes"."rowid"`)));
-      return rows.map(({ quote, ...job }) => ({
+      return rows.map(({ quote, engagementState, ...job }) => ({
         ...jobAsArtisanView(job),
         quoteId: quote.id,
         state: quote.state as "held" | "sent" | "hired",
+        engagementState,
         totalCents: quote.labourCents + quote.materialsCents,
         sentAt: quote.sentAt,
         expiresAt: quote.expiresAt,

@@ -1,7 +1,7 @@
 import { and, desc, eq, type SQL } from "drizzle-orm";
 import { startClock } from "../clocks";
 import type { Context } from "../context";
-import { jobs, regions, suburbs } from "../schema";
+import { engagements, jobs, regions, suburbs } from "../schema";
 import { SERVICE_CATEGORY_NAMES, type ServiceCategory } from "../service-categories";
 import type { StoredFile } from "../uploads";
 import { OPEN_DAYS } from "./inputs";
@@ -48,13 +48,14 @@ export async function jobRow(ctx: Context, jobId: string) {
 
 export type JobRow = NonNullable<Awaited<ReturnType<typeof jobRow>>>;
 
-/** A Client's Jobs, the one changed last first. */
+/** A Client's Jobs, the one changed last first, each with its Engagement's state once Hired. */
 export async function jobsOf(ctx: Context, clientId: string) {
   return ctx.db
-    .select(JOB_COLUMNS)
+    .select({ ...JOB_COLUMNS, engagementState: engagements.state })
     .from(jobs)
     .leftJoin(suburbs, eq(suburbs.id, jobs.suburbId))
     .leftJoin(regions, eq(regions.id, suburbs.regionId))
+    .leftJoin(engagements, eq(engagements.jobId, jobs.id))
     .where(eq(jobs.clientId, clientId))
     .orderBy(desc(jobs.updatedAt), desc(jobs.id));
 }

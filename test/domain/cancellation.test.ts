@@ -423,6 +423,23 @@ describe("a Cancellation", () => {
     }
   });
 
+  test("finishes the Job in the Client's Jobs, and both lists show the Engagement's state", async () => {
+    const { domain, given } = await createHarness();
+    const paid = await hiredJob(given);
+    const ended = await hiredJob(given, paid.artisan, paid.client);
+
+    await cancelled(domain, ended.client, ended.engagementId);
+
+    expect(await domain.jobs.mine(paid.client.actor)).toMatchObject({
+      inProgress: [{ jobId: paid.jobId, state: "hired", engagementState: "paid" }],
+      finished: [{ jobId: ended.jobId, state: "hired", engagementState: "cancelled" }],
+    });
+    expect(await domain.quotes.mine(paid.artisan.actor)).toMatchObject([
+      { jobId: ended.jobId, state: "hired", engagementState: "cancelled" },
+      { jobId: paid.jobId, state: "hired", engagementState: "paid" },
+    ]);
+  });
+
   test("is only its parties' to make", async () => {
     const { domain, given } = await createHarness();
     const { engagementId } = await hiredJob(given);
@@ -597,14 +614,15 @@ describe("the Artisan record", () => {
 });
 
 type Artisan = Awaited<ReturnType<Harness["given"]["matchableArtisan"]>>;
+type Client = Awaited<ReturnType<Harness["given"]["client"]>>;
 
 /**
  * A Client's Painting Job Hired from the default Quote: R1 500 Labour and
  * R500 Materials, starting today (5 October 2026). The Artisan given, or a
  * new one, Quotes it.
  */
-async function hiredJob(given: Harness["given"], by?: Artisan) {
-  const client = await given.client();
+async function hiredJob(given: Harness["given"], by?: Artisan, of?: Client) {
+  const client = of ?? (await given.client());
   const artisan = by ?? (await given.matchableArtisan({ name: "Sipho Dlamini" }));
   const jobId = await given.openJob(client);
   const quoteId = await given.sentQuote(artisan, jobId, { startOn: "2026-10-05" });

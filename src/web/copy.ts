@@ -1,5 +1,6 @@
 import { EMAIL_CODE } from "@/domain/accounts/inputs";
 import type { MessageEvent } from "@/domain/conversations/inputs";
+import type { ENGAGEMENT_STATES } from "@/domain/schema";
 import { formatTime } from "@/domain/sa-days";
 
 // Every word the web app shows, in one place for later translation. Copy is a
@@ -602,6 +603,16 @@ export const copy = {
       }`,
   },
   engagement: {
+    /** A Hired Job's badge: where its Engagement stands. */
+    states: {
+      paid: "Paid",
+      "work-started": "Work started",
+      "awaiting-approval": "Awaiting approval",
+      "fix-requested": "Fix requested",
+      disputed: "Disputed",
+      completed: "Completed",
+      cancelled: "Cancelled",
+    } satisfies Record<(typeof ENGAGEMENT_STATES)[number], string>,
     nextStepClient: "Paid. Next: Work started",
     nextStepClientLead: (start: string) =>
       `The Artisan starts on ${start}. Once they are working on site, you mark Work started here, which releases the Materials to them.`,
