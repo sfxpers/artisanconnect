@@ -103,7 +103,7 @@ The part of a Quote that pays for goods the Artisan supplies, released at Work s
 _Avoid_: Deposit, Parts, Supplies
 
 **Hire**:
-The Client's choice of a Sent Quote, made by paying for it. Other Sent Quotes on that Job become Declined.
+The Client's choice of a Sent Quote, made by paying for it. Other Sent Quotes on that Job become Declined. A Quote whose start date has passed is revised before it is Hired. If the Quote ends or is revised while the Client is paying, nobody is Hired and the Payment is refunded in full.
 _Avoid_: Accept, Booking
 
 **Conversation**:

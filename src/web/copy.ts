@@ -511,6 +511,9 @@ export const copy = {
     sent: (when: string) => `Sent ${when}`,
     expires: (when: string) => `Expires ${when}`,
     hire: "Hire",
+    startPassed: "Start date passed",
+    startPassedLead:
+      "Ask the Artisan to revise this Quote in your Conversation; then you can Hire it.",
     hireTitle: "Hire by paying for this Quote",
     hireQuote: "Quote",
     hireFee: (percent: number) => `Protection Fee (${percent}%)`,

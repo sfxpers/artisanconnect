@@ -91,6 +91,60 @@ describe("hiring a Sent Quote", () => {
     expect(checkoutsOpened(harness.payments)).toEqual([]);
   });
 
+  test("not of a Quote whose start date has passed: the Artisan revises it first", async () => {
+    const { domain, given, clock, payments } = await createHarness();
+    const client = await given.client();
+    const artisan = await given.matchableArtisan();
+    const jobId = await given.openJob(client);
+    const quoteId = await given.sentQuote(artisan, jobId, { startOn: "2026-10-06" });
+    expect(await domain.quotes.forJob(client.actor, { jobId })).toEqual([
+      expect.objectContaining({ startPassed: false }),
+    ]);
+    clock.set(new Date("2026-10-06T22:00:00Z")); // 7 October begins in South Africa
+
+    expect(await domain.quotes.forJob(client.actor, { jobId })).toEqual([
+      expect.objectContaining({ startPassed: true }),
+    ]);
+    expect(await domain.engagements.hire(client.actor, { quoteId, feeAcknowledged: true })).toEqual(
+      {
+        ok: false,
+        refusal: {
+          reason: "start-passed",
+          message:
+            "This Quote's start date has passed. Ask the Artisan to revise it in your Conversation, then Hire it.",
+        },
+      },
+    );
+    expect(checkoutsOpened(payments)).toEqual([]);
+
+    const revised = await domain.quotes.revise(artisan.actor, {
+      jobId,
+      ...QUOTE,
+      startOn: "2026-10-09",
+    });
+    if (!revised.ok) throw new Error(revised.refusal.message);
+    await given.hired(client, quoteId);
+    expect(await domain.jobs.view(client.actor, { jobId })).toMatchObject({ state: "hired" });
+  });
+
+  test("a start date that passes while the Client pays does not stop the Hire", async () => {
+    const { domain, given, clock } = await createHarness();
+    const client = await given.client();
+    const artisan = await given.matchableArtisan();
+    const jobId = await given.openJob(client);
+    const quoteId = await given.sentQuote(artisan, jobId, { startOn: "2026-10-05" });
+    clock.set(new Date("2026-10-05T21:59:00Z")); // a minute before midnight
+    const collectionId = await given.checkout(client, quoteId);
+    clock.advance({ minutes: 2 });
+
+    await given.paid(collectionId);
+
+    expect(await domain.jobs.view(client.actor, { jobId })).toMatchObject({
+      state: "hired",
+      notHired: [],
+    });
+  });
+
   test("works on an Expired Job with a Quote still Sent, without a Renew", async () => {
     const { domain, given, clock } = await createHarness();
     const client = await given.client();

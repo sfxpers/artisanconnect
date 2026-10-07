@@ -145,6 +145,7 @@ describe("the Client's Quotes", () => {
         // 5% of R305.30 is R15.265, which rounds half up to R15.27.
         protectionFeeCents: 1_527,
         paymentCents: 32_057,
+        startPassed: false,
         sentAt: clock.now(),
         expiresAt: new Date(clock.now().getTime() + 14 * DAY),
         revisedAt: null,

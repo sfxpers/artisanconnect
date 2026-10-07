@@ -339,6 +339,8 @@ export const quotesSection = defineSection({
           ...view,
           protectionFeeCents: protectionFee,
           paymentCents: view.totalCents + protectionFee,
+          /** Whether its start date has passed, so it must be revised before it can be Hired. */
+          startPassed: startPassed(ctx, quote.startOn),
           sentAt: quote.sentAt,
           expiresAt: quote.expiresAt,
           revisedAt: quote.revisedAt,

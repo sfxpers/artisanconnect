@@ -11,7 +11,7 @@ import { ledgerWrites, LEDGER_KINDS, paymentInRows } from "../ledger";
 import { formatRands, PROTECTION_FEE_PERCENT, protectionFeeCents } from "../money";
 import type { PaymentEvent, PaymentMethod } from "../ports";
 import { closeJobWrites } from "../quotes/ends";
-import { verifiedForJob } from "../quotes/rules";
+import { startPassed, verifiedForJob } from "../quotes/rules";
 import { isLive, quoteRow, type QuoteRow } from "../quotes/rows";
 import { ok, refuse } from "../result";
 import { saDay, formatDay } from "../sa-days";
@@ -54,6 +54,14 @@ export async function openCheckout(
   }
   if (!isLive(quote) || quote.state !== "sent") {
     return refuse("not-sent", "Only a Sent Quote can be Hired.");
+  }
+  // Its start date is the Artisan's commitment (ADR 0004), so a passed one is
+  // revised first. Asked only now: one passing while the Client pays stands.
+  if (startPassed(ctx, quote.startOn)) {
+    return refuse(
+      "start-passed",
+      "This Quote's start date has passed. Ask the Artisan to revise it in your Conversation, then Hire it.",
+    );
   }
   if (input.feeAcknowledged !== true) {
     return refuse(

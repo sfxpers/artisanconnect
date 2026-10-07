@@ -235,7 +235,12 @@ function QuoteRow({
         </p>
       </div>
       {open && <p className="text-sm whitespace-pre-line">{quote.scope}</p>}
-      {hiring && (
+      {quote.startPassed && (
+        <p className="text-sm text-muted-foreground">
+          <Badge variant="outline">{q.startPassed}</Badge> {q.startPassedLead}
+        </p>
+      )}
+      {hiring && !quote.startPassed && (
         <div className="space-y-3 rounded-lg border p-3">
           <h4 className="text-sm font-medium">{q.hireTitle}</h4>
           <dl className="space-y-1 text-sm">
@@ -269,6 +274,7 @@ function QuoteRow({
         <Button
           size="sm"
           variant={hiring ? "secondary" : "default"}
+          disabled={quote.startPassed}
           onClick={() => setHiring((shown) => !shown)}
         >
           {q.hire}
