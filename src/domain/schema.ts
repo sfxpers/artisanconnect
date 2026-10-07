@@ -56,9 +56,15 @@ export const ledgerEntries = sqliteTable(
     kind: text("kind").notNull(),
     amountCents: integer("amount_cents").notNull(),
     recordedAt: instant("recorded_at").notNull(),
+    /** The Payment the money came in by, or is owed back from. */
+    paymentId: text("payment_id").references((): AnySQLiteColumn => payments.id),
+    /** The Engagement the money is for; null for a Payment that Hired nobody. */
+    engagementId: text("engagement_id").references((): AnySQLiteColumn => engagements.id),
   },
   (table) => [
     index("ledger_entries_event").on(table.eventId),
+    index("ledger_entries_payment").on(table.paymentId),
+    index("ledger_entries_engagement").on(table.engagementId),
     check("ledger_entries_whole_cents", sql`typeof(${table.amountCents}) = 'integer'`),
   ],
 );
@@ -835,3 +841,126 @@ export const messages = sqliteTable(
     check("messages_speech_or_event", sql.raw("(sender_id is null) <> (event is null)")),
   ],
 );
+
+export const PAYMENT_STATES = ["open", "failed", "paid", "not-hired"] as const;
+
+/** Why a Payment that arrived Hired nobody, and so is refunded whole. */
+export const NOT_HIRED_REASONS = ["quote-ended", "quote-changed", "not-verified"] as const;
+
+/**
+ * Each checkout a Client opens to Hire a Sent Quote: the Quote as it stood
+ * then, and the Payment it asks for, the Quote plus the Protection Fee. Our
+ * id is the collection's id at the payment adapter and its reference. It is
+ * open until the collection's event arrives: failed, which changes nothing
+ * else, or succeeded, which Hires the Quote (paid) or, if the Hire can no
+ * longer happen, refunds the whole Payment (not-hired). A trigger in the
+ * migration refuses any other change of state.
+ */
+export const payments = sqliteTable(
+  "payments",
+  {
+    id: text("id").primaryKey(),
+    clientId: text("client_id")
+      .notNull()
+      .references(() => accounts.id),
+    jobId: text("job_id")
+      .notNull()
+      .references(() => jobs.id),
+    quoteId: text("quote_id")
+      .notNull()
+      .references(() => quotes.id),
+    /** When the Quote was last revised as the Client saw it; the Hire is of that version only. */
+    quoteRevisedAt: instant("quote_revised_at"),
+    labourCents: integer("labour_cents").notNull(),
+    materialsCents: integer("materials_cents").notNull(),
+    protectionFeeCents: integer("protection_fee_cents").notNull(),
+    /** What the Client pays: Labour, Materials, and the Protection Fee. */
+    amountCents: integer("amount_cents").notNull(),
+    state: text("state", { enum: PAYMENT_STATES }).notNull(),
+    /** Card or Instant EFT, once it arrived. */
+    method: text("method"),
+    notHiredFor: text("not_hired_for", { enum: NOT_HIRED_REASONS }),
+    /** Our id of the Refund of a Payment that Hired nobody, at the payment adapter. */
+    refundId: text("refund_id"),
+    openedAt: instant("opened_at").notNull(),
+    /** When its event arrived. */
+    settledAt: instant("settled_at"),
+  },
+  (table) => [
+    index("payments_job").on(table.jobId, table.openedAt),
+    check(
+      "payments_state",
+      sql.raw(`state in (${PAYMENT_STATES.map((state) => `'${state}'`).join(", ")})`),
+    ),
+    check(
+      "payments_amounts",
+      sql.raw(
+        "typeof(amount_cents) = 'integer' and amount_cents = labour_cents + materials_cents + protection_fee_cents",
+      ),
+    ),
+  ],
+);
+
+export const ENGAGEMENT_STATES = [
+  "paid",
+  "work-started",
+  "awaiting-approval",
+  "fix-requested",
+  "disputed",
+  "completed",
+  "cancelled",
+] as const;
+
+/**
+ * A Hired Quote's work and money, made at Hire, when its Payment arrived:
+ * one per Job, Quote, and Payment. The Artisan Fee is fixed here for its whole
+ * life. A trigger in the migration refuses changing whose it is or its fee.
+ */
+export const engagements = sqliteTable(
+  "engagements",
+  {
+    id: text("id").primaryKey(),
+    jobId: text("job_id")
+      .notNull()
+      .unique()
+      .references(() => jobs.id),
+    quoteId: text("quote_id")
+      .notNull()
+      .unique()
+      .references(() => quotes.id),
+    paymentId: text("payment_id")
+      .notNull()
+      .unique()
+      .references(() => payments.id),
+    clientId: text("client_id")
+      .notNull()
+      .references(() => accounts.id),
+    artisanId: text("artisan_id")
+      .notNull()
+      .references(() => accounts.id),
+    state: text("state", { enum: ENGAGEMENT_STATES }).notNull(),
+    /** 10, or 5 if the Client Relationship had a Completed Engagement at Hire (ADR 0009). */
+    artisanFeePercent: integer("artisan_fee_percent").notNull(),
+    hiredAt: instant("hired_at").notNull(),
+  },
+  (table) => [
+    index("engagements_relationship").on(table.clientId, table.artisanId),
+    check(
+      "engagements_state",
+      sql.raw(`state in (${ENGAGEMENT_STATES.map((state) => `'${state}'`).join(", ")})`),
+    ),
+    check("engagements_artisan_fee", sql.raw("artisan_fee_percent in (5, 10)")),
+  ],
+);
+
+/**
+ * The fake payment adapter's state, in the Worker (#126): launch money is
+ * fake in every environment, and its collections must outlive one isolate
+ * for its checkout page to work. One row; tests keep the fake in memory.
+ */
+export const fakePaymentState = sqliteTable("fake_payment_state", {
+  id: text("id").primaryKey(),
+  state: text("state", { mode: "json" }).notNull(),
+  /** Counts saves, so two requests never overwrite each other's. */
+  version: integer("version").notNull(),
+});

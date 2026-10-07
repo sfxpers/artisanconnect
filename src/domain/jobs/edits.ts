@@ -138,6 +138,12 @@ export async function withdrawEdit(ctx: Context, editId: string): Promise<Write[
   ];
 }
 
+/** The photos an edit added: once it is withdrawn they are nobody's; those it kept stay on the Job. */
+export function addedBy(edit: { photos: JobPhoto[] }, job: { photos: JobPhoto[] }) {
+  const onJob = new Set(job.photos.map((photo) => photo.id));
+  return edit.photos.filter((photo) => !onJob.has(photo.id));
+}
+
 async function editRow(ctx: Context, editId: string) {
   const [row] = await ctx.db.select().from(jobEdits).where(eq(jobEdits.id, editId));
   return row ?? null;

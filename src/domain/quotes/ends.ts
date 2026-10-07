@@ -50,14 +50,16 @@ export function endWrites(
 }
 
 /**
- * The writes that end every Quote on a Job the Client closes: each Sent one
- * is Declined and its Artisan told, and each Held one, or Held revision,
- * leaves the Admin's queue. A decision recorded on one meanwhile aborts the batch.
+ * The writes that end every Quote on a Job the Client closes, or Hires one
+ * of: each other Sent one is Declined and its Artisan told, and each Held
+ * one, or Held revision (the Hired one's too), leaves the Admin's queue. A
+ * decision recorded on one meanwhile aborts the batch.
  */
 export async function closeJobWrites(
   ctx: Context,
   actor: Actor,
   job: { id: string; title: string },
+  hired?: { quoteId: string },
 ): Promise<Write[]> {
   const onJob = await ctx.db
     .select({ id: quotes.id, artisanId: quotes.artisanId, state: quotes.state })
@@ -65,7 +67,9 @@ export async function closeJobWrites(
     .where(eq(quotes.jobId, job.id));
   const writes: Write[] = [];
   for (const quote of onJob) {
-    if (quote.state === "sent") {
+    if (quote.id === hired?.quoteId) {
+      writes.push(...(await withdrawRevisionWrites(ctx, quote.id)));
+    } else if (quote.state === "sent") {
       writes.push(
         ...endWrites(ctx, actor, quote, "declined", {
           to: quote.artisanId,

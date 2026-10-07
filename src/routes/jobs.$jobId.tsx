@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Link, createFileRoute, useNavigate, useRouterState } from "@tanstack/react-router";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +11,14 @@ import { Details, Fact } from "@/components/job-details";
 import { InviteList, type InviteListView } from "@/components/invite-list";
 import { OfferedJob } from "@/components/offered-job";
 import { ClientQuotes } from "@/components/quotes";
+import {
+  ActivityCard,
+  EngagementNextStep,
+  HiredQuoteCard,
+  MoneyCard,
+  PaymentsCard,
+} from "@/components/engagement";
+import { formatRands } from "@/domain/money";
 import {
   Messages,
   type ConversationSummary,
@@ -176,7 +184,16 @@ function ClientJob({
           tab={tab}
           conversations={conversations}
           overview={
-            <Posted job={job} invite={invite} quotes={quotes} conversations={conversations} />
+            job.engagement ? (
+              <Hired
+                job={job}
+                engagement={job.engagement}
+                quotes={quotes}
+                conversations={conversations}
+              />
+            ) : (
+              <Posted job={job} invite={invite} quotes={quotes} conversations={conversations} />
+            )
           }
           messages={
             <Messages jobId={job.jobId} conversations={conversations} open={open} asClient />
@@ -280,6 +297,7 @@ function Posted({
           {job.state === "open" && !job.takesQuotes && (
             <p className="text-sm text-muted-foreground">{t.fullLead}</p>
           )}
+          <NotHired job={job} />
           {job.state !== "held" && (
             <ClientQuotes jobId={job.jobId} quotes={quotes} conversations={conversations} />
           )}
@@ -395,24 +413,114 @@ function Posted({
       </div>
 
       <aside className="space-y-6">
+        <SiteCard job={job}>
+          <p className="mt-3 text-xs text-muted-foreground">{t.locked}</p>
+          {!editable && quotes.length > 0 && (
+            <p className="mt-2 text-xs text-muted-foreground">{t.editLocked}</p>
+          )}
+        </SiteCard>
+      </aside>
+    </div>
+  );
+}
+
+/** Where the Job is, and how it was posted, as its Client sees it. */
+function SiteCard({ job, children }: { job: JobView; children?: ReactNode }) {
+  return (
+    <Card size="sm">
+      <CardContent>
+        <dl className="space-y-3 text-sm">
+          <Fact label={t.category}>
+            {job.category?.name}
+            {job.gasWork && ` · ${t.gasWork} ${t.yes}`}
+          </Fact>
+          <Fact label={t.suburb}>{job.suburb?.name}</Fact>
+          <Fact label={t.region}>{job.region?.name}</Fact>
+          <Fact label={t.street}>{job.street}</Fact>
+          <Fact label={t.matching}>{job.matching && t.matchings[job.matching]}</Fact>
+        </dl>
+        {children}
+      </CardContent>
+    </Card>
+  );
+}
+
+/** Payments that arrived but Hired nobody, each refunded whole. */
+function NotHired({ job }: { job: JobView }) {
+  return job.notHired.map((payment) => (
+    <p key={payment.paymentId} role="status" className="text-sm text-destructive">
+      {copy.quotes.notHired(formatRands(payment.amountCents), payment.reason!)}
+    </p>
+  ));
+}
+
+/**
+ * A Hired Job, as its Client sees it (#107): what comes next, the Payments,
+ * the Activity, and the details, beside the Artisan, the Money with the
+ * Protection Fee, and the Hired Quote's dates.
+ */
+function Hired({
+  job,
+  engagement,
+  quotes,
+  conversations,
+}: {
+  job: JobView;
+  engagement: NonNullable<JobView["engagement"]>;
+  quotes: ClientQuote[];
+  conversations: ConversationSummary[];
+}) {
+  const { artisan } = engagement;
+  return (
+    <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
+      <div className="min-w-0 space-y-6">
+        <EngagementNextStep engagement={engagement} asClient>
+          <NotHired job={job} />
+        </EngagementNextStep>
+        <PaymentsCard engagement={engagement} />
+        <ActivityCard engagement={engagement} />
+        <Card>
+          <CardHeader>
+            <CardTitle>{t.details}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Details job={job} />
+            <ClientQuotes jobId={job.jobId} quotes={quotes} conversations={conversations} />
+          </CardContent>
+        </Card>
+      </div>
+      <aside className="space-y-6">
         <Card size="sm">
-          <CardContent>
-            <dl className="space-y-3 text-sm">
-              <Fact label={t.category}>
-                {job.category?.name}
-                {job.gasWork && ` · ${t.gasWork} ${t.yes}`}
-              </Fact>
-              <Fact label={t.suburb}>{job.suburb?.name}</Fact>
-              <Fact label={t.region}>{job.region?.name}</Fact>
-              <Fact label={t.street}>{job.street}</Fact>
-              <Fact label={t.matching}>{job.matching && t.matchings[job.matching]}</Fact>
-            </dl>
-            <p className="mt-3 text-xs text-muted-foreground">{t.locked}</p>
-            {!editable && quotes.length > 0 && (
-              <p className="mt-2 text-xs text-muted-foreground">{t.editLocked}</p>
+          <CardHeader>
+            <CardTitle>{copy.engagement.artisan}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {artisan.publicName ? (
+              <Link
+                to="/artisans/$artisanId"
+                params={{ artisanId: artisan.artisanId }}
+                className="font-medium hover:underline"
+              >
+                {artisan.publicName}
+              </Link>
+            ) : (
+              <span className="font-medium">{copy.quotes.noName}</span>
+            )}
+            {artisan.badges.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {artisan.badges.map((badge) => (
+                  <Badge key={`${badge.kind}:${badge.category ?? ""}`} variant="outline">
+                    <ShieldCheck />
+                    {badge.name}
+                  </Badge>
+                ))}
+              </div>
             )}
           </CardContent>
         </Card>
+        <MoneyCard engagement={engagement} />
+        <HiredQuoteCard engagement={engagement} />
+        <SiteCard job={job} />
       </aside>
     </div>
   );

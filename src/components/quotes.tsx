@@ -3,13 +3,15 @@ import { Link, useRouter } from "@tanstack/react-router";
 import { ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Fact } from "@/components/job-details";
 import { Refusal } from "@/components/page";
 import { formatRands, PROTECTION_FEE_PERCENT } from "@/domain/money";
 import type { MaterialsBy } from "@/domain/quotes/inputs";
 import { formatDay } from "@/domain/sa-days";
 import { copy, formatDate } from "@/web/copy";
-import { declineQuote, type getJobQuotes } from "@/web/quotes";
+import { declineQuote, hireQuote, type getJobQuotes } from "@/web/quotes";
 import type { ConversationSummary } from "@/components/conversation";
 
 const t = copy.quote;
@@ -59,8 +61,8 @@ const q = copy.quotes;
  * The Quotes on the Client's Job (#124): those Sent, in the order sent or by
  * total, each with the Artisan's record, their badges for the category, and
  * the Payment with the Protection Fee; then those no longer open. Nothing is
- * labelled best or cheapest, and each opens its Conversation. Hire comes with
- * its ticket (#126).
+ * labelled best or cheapest, and each opens its Conversation. Each Sent one
+ * may be Hired by paying for it (#126).
  */
 export function ClientQuotes({
   jobId,
@@ -145,8 +147,26 @@ function QuoteRow({
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [hiring, setHiring] = useState(false);
+  const [acknowledged, setAcknowledged] = useState(false);
   const [busy, setBusy] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);
+
+  /** Opens the checkout and goes there; the Hire happens when the money arrives. */
+  async function pay() {
+    setBusy(true);
+    setRefusal(null);
+    const opened = await hireQuote({
+      data: { quoteId: quote.quoteId, feeAcknowledged: acknowledged },
+    });
+    if (opened.ok) {
+      window.location.assign(opened.value.checkoutUrl);
+      return;
+    }
+    setRefusal(opened.refusal.message);
+    await router.invalidate();
+    setBusy(false);
+  }
 
   async function decline() {
     if (!window.confirm(q.declineConfirm)) return;
@@ -215,7 +235,44 @@ function QuoteRow({
         </p>
       </div>
       {open && <p className="text-sm whitespace-pre-line">{quote.scope}</p>}
+      {hiring && (
+        <div className="space-y-3 rounded-lg border p-3">
+          <h4 className="text-sm font-medium">{q.hireTitle}</h4>
+          <dl className="space-y-1 text-sm">
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted-foreground">{q.hireQuote}</dt>
+              <dd>{formatRands(quote.totalCents)}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted-foreground">{q.hireFee(PROTECTION_FEE_PERCENT)}</dt>
+              <dd>{formatRands(quote.protectionFeeCents)}</dd>
+            </div>
+            <div className="flex justify-between gap-3 font-semibold">
+              <dt>{q.hirePayment}</dt>
+              <dd>{formatRands(quote.paymentCents)}</dd>
+            </div>
+          </dl>
+          <Label className="items-start gap-2 leading-snug font-normal">
+            <Checkbox
+              checked={acknowledged}
+              onCheckedChange={(checked) => setAcknowledged(checked)}
+            />
+            {q.hireAcknowledge(formatRands(quote.protectionFeeCents))}
+          </Label>
+          <p className="text-xs text-muted-foreground">{q.hireLead}</p>
+          <Button disabled={busy || !acknowledged} onClick={() => void pay()}>
+            {q.hirePay(formatRands(quote.paymentCents))}
+          </Button>
+        </div>
+      )}
       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+        <Button
+          size="sm"
+          variant={hiring ? "secondary" : "default"}
+          onClick={() => setHiring((shown) => !shown)}
+        >
+          {q.hire}
+        </Button>
         <Button size="sm" variant="outline" onClick={() => setOpen((shown) => !shown)}>
           {open ? q.hideDetails : q.details}
         </Button>

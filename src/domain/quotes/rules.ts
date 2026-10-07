@@ -21,10 +21,22 @@ export async function sendingProblem(
   startOn: string,
 ): Promise<SendingProblem | null> {
   if (startPassed(ctx, startOn)) return "start-passed";
-  if (!job.category) return "not-verified";
-  const verified = await verifiedFor(ctx, artisanId, job.category);
-  if (!verified.verified || (job.gasWork && !verified.gasWork)) return "not-verified";
+  if (!(await verifiedForJob(ctx, artisanId, job))) return "not-verified";
   return null;
+}
+
+/**
+ * Whether the Artisan is verified now for the Job's category, and for gas
+ * work on a gas Job: asked at Quote and at Hire, never after (ADR 0002).
+ */
+export async function verifiedForJob(
+  ctx: Context,
+  artisanId: string,
+  job: { category: ServiceCategory | null; gasWork: boolean | null },
+): Promise<boolean> {
+  if (!job.category) return false;
+  const verified = await verifiedFor(ctx, artisanId, job.category);
+  return verified.verified && (!job.gasWork || verified.gasWork);
 }
 
 /** Whether a start date is before today, South African time. */

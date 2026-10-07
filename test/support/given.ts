@@ -1,6 +1,7 @@
 import type { Domain } from "@/domain";
-import type { Actor } from "@/domain/actor";
+import type { Actor, AdminActor } from "@/domain/actor";
 import type { FakeMailer } from "@/domain/fakes/mailer";
+import type { FakePayments } from "@/domain/fakes/payments";
 import type { ServiceCategory } from "@/domain/service-categories";
 import {
   document,
@@ -18,8 +19,24 @@ import {
  * builders its commands make possible: a Client, a verified Artisan, an Open
  * Job, a Hired Engagement, an Admin.
  */
-export function given({ domain, mailer }: { domain: Domain; mailer: FakeMailer }) {
-  let count = 0;
+export function given({
+  domain,
+  mailer,
+  payments,
+  admin: signedIn,
+  start = 0,
+}: {
+  domain: Domain;
+  mailer: FakeMailer;
+  payments: FakePayments;
+  /** An Admin already signed in, for a database that has one (a seed of the local app). */
+  admin?: { actor: AdminActor };
+  /** Where numbering starts, so a seed run again makes new Identity Numbers and addresses. */
+  start?: number;
+}) {
+  let count = start;
+  /** A documentation address, one per Account made. */
+  const ipOf = (n: number) => `198.51.100.${n % 256}`;
 
   /** The newest Email code sent to an address. */
   function codeSentTo(email: string): string {
@@ -47,13 +64,13 @@ export function given({ domain, mailer }: { domain: Domain; mailer: FakeMailer }
         password,
         rulesVersion: rules.version,
         consentsToDataUse: true,
-        ip: `198.51.100.${count}`,
+        ip: ipOf(count),
       },
     );
     if (!signedUp.ok) throw new Error(signedUp.refusal.message);
     const confirmed = await domain.accounts.confirmEmail(
       { kind: "visitor" },
-      { email, code: codeSentTo(email), ip: `198.51.100.${count}` },
+      { email, code: codeSentTo(email), ip: ipOf(count) },
     );
     if (!confirmed.ok) throw new Error(confirmed.refusal.message);
     return { ...confirmed.value, email, password };
@@ -62,7 +79,7 @@ export function given({ domain, mailer }: { domain: Domain; mailer: FakeMailer }
   /** Signs an Admin in with an Email code. */
   async function signedInAdmin(email: string) {
     count += 1;
-    const ip = `198.51.100.${count}`;
+    const ip = ipOf(count);
     await domain.admins.requestSignInCode({ kind: "visitor" }, { email, ip });
     const signedIn = await domain.admins.signIn(
       { kind: "visitor" },
@@ -72,7 +89,7 @@ export function given({ domain, mailer }: { domain: Domain; mailer: FakeMailer }
     return { ...signedIn.value, email };
   }
 
-  let firstAdmin: Awaited<ReturnType<typeof signedInAdmin>> | undefined;
+  let firstAdmin: { actor: AdminActor } | undefined = signedIn;
 
   /**
    * A signed-in Admin. The first is made by the setup command; each one after
@@ -226,6 +243,28 @@ export function given({ domain, mailer }: { domain: Domain; mailer: FakeMailer }
     return sent.value.quoteId;
   }
 
+  /** The Client opens a checkout for the Quote, acknowledging the Protection Fee: its collection's id. */
+  async function checkout(client: { actor: Actor }, quoteId: string) {
+    const opened = await domain.engagements.hire(client.actor, { quoteId, feeAcknowledged: true });
+    if (!opened.ok) throw new Error(opened.refusal.message);
+    return collectionOf(opened.value.checkoutUrl);
+  }
+
+  /** The Client's Payment for a checkout arrives, by card unless said. */
+  async function paid(collectionId: string, method?: "card" | "pay_by_bank") {
+    const received = await domain.system.receivePaymentEvent(
+      await payments.succeedCollection(collectionId, method),
+    );
+    if (!received.ok) throw new Error(received.refusal.message);
+  }
+
+  /** The Client Hires the Quote: a checkout, and its Payment arrives. Its collection's id. */
+  async function hired(client: { actor: Actor }, quoteId: string) {
+    const collectionId = await checkout(client, quoteId);
+    await paid(collectionId);
+    return collectionId;
+  }
+
   return {
     codeSentTo,
     admin,
@@ -240,5 +279,13 @@ export function given({ domain, mailer }: { domain: Domain; mailer: FakeMailer }
     jobDraft,
     openJob,
     sentQuote,
+    checkout,
+    paid,
+    hired,
   };
+}
+
+/** The fake adapter's collection a checkout URL is for. */
+export function collectionOf(checkoutUrl: string): string {
+  return decodeURIComponent(new URL(checkoutUrl).pathname.split("/").at(-1)!);
 }

@@ -45,8 +45,7 @@ type Result = { ok: true } | { ok: false; refusal: { message: string } };
  * The Artisan home (#107): a highlighted card for what is waiting, tabs for
  * Job Matches, Invitations, Active Jobs, and Notices, and a sidebar with the
  * Profile and the Available for Jobs switch, and the Regions. Active Jobs are
- * those the Artisan has a Quote on being checked or Sent; Hired ones join
- * them with their ticket (#126).
+ * those the Artisan has a Quote on being checked, Sent, or Hired.
  */
 function Home() {
   const { notices, work } = Route.useLoaderData();
@@ -188,7 +187,7 @@ function Invitations({ invitations }: { invitations: Invitation[] }) {
   );
 }
 
-/** The Jobs the Artisan has a Quote on, being checked or Sent, the newest first. */
+/** The Jobs the Artisan has a Quote on, being checked, Sent, or Hired, the newest first. */
 function Active({ quotes }: { quotes: Quoted[] }) {
   if (quotes.length === 0) return <Empty>{t.noActive}</Empty>;
   return (

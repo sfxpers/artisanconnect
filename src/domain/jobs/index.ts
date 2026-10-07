@@ -19,10 +19,12 @@ import { hasHadQuote, isLive, newestQuote, takesQuotesNow } from "../quotes/rows
 import { ownQuoteView } from "../quotes/views";
 import { sendDueBatch } from "../matches/batches";
 import { emailTells } from "../tells";
+import { engagementAsArtisan, engagementAsClient, notHiredPayments } from "../engagements/views";
 import { expiryClocks } from "./expiry";
 import { heldJob, holdWrites, refusalOf, stillDraft, withdrawHeldJob } from "./held";
 import {
   EDITABLE_STATES,
+  addedBy,
   editPhotoById,
   applyWrites,
   editsStanding,
@@ -379,11 +381,13 @@ export const jobsSection = defineSection({
     async view(viewer: Actor, input: { jobId: string }) {
       const job = await jobRow(ctx, input.jobId);
       if (!job || job.clientId !== accountIdOf(viewer)) return null;
-      const [refusal, edits, quoted, takesQuotes] = await Promise.all([
+      const [refusal, edits, quoted, takesQuotes, engagement, notHired] = await Promise.all([
         refusalOf(ctx, job),
         editsStanding(ctx, job.id),
         hasHadQuote(ctx, job.id),
         takesQuotesNow(ctx, job.id),
+        engagementAsClient(ctx, job),
+        notHiredPayments(ctx, job.id),
       ]);
       return {
         jobId: job.id,
@@ -415,6 +419,10 @@ export const jobsSection = defineSection({
             reason: edits.refused.reason,
           },
         },
+        /** The Engagement, once a Quote is Hired. */
+        engagement,
+        /** Payments that arrived but Hired nobody, each refunded whole. */
+        notHired,
       };
     },
 
@@ -445,17 +453,25 @@ export const jobsSection = defineSection({
       // A Quote keeps the Job in view, whatever becomes of it or the Job, and
       // so does an Invitation not passed, for its Conversation.
       if (!held && !isLive(quote) && !invitation) return null;
+      const engagement = await engagementAsArtisan(ctx, job.id, viewer.accountId);
       return {
         jobId: job.id,
         state: job.state,
         category: job.category && { id: job.category, name: SERVICE_CATEGORY_NAMES[job.category] },
         siteType: job.siteType,
         region: job.regionId ? { id: job.regionId, name: job.regionName ?? "" } : null,
+        /** The suburb and street, withheld from every Artisan until Payment, then shown to the Hired one. */
+        address: engagement && {
+          suburb: job.suburbName ?? "",
+          street: job.street,
+        },
         title: job.title,
         description: job.description,
         photos: job.photos.map(photoView),
         gasWork: job.gasWork,
         preferredStart: job.preferredStart,
+        /** The Engagement, if the Artisan was Hired. */
+        engagement,
         /** When a Batch offered it the Artisan, if one did and they have not passed. */
         offeredAt: held?.offeredAt ?? null,
         /** When the Client invited the Artisan, if they did. */
@@ -542,12 +558,6 @@ function isRefusedMove(error: unknown) {
 
 function noDraft() {
   return refuse("not-found", "That Draft does not exist. Reload the page.");
-}
-
-/** The photos an edit added: once it is withdrawn they are nobody's; those it kept stay on the Job. */
-function addedBy(edit: { photos: JobPhoto[] }, job: { photos: JobPhoto[] }) {
-  const onJob = new Set(job.photos.map((photo) => photo.id));
-  return edit.photos.filter((photo) => !onJob.has(photo.id));
 }
 
 function changed() {

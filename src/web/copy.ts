@@ -510,6 +510,60 @@ export const copy = {
     ended: "No longer open",
     sent: (when: string) => `Sent ${when}`,
     expires: (when: string) => `Expires ${when}`,
+    hire: "Hire",
+    hireTitle: "Hire by paying for this Quote",
+    hireQuote: "Quote",
+    hireFee: (percent: number) => `Protection Fee (${percent}%)`,
+    hirePayment: "You pay",
+    hireAcknowledge: (fee: string) =>
+      `I understand the Protection Fee of ${fee} is not refunded, whatever happens next.`,
+    hirePay: (amount: string) => `Pay ${amount}`,
+    hireLead:
+      "By card or Instant EFT. The Artisan is Hired once your Payment arrives, and your other Quotes are then declined.",
+    notHired: (amount: string, reason: "quote-ended" | "quote-changed" | "not-verified") =>
+      `A Payment of ${amount} arrived after ${
+        {
+          "quote-ended": "the Quote was no longer open",
+          "quote-changed": "the Quote was revised",
+          "not-verified": "the Artisan stopped being verified for this trade",
+        }[reason]
+      }, so nobody was Hired. It is being refunded in full, Protection Fee included.`,
+  },
+  engagement: {
+    nextStepClient: "Paid. Next: Work started",
+    nextStepClientLead: (start: string) =>
+      `The Artisan starts on ${start}. Once they are working on site, you mark Work started here, which releases the Materials to them.`,
+    nextStepArtisan: "You were Hired",
+    nextStepArtisanLead: (start: string, days: string) =>
+      `Start on ${start}, for ${days}. Once you are working on site, the Client marks Work started, which releases the Materials to you.`,
+    payments: "Payments",
+    parts: {
+      materials: { title: "Materials", released: "Released at Work started" },
+      labour: { title: "Labour", released: "Released at Approval" },
+    },
+    partStates: { unreleased: "Paid in", released: "Released", refunded: "Refunded" },
+    activity: "Activity",
+    events: { "quote.sent": "Quote sent", hired: "Hired and paid" },
+    artisan: "Artisan",
+    money: "Money",
+    paidIn: "Paid in",
+    released: "Released",
+    unreleased: "Not yet released",
+    refunded: "Refunded",
+    protectionFee: "Protection Fee (not refunded)",
+    artisanFee: "Artisan Fee",
+    artisanFeeShown: (percent: number) => `${percent}% of each Release`,
+    hiredQuote: "Hired Quote",
+    address: "Address",
+  },
+  fakeCheckout: {
+    title: "Fake checkout",
+    lead: "Launch money is fake: no money moves. Pay or fail this Payment as the provider's checkout would.",
+    amount: "Amount",
+    pay: "Pay",
+    fail: "Fail the payment",
+    closed: "This checkout is closed.",
+    back: "Back to ArtisanConnect",
   },
   conversation: {
     tabs: {

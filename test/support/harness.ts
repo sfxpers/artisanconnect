@@ -23,16 +23,17 @@ export async function createHarness() {
   await applyD1Migrations(env.DB, env.TEST_MIGRATIONS);
   const clock = withSystemTime(createFakeClock());
   const mailer = createFakeMailer();
+  const payments = createFakePayments({ clock });
   const ports = {
     db: env.DB,
     files: env.R2,
     clock,
     contentReader: createFakeContentReader(),
-    payments: createFakePayments({ clock }),
+    payments,
     mailer,
   } satisfies Ports;
   const domain = createDomain(ports, TEST_CONFIG);
-  return { ...ports, ports, domain, given: given({ domain, mailer }) };
+  return { ...ports, ports, domain, given: given({ domain, mailer, payments }) };
 }
 
 export type Harness = Awaited<ReturnType<typeof createHarness>>;

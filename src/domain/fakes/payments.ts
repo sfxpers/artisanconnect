@@ -54,6 +54,23 @@ export type FakePayments = PaymentAdapter & {
   setFloat(cents: number): void;
   /** What verifyBankAccount answers from now on. Starts as a full match. */
   setBankAccountVerification(verification: BankAccountVerification): void;
+
+  /** What its checkout page shows of a collection, and where it returns to; null if none. */
+  checkout(id: string): Promise<(Collection & { returnUrl: string }) | null>;
+  /** Its whole state, to keep and start another from. */
+  snapshot(): FakePaymentsState;
+};
+
+/** Everything the fake keeps, as JSON can hold it. */
+export type FakePaymentsState = {
+  collections: [string, { input: CreateCollection; state: Collection }][];
+  refunds: [string, { input: CreateRefund; state: Refund }][];
+  payouts: [string, { input: CreatePayout; state: Payout; refusal: string | null }][];
+  chargebacks: [string, "open" | "closed"][];
+  float: number;
+  nextPayoutRefusal: string | null;
+  bankAccountVerification: BankAccountVerification;
+  eventCount: number;
 };
 
 type Operation = Exclude<keyof PaymentAdapter, "verifyWebhook">;
@@ -66,15 +83,23 @@ export function createFakePayments({
   clock = { now: () => new Date() },
   webhookSecret = "fake-webhook-secret",
   floatCents = 100_000_000,
-}: { clock?: Clock; webhookSecret?: string; floatCents?: number } = {}): FakePayments {
+  state: kept,
+}: {
+  clock?: Clock;
+  webhookSecret?: string;
+  floatCents?: number;
+  /** A snapshot to carry on from, instead of starting empty. */
+  state?: FakePaymentsState;
+} = {}): FakePayments {
   const calls: FakePayments["calls"] = [];
-  const collections = new Map<string, { input: CreateCollection; state: Collection }>();
-  const refunds = new Map<string, { input: CreateRefund; state: Refund }>();
-  const payouts = new Map<string, { input: CreatePayout; state: Payout; refusal: string | null }>();
-  const chargebacks = new Map<string, "open" | "closed">();
-  let float = floatCents;
-  let nextPayoutRefusal: string | null = null;
-  let bankAccountVerification: BankAccountVerification = {
+  const restored = kept && structuredClone(kept);
+  const collections = new Map(restored?.collections);
+  const refunds = new Map(restored?.refunds);
+  const payouts = new Map(restored?.payouts);
+  const chargebacks = new Map(restored?.chargebacks);
+  let float = restored?.float ?? floatCents;
+  let nextPayoutRefusal = restored?.nextPayoutRefusal ?? null;
+  let bankAccountVerification: BankAccountVerification = restored?.bankAccountVerification ?? {
     state: "done",
     accountOpen: true,
     acceptsCredits: true,
@@ -82,7 +107,7 @@ export function createFakePayments({
     surnameMatch: true,
     initialsMatch: true,
   };
-  let eventCount = 0;
+  let eventCount = restored?.eventCount ?? 0;
   const keyPromise = crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(webhookSecret),
@@ -356,6 +381,77 @@ export function createFakePayments({
     setBankAccountVerification(verification) {
       bankAccountVerification = verification;
     },
+
+    async checkout(id) {
+      const found = collections.get(id);
+      return found ? { ...found.state, returnUrl: found.input.returnUrl } : null;
+    },
+
+    snapshot() {
+      return structuredClone({
+        collections: [...collections],
+        refunds: [...refunds],
+        payouts: [...payouts],
+        chargebacks: [...chargebacks],
+        float,
+        nextPayoutRefusal,
+        bankAccountVerification,
+        eventCount,
+      });
+    },
+  };
+}
+
+/** Where a fake kept outside one isolate's memory saves its state. */
+export type FakePaymentsStore = {
+  /** The state saved last, and its version; null before the first save. */
+  load(): Promise<{ state: FakePaymentsState; version: number } | null>;
+  /** Saves the state over that version (0 for the first); false if another save came first. */
+  save(state: FakePaymentsState, version: number): Promise<boolean>;
+};
+
+/** The fake as the Worker keeps it: the adapter, and its checkout page's controls. */
+export type StoredFakePayments = PaymentAdapter &
+  Pick<FakePayments, "succeedCollection" | "failCollection" | "checkout">;
+
+/**
+ * The fake with its state in a store, as the Worker runs it: each operation
+ * carries on from the state saved last and saves what it changed, starting
+ * again if another request saved first, so every isolate sees one fake.
+ */
+export function createStoredFakePayments({
+  store,
+  ...options
+}: {
+  store: FakePaymentsStore;
+  clock?: Clock;
+  webhookSecret?: string;
+}): StoredFakePayments {
+  async function run<T>(operation: (fake: FakePayments) => Promise<T>): Promise<T> {
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const saved = await store.load();
+      const fake = createFakePayments({ ...options, state: saved?.state });
+      const before = JSON.stringify(fake.snapshot());
+      const result = await operation(fake);
+      const after = fake.snapshot();
+      if (JSON.stringify(after) === before) return result;
+      if (await store.save(after, saved?.version ?? 0)) return result;
+    }
+    throw new Error("The fake payment adapter's state kept changing; try again");
+  }
+  return {
+    createCollection: (input) => run((fake) => fake.createCollection(input)),
+    getCollection: (id) => run((fake) => fake.getCollection(id)),
+    refund: (input) => run((fake) => fake.refund(input)),
+    getRefund: (id) => run((fake) => fake.getRefund(id)),
+    verifyBankAccount: (input) => run((fake) => fake.verifyBankAccount(input)),
+    createPayout: (input) => run((fake) => fake.createPayout(input)),
+    getPayout: (id) => run((fake) => fake.getPayout(id)),
+    getFloatBalance: () => run((fake) => fake.getFloatBalance()),
+    verifyWebhook: (webhook) => run((fake) => fake.verifyWebhook(webhook)),
+    succeedCollection: (id, method) => run((fake) => fake.succeedCollection(id, method)),
+    failCollection: (id, reason) => run((fake) => fake.failCollection(id, reason)),
+    checkout: (id) => run((fake) => fake.checkout(id)),
   };
 }
 

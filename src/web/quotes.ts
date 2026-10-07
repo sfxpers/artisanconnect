@@ -56,3 +56,14 @@ export const declineQuote = createServerFn({ method: "POST" })
     const domain = requestDomain();
     return domain.quotes.decline(await requestActor(domain), data);
   });
+
+/**
+ * Opens a checkout to Hire a Sent Quote on the Client's Job; where to send
+ * the Client to pay. The Hire happens when the money arrives.
+ */
+export const hireQuote = createServerFn({ method: "POST" })
+  .inputValidator((input: { quoteId: string; feeAcknowledged: boolean }) => input)
+  .handler(async ({ data }) => {
+    const domain = requestDomain();
+    return domain.engagements.hire(await requestActor(domain), data);
+  });

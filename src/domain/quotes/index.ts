@@ -264,8 +264,8 @@ export const quotesSection = defineSection({
     },
 
     /**
-     * The Artisan's Quotes being checked or Sent, the newest first, each with
-     * its Job as they see it before Payment.
+     * The Artisan's Quotes being checked, Sent, or Hired, the newest first,
+     * each with its Job as they see it in a list: the Region, never the address.
      */
     async mine(viewer: Actor) {
       if (viewer.kind !== "artisan") return null;
@@ -275,12 +275,17 @@ export const quotesSection = defineSection({
         .innerJoin(jobs, eq(jobs.id, quotes.jobId))
         .leftJoin(suburbs, eq(suburbs.id, jobs.suburbId))
         .leftJoin(regions, eq(regions.id, suburbs.regionId))
-        .where(and(eq(quotes.artisanId, viewer.accountId), inArray(quotes.state, ["held", "sent"])))
+        .where(
+          and(
+            eq(quotes.artisanId, viewer.accountId),
+            inArray(quotes.state, ["held", "sent", "hired"]),
+          ),
+        )
         .orderBy(desc(quotes.createdAt), desc(sql.raw(`"quotes"."rowid"`)));
       return rows.map(({ quote, ...job }) => ({
         ...jobAsArtisanView(job),
         quoteId: quote.id,
-        state: quote.state as "held" | "sent",
+        state: quote.state as "held" | "sent" | "hired",
         totalCents: quote.labourCents + quote.materialsCents,
         sentAt: quote.sentAt,
         expiresAt: quote.expiresAt,

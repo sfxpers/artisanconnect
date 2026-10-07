@@ -12,6 +12,13 @@ import { useAction } from "@/components/use-action";
 import { QuoteForm } from "@/components/quote-form";
 import { QuoteFacts } from "@/components/quotes";
 import {
+  ActivityCard,
+  EngagementNextStep,
+  HiredQuoteCard,
+  MoneyCard,
+  PaymentsCard,
+} from "@/components/engagement";
+import {
   Messages,
   type ConversationSummary,
   type ConversationView,
@@ -36,7 +43,8 @@ const tq = copy.quote;
  * The Next step card holds the Quote form while the Artisan holds a Job Match
  * or an Invitation, and their Quote once they have sent one. Either may be
  * passed before a Quote, telling nobody. Messages holds their Conversation
- * with the Client, once an Invitation or their Quote opened it.
+ * with the Client, once an Invitation or their Quote opened it. Once Hired,
+ * it is the Engagement, with the address (#126).
  */
 export function OfferedJob({
   job,
@@ -54,7 +62,7 @@ export function OfferedJob({
   const clientName = job.client.shownName ?? t.noName;
   const invited = job.invitedAt !== null;
   const holding = job.offeredAt !== null || invited;
-  const { quote } = job;
+  const { quote, engagement } = job;
   return (
     <Page>
       <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -89,7 +97,13 @@ export function OfferedJob({
         overview={
           <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
             <div className="min-w-0 space-y-6">
-              {quote && quote.state !== "refused" ? (
+              {engagement ? (
+                <>
+                  <EngagementNextStep engagement={engagement} asClient={false} />
+                  <PaymentsCard engagement={engagement} />
+                  <ActivityCard engagement={engagement} />
+                </>
+              ) : quote && quote.state !== "refused" ? (
                 <QuoteStep job={job} quote={quote} vatNumber={vatNumber} />
               ) : (
                 holding && <QuoteOrPass job={job} invited={invited} vatNumber={vatNumber} />
@@ -131,9 +145,20 @@ export function OfferedJob({
                       {job.gasWork && ` · ${t.gasWork}`}
                     </Fact>
                     <Fact label={t.region}>{job.region?.name}</Fact>
+                    {job.address && (
+                      <Fact label={copy.engagement.address}>
+                        {job.address.street}, {job.address.suburb}
+                      </Fact>
+                    )}
                   </dl>
                 </CardContent>
               </Card>
+              {engagement && (
+                <>
+                  <MoneyCard engagement={engagement} />
+                  <HiredQuoteCard engagement={engagement} />
+                </>
+              )}
             </aside>
           </div>
         }

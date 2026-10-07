@@ -9,9 +9,11 @@ import { adminsSection, setUpFirstAdmin } from "./admins";
 import { marketplaceRulesSection } from "./accounts/rules";
 import { createContext } from "./context";
 import { conversationsSection } from "./conversations";
+import { engagementsSection } from "./engagements";
 import { invitationsSection } from "./invitations";
 import { jobsSection } from "./jobs";
 import { matchesSection } from "./matches";
+import { receivePaymentEvent } from "./payments";
 import { createQueues, type QueueItemKind } from "./queues";
 import { profilesSection } from "./profiles";
 import { quotesSection } from "./quotes";
@@ -20,7 +22,7 @@ import { availabilitySection } from "./regions/availability";
 import { supportSection } from "./support";
 import { emailTells, noticesSection } from "./tells";
 import { verificationSection } from "./verification";
-import { PORT_NAMES, type DomainConfig, type Ports } from "./ports";
+import { PORT_NAMES, type DomainConfig, type Ports, type Webhook } from "./ports";
 
 /** Every section of the module. Each ticket adds its section here. */
 export const sections = [
@@ -28,6 +30,7 @@ export const sections = [
   adminsSection,
   availabilitySection,
   conversationsSection,
+  engagementsSection,
   invitationsSection,
   jobsSection,
   marketplaceRulesSection,
@@ -90,6 +93,8 @@ export function assembleDomain<const Sections extends readonly Section[]>(
           });
         }
       },
+      /** Called by the payment webhook route with the request as it came. */
+      receivePaymentEvent: (webhook: Webhook) => receivePaymentEvent(ctx, webhook),
       /** The deploy-time setup command: makes the first Admin. */
       setUpFirstAdmin: (input: { email: string }) => setUpFirstAdmin(ctx, input),
     },

@@ -13,8 +13,7 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import { parseArgs } from "node:util";
 import { applyEdits, modify, parse } from "jsonc-parser";
-import { runnerImport } from "vite";
-import { getPlatformProxy } from "wrangler";
+import { withWorkerModule } from "./worker-module.mjs";
 
 const root = path.resolve(import.meta.dirname, "..");
 const args = process.argv.slice(2);
@@ -32,52 +31,25 @@ if (!email || (environment && !["staging", "production"].includes(environment)))
 }
 
 const configPath = environment ? remoteConfig(environment) : path.join(root, "wrangler.jsonc");
-let proxy;
 try {
-  proxy = await getPlatformProxy({
-    configPath,
-    environment,
-    remoteBindings: Boolean(environment),
-  });
-  const { module } = await runnerImport(path.join(root, "src/worker/set-up-admin.ts"), {
-    configFile: false,
-    logLevel: "error",
-    resolve: { tsconfigPaths: true },
-    plugins: [wasmModules()],
-  });
-  const result = await module.setUpFirstAdmin(proxy.env, email);
-  if (!result.ok) {
-    console.error(result.refusal.message);
-    process.exitCode = 1;
-  } else {
-    const signIn = new URL("/admin/sign-in", proxy.env.APP_URL).href;
-    console.log(
-      `${result.value.email} is the first Admin. Sign in with an Email code at ${signIn}`,
-    );
-  }
-} finally {
-  await proxy?.dispose();
-  if (environment) rmSync(configPath, { force: true });
-}
-
-/**
- * Loads `*.wasm?module` as a compiled WebAssembly.Module, as the Worker build
- * does. The domain imports the photo codecs that way, and Vite alone does not
- * know the suffix.
- */
-function wasmModules() {
-  return {
-    name: "wasm-modules",
-    enforce: "pre",
-    load(id) {
-      if (!id.endsWith(".wasm?module")) return;
-      const file = id.slice(0, -"?module".length);
-      return [
-        `import { readFileSync } from "node:fs";`,
-        `export default new WebAssembly.Module(readFileSync(${JSON.stringify(file)}));`,
-      ].join("\n");
+  await withWorkerModule(
+    path.join(root, "src/worker/set-up-admin.ts"),
+    { configPath, environment, remoteBindings: Boolean(environment) },
+    async (module, env) => {
+      const result = await module.setUpFirstAdmin(env, email);
+      if (!result.ok) {
+        console.error(result.refusal.message);
+        process.exitCode = 1;
+      } else {
+        const signIn = new URL("/admin/sign-in", env.APP_URL).href;
+        console.log(
+          `${result.value.email} is the first Admin. Sign in with an Email code at ${signIn}`,
+        );
+      }
     },
-  };
+  );
+} finally {
+  if (environment) rmSync(configPath, { force: true });
 }
 
 /**
