@@ -582,14 +582,24 @@ export const copy = {
     hirePay: (amount: string) => `Pay ${amount}`,
     hireLead:
       "By card or Instant EFT. The Artisan is Hired once your Payment arrives, and your other Quotes are then declined.",
-    notHired: (amount: string, reason: "quote-ended" | "quote-changed" | "not-verified") =>
+    notHired: (
+      amount: string,
+      reason: "quote-ended" | "quote-changed" | "not-verified",
+      refund: "on-its-way" | "paid" | "owed",
+    ) =>
       `A Payment of ${amount} arrived after ${
         {
           "quote-ended": "the Quote was no longer open",
           "quote-changed": "the Quote was revised",
           "not-verified": "the Artisan stopped being verified for this trade",
         }[reason]
-      }, so nobody was Hired. It is being refunded in full, Protection Fee included.`,
+      }, so nobody was Hired. ${
+        {
+          "on-its-way": "It is being refunded in full, Protection Fee included.",
+          paid: "It was refunded in full, Protection Fee included.",
+          owed: "Your bank could not take its Refund, so it is still owed to you in full, and we will pay it by bank transfer.",
+        }[refund]
+      }`,
   },
   engagement: {
     nextStepClient: "Paid. Next: Work started",
@@ -692,7 +702,27 @@ export const copy = {
       "completion.made": "Marked complete",
       "fix.requested": "Fix requested",
       approved: "Approved",
+      refunded: "Refunded",
     },
+    refunds: "Refunds",
+    refundStates: {
+      "on-its-way": "On its way",
+      paid: "Refunded",
+      owed: "Owed, paid by hand",
+    },
+    refundLine: (materials: string | null, labour: string | null) =>
+      [materials && `Materials ${materials}`, labour && `Labour ${labour}`]
+        .filter(Boolean)
+        .join(", "),
+    refundOwedLead:
+      "The bank could not take a Refund, so it is still owed to the Client. ArtisanConnect pays it by bank transfer.",
+    refund: "Refund",
+    refundLead:
+      "Refund any money not yet released, at any time: the Client's agreement is not needed. The Protection Fee is never refunded, and refunded money has no Artisan Fee taken.",
+    refundUpTo: (part: string, amount: string) => `${part}, up to ${amount}`,
+    refundSend: "Refund",
+    refundConfirm: (amount: string) => `Refund ${amount} to the Client? This cannot be undone.`,
+    cancelRefund: "Cancel",
     artisan: "Artisan",
     money: "Money",
     paidIn: "Paid in",
@@ -758,6 +788,7 @@ export const copy = {
       "completion.made": "Marked complete",
       "fix.requested": "Fix requested",
       approved: "Approved",
+      refund: "Refunded",
     } satisfies Record<MessageEvent, string>,
     photo: (index: number) => `Photo ${index}`,
     message: "Message",

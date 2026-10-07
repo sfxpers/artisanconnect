@@ -14,6 +14,7 @@ export const MESSAGE_EVENTS = [
   "completion.made",
   "fix.requested",
   "approved",
+  "refund",
 ] as const;
 
 export type MessageEvent = (typeof MESSAGE_EVENTS)[number];

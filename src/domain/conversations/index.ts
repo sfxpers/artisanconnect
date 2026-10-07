@@ -290,7 +290,14 @@ export const conversationsSection = defineSection({
 /** A message, or an event's row, as the viewer sees it. */
 function itemView(row: MessageRow, viewerId: string, reasons: Map<string, string>) {
   const at = row.deliveredAt ?? row.sentAt;
-  if (row.event !== null) return { kind: "event" as const, event: row.event, at };
+  if (row.event !== null) {
+    return {
+      kind: "event" as const,
+      event: row.event,
+      at,
+      ...(row.text ? { text: row.text } : {}),
+    };
+  }
   return {
     kind: "message" as const,
     messageId: row.id,

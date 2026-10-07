@@ -10,6 +10,8 @@ import {
   requestFix,
   withdrawCompletion,
 } from "./completion";
+import { refundByArtisan, refundClocks } from "../refunds";
+import type { RefundFields } from "./inputs";
 import { openCheckout } from "./hire";
 import { answerNotStarted, claimStarted, markWorkStarted, workStartedClocks } from "./work-started";
 
@@ -18,7 +20,7 @@ import { answerNotStarted, claimStarted, markWorkStarted, workStartedClocks } fr
 
 export const engagementsSection = defineSection({
   name: "engagements",
-  clocks: { ...workStartedClocks, ...completionClocks },
+  clocks: { ...workStartedClocks, ...completionClocks, ...refundClocks },
   queueItems: [heldCompletion, heldFixNote],
   api: (ctx) => ({
     /**
@@ -54,6 +56,12 @@ export const engagementsSection = defineSection({
     /** The Client asks for a fix with a note, which stops the seven days. */
     requestFix: (actor: Actor, input: { engagementId: string; note: string }) =>
       requestFix(ctx, actor, input),
+    /**
+     * The Artisan refunds an amount of each unreleased line, in rands, at
+     * any time, without the Client's agreement. Never the Protection Fee.
+     */
+    refund: (actor: Actor, input: { engagementId: string } & RefundFields) =>
+      refundByArtisan(ctx, actor, input),
     /** A Completion's photo or document, to whoever may see it; null to anyone else. */
     completionFile: (
       viewer: Actor,

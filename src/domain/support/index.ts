@@ -5,6 +5,7 @@ import { firstProblem } from "../accounts/inputs";
 import type { Context, Write } from "../context";
 import { insertWhile } from "../guarded";
 import { defineQueueItemKind, type ItemView } from "../queues";
+import { owedByHand, paidByHandWrites } from "../refunds/by-hand";
 import { ok, refuse } from "../result";
 import { accounts, authUsers, queueItems, supportRequests } from "../schema";
 import { defineSection } from "../section";
@@ -78,23 +79,45 @@ export type SupportTag = keyof typeof SUPPORT_TAGS;
 
 /**
  * A system request: `about` titles it for the Admin, `details` says what
- * happened, and `accountId` names the Account it concerns, if one does.
+ * happened, `accountId` names the Account it concerns, if one does, and
+ * `refundId` the failed Refund it is for, which the Admin pays by hand.
  */
 export type SystemSupportRequest = {
   tag: SupportTag;
   about: string;
   details: string;
   accountId?: string;
+  refundId?: string;
 };
 
-/** A request the platform raises itself, for what only the Admin can settle. */
+/**
+ * A request the platform raises itself, for what only the Admin can settle.
+ * One for a failed Refund is settled only by recording the bank transfer
+ * that paid it, while it is still owed.
+ */
 const systemRequest = defineQueueItemKind("support.system", {
   queue: "support",
   decisions: {
     resolve: { label: "Resolve", told: "Nobody", reason: "optional", reasonLabel: "Note" },
+    "paid-by-hand": {
+      label: "Record the bank transfer",
+      told: "The Client, with a Receipt",
+      reason: "required",
+      reasonLabel: "Bank transfer reference",
+    },
   },
-  async decide() {
-    return ok([]);
+  async allowed(ctx, item) {
+    const raised = await requestRow(ctx, item.subjectId);
+    return raised?.refundId && (await owedByHand(ctx, raised.refundId))
+      ? ["paid-by-hand"]
+      : ["resolve"];
+  },
+  async decide(ctx, _admin, item, choice) {
+    if (choice.decision !== "paid-by-hand") return ok([]);
+    const raised = await requestRow(ctx, item.subjectId);
+    if (!raised?.refundId)
+      return refuse("not-allowed", "That decision is not allowed on this item.");
+    return paidByHandWrites(ctx, raised.refundId, choice.reason ?? "");
   },
   async view(ctx, item) {
     const raised = await requestRow(ctx, item.subjectId);
@@ -119,6 +142,7 @@ export function raiseSupportRequest(
     tag: input.tag,
     message: input.details,
     sentAt: ctx.now(),
+    refundId: input.refundId ?? null,
   };
   return [
     condition
@@ -216,6 +240,7 @@ async function requestRow(ctx: Context, requestId: string) {
       topic: supportRequests.topic,
       tag: supportRequests.tag,
       message: supportRequests.message,
+      refundId: supportRequests.refundId,
       kind: accounts.kind,
       name: accounts.name,
       email: authUsers.email,

@@ -1,6 +1,7 @@
 import type { Context } from "./context";
 import { collectionFailed, collectionSucceeded } from "./engagements/hire";
 import { payoutFailed, payoutPaused, payoutSentBack, payoutSucceeded } from "./payouts/events";
+import { refundFailed, refundPaused, refundSucceeded } from "./refunds";
 import type { Webhook } from "./ports";
 import { ok, refuse } from "./result";
 
@@ -35,7 +36,16 @@ export async function receivePaymentEvent(ctx: Context, webhook: Webhook) {
     case "payout.reversed":
       await payoutSentBack(ctx, event);
       break;
-    // Refunds and Chargebacks come with their tickets (#132, #137).
+    case "refund.succeeded":
+      await refundSucceeded(ctx, event);
+      break;
+    case "refund.paused":
+      await refundPaused(ctx, event);
+      break;
+    case "refund.failed":
+      await refundFailed(ctx, event);
+      break;
+    // Chargebacks come with their ticket (#137).
     default:
       break;
   }

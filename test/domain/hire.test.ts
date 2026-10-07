@@ -225,8 +225,8 @@ describe("when the Payment arrives", () => {
       unreleasedCents: 200_000,
       refundedCents: 0,
       payments: [
-        { part: "materials", amountCents: 50_000, state: "unreleased" },
-        { part: "labour", amountCents: 150_000, state: "unreleased" },
+        { part: "materials", amountCents: 50_000, unreleasedCents: 50_000, state: "unreleased" },
+        { part: "labour", amountCents: 150_000, unreleasedCents: 150_000, state: "unreleased" },
       ],
     };
     expect((await domain.jobs.view(client.actor, { jobId }))?.engagement?.money).toEqual({
@@ -497,7 +497,13 @@ describe("the Hire is asked again when the Payment arrives", () => {
     ]);
     const job = await domain.jobs.view(client.actor, { jobId });
     expect(job?.notHired).toEqual([
-      { paymentId: second, amountCents: 210_000, reason: "quote-ended", at: expect.any(Date) },
+      {
+        paymentId: second,
+        amountCents: 210_000,
+        reason: "quote-ended",
+        at: expect.any(Date),
+        refund: "on-its-way",
+      },
     ]);
     expect(job?.engagement?.money).toMatchObject({ paidInCents: 200_000 });
     expect(await toldOf(domain, artisan, jobId)).toHaveLength(1);
@@ -563,7 +569,7 @@ describe("the Hire is asked again when the Payment arrives", () => {
     },
   );
 
-  test("a repeated event of a Payment that Hired nobody asks for the same Refund again, harmlessly", async () => {
+  test("a repeated event of a Payment that Hired nobody refunds it once", async () => {
     const harness = await createHarness();
     const { domain, given, payments } = harness;
     const q = await quoted(given);
@@ -574,14 +580,36 @@ describe("the Hire is asked again when the Payment arrives", () => {
 
     await domain.system.receivePaymentEvent(webhook);
 
-    const refunds = payments.calls.filter((call) => call.operation === "refund");
-    expect(refunds).toHaveLength(2);
-    expect(refunds[1]).toEqual(refunds[0]);
+    expect(payments.calls.filter((call) => call.operation === "refund")).toHaveLength(1);
     expect(
       (await domain.notices.list(q.client.actor)).filter(
         (notice) => notice.event === "payment.not-hired",
       ),
     ).toHaveLength(1);
+  });
+
+  test("a Refund the adapter did not take is sent by the repeated event", async () => {
+    const harness = await createHarness();
+    const { domain, given, payments } = harness;
+    const q = await quoted(given);
+    const collectionId = await given.checkout(q.client, q.quoteId);
+    await domain.quotes.withdraw(q.artisan.actor, { jobId: q.jobId });
+    const webhook = await payments.succeedCollection(collectionId);
+    const refund = payments.refund;
+    payments.refund = () => Promise.reject(new Error("The provider is down"));
+    await expect(domain.system.receivePaymentEvent(webhook)).rejects.toThrow(
+      "The provider is down",
+    );
+    payments.refund = refund;
+
+    await domain.system.receivePaymentEvent(webhook);
+
+    expect(payments.calls.filter((call) => call.operation === "refund")).toEqual([
+      {
+        operation: "refund",
+        input: expect.objectContaining({ collectionId, amountCents: 210_000 }),
+      },
+    ]);
   });
 });
 

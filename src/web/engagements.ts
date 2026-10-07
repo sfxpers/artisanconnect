@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requestActor, requestDomain } from "./session";
 
 // Engagements: thin adapters onto the domain module, which decides who may
-// set Work started, mark the work complete, and approve it, and when (ADR 0006).
+// set Work started, mark the work complete, approve it, and refund, and when (ADR 0006).
 
 const byEngagement = (input: { engagementId: string }) => input;
 
@@ -77,4 +77,12 @@ export const requestFix = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const domain = requestDomain();
     return domain.engagements.requestFix(await requestActor(domain), data);
+  });
+
+/** The Artisan refunds an amount of each unreleased line, in rands. */
+export const refund = createServerFn({ method: "POST" })
+  .validator((input: { engagementId: string; materials?: string; labour?: string }) => input)
+  .handler(async ({ data }) => {
+    const domain = requestDomain();
+    return domain.engagements.refund(await requestActor(domain), data);
   });

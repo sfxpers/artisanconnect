@@ -11,7 +11,13 @@ import { eventWrite } from "../conversations/rows";
 import { insertWhile } from "../guarded";
 import { jobBlocks } from "../jobs/held";
 import { jobRow } from "../jobs/rows";
-import { engagementMoney, LEDGER_KINDS, ledgerWrites, releaseRows } from "../ledger";
+import {
+  commitFromUnreleased,
+  engagementMoney,
+  LEDGER_KINDS,
+  ledgerWrites,
+  releaseRows,
+} from "../ledger";
 import type { Block } from "../queues";
 import { accountSidebar } from "../quotes/held";
 import { ok, refuse, type Result } from "../result";
@@ -272,7 +278,9 @@ export async function approve(ctx: Context, actor: Actor, input: { engagementId:
         : "There is no Completion to approve.",
     );
   }
-  await ctx.commit(await approvalWrites(ctx, actor, engagement, completion, "approved"));
+  await commitFromUnreleased(ctx, () =>
+    approvalWrites(ctx, actor, engagement, completion, "approved"),
+  );
   // The seven days may have ended between the read and the batch, which then changed nothing.
   if ((await completionRow(ctx, completion.id))?.answer !== "approved") {
     return refuse("not-awaiting", "This Engagement is Completed.");
@@ -726,7 +734,7 @@ async function approvalWrites(
   const now = ctx.now();
   const { labour } = await engagementMoney(ctx, engagement.id);
   // Extra Labour an Updated Quote pays in is released here too, once there is some (#134).
-  const labourCents = labour.paidInCents - labour.releasedCents - labour.refundedCents;
+  const labourCents = labour.unreleasedCents;
   const completedNow = exists(
     ctx.db
       .select({ one: sql`1` })

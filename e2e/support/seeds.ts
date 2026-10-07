@@ -84,6 +84,22 @@ export async function engagementMessage(env: Env, engagementId: string) {
   return { conversationId: row.conversation_id };
 }
 
+/** The bank pays the Engagement's Refund that is with the payment adapter (#132). */
+export async function refundPaid(env: Env, engagementId: string) {
+  const { domain } = await world(env);
+  const refund = await env.DB.prepare(
+    "select id from refunds where engagement_id = ? and state = 'sent'",
+  )
+    .bind(engagementId)
+    .first<{ id: string }>();
+  if (!refund) throw new Error(`Engagement ${engagementId} has no Refund with the adapter`);
+  const received = await domain.system.receivePaymentEvent(
+    await fakePaymentsFromEnv(env).succeedRefund(refund.id),
+  );
+  if (!received.ok) throw new Error(received.refusal.message);
+  return { refundId: refund.id };
+}
+
 /**
  * An Artisan with two Releases owed: one paid by today's Payout run, with its
  * Receipt, unless the run already went today, and one Released after the run,

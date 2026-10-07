@@ -15,6 +15,7 @@ import type { PaymentEvent, PaymentMethod } from "../ports";
 import { closeJobWrites } from "../quotes/ends";
 import { startPassed, verifiedForJob } from "../quotes/rules";
 import { isLive, quoteRow, type QuoteRow } from "../quotes/rows";
+import { notHiredRefundWrite, sendRefunds } from "../refunds";
 import { ok, refuse } from "../result";
 import { saDay, formatDay } from "../sa-days";
 import {
@@ -259,17 +260,14 @@ async function notHiredWrites(
   job: JobRow,
   reason: NotHiredReason,
 ): Promise<Write[]> {
+  const refundId = ctx.newId();
   return [
     // Unguarded on purpose: on a Payment no longer open or failed a trigger aborts the batch.
     ctx.db
       .update(payments)
-      .set({
-        state: "not-hired",
-        notHiredFor: reason,
-        refundId: ctx.newId(),
-        settledAt: ctx.now(),
-      })
+      .set({ state: "not-hired", notHiredFor: reason, refundId, settledAt: ctx.now() })
       .where(eq(payments.id, payment.id)),
+    notHiredRefundWrite(ctx, refundId, payment),
     ...ledgerWrites(ctx, [
       ...paymentInRows(payment, null),
       {
@@ -288,18 +286,12 @@ async function notHiredWrites(
 }
 
 /**
- * Asks the adapter to refund a Payment that Hired nobody, whole. Our id
- * makes asking again harmless, so a repeated event asks again in case the
- * first ask never reached it. What becomes of the Refund comes with #132.
+ * Sends the Refund of a Payment that Hired nobody, whole, if the adapter
+ * does not have it yet: a repeated event sends it if the first send never
+ * reached the adapter. Its events are a Refund's as any other (#132).
  */
 async function refundWhole(ctx: Context, payment: PaymentRow) {
-  if (!payment.refundId) throw new Error(`Payment ${payment.id} has no Refund`);
-  await ctx.ports.payments.refund({
-    id: payment.refundId,
-    collectionId: payment.id,
-    amountCents: payment.amountCents,
-    reason: `No Hire: ${payment.notHiredFor}`,
-  });
+  await sendRefunds(ctx, payment.id);
   await emailTells(ctx).catch((error: unknown) => {
     console.error("Tell emails did not go", error);
   });

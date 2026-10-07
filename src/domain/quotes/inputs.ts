@@ -22,7 +22,7 @@ export const QUOTE_DAYS = 14;
 export const QUOTES_MAX = 5;
 
 /** Rands as typed, "1500", "1 500.50", or "1500,5", as whole cents. */
-const rands = (label: string) =>
+export const rands = (label: string) =>
   z
     .union([z.string(), z.number()], { error: `Give the ${label} in rands.` })
     .transform((value, issue) => {

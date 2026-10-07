@@ -119,7 +119,8 @@ function ItemRow({ item }: { item: Item }) {
       <div className="flex items-center gap-3 text-xs text-muted-foreground">
         <span className="h-px flex-1 bg-border" />
         <span>
-          {t.events[item.event]} · {formatDate(item.at)}
+          {t.events[item.event]}
+          {"text" in item && item.text ? ` ${item.text}` : ""} · {formatDate(item.at)}
         </span>
         <span className="h-px flex-1 bg-border" />
       </div>

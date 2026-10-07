@@ -124,13 +124,14 @@ export function quoteSentWrites(
 /**
  * The write that shows an event in the Conversation of the Artisan on the
  * Job, as a row that is not speech, only if the condition holds when it is
- * written.
+ * written. Its text, if any, is what the event names, such as a Refund's amount.
  */
 export function eventWrite(
   ctx: Context,
   on: { jobId: string; artisanId: string },
   event: MessageEvent,
   condition: SQL,
+  text = "",
 ): Write {
   const now = ctx.now();
   return ctx.db.insert(messages).select(
@@ -140,7 +141,7 @@ export function eventWrite(
         conversationId: conversations.id,
         senderId: sql<null>`null`.as("sender_id"),
         event: sql<MessageEvent>`${event}`.as("event"),
-        text: sql<string>`''`.as("text"),
+        text: sql<string>`${text}`.as("text"),
         photos: sql<string>`'[]'`.as("photos"),
         files: sql<string>`'[]'`.as("files"),
         state: sql<string>`'delivered'`.as("state"),

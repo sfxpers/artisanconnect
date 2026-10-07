@@ -368,6 +368,8 @@ export const supportRequests = sqliteTable(
     tag: text("tag"),
     message: text("message").notNull(),
     sentAt: instant("sent_at").notNull(),
+    /** The Refund a failed-Refund request is for, which the Admin pays by hand (#132). */
+    refundId: text("refund_id").references((): AnySQLiteColumn => refunds.id),
   },
   (table) => [
     index("support_requests_account").on(table.accountId, table.sentAt),
@@ -1051,6 +1053,79 @@ export const completions = sqliteTable(
     check(
       "completions_fix_note_state",
       sql.raw(`fix_note_state in (${FIX_NOTE_STATES.map((state) => `'${state}'`).join(", ")})`),
+    ),
+  ],
+);
+
+/**
+ * A Refund's states: waiting while another Refund of its Payment is with the
+ * payment adapter (one at a time per collection), sent once the adapter has
+ * it, paused while the float is low, paid, or failed, when it stays owed to
+ * the Client until the Admin pays it by hand.
+ */
+export const REFUND_STATES = [
+  "waiting",
+  "sent",
+  "paused",
+  "paid",
+  "failed",
+  "paid-by-hand",
+] as const;
+
+/** Why a Refund was made: the Artisan's choice, or a Payment that Hired nobody. */
+export const REFUND_CAUSES = ["artisan", "not-hired"] as const;
+
+/**
+ * Each Refund of a Payment to its Client (#132): unreleased money, never the
+ * Protection Fee, unless the Payment Hired nobody, when the whole of it goes
+ * back. Our id is the payment adapter's idempotency key. What it refunds of
+ * the Labour, Materials, and Protection Fee never changes; its state moves
+ * forward only (a trigger in the migration refuses anything else).
+ */
+export const refunds = sqliteTable(
+  "refunds",
+  {
+    id: text("id").primaryKey(),
+    paymentId: text("payment_id")
+      .notNull()
+      .references(() => payments.id),
+    /** The Engagement it refunds; null for a Payment that Hired nobody. */
+    engagementId: text("engagement_id").references(() => engagements.id),
+    clientId: text("client_id")
+      .notNull()
+      .references(() => accounts.id),
+    cause: text("cause", { enum: REFUND_CAUSES }).notNull(),
+    labourCents: integer("labour_cents").notNull(),
+    materialsCents: integer("materials_cents").notNull(),
+    protectionFeeCents: integer("protection_fee_cents").notNull(),
+    amountCents: integer("amount_cents").notNull(),
+    state: text("state", { enum: REFUND_STATES }).notNull(),
+    madeAt: instant("made_at").notNull(),
+    sentAt: instant("sent_at"),
+    pausedAt: instant("paused_at"),
+    /** When the bank took it, or the Admin paid it by hand. */
+    paidAt: instant("paid_at"),
+    failedAt: instant("failed_at"),
+    /** Why the bank could not take it. */
+    failedFor: text("failed_for"),
+  },
+  (table) => [
+    index("refunds_payment").on(table.paymentId, table.madeAt),
+    index("refunds_engagement").on(table.engagementId, table.madeAt),
+    index("refunds_waiting").on(table.paymentId).where(sql.raw("state = 'waiting'")),
+    check(
+      "refunds_state",
+      sql.raw(`state in (${REFUND_STATES.map((state) => `'${state}'`).join(", ")})`),
+    ),
+    check(
+      "refunds_cause",
+      sql.raw(`cause in (${REFUND_CAUSES.map((cause) => `'${cause}'`).join(", ")})`),
+    ),
+    check(
+      "refunds_amounts",
+      sql.raw(
+        "typeof(amount_cents) = 'integer' and amount_cents > 0 and labour_cents >= 0 and materials_cents >= 0 and protection_fee_cents >= 0 and amount_cents = labour_cents + materials_cents + protection_fee_cents",
+      ),
     ),
   ],
 );

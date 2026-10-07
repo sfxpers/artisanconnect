@@ -16,6 +16,7 @@ import { matchesSection } from "./matches";
 import { receivePaymentEvent } from "./payments";
 import { payoutsSection } from "./payouts";
 import { runPayouts } from "./payouts/run";
+import { sendWaitingRefunds } from "./refunds";
 import { createQueues, type QueueItemKind } from "./queues";
 import { profilesSection } from "./profiles";
 import { quotesSection } from "./quotes";
@@ -85,11 +86,17 @@ export function assembleDomain<const Sections extends readonly Section[]>(
     queues: createQueues(ctx, queueItemKinds),
     /** Entry points the platform calls, not a party. */
     system: {
-      /** Called by the every-minute cron. Also sends any Tell's email that has not gone. */
+      /**
+       * Called by the every-minute cron. Also sends any Refund a command
+       * could not send, and any Tell's email that has not gone.
+       */
       async runDueClocks() {
         try {
           return await runDueClocks(ctx, clocks);
         } finally {
+          await sendWaitingRefunds(ctx).catch((error: unknown) => {
+            console.error("Refunds were not sent", error);
+          });
           // Never in place of a clock's failure.
           await emailTells(ctx).catch((error: unknown) => {
             console.error("Tell emails did not go", error);

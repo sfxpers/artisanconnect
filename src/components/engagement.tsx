@@ -14,6 +14,7 @@ import {
   COMPLETION_DOCUMENTS_MAX,
   COMPLETION_PHOTOS_MAX,
   NOTE_MAX,
+  refundFields,
 } from "@/domain/engagements/inputs";
 import { formatRands } from "@/domain/money";
 import { formatDay } from "@/domain/sa-days";
@@ -24,6 +25,7 @@ import {
   claimStarted,
   markComplete,
   markWorkStarted,
+  refund,
   requestFix,
   withdrawCompletion,
 } from "@/web/engagements";
@@ -34,9 +36,9 @@ import { shrinkPhoto } from "@/web/shrink-photo";
 // each party may do toward Work started (#127) and then Completion, Approval,
 // and Fix requests (#130), the Completion itself, the Payments card with
 // Materials and Labour as two numbered payments and the bar to Approval by
-// silence, the Activity, and in the sidebar the Money and the Hired Quote's
-// dates. The Client never sees the Artisan Fee; the Artisan never sees the
-// Protection Fee.
+// silence, the Refunds and the Artisan's Refund form (#132), the Activity,
+// and in the sidebar the Money and the Hired Quote's dates. The Client never
+// sees the Artisan Fee; the Artisan never sees the Protection Fee.
 
 type JobView = Awaited<ReturnType<typeof getJob>>;
 type ClientEngagement = NonNullable<Extract<JobView, { as: "client" }>["engagement"]>;
@@ -117,7 +119,9 @@ export function StartActions({
             <Button
               disabled={action.busy}
               onClick={() => {
-                const shown = materials?.amountCents ? formatRands(materials.amountCents) : null;
+                const shown = materials?.unreleasedCents
+                  ? formatRands(materials.unreleasedCents)
+                  : null;
                 if (!window.confirm(t.markWorkStartedConfirm(shown))) return;
                 void action.run(() => markWorkStarted({ data: { engagementId } }));
               }}
@@ -414,7 +418,7 @@ function ApproveOrFix({ engagement }: { engagement: Engagement }) {
         <Button
           disabled={action.busy}
           onClick={() => {
-            const shown = labour?.amountCents ? formatRands(labour.amountCents) : null;
+            const shown = labour?.unreleasedCents ? formatRands(labour.unreleasedCents) : null;
             if (!window.confirm(t.approveConfirm(shown))) return;
             void action.run(() => approveCompletion({ data: { engagementId } }));
           }}
@@ -474,7 +478,10 @@ export function CompletionCard({ engagement }: { engagement: Engagement }) {
   );
 }
 
-/** Materials and Labour, as two numbered payments, each with its state, and the bar to Approval by silence. */
+/**
+ * Materials and Labour, as two numbered payments, each with its state; the
+ * bar to Approval by silence; the Refunds; and the Artisan's Refund form.
+ */
 export function PaymentsCard({ engagement }: { engagement: Engagement }) {
   const { approval } = engagement;
   return (
@@ -520,8 +527,114 @@ export function PaymentsCard({ engagement }: { engagement: Engagement }) {
             </p>
           </div>
         )}
+        <RefundsList engagement={engagement} />
+        {"refundable" in engagement && <RefundForm engagement={engagement} />}
       </CardContent>
     </Card>
+  );
+}
+
+/** The Engagement's Refunds, oldest first, each with where it stands. */
+function RefundsList({ engagement }: { engagement: Engagement }) {
+  if (engagement.refunds.length === 0) return null;
+  const owed = engagement.refunds.some((each) => each.state === "owed");
+  return (
+    <div className="space-y-2">
+      <h3 className="text-sm font-medium">{t.refunds}</h3>
+      <ul className="divide-y rounded-lg border">
+        {engagement.refunds.map((each) => (
+          <li key={each.refundId} className="flex flex-wrap items-center gap-3 p-3 text-sm">
+            <div className="min-w-0 flex-1">
+              <div className="font-medium">{formatRands(each.amountCents)}</div>
+              <div className="text-xs text-muted-foreground">
+                {t.refundLine(
+                  each.materialsCents ? formatRands(each.materialsCents) : null,
+                  each.labourCents ? formatRands(each.labourCents) : null,
+                )}{" "}
+                · {formatDate(each.madeAt)}
+              </div>
+            </div>
+            <Badge variant={each.state === "owed" ? "destructive" : "secondary"}>
+              {t.refundStates[each.state]}
+            </Badge>
+          </li>
+        ))}
+      </ul>
+      {owed && <p className="text-xs text-muted-foreground">{t.refundOwedLead}</p>}
+    </div>
+  );
+}
+
+/** The Artisan names an amount of each unreleased line to refund, while any is unreleased. */
+function RefundForm({ engagement }: { engagement: ArtisanEngagement }) {
+  const action = useAction();
+  const [open, setOpen] = useState(false);
+  const [amounts, setAmounts] = useState({ materials: "", labour: "" });
+  const { refundable } = engagement;
+  const lines = (["materials", "labour"] as const).filter((part) => refundable[`${part}Cents`] > 0);
+  if (lines.length === 0) return null;
+  if (!open) {
+    return (
+      <div className="space-y-1">
+        <Button variant="outline" onClick={() => setOpen(true)}>
+          {t.refund}
+        </Button>
+      </div>
+    );
+  }
+  // Read as the server reads it, so the button and the confirm agree with it.
+  const typed = refundFields.safeParse(
+    Object.fromEntries(lines.map((part) => [part, amounts[part]])),
+  );
+  const typedCents = typed.success ? typed.data.materials + typed.data.labour : 0;
+  return (
+    <form
+      className="space-y-3 rounded-lg border p-3"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (!window.confirm(t.refundConfirm(formatRands(typedCents)))) return;
+        void action.run(
+          () =>
+            refund({
+              data: {
+                engagementId: engagement.engagementId,
+                ...Object.fromEntries(lines.map((part) => [part, amounts[part]])),
+              },
+            }),
+          () => {
+            setOpen(false);
+            setAmounts({ materials: "", labour: "" });
+          },
+        );
+      }}
+    >
+      <p className="text-sm text-muted-foreground">{t.refundLead}</p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {lines.map((part) => (
+          <div key={part} className="space-y-1.5">
+            <Label htmlFor={`refund-${part}`}>
+              {t.refundUpTo(t.parts[part].title, formatRands(refundable[`${part}Cents`]))}
+            </Label>
+            <Input
+              id={`refund-${part}`}
+              inputMode="decimal"
+              placeholder="0.00"
+              value={amounts[part]}
+              onChange={(event) => setAmounts({ ...amounts, [part]: event.target.value })}
+            />
+          </div>
+        ))}
+      </div>
+      <Refusal message={action.refusal} />
+      <div className="flex flex-wrap gap-2">
+        <Button type="submit" disabled={action.busy || typedCents === 0}>
+          {t.refundSend}
+        </Button>
+        <Button type="button" variant="ghost" disabled={action.busy} onClick={() => setOpen(false)}>
+          {t.cancelRefund}
+        </Button>
+      </div>
+    </form>
   );
 }
 

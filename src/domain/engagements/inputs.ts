@@ -1,6 +1,8 @@
+import * as z from "zod";
+import { rands } from "../quotes/inputs";
 import type { ServiceCategory } from "../service-categories";
 
-// What a Completion and a Fix request take, shared with the web app's forms.
+// What a Completion, a Fix request, and a Refund take, shared with the web app's forms.
 // Nothing here may import what only runs on the server.
 
 /** The most characters a Completion's note or a Fix request's note may have. */
@@ -39,4 +41,28 @@ export function certificateNeeded(job: {
   if (job.category === "electrical") return "compliance";
   if (job.category === "plumbing" && job.gasWork) return "conformity";
   return null;
+}
+
+/**
+ * A Refund as the Artisan names it: an amount of each unreleased line, in
+ * rands, left out or empty for none, and above zero in all.
+ */
+export const refundFields = z
+  .object({
+    materials: line("Materials"),
+    labour: line("Labour"),
+  })
+  .transform(({ materials = 0, labour = 0 }) => ({ materials, labour }))
+  .refine(({ materials, labour }) => materials + labour > 0, {
+    error: "Name an amount to refund.",
+  });
+
+export type RefundFields = z.input<typeof refundFields>;
+
+/** One line of a Refund: rands, or nothing for none. */
+function line(label: string) {
+  return z.preprocess(
+    (value) => (value === "" || value === null ? undefined : value),
+    rands(label).optional(),
+  );
 }

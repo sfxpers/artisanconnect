@@ -3,7 +3,8 @@ import { publicName } from "../accounts/names";
 import type { Context } from "../context";
 import { engagementMoney } from "../ledger";
 import { fieldsView } from "../quotes/views";
-import { accounts, engagements, jobs, payments, quotes } from "../schema";
+import { refundsOf, shownState } from "../refunds";
+import { accounts, engagements, jobs, payments, quotes, refunds } from "../schema";
 import type { ServiceCategory } from "../service-categories";
 import { refusedFor } from "../content/held";
 import { badgesOf } from "../verification";
@@ -29,7 +30,7 @@ export async function engagementAsClient(
   const found = await engagementOf(ctx, job.id);
   if (!found) return null;
   const { engagement, quote } = found;
-  const [money, [artisan], badges, completions] = await Promise.all([
+  const [money, [artisan], badges, completions, refunded] = await Promise.all([
     engagementMoney(ctx, engagement.id),
     ctx.db
       .select({
@@ -41,10 +42,11 @@ export async function engagementAsClient(
       .where(eq(accounts.id, engagement.artisanId)),
     badgesOf(ctx, engagement.artisanId),
     completionsOf(ctx, engagement.id),
+    refundsOf(ctx, engagement.id),
   ]);
   const { protectionFeeCents, ...shared } = money;
   return {
-    ...common(ctx, found, completions),
+    ...common(ctx, found, completions, refunded),
     fixRequest: await fixRequestView(ctx, found, completions, "client"),
     artisan: {
       artisanId: engagement.artisanId,
@@ -61,17 +63,27 @@ export async function engagementAsClient(
 export async function engagementAsArtisan(ctx: Context, jobId: string, artisanId: string) {
   const found = await engagementOf(ctx, jobId);
   if (!found || found.engagement.artisanId !== artisanId) return null;
-  const [{ protectionFeeCents: _, ...money }, completions] = await Promise.all([
+  const [{ protectionFeeCents: _, ...money }, completions, refunded] = await Promise.all([
     engagementMoney(ctx, found.engagement.id),
     completionsOf(ctx, found.engagement.id),
+    refundsOf(ctx, found.engagement.id),
   ]);
   const { state } = found.engagement;
   const newest = completions.at(-1);
   const held = newest?.state === "held";
   return {
-    ...common(ctx, found, completions),
+    ...common(ctx, found, completions, refunded),
     fixRequest: await fixRequestView(ctx, found, completions, "artisan"),
     money: { ...moneyView(money), artisanFeePercent: found.engagement.artisanFeePercent },
+    /**
+     * What the Artisan may refund now, of each line: what is unreleased of
+     * it. Extra Materials an Updated Quote pays in are a line of their own,
+     * once there are some (#134).
+     */
+    refundable: {
+      materialsCents: money.materials.unreleasedCents,
+      labourCents: money.labour.unreleasedCents,
+    },
     /** Whether the Artisan may say they've started now. */
     canClaimStart:
       state === "paid" &&
@@ -94,18 +106,24 @@ export async function engagementAsArtisan(ctx: Context, jobId: string, artisanId
   };
 }
 
-/** The Payments on the Client's Job that arrived but Hired nobody, refunded whole. */
+/**
+ * The Payments on the Client's Job that arrived but Hired nobody, refunded
+ * whole, and where each one's Refund stands.
+ */
 export async function notHiredPayments(ctx: Context, jobId: string) {
-  return ctx.db
+  const rows = await ctx.db
     .select({
       paymentId: payments.id,
       amountCents: payments.amountCents,
       reason: payments.notHiredFor,
       at: payments.settledAt,
+      refundState: refunds.state,
     })
     .from(payments)
+    .innerJoin(refunds, eq(refunds.id, payments.refundId))
     .where(and(eq(payments.jobId, jobId), eq(payments.state, "not-hired")))
     .orderBy(asc(payments.settledAt));
+  return rows.map(({ refundState, ...row }) => ({ ...row, refund: shownState(refundState) }));
 }
 
 async function engagementOf(ctx: Context, jobId: string) {
@@ -123,15 +141,21 @@ async function engagementOf(ctx: Context, jobId: string) {
 }
 
 type Found = NonNullable<Awaited<ReturnType<typeof engagementOf>>>;
+type Refunded = Awaited<ReturnType<typeof refundsOf>>;
 type Money = Omit<Awaited<ReturnType<typeof engagementMoney>>, "protectionFeeCents">;
 
 /**
  * What both parties see alike: its state, the Hired Quote's dates, the
  * Artisan's claim to have started while it waits for the Client, the newest
  * Completion the Client could see and the bar to its Approval by silence,
- * and its Activity.
+ * its Refunds, and its Activity.
  */
-function common(ctx: Context, { engagement, quote }: Found, completions: CompletionRow[]) {
+function common(
+  ctx: Context,
+  { engagement, quote }: Found,
+  completions: CompletionRow[],
+  refunded: Refunded,
+) {
   const { startClaimedAt, workStartedAt, completedAt } = engagement;
   const made = completions.filter((completion) => completion.state === "made");
   const newest = made.at(-1);
@@ -154,6 +178,7 @@ function common(ctx: Context, { engagement, quote }: Found, completions: Complet
         ? approvalBar(ctx, newest.madeAt)
         : null,
     completedAt,
+    refunds: refunded,
     /** What happened, oldest first. Each later step adds its own. */
     activity: [
       { event: "quote.sent" as const, at: quote.sentAt! },
@@ -173,7 +198,8 @@ function common(ctx: Context, { engagement, quote }: Found, completions: Complet
             ]
           : []),
       ]),
-    ],
+      ...refunded.map((refund) => ({ event: "refunded" as const, at: refund.madeAt })),
+    ].sort((a, b) => a.at.getTime() - b.at.getTime()),
   };
 }
 
@@ -244,6 +270,8 @@ async function fixRequestView(
 function moneyView({ labour, materials, ...totals }: Money) {
   const part = (of: typeof labour) => ({
     amountCents: of.paidInCents,
+    /** What a Release of it would release now: what is neither released nor refunded. */
+    unreleasedCents: of.unreleasedCents,
     state:
       of.paidInCents > 0 && of.refundedCents === of.paidInCents
         ? ("refunded" as const)

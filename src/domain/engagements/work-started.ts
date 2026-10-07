@@ -3,7 +3,13 @@ import { system, type Actor } from "../actor";
 import { startClock, type ClockHandler } from "../clocks";
 import type { Context, Write } from "../context";
 import { eventWrite } from "../conversations/rows";
-import { engagementMoney, LEDGER_KINDS, ledgerWrites, releaseRows } from "../ledger";
+import {
+  commitFromUnreleased,
+  engagementMoney,
+  LEDGER_KINDS,
+  ledgerWrites,
+  releaseRows,
+} from "../ledger";
 import { ok, refuse } from "../result";
 import { formatDay, formatTime, saDay } from "../sa-days";
 import { engagements, type WORK_STARTED_BY } from "../schema";
@@ -42,7 +48,7 @@ export async function markWorkStarted(ctx: Context, actor: Actor, input: { engag
   }
   if (engagement.state !== "paid") return notPaid(engagement);
   // Not while a Chargeback freezes the Engagement, too, once there are Chargebacks (#137).
-  await ctx.commit(await startWrites(ctx, actor, engagement, "client"));
+  await commitFromUnreleased(ctx, () => startWrites(ctx, actor, engagement, "client"));
   await emailTells(ctx).catch((error: unknown) => {
     console.error("Tell emails did not go", error);
   });
@@ -195,7 +201,7 @@ async function startWrites(
   const now = ctx.now();
   const { materials } = await engagementMoney(ctx, engagement.id);
   // Extra Materials an Updated Quote pays in are released here too, once there are some (#134).
-  const materialsCents = materials.paidInCents - materials.releasedCents - materials.refundedCents;
+  const materialsCents = materials.unreleasedCents;
   const startedNow = exists(
     ctx.db
       .select({ one: sql`1` })

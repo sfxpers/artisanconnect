@@ -452,7 +452,7 @@ function SiteCard({ job, children }: { job: JobView; children?: ReactNode }) {
 function NotHired({ job }: { job: JobView }) {
   return job.notHired.map((payment) => (
     <p key={payment.paymentId} role="status" className="text-sm text-destructive">
-      {copy.quotes.notHired(formatRands(payment.amountCents), payment.reason!)}
+      {copy.quotes.notHired(formatRands(payment.amountCents), payment.reason!, payment.refund)}
     </p>
   ));
 }
