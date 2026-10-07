@@ -13,6 +13,11 @@ export const copy = {
     admin: { queues: "Queues", admins: "Admins", audit: "Audit log", signOut: "Sign out" },
     notices: "Notices",
   },
+  notFound: {
+    title: "No such page",
+    lead: "Nothing is at this address on ArtisanConnect. The link may be mistyped or out of date.",
+    home: "Go to ArtisanConnect",
+  },
   landing: {
     title: "Hire a verified Artisan in Cape Town",
     lead: "Post a Job, compare fixed-price Quotes, and pay through the platform. The money waits with the platform until the work is done.",

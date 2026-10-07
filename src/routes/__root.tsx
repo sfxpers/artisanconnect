@@ -1,8 +1,10 @@
 import type { ReactNode } from "react";
-import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";
+import { HeadContent, Link, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import appCss from "@/styles.css?url";
 import { AppHeader } from "@/components/app-header";
+import { Page } from "@/components/page";
+import { buttonVariants } from "@/components/ui/button";
 import { getSession } from "@/web/accounts";
 import { copy } from "@/web/copy";
 
@@ -21,6 +23,8 @@ export const Route = createRootRoute({
   // Who is signed in decides the header and which pages they may open.
   beforeLoad: () => getSession(),
   component: RootComponent,
+  // An unknown address, or a notFound() no nearer route shows.
+  notFoundComponent: NotFound,
 });
 
 function RootComponent() {
@@ -32,6 +36,18 @@ function RootComponent() {
         <Outlet />
       </div>
     </RootDocument>
+  );
+}
+
+function NotFound() {
+  const t = copy.notFound;
+  return (
+    <Page title={t.title}>
+      <p className="text-sm text-muted-foreground">{t.lead}</p>
+      <Link to="/" className={buttonVariants({ variant: "outline", size: "sm" })}>
+        {t.home}
+      </Link>
+    </Page>
   );
 }
 
