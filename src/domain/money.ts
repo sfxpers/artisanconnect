@@ -15,6 +15,11 @@ export function protectionFeeCents(cents: number): number {
   return percentOf(cents, PROTECTION_FEE_PERCENT);
 }
 
+/** The Artisan Fee on a Release of this many cents, at the Engagement's rate (ADR 0009). */
+export function artisanFeeCents(cents: number, percent: number): number {
+  return percentOf(cents, percent);
+}
+
 /** An amount as South Africans read it: "R 1 500,00". */
 export function formatRands(cents: number): string {
   return new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR" }).format(cents / 100);

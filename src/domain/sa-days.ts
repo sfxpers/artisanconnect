@@ -35,3 +35,12 @@ export function formatDay(day: string): string {
     timeZone: "UTC",
   });
 }
+
+/** An instant as South Africans read it, to the minute: "06 Oct 2026, 08:00". */
+export function formatTime(at: Date): string {
+  return at.toLocaleString("en-ZA", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Africa/Johannesburg",
+  });
+}

@@ -204,6 +204,9 @@ async function hireWrites(
         state: "paid",
         artisanFeePercent: await artisanFeePercentOf(ctx, job.clientId, quote.artisanId),
         hiredAt: now,
+        startClaimedAt: null,
+        workStartedAt: null,
+        workStartedBy: null,
       },
       and(
         sql`exists (select 1 from ${payments} where ${payments.id} = ${payment.id} and ${inArray(payments.state, ["open", "failed"])})`,

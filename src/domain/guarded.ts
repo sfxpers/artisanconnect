@@ -13,14 +13,19 @@ export function insertWhile<Table extends SQLiteTable>(
   condition: SQL,
 ) {
   const columns = getTableColumns(table);
+  // In the table's order, as an insert of a select needs it.
   const selected = Object.fromEntries(
-    Object.entries(row).map(([key, value]) => [
-      key,
-      // JSON columns are stored as text, as Drizzle stores them.
-      sql`${value instanceof Date ? value.getTime() : Array.isArray(value) ? JSON.stringify(value) : value}`.as(
-        columns[key]!.name,
-      ),
-    ]),
+    Object.entries(columns).map(([key, column]) => {
+      if (!(key in row)) throw new Error(`insertWhile: no value for column "${key}"`);
+      const value: unknown = row[key as keyof typeof row];
+      return [
+        key,
+        // JSON columns are stored as text, as Drizzle stores them.
+        sql`${value instanceof Date ? value.getTime() : Array.isArray(value) ? JSON.stringify(value) : value}`.as(
+          column.name,
+        ),
+      ];
+    }),
   );
   return ctx.db.insert(table).select(
     ctx.db

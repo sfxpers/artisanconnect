@@ -1,5 +1,7 @@
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, type SQL } from "drizzle-orm";
 import type { Context, Write } from "./context";
+import { insertWhile } from "./guarded";
+import { artisanFeeCents } from "./money";
 import { ledgerEntries } from "./schema";
 
 // The money ledger (ADR 0017): append-only rows, every event's written in its
@@ -15,6 +17,12 @@ export const LEDGER_KINDS = {
   protectionFeeIn: "payment.protection-fee",
   /** Money owed back to the Client, until the bank takes it. */
   refundOwed: "refund.owed",
+  /** The Materials released at Work started, before the Artisan Fee (ADR 0006). */
+  materialsReleased: "release.materials",
+  /** The Artisan Fee kept from a Release (ADR 0009). */
+  artisanFee: "release.artisan-fee",
+  /** A Release less its Artisan Fee, owed to the Artisan until a Payout sends it (#128). */
+  payoutOwed: "payout.owed",
 } as const;
 
 type LedgerKind = (typeof LEDGER_KINDS)[keyof typeof LEDGER_KINDS];
@@ -27,15 +35,45 @@ export type LedgerRow = {
   engagementId: string | null;
 };
 
-/** The writes of one event's ledger rows, sharing its id. */
-export function ledgerWrites(ctx: Context, rows: LedgerRow[]): Write[] {
+/**
+ * The writes of one event's ledger rows, sharing its id; with a condition,
+ * written only while it holds when the batch runs.
+ */
+export function ledgerWrites(ctx: Context, rows: LedgerRow[], condition?: SQL): Write[] {
   const eventId = ctx.newId();
   const recordedAt = ctx.now();
   return rows
     .filter((row) => row.amountCents !== 0)
-    .map((row) =>
-      ctx.db.insert(ledgerEntries).values({ id: ctx.newId(), eventId, recordedAt, ...row }),
-    );
+    .map((row) => {
+      const entry = { id: ctx.newId(), eventId, recordedAt, ...row };
+      return condition
+        ? insertWhile(ctx, ledgerEntries, entry, condition)
+        : ctx.db.insert(ledgerEntries).values(entry);
+    });
+}
+
+/**
+ * The rows that record a Release: the amount released of one part, the
+ * Artisan Fee kept from it, rounded half up to the cent, and the rest owed
+ * to the Artisan.
+ */
+export function releaseRows(
+  engagement: { id: string; paymentId: string; artisanFeePercent: number },
+  kind: typeof LEDGER_KINDS.materialsReleased,
+  amountCents: number,
+): LedgerRow[] {
+  const feeCents = artisanFeeCents(amountCents, engagement.artisanFeePercent);
+  const of = (kind: LedgerKind, amountCents: number) => ({
+    kind,
+    amountCents,
+    paymentId: engagement.paymentId,
+    engagementId: engagement.id,
+  });
+  return [
+    of(kind, amountCents),
+    of(LEDGER_KINDS.artisanFee, feeCents),
+    of(LEDGER_KINDS.payoutOwed, amountCents - feeCents),
+  ];
 }
 
 /** The rows that record a Payment arriving: its Labour, Materials, and Protection Fee. */
@@ -73,11 +111,11 @@ export async function engagementMoney(ctx: Context, engagementId: string) {
     .where(eq(ledgerEntries.engagementId, engagementId))
     .groupBy(ledgerEntries.kind);
   const sum = (kind: LedgerKind) => rows.find((row) => row.kind === kind)?.cents ?? 0;
-  // Releases and Refunds come with their tickets (#127, #132).
+  // The Labour's Release and Refunds come with their tickets (#130, #132).
   const labour = { paidInCents: sum(LEDGER_KINDS.labourIn), releasedCents: 0, refundedCents: 0 };
   const materials = {
     paidInCents: sum(LEDGER_KINDS.materialsIn),
-    releasedCents: 0,
+    releasedCents: sum(LEDGER_KINDS.materialsReleased),
     refundedCents: 0,
   };
   const paidInCents = labour.paidInCents + materials.paidInCents;

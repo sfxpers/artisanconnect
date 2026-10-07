@@ -17,6 +17,7 @@ import {
   HiredQuoteCard,
   MoneyCard,
   PaymentsCard,
+  StartActions,
 } from "@/components/engagement";
 import { formatRands } from "@/domain/money";
 import {
@@ -476,6 +477,7 @@ function Hired({
       <div className="min-w-0 space-y-6">
         <EngagementNextStep engagement={engagement} asClient>
           <NotHired job={job} />
+          <StartActions engagement={engagement} asClient />
         </EngagementNextStep>
         <PaymentsCard engagement={engagement} />
         <ActivityCard engagement={engagement} />

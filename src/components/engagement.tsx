@@ -2,13 +2,17 @@ import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Fact } from "@/components/job-details";
-import { NextStepCard } from "@/components/page";
+import { Button } from "@/components/ui/button";
+import { NextStepCard, Refusal } from "@/components/page";
+import { useAction } from "@/components/use-action";
 import { formatRands } from "@/domain/money";
 import { formatDay } from "@/domain/sa-days";
 import { copy, formatDate } from "@/web/copy";
+import { answerNotStarted, claimStarted, markWorkStarted } from "@/web/engagements";
 import type { getJob } from "@/web/jobs";
 
-// The Job page once a Quote is Hired (#107, #126): the next step, the
+// The Job page once a Quote is Hired (#107, #126): the next step, with what
+// each party may do toward Work started (#127), the
 // Payments card with Materials and Labour as two numbered payments, the
 // Activity, and in the sidebar the Money and the Hired Quote's dates. The
 // Client never sees the Artisan Fee; the Artisan never sees the Protection Fee.
@@ -30,19 +34,92 @@ export function EngagementNextStep({
   asClient: boolean;
   children?: ReactNode;
 }) {
-  const start = formatDay(engagement.startOn);
+  const [title, lead] = nextStep(engagement, asClient);
   return (
-    <NextStepCard
-      label={copy.jobs.nextStep}
-      title={asClient ? t.nextStepClient : t.nextStepArtisan}
-    >
-      <p className="text-sm text-muted-foreground">
-        {asClient
-          ? t.nextStepClientLead(start)
-          : t.nextStepArtisanLead(start, copy.quote.days(engagement.durationDays))}
-      </p>
+    <NextStepCard label={copy.jobs.nextStep} title={title}>
+      <p className="text-sm text-muted-foreground">{lead}</p>
       {children}
     </NextStepCard>
+  );
+}
+
+/** The Next step's title and lead, by the Engagement's state. */
+function nextStep(engagement: Engagement, asClient: boolean): [string, string] {
+  if (engagement.state === "work-started") {
+    return [t.workStarted, asClient ? t.workStartedClientLead : t.workStartedArtisanLead];
+  }
+  if (engagement.startClaim) {
+    const answerBy = formatDate(engagement.startClaim.answerBy);
+    return asClient
+      ? [t.claimedClient, t.claimedClientLead(answerBy)]
+      : [t.claimedArtisan, t.claimedArtisanLead(answerBy)];
+  }
+  const start = formatDay(engagement.startOn);
+  return asClient
+    ? [t.nextStepClient, t.nextStepClientLead(start)]
+    : [t.nextStepArtisan, t.nextStepArtisanLead(start, copy.quote.days(engagement.durationDays))];
+}
+
+/**
+ * What the viewer may do toward Work started while the Engagement is Paid:
+ * the Client marks it, or answers the Artisan's claim Not started; the
+ * Artisan says they've started.
+ */
+export function StartActions({
+  engagement,
+  asClient,
+}: {
+  engagement: Engagement;
+  asClient: boolean;
+}) {
+  const action = useAction();
+  if (engagement.state !== "paid") return null;
+  const { engagementId } = engagement;
+  const materials = engagement.money.payments.find((each) => each.part === "materials");
+  return (
+    <>
+      <Refusal message={action.refusal} />
+      <div className="flex flex-wrap gap-2">
+        {asClient ? (
+          <>
+            <Button
+              disabled={action.busy}
+              onClick={() => {
+                const shown = materials?.amountCents ? formatRands(materials.amountCents) : null;
+                if (!window.confirm(t.markWorkStartedConfirm(shown))) return;
+                void action.run(() => markWorkStarted({ data: { engagementId } }));
+              }}
+            >
+              {t.markWorkStarted}
+            </Button>
+            {engagement.startClaim && (
+              <Button
+                variant="outline"
+                disabled={action.busy}
+                onClick={() => {
+                  if (!window.confirm(t.notStartedConfirm)) return;
+                  void action.run(() => answerNotStarted({ data: { engagementId } }));
+                }}
+              >
+                {t.notStarted}
+              </Button>
+            )}
+          </>
+        ) : (
+          !engagement.startClaim && (
+            <Button
+              disabled={action.busy}
+              onClick={() => {
+                if (!window.confirm(t.claimStartedConfirm)) return;
+                void action.run(() => claimStarted({ data: { engagementId } }));
+              }}
+            >
+              {t.claimStarted}
+            </Button>
+          )
+        )}
+      </div>
+    </>
   );
 }
 

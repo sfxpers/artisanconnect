@@ -2,9 +2,8 @@ import { createDomain } from "@/domain";
 import type { AdminActor } from "@/domain/actor";
 import { createFakeContentReader } from "@/domain/fakes/content-reader";
 import { createFakeMailer } from "@/domain/fakes/mailer";
-import { createFakePayments } from "@/domain/fakes/payments";
 import { saDay } from "@/domain/sa-days";
-import { configFromEnv, portsFromEnv } from "@/worker/ports";
+import { configFromEnv, fakePaymentsFromEnv, portsFromEnv } from "@/worker/ports";
 import { given } from "../../test/support/given";
 
 // What a smoke test needs in the local app's D1, made by the domain tests'
@@ -14,20 +13,55 @@ import { given } from "../../test/support/given";
 
 /** A Client with an Invite-only Job and one Sent Quote on it, from a verified Artisan. */
 export async function hire(env: Env) {
+  const { domain, make } = await world(env);
+  const { client, artisan, jobId } = await quoted(domain, make);
+  return {
+    email: client.email,
+    password: client.password,
+    jobId,
+    artisan: { email: artisan.email, password: artisan.password },
+  };
+}
+
+/** A Client's Job Hired from a Quote with Materials, through the local app's fake checkout: Paid. */
+export async function hired(env: Env) {
+  const { domain, make } = await world(env);
+  const { client, artisan, jobId, quoteId } = await quoted(domain, make);
+  await make.hired(client, quoteId);
+  return {
+    email: client.email,
+    password: client.password,
+    jobId,
+    engagementId: await make.engagementOf(client, jobId),
+    artisan: { email: artisan.email, password: artisan.password },
+  };
+}
+
+/** The module on the local app's D1, and the builders over it. */
+async function world(env: Env) {
   const mailer = createFakeMailer();
   const domain = createDomain(
     { ...portsFromEnv(env), contentReader: createFakeContentReader(), mailer },
     configFromEnv(env),
   );
-  const stamp = Date.now();
   const make = given({
     domain,
     mailer,
-    payments: createFakePayments(),
+    // The local app's own fake, so a Payment arrives as its checkout page would make it.
+    payments: fakePaymentsFromEnv(env),
     admin: await anAdmin(env, domain),
     // New Identity Numbers and Payout accounts each run.
     start: Math.floor(Math.random() * 9000),
   });
+  return { domain, make };
+}
+
+/** An Invite-only Job with one Sent Quote on it, starting in 30 days, from a verified Artisan. */
+async function quoted(
+  domain: ReturnType<typeof createDomain>,
+  make: Awaited<ReturnType<typeof world>>["make"],
+) {
+  const stamp = Date.now();
   const client = await make.client({ email: `client-${stamp}@example.test` });
   const artisan = await make.matchableArtisan({ email: `artisan-${stamp}@example.test` });
   const jobId = await make.openJob(client, { matching: "invite-only" });
@@ -36,15 +70,10 @@ export async function hire(env: Env) {
     artisanId: artisan.actor.accountId,
   });
   if (!invited.ok) throw new Error(invited.refusal.message);
-  await make.sentQuote(artisan, jobId, {
+  const quoteId = await make.sentQuote(artisan, jobId, {
     startOn: saDay(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)),
   });
-  return {
-    email: client.email,
-    password: client.password,
-    jobId,
-    artisan: { email: artisan.email, password: artisan.password },
-  };
+  return { client, artisan, jobId, quoteId };
 }
 
 /** An Admin of the local app, set up first if there is none. */

@@ -911,10 +911,14 @@ export const ENGAGEMENT_STATES = [
   "cancelled",
 ] as const;
 
+/** Who set Work started: the Client, or the Artisan when the Client did not answer in 24 hours. */
+export const WORK_STARTED_BY = ["client", "artisan"] as const;
+
 /**
  * A Hired Quote's work and money, made at Hire, when its Payment arrived:
  * one per Job, Quote, and Payment. The Artisan Fee is fixed here for its whole
- * life. A trigger in the migration refuses changing whose it is or its fee.
+ * life. A trigger in the migration refuses changing whose it is or its fee,
+ * and any move of its state but the ones built so far.
  */
 export const engagements = sqliteTable(
   "engagements",
@@ -942,6 +946,10 @@ export const engagements = sqliteTable(
     /** 10, or 5 if the Client Relationship had a Completed Engagement at Hire (ADR 0009). */
     artisanFeePercent: integer("artisan_fee_percent").notNull(),
     hiredAt: instant("hired_at").notNull(),
+    /** When the Artisan said they've started, while the Client has not answered (#127). */
+    startClaimedAt: instant("start_claimed_at"),
+    workStartedAt: instant("work_started_at"),
+    workStartedBy: text("work_started_by", { enum: WORK_STARTED_BY }),
   },
   (table) => [
     index("engagements_relationship").on(table.clientId, table.artisanId),

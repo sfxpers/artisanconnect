@@ -28,7 +28,8 @@ export function given({
 }: {
   domain: Domain;
   mailer: FakeMailer;
-  payments: FakePayments;
+  /** The payment adapter's control that a Payment arrives, in memory or the local app's D1. */
+  payments: Pick<FakePayments, "succeedCollection">;
   /** An Admin already signed in, for a database that has one (a seed of the local app). */
   admin?: { actor: AdminActor };
   /** Where numbering starts, so a seed run again makes new Identity Numbers and addresses. */
@@ -265,6 +266,13 @@ export function given({
     return collectionId;
   }
 
+  /** The Engagement on the Client's Hired Job. */
+  async function engagementOf(client: { actor: Actor }, jobId: string) {
+    const engagement = (await domain.jobs.view(client.actor, { jobId }))?.engagement;
+    if (!engagement) throw new Error("Expected the Job to be Hired");
+    return engagement.engagementId;
+  }
+
   return {
     codeSentTo,
     admin,
@@ -282,6 +290,7 @@ export function given({
     checkout,
     paid,
     hired,
+    engagementOf,
   };
 }
 

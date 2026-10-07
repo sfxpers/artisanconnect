@@ -6,6 +6,7 @@ import { fieldsView } from "../quotes/views";
 import { accounts, engagements, payments, quotes } from "../schema";
 import type { ServiceCategory } from "../service-categories";
 import { badgesOf } from "../verification";
+import { answerBy } from "./work-started";
 
 // An Engagement as each party sees it on the Job page (#107): the Client
 // never sees the Artisan Fee, and the Artisan never sees the Protection Fee.
@@ -81,8 +82,12 @@ async function engagementOf(ctx: Context, jobId: string) {
 type Found = NonNullable<Awaited<ReturnType<typeof engagementOf>>>;
 type Money = Omit<Awaited<ReturnType<typeof engagementMoney>>, "protectionFeeCents">;
 
-/** What both parties see alike: its state, the Hired Quote's dates, and its Activity. */
+/**
+ * What both parties see alike: its state, the Hired Quote's dates, the
+ * Artisan's claim to have started while it waits for the Client, and its Activity.
+ */
 function common({ engagement, quote }: Found) {
+  const { startClaimedAt, workStartedAt } = engagement;
   return {
     engagementId: engagement.id,
     state: engagement.state,
@@ -90,10 +95,16 @@ function common({ engagement, quote }: Found) {
     startOn: quote.startOn,
     durationDays: quote.durationDays,
     warranty: quote.warranty,
+    startClaim:
+      engagement.state === "paid" && startClaimedAt
+        ? { claimedAt: startClaimedAt, answerBy: answerBy(startClaimedAt) }
+        : null,
+    workStartedAt,
     /** What happened, oldest first. Each later step adds its own. */
     activity: [
       { event: "quote.sent" as const, at: quote.sentAt! },
       { event: "hired" as const, at: engagement.hiredAt },
+      ...(workStartedAt ? [{ event: "work.started" as const, at: workStartedAt }] : []),
     ],
   };
 }

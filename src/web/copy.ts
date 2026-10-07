@@ -1,5 +1,6 @@
 import { EMAIL_CODE } from "@/domain/accounts/inputs";
 import type { MessageEvent } from "@/domain/conversations/inputs";
+import { formatTime } from "@/domain/sa-days";
 
 // Every word the web app shows, in one place for later translation. Copy is a
 // placeholder until final copy is written (#111).
@@ -543,7 +544,28 @@ export const copy = {
       `The Artisan starts on ${start}. Once they are working on site, you mark Work started here, which releases the Materials to them.`,
     nextStepArtisan: "You were Hired",
     nextStepArtisanLead: (start: string, days: string) =>
-      `Start on ${start}, for ${days}. Once you are working on site, the Client marks Work started, which releases the Materials to you.`,
+      `Start on ${start}, for ${days}. Once you are working on site, tap I've started. Unless the Client answers Not started within 24 hours, it is Work started, which releases the Materials to you.`,
+    claimedClient: "The Artisan says work has started",
+    claimedClientLead: (answerBy: string) =>
+      `If they are working on site, mark Work started. If not, answer Not started by ${answerBy}; otherwise it is Work started then, and the Materials are released to them.`,
+    claimedArtisan: "You said you've started",
+    claimedArtisanLead: (answerBy: string) =>
+      `Unless the Client answers Not started by ${answerBy}, it is Work started then, and the Materials are released to you.`,
+    workStarted: "Work started",
+    workStartedClientLead:
+      "The Materials were released to the Artisan. Next, the Artisan marks the work complete, and your Approval releases the Labour.",
+    workStartedArtisanLead:
+      "The Materials were released to you, less the Artisan Fee. Once the work is done, you mark it complete, and the Client's Approval releases the Labour.",
+    markWorkStarted: "Work started",
+    markWorkStartedConfirm: (materials: string | null) =>
+      materials
+        ? `Mark Work started? This releases the Materials, ${materials}, to the Artisan, and cannot be undone.`
+        : "Mark Work started? This cannot be undone.",
+    notStarted: "Not started",
+    notStartedConfirm: "Tell the Artisan that work has not started on site?",
+    claimStarted: "I've started",
+    claimStartedConfirm:
+      "Tell the Client you are working on site? Unless they answer Not started within 24 hours, it is Work started.",
     payments: "Payments",
     parts: {
       materials: { title: "Materials", released: "Released at Work started" },
@@ -551,7 +573,7 @@ export const copy = {
     },
     partStates: { unreleased: "Paid in", released: "Released", refunded: "Refunded" },
     activity: "Activity",
-    events: { "quote.sent": "Quote sent", hired: "Hired and paid" },
+    events: { "quote.sent": "Quote sent", hired: "Hired and paid", "work.started": "Work started" },
     artisan: "Artisan",
     money: "Money",
     paidIn: "Paid in",
@@ -598,7 +620,10 @@ export const copy = {
     withdraw: "Withdraw",
     refused: (reason: string) => `Refused by the Admin: ${reason}`,
     readOnly: "This Conversation has ended. It stays here to read.",
-    events: { "quote.sent": "Quote sent" } satisfies Record<MessageEvent, string>,
+    events: {
+      "quote.sent": "Quote sent",
+      "work.started": "Work started",
+    } satisfies Record<MessageEvent, string>,
     photo: (index: number) => `Photo ${index}`,
     message: "Message",
   },
@@ -775,9 +800,5 @@ export const copy = {
 
 /** A date as South Africans read it. */
 export function formatDate(date: Date | string): string {
-  return new Date(date).toLocaleString("en-ZA", {
-    dateStyle: "medium",
-    timeStyle: "short",
-    timeZone: "Africa/Johannesburg",
-  });
+  return formatTime(new Date(date));
 }

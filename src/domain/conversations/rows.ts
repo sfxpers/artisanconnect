@@ -90,39 +90,50 @@ export function quoteSentWrites(
   ctx: Context,
   quote: { id: string; jobId: string; artisanId: string },
 ): Write[] {
-  const now = ctx.now();
   const sentNow = exists(
     ctx.db
       .select({ one: sql`1` })
       .from(quotes)
       .where(and(eq(quotes.id, quote.id), eq(quotes.state, "sent"))),
   );
-  return [
-    ...openWrites(ctx, quote, sentNow),
-    ctx.db.insert(messages).select(
-      ctx.db
-        .select({
-          id: sql<string>`${ctx.newId()}`.as("id"),
-          conversationId: conversations.id,
-          senderId: sql<null>`null`.as("sender_id"),
-          event: sql<MessageEvent>`'quote.sent'`.as("event"),
-          text: sql<string>`''`.as("text"),
-          photos: sql<string>`'[]'`.as("photos"),
-          state: sql<string>`'delivered'`.as("state"),
-          heldFor: sql<null>`null`.as("held_for"),
-          sentAt: sql<number>`${now.getTime()}`.as("sent_at"),
-          deliveredAt: sql<number>`${now.getTime()}`.as("delivered_at"),
-        })
-        .from(conversations)
-        .where(
-          and(
-            eq(conversations.jobId, quote.jobId),
-            eq(conversations.artisanId, quote.artisanId),
-            sentNow,
-          ),
+  return [...openWrites(ctx, quote, sentNow), eventWrite(ctx, quote, "quote.sent", sentNow)];
+}
+
+/**
+ * The write that shows an event in the Conversation of the Artisan on the
+ * Job, as a row that is not speech, only if the condition holds when it is
+ * written.
+ */
+export function eventWrite(
+  ctx: Context,
+  on: { jobId: string; artisanId: string },
+  event: MessageEvent,
+  condition: SQL,
+): Write {
+  const now = ctx.now();
+  return ctx.db.insert(messages).select(
+    ctx.db
+      .select({
+        id: sql<string>`${ctx.newId()}`.as("id"),
+        conversationId: conversations.id,
+        senderId: sql<null>`null`.as("sender_id"),
+        event: sql<MessageEvent>`${event}`.as("event"),
+        text: sql<string>`''`.as("text"),
+        photos: sql<string>`'[]'`.as("photos"),
+        state: sql<string>`'delivered'`.as("state"),
+        heldFor: sql<null>`null`.as("held_for"),
+        sentAt: sql<number>`${now.getTime()}`.as("sent_at"),
+        deliveredAt: sql<number>`${now.getTime()}`.as("delivered_at"),
+      })
+      .from(conversations)
+      .where(
+        and(
+          eq(conversations.jobId, on.jobId),
+          eq(conversations.artisanId, on.artisanId),
+          condition,
         ),
-    ),
-  ];
+      ),
+  );
 }
 
 /** The states of a Quote that ended before Hire, which ends its Conversation. */
