@@ -11,7 +11,7 @@ import { clientShownName, publicName } from "../accounts/names";
 import { accounts, jobs, suburbs, type JOB_STATES } from "../schema";
 import { defineSection } from "../section";
 import { SERVICE_CATEGORY_NAMES } from "../service-categories";
-import { checkFileCount, uploadFile, UPLOAD_CONTEXTS } from "../uploads";
+import { checkFileCount, discardFiles, uploadFile, UPLOAD_CONTEXTS } from "../uploads";
 import { heldInvitation } from "../invitations";
 import { heldMatch } from "../matches";
 import { closeJobWrites } from "../quotes/ends";
@@ -35,7 +35,6 @@ import {
 } from "./edits";
 import { draftFields, editFields, type DraftFields, type EditFields } from "./inputs";
 import {
-  discardPhotos,
   jobPhotoById,
   jobRow,
   jobsOf,
@@ -105,7 +104,7 @@ export const jobsSection = defineSection({
             .where(and(eq(jobs.id, draft.id), stillDraft(draft)))
             .returning({ id: jobs.id });
           if (saved.length === 0) {
-            await discardPhotos(ctx, added);
+            await discardFiles(ctx, added);
             return changed();
           }
           jobId = draft.id;
@@ -120,10 +119,10 @@ export const jobsSection = defineSection({
           });
         }
       } catch (error) {
-        await discardPhotos(ctx, added);
+        await discardFiles(ctx, added);
         throw error;
       }
-      await discardPhotos(ctx, removed);
+      await discardFiles(ctx, removed);
       return ok({ jobId });
     },
 
@@ -211,7 +210,7 @@ export const jobsSection = defineSection({
           context: { kind: "before-payment" },
         });
         if (!checked.ok) {
-          await discardPhotos(ctx, added);
+          await discardFiles(ctx, added);
           return checked;
         }
         const verdict = checked.value;
@@ -223,19 +222,19 @@ export const jobsSection = defineSection({
           // A batch, not a commit, to read whether the guarded update landed.
           const [landed] = await ctx.db.batch(applyWrites(ctx, job, version));
           if (landed.length === 0) {
-            await discardPhotos(ctx, added);
+            await discardFiles(ctx, added);
             return changed();
           }
         }
       } catch (error) {
         // Nothing stored stays behind an edit that was not written.
-        await discardPhotos(ctx, added);
+        await discardFiles(ctx, added);
         if (causedBy(error, "UNIQUE constraint failed: job_edits.job_id")) {
           return editBeingChecked();
         }
         throw error;
       }
-      if (applied) await discardPhotos(ctx, removed);
+      if (applied) await discardFiles(ctx, removed);
       return ok({ edit: applied ? ("applied" as const) : ("being-checked" as const) });
     },
 
@@ -260,8 +259,7 @@ export const jobsSection = defineSection({
         if (isAlreadyDecided(error)) return alreadyChecked();
         throw error;
       }
-      if (beingChecked && job.state !== "held")
-        await discardPhotos(ctx, addedBy(beingChecked, job));
+      if (beingChecked && job.state !== "held") await discardFiles(ctx, addedBy(beingChecked, job));
       return ok({});
     },
 
@@ -290,7 +288,7 @@ export const jobsSection = defineSection({
         if (isAlreadyDecided(error)) return changed();
         throw error;
       }
-      if (beingChecked) await discardPhotos(ctx, addedBy(beingChecked, job));
+      if (beingChecked) await discardFiles(ctx, addedBy(beingChecked, job));
       await emailTells(ctx).catch((error: unknown) => {
         console.error("Tell emails did not go", error);
       });
@@ -327,7 +325,7 @@ export const jobsSection = defineSection({
         .where(and(eq(jobs.id, draft.id), eq(jobs.state, "draft")))
         .returning({ id: jobs.id });
       if (deleted.length === 0) return noDraft();
-      await discardPhotos(ctx, draft.photos);
+      await discardFiles(ctx, draft.photos);
       return ok({});
     },
 
@@ -642,13 +640,13 @@ async function takePhotos(ctx: Context, holding: JobPhoto[], input: PhotosInput)
     for (const file of add) {
       const uploaded = await uploadFile(ctx, file, UPLOAD_CONTEXTS.beforePayment);
       if (!uploaded.ok) {
-        await discardPhotos(ctx, added);
+        await discardFiles(ctx, added);
         return uploaded;
       }
       if (uploaded.value.kind === "photo") added.push(uploaded.value);
     }
   } catch (error) {
-    await discardPhotos(ctx, added);
+    await discardFiles(ctx, added);
     throw error;
   }
   return ok({

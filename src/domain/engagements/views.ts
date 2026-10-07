@@ -5,6 +5,7 @@ import { engagementMoney } from "../ledger";
 import { fieldsView } from "../quotes/views";
 import { accounts, engagements, jobs, payments, quotes } from "../schema";
 import type { ServiceCategory } from "../service-categories";
+import { refusedFor } from "../content/held";
 import { badgesOf } from "../verification";
 import {
   approvalAt,
@@ -12,7 +13,6 @@ import {
   completionsOf,
   heldCompletion,
   heldFixNote,
-  refusalOf,
   type CompletionRow,
 } from "./completion";
 import { certificateNeeded } from "./inputs";
@@ -88,7 +88,7 @@ export async function engagementAsArtisan(ctx: Context, jobId: string, artisanId
         ? {
             state: "refused" as const,
             sentAt: newest.sentAt,
-            reason: (await refusalOf(ctx, heldCompletion.kind, newest.id)) ?? "",
+            reason: (await refusedFor(ctx, heldCompletion.kind, newest.id)) ?? "",
           }
         : null,
   };
@@ -231,7 +231,7 @@ async function fixRequestView(
     /** Why the Admin refused the note, for its Client. */
     refusedFor:
       party === "client" && asked.fixNoteState === "refused"
-        ? ((await refusalOf(ctx, heldFixNote.kind, asked.id)) ?? "")
+        ? ((await refusedFor(ctx, heldFixNote.kind, asked.id)) ?? "")
         : null,
   };
 }

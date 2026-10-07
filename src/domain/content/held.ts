@@ -1,4 +1,4 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import type { AdminActor } from "../actor";
 import type { Context, Write } from "../context";
 import { causedBy } from "../errors";
@@ -107,6 +107,24 @@ export function defineHeldKind(kind: string, definition: HeldKindDefinition): He
       ];
     },
   };
+}
+
+/**
+ * Why the Admin refused the newest item of this kind about this subject; null
+ * if its newest decision was not a refusal.
+ */
+export async function refusedFor(
+  ctx: Context,
+  kind: string,
+  subjectId: string,
+): Promise<string | null> {
+  const [newest] = await ctx.db
+    .select({ decision: queueItems.decision, reason: queueItems.reason })
+    .from(queueItems)
+    .where(and(eq(queueItems.kind, kind), eq(queueItems.subjectId, subjectId)))
+    .orderBy(desc(queueItems.raisedAt), desc(sql.raw(`"queue_items"."rowid"`)))
+    .limit(1);
+  return newest?.decision === "refuse" ? (newest.reason ?? "") : null;
 }
 
 /** Whether a batch failed because the Admin decided the item first. */

@@ -5,6 +5,8 @@ export type FakeContentReader = ContentReader & {
   readonly reads: ContentToRead[];
   /** Every read from now on gets this verdict. Starts as clear. */
   force(verdict: ContentVerdict): void;
+  /** A read whose text holds this gets this verdict instead, whatever is forced. */
+  forceWhen(text: string, verdict: ContentVerdict): void;
   /** Every photo from now on holds this text. Starts as none. */
   photosSay(text: string): void;
   /** Every voice note from now on says this. Starts as nothing. */
@@ -15,6 +17,7 @@ export type FakeContentReader = ContentReader & {
 
 export function createFakeContentReader(): FakeContentReader {
   let verdict: ContentVerdict = { kind: "clear" };
+  const when: { text: string; verdict: ContentVerdict }[] = [];
   let photoText = "";
   let voiceNoteText = "";
   let broken = false;
@@ -26,6 +29,9 @@ export function createFakeContentReader(): FakeContentReader {
     reads,
     force(next) {
       verdict = next;
+    },
+    forceWhen(text, next) {
+      when.push({ text, verdict: next });
     },
     photosSay(text) {
       photoText = text;
@@ -47,7 +53,7 @@ export function createFakeContentReader(): FakeContentReader {
     async read(content) {
       working();
       reads.push(content);
-      return verdict;
+      return when.find((each) => content.text.includes(each.text))?.verdict ?? verdict;
     },
   };
 }

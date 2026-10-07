@@ -161,6 +161,14 @@ async function upload(
   return refuseType();
 }
 
+/** Deletes stored files nothing holds any more, a photo with its thumbnail; one that will not go is left. */
+export async function discardFiles(ctx: Context, files: readonly StoredFile[]) {
+  const keys = files.flatMap((file) =>
+    file.kind === "photo" ? [file.key, file.thumbnailKey] : [file.key],
+  );
+  if (keys.length > 0) await ctx.ports.files.delete(keys).catch(() => {});
+}
+
 function put(
   ctx: Context,
   key: string,

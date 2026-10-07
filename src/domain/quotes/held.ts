@@ -1,8 +1,8 @@
-import { and, desc, eq, exists, sql } from "drizzle-orm";
-import { accounts, authUsers, queueItems, quotes } from "../schema";
+import { and, eq, exists, sql } from "drizzle-orm";
+import { accounts, authUsers, quotes } from "../schema";
 import { startClock } from "../clocks";
 import type { Context, Write } from "../context";
-import { defineHeldKind } from "../content/held";
+import { defineHeldKind, refusedFor } from "../content/held";
 import { quoteSentWrites } from "../conversations/rows";
 import { jobBlocks } from "../jobs/held";
 import { jobRow } from "../jobs/rows";
@@ -129,13 +129,7 @@ function unsentWrite(ctx: Context, quoteId: string) {
 /** Why the Admin refused the Quote, if it is a refused one. */
 export async function refusalOf(ctx: Context, quote: { id: string; state: string }) {
   if (quote.state !== "refused") return null;
-  const [newest] = await ctx.db
-    .select({ reason: queueItems.reason })
-    .from(queueItems)
-    .where(and(eq(queueItems.kind, heldQuote.kind), eq(queueItems.subjectId, quote.id)))
-    .orderBy(desc(queueItems.raisedAt))
-    .limit(1);
-  return newest?.reason ?? "";
+  return (await refusedFor(ctx, heldQuote.kind, quote.id)) ?? "";
 }
 
 const MATERIALS_BY_NAMES = {

@@ -651,6 +651,52 @@ describe("Completion evidence", () => {
     ).toEqual({ ok: true, value: { state: "held" } });
   });
 
+  test("is read by the content reader too, and what it finds Holds the Completion rather than refusing it", async () => {
+    const { domain, given, contentReader } = await createHarness();
+    const { client, artisan, jobId, engagementId } = await startedJob(given, "electrical");
+    contentReader.forceWhen("Pay the installer directly", {
+      kind: "sure-hit",
+      reason: "It asks to be paid off the platform.",
+    });
+
+    expect(
+      await domain.engagements.complete(artisan.actor, {
+        engagementId,
+        note: "New plugs in the kitchen.",
+        photos: [await photo()],
+        certificate: await pdf([
+          "Certificate of Compliance",
+          "IE-5678",
+          "Pay the installer directly and skip the fee",
+        ]),
+      }),
+    ).toEqual({ ok: true, value: { state: "held" } });
+
+    expect(contentReader.reads.at(-1)).toMatchObject({
+      text: expect.stringContaining("Certificate of Compliance"),
+      context: { kind: "engagement-conversation", engagementId },
+    });
+    expect((await domain.jobs.view(client.actor, { jobId }))?.engagement?.state).toBe(
+      "work-started",
+    );
+    const admin = await given.admin();
+    const [held] = (await domain.queues.home(admin.actor, { queue: "pre-checks" }))!.items;
+    const item = await domain.queues.item(admin.actor, { itemId: held!.id });
+    expect(item?.tabs).toContainEqual(
+      expect.objectContaining({
+        key: "checks",
+        blocks: [
+          { kind: "text", text: "On the certificate: It asks to be paid off the platform." },
+          expect.objectContaining({
+            facts: expect.arrayContaining([
+              { label: "Content reader", value: "Sure it breaks the rules" },
+            ]),
+          }),
+        ],
+      }),
+    );
+  });
+
   test("the Admin sees the Completion, its files, and the certificate's reading", async () => {
     const { domain, given } = await createHarness();
     const { artisan, engagementId } = await startedJob(given, "electrical");
@@ -694,6 +740,7 @@ describe("Completion evidence", () => {
           facts: [
             { label: "Certificate of compliance in the text", value: "Yes" },
             { label: "Registration number in the text (EC-9012, IE-5678)", value: "No" },
+            { label: "Content reader", value: "Clear" },
           ],
         },
       ],

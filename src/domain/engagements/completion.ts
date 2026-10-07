@@ -1,10 +1,11 @@
-import { and, asc, desc, eq, exists, inArray, isNull, sql, type SQL } from "drizzle-orm";
+import { and, asc, eq, exists, inArray, isNull, sql, type SQL } from "drizzle-orm";
 import { system, type Actor } from "../actor";
 import { startClock, type ClockHandler } from "../clocks";
 import { checkContent, readFiles } from "../content/check";
 import { alreadyChecked, defineHeldKind, isAlreadyDecided } from "../content/held";
 import { patternHit, type PatternHit } from "../content/patterns";
 import type { Context, Write } from "../context";
+import type { ContentToRead, ContentVerdict } from "../ports";
 import { causedBy } from "../errors";
 import { eventWrite } from "../conversations/rows";
 import { insertWhile } from "../guarded";
@@ -18,7 +19,6 @@ import { formatTime } from "../sa-days";
 import {
   completions,
   engagements,
-  queueItems,
   verificationChecks,
   type CompletionDocument,
   type ENGAGEMENT_STATES,
@@ -26,6 +26,7 @@ import {
 import { emailTells, tellWhile } from "../tells";
 import {
   checkFileCount,
+  discardFiles,
   uploadFile,
   UPLOAD_CONTEXTS,
   type StoredFile,
@@ -141,7 +142,8 @@ export async function markComplete(
       : ok([]);
     if (!certificate.ok) return await discarded(ctx, stored, certificate);
 
-    // The certificate is read for what it is below; a long number on it is no reason to refuse it.
+    // The certificate is read on its own below: what it finds Holds rather than refuses, as a
+    // real certificate is full of long numbers and cannot be rewritten.
     const checked = await checkContent(ctx, {
       text: note,
       files: [...photos.value, ...others.value],
@@ -436,17 +438,6 @@ export async function completionsOf(ctx: Context, engagementId: string) {
     .from(completions)
     .where(eq(completions.engagementId, engagementId))
     .orderBy(asc(completions.sentAt), asc(sql.raw(`"completions"."rowid"`)));
-}
-
-/** Why the Admin refused the item of this kind about this subject, if they did. */
-export async function refusalOf(ctx: Context, kind: string, subjectId: string) {
-  const [newest] = await ctx.db
-    .select({ decision: queueItems.decision, reason: queueItems.reason })
-    .from(queueItems)
-    .where(and(eq(queueItems.kind, kind), eq(queueItems.subjectId, subjectId)))
-    .orderBy(desc(queueItems.raisedAt))
-    .limit(1);
-  return newest?.decision === "refuse" ? (newest.reason ?? "") : null;
 }
 
 /**
@@ -814,9 +805,11 @@ async function approvalWrites(
 /**
  * Reads the certificate for its kind and the Artisan's registration number
  * from Verification. A sure reading passes; anything less Holds the
- * Completion for the Admin, with the reasons and what was found. So does
- * what looks like a payment detail, which on a certificate may be its own
- * number, so it is the Admin's to judge rather than refused.
+ * Completion for the Admin, with the reasons and what was found. The
+ * certificate is also read as everything sent is (ADR 0011), by the patterns
+ * and the content reader, but what they find Holds it rather than refusing
+ * it: on a certificate a long number may be its own, and a certificate cannot
+ * be rewritten, so it is the Admin's to judge.
  */
 async function readCertificate(
   ctx: Context,
@@ -840,8 +833,11 @@ async function readCertificate(
   else if (numberFound !== "Yes") {
     reasons.push("The certificate does not show the Artisan's registration number.");
   }
-  const hit = patternHit(text, { kind: "engagement-conversation", engagementId: engagement.id });
+  const context = { kind: "engagement-conversation" as const, engagementId: engagement.id };
+  const hit = patternHit(text, context);
   if (hit) reasons.push(`The certificate seems to hold ${HIT_NAMES[hit]}.`);
+  const verdict = await readerVerdict(ctx, { text, photos: read.photos, context });
+  if (verdict.kind !== "clear") reasons.push(`On the certificate: ${verdict.reason}`);
   return {
     reasons,
     facts: [
@@ -851,8 +847,26 @@ async function readCertificate(
         label: `Registration number in the text (${numbers.join(", ") || "none on record"})`,
         value: numberFound,
       },
+      { label: "Content reader", value: VERDICT_NAMES[verdict.kind] },
     ],
   };
+}
+
+const VERDICT_NAMES: Record<ContentVerdict["kind"], string> = {
+  clear: "Clear",
+  "sure-hit": "Sure it breaks the rules",
+  unsure: "Unsure",
+  "cannot-run": "Did not run",
+};
+
+/** The content reader's verdict; one that throws, as Workers AI does when it is down, cannot run. */
+async function readerVerdict(ctx: Context, content: ContentToRead): Promise<ContentVerdict> {
+  try {
+    return await ctx.ports.contentReader.read(content);
+  } catch (error) {
+    console.error("The content reader did not run", error);
+    return { kind: "cannot-run", reason: "The content reader did not answer." };
+  }
 }
 
 const HIT_NAMES: Record<PatternHit, string> = {
@@ -996,14 +1010,6 @@ async function take(ctx: Context, files: Blob[], where: UploadContext, stored: S
 async function discarded<R>(ctx: Context, stored: StoredFile[], refusal: R): Promise<R> {
   await discardFiles(ctx, stored);
   return refusal;
-}
-
-/** Deletes stored files nothing holds any more; one that will not go is left. */
-async function discardFiles(ctx: Context, files: readonly StoredFile[]) {
-  const keys = files.flatMap((file) =>
-    file.kind === "photo" ? [file.key, file.thumbnailKey] : [file.key],
-  );
-  if (keys.length > 0) await ctx.ports.files.delete(keys).catch(() => {});
 }
 
 function documentOf(file: StoredFile, certificate: boolean): CompletionDocument {

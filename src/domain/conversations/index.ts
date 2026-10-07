@@ -4,12 +4,12 @@ import { checkContent } from "../content/check";
 import { alreadyChecked, isAlreadyDecided } from "../content/held";
 import type { Context } from "../context";
 import { insertWhile } from "../guarded";
-import { discardPhotos, jobRow, type JobPhoto } from "../jobs/rows";
+import { jobRow, type JobPhoto } from "../jobs/rows";
 import { ok, refuse } from "../result";
 import { conversations, messages } from "../schema";
 import { defineSection } from "../section";
 import { emailTells } from "../tells";
-import { checkFileCount, uploadFile, UPLOAD_CONTEXTS } from "../uploads";
+import { checkFileCount, discardFiles, uploadFile, UPLOAD_CONTEXTS } from "../uploads";
 import { MESSAGE_MAX } from "./inputs";
 import { heldMessage, holdWrites, refusalsOf, withdrawHeldMessage } from "./held";
 import { messagePhotoPath, namesOf, viewerOf, withheldOf } from "./parties";
@@ -166,7 +166,7 @@ export const conversationsSection = defineSection({
           withheld: await withheldOf(ctx, conversation),
         });
         if (!checked.ok) {
-          await discardPhotos(ctx, photos);
+          await discardFiles(ctx, photos);
           return checked;
         }
         if (checked.value.verdict === "held") {
@@ -186,11 +186,11 @@ export const conversationsSection = defineSection({
           ...newMessageTell(ctx, actor, conversation, { id: message.id, senderId: accountId }),
         ]);
         if (delivered.length === 0) {
-          await discardPhotos(ctx, photos);
+          await discardFiles(ctx, photos);
           return readOnly();
         }
       } catch (error) {
-        await discardPhotos(ctx, photos);
+        await discardFiles(ctx, photos);
         throw error;
       }
       // The message stands whatever happens to an email; the clocks retry one that did not go.
@@ -225,7 +225,7 @@ export const conversationsSection = defineSection({
         if (isAlreadyDecided(error)) return alreadyChecked();
         throw error;
       }
-      await discardPhotos(ctx, message.photos);
+      await discardFiles(ctx, message.photos);
       return ok({});
     },
 
@@ -318,13 +318,13 @@ async function takePhotos(ctx: Context, add: Blob[]) {
     for (const file of add) {
       const uploaded = await uploadFile(ctx, file, UPLOAD_CONTEXTS.beforePayment);
       if (!uploaded.ok) {
-        await discardPhotos(ctx, added);
+        await discardFiles(ctx, added);
         return uploaded;
       }
       if (uploaded.value.kind === "photo") added.push(uploaded.value);
     }
   } catch (error) {
-    await discardPhotos(ctx, added);
+    await discardFiles(ctx, added);
     throw error;
   }
   return ok(added);

@@ -6,7 +6,8 @@ import type { Context, Write } from "../context";
 import { causedBy } from "../errors";
 import { insertWhile } from "../guarded";
 import { addedBy, editsStanding, withdrawEdit } from "../jobs/edits";
-import { discardPhotos, jobRow, type JobRow } from "../jobs/rows";
+import { jobRow, type JobRow } from "../jobs/rows";
+import { discardFiles } from "../uploads";
 import { ledgerWrites, LEDGER_KINDS, paymentInRows } from "../ledger";
 import { formatRands, PROTECTION_FEE_PERCENT, protectionFeeCents } from "../money";
 import type { PaymentEvent, PaymentMethod } from "../ports";
@@ -136,7 +137,7 @@ export async function collectionSucceeded(
     }
     if (reason) return refundWhole(ctx, (await paymentRow(ctx, payment.id))!);
     // An edit waiting on the Job was withdrawn: what it added is nobody's now.
-    if (beingChecked) await discardPhotos(ctx, addedBy(beingChecked, job));
+    if (beingChecked) await discardFiles(ctx, addedBy(beingChecked, job));
     await emailTells(ctx).catch((error: unknown) => {
       console.error("Tell emails did not go", error);
     });

@@ -18,7 +18,7 @@ import {
   type ServiceCategory,
 } from "../service-categories";
 import { tell } from "../tells";
-import { uploadFile, UPLOAD_CONTEXTS, type StoredFile } from "../uploads";
+import { discardFiles, uploadFile, UPLOAD_CONTEXTS } from "../uploads";
 import {
   CATEGORY_CREDENTIALS,
   CHECKS,
@@ -639,13 +639,6 @@ function alreadyWaiting(kind: CheckKind) {
     "waiting",
     `Your ${CHECKS[kind].name.toLowerCase()} is waiting for the Admin. You can send another once it is decided.`,
   );
-}
-
-async function discardFiles(ctx: Context, files: StoredFile[]) {
-  const keys = files.flatMap((file) =>
-    file.kind === "photo" ? [file.key, file.thumbnailKey] : [file.key],
-  );
-  if (keys.length > 0) await ctx.ports.files.delete(keys).catch(() => {});
 }
 
 /** The write that raises the Artisan's Verification item, unless one is open. */

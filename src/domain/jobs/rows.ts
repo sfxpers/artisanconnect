@@ -121,12 +121,6 @@ export function jobPhotoPath(photo: { id: string }, thumbnail = false): string {
   return `/job-photos/${photo.id}${thumbnail ? "?size=thumbnail" : ""}`;
 }
 
-/** Deletes stored photos nothing holds any more; one that will not go is left. */
-export async function discardPhotos(ctx: Context, photos: JobPhoto[]) {
-  const keys = photos.flatMap((photo) => [photo.key, photo.thumbnailKey]);
-  if (keys.length > 0) await ctx.ports.files.delete(keys).catch(() => {});
-}
-
 /** A photo as a viewer sees it, by the paths that serve it. */
 export function photoView(photo: JobPhoto) {
   return {

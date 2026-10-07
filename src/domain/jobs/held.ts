@@ -1,6 +1,6 @@
-import { and, desc, eq, isNull, notExists, sql } from "drizzle-orm";
+import { and, eq, isNull, notExists, sql } from "drizzle-orm";
 import type { Context, Write } from "../context";
-import { defineHeldKind } from "../content/held";
+import { defineHeldKind, refusedFor } from "../content/held";
 import type { Block } from "../queues";
 import { formatDay } from "../sa-days";
 import { accounts, authUsers, jobs, queueItems } from "../schema";
@@ -143,14 +143,7 @@ function backToDraft(ctx: Context, jobId: string): Write {
 
 /** Why the Admin refused the Job when it was last posted, while it is a Draft again. */
 export async function refusalOf(ctx: Context, job: JobRow): Promise<string | null> {
-  if (job.state !== "draft") return null;
-  const [newest] = await ctx.db
-    .select({ decision: queueItems.decision, reason: queueItems.reason })
-    .from(queueItems)
-    .where(and(eq(queueItems.kind, heldJob.kind), eq(queueItems.subjectId, job.id)))
-    .orderBy(desc(queueItems.raisedAt), desc(sql.raw(`"queue_items"."rowid"`)))
-    .limit(1);
-  return newest?.decision === "refuse" ? (newest.reason ?? "") : null;
+  return job.state === "draft" ? refusedFor(ctx, heldJob.kind, job.id) : null;
 }
 
 const SITE_TYPE_NAMES = { home: "Home", business: "Business" } as const;

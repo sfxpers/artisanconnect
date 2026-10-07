@@ -1,12 +1,12 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { system } from "../actor";
 import type { Context, Write } from "../context";
-import { defineHeldKind } from "../content/held";
+import { defineHeldKind, refusedFor } from "../content/held";
 import { jobBlocks } from "../jobs/held";
 import { jobRow } from "../jobs/rows";
 import { accountSidebar } from "../quotes/held";
 import type { Block } from "../queues";
-import { messages, queueItems } from "../schema";
+import { messages } from "../schema";
 import { messagePhotoPath } from "./parties";
 import {
   conversationRow,
@@ -132,13 +132,7 @@ export async function withdrawHeldMessage(ctx: Context, messageId: string): Prom
 export async function refusalsOf(ctx: Context, refused: readonly { id: string }[]) {
   const reasons = new Map<string, string>();
   for (const message of refused) {
-    const [newest] = await ctx.db
-      .select({ reason: queueItems.reason })
-      .from(queueItems)
-      .where(and(eq(queueItems.kind, heldMessage.kind), eq(queueItems.subjectId, message.id)))
-      .orderBy(desc(queueItems.raisedAt))
-      .limit(1);
-    reasons.set(message.id, newest?.reason ?? "");
+    reasons.set(message.id, (await refusedFor(ctx, heldMessage.kind, message.id)) ?? "");
   }
   return reasons;
 }

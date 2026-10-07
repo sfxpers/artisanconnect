@@ -14,7 +14,7 @@ import {
   SERVICE_CATEGORY_NAMES,
   type ServiceCategory,
 } from "../service-categories";
-import { checkFileCount, uploadFile, UPLOAD_CONTEXTS } from "../uploads";
+import { checkFileCount, discardFiles, uploadFile, UPLOAD_CONTEXTS } from "../uploads";
 import { badgesOf, verifiedCategoriesOf } from "../verification";
 import { slotOf } from "../verification/checks";
 import {
@@ -124,7 +124,7 @@ export const profilesSection = defineSection({
       if (unchanged) return refuse("unchanged", "Nothing has changed.");
 
       const added: ProfilePhoto[] = [];
-      const discard = () => discardPhotos(ctx, added);
+      const discard = () => discardFiles(ctx, added);
       try {
         for (const file of input.add) {
           const uploaded = await uploadFile(ctx, file, UPLOAD_CONTEXTS.beforePayment);
@@ -210,7 +210,7 @@ export const profilesSection = defineSection({
       }
       // The photos it added are nobody's now; those it kept are still shown.
       const shown = new Set((await shownVersion(ctx, actor.accountId)).photos.map((p) => p.id));
-      await discardPhotos(
+      await discardFiles(
         ctx,
         beingChecked.photos.filter((photo) => !shown.has(photo.id)),
       );
@@ -226,11 +226,6 @@ function beingChecked() {
     "being-checked",
     "Your last Profile edit is being checked. Withdraw it to send another.",
   );
-}
-
-async function discardPhotos(ctx: Context, photos: ProfilePhoto[]) {
-  const keys = photos.flatMap((photo) => [photo.key, photo.thumbnailKey]);
-  if (keys.length > 0) await ctx.ports.files.delete(keys).catch(() => {});
 }
 
 /** A version as a viewer sees it: each photo by the path that serves it. */
