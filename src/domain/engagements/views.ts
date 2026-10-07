@@ -186,14 +186,14 @@ function completionView(completion: CompletionRow) {
       id: photo.id,
       width: photo.width,
       height: photo.height,
-      href: completionFilePath(photo),
-      thumbnailHref: completionFilePath(photo, true),
+      href: completionFilePath(completion.id, photo),
+      thumbnailHref: completionFilePath(completion.id, photo, true),
     })),
     documents: completion.documents.map((document) => ({
       id: document.id,
       kind: document.kind,
       certificate: document.certificate,
-      href: completionFilePath(document),
+      href: completionFilePath(completion.id, document),
     })),
     madeAt: completion.madeAt!,
     /** When the Client's silence is Approval. */

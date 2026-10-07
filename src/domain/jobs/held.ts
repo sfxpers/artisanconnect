@@ -176,7 +176,7 @@ export function jobBlocks(job: Omit<JobRow, "street">): Block[] {
       files: job.photos.map((photo, index) => ({
         kind: "photo",
         label: `Photo ${index + 1}`,
-        href: jobPhotoPath(photo),
+        href: jobPhotoPath(job.id, photo),
       })),
     });
   }

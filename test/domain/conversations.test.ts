@@ -172,14 +172,17 @@ describe("a message", () => {
       expect.objectContaining({ width: 64, height: 48 }),
       expect.objectContaining({ width: 64, height: 48 }),
     ]);
-    const photoId = photos[0]!.id;
+    const photo1 = { messageId: sent.ok ? sent.value.messageId : "", fileId: photos[0]!.id };
     for (const party of [client, artisan]) {
-      expect(await domain.conversations.file(party.actor, { fileId: photoId })).toMatchObject({
+      expect(await domain.conversations.file(party.actor, photo1)).toMatchObject({
         contentType: "image/webp",
       });
     }
-    expect(await domain.conversations.file(stranger.actor, { fileId: photoId })).toBeNull();
-    expect(await domain.conversations.file({ kind: "visitor" }, { fileId: photoId })).toBeNull();
+    expect(await domain.conversations.file(stranger.actor, photo1)).toBeNull();
+    expect(await domain.conversations.file({ kind: "visitor" }, photo1)).toBeNull();
+    expect(
+      await domain.conversations.file(client.actor, { ...photo1, messageId: "nope" }),
+    ).toBeNull();
   });
 
   test("is refused with six photos, a voice note or a PDF, or nothing in it", async () => {
@@ -691,13 +694,13 @@ describe("the Engagement's Conversation", () => {
     expect(files).toEqual([
       { id: expect.any(String), kind: "voice-note", seconds: 300, href: expect.any(String) },
     ]);
-    const fileId = files[0]!.id;
+    const voiceNote = { messageId: sent.ok ? sent.value.messageId : "", fileId: files[0]!.id };
     for (const party of [client, artisan]) {
-      expect(await domain.conversations.file(party.actor, { fileId })).toMatchObject({
+      expect(await domain.conversations.file(party.actor, voiceNote)).toMatchObject({
         contentType: "audio/mp4",
       });
     }
-    expect(await domain.conversations.file(stranger.actor, { fileId })).toBeNull();
+    expect(await domain.conversations.file(stranger.actor, voiceNote)).toBeNull();
   });
 
   test("refuses a voice note over five minutes, and a voice note asking for payment off the platform", async () => {
@@ -740,7 +743,12 @@ describe("the Engagement's Conversation", () => {
     const last = (await domain.conversations.view(artisan.actor, { conversationId }))!.items.at(-1);
     const files = last?.kind === "message" ? last.files : [];
     expect(files).toEqual([{ id: expect.any(String), kind: "pdf", href: expect.any(String) }]);
-    expect(await domain.conversations.file(artisan.actor, { fileId: files[0]!.id })).toMatchObject({
+    expect(
+      await domain.conversations.file(artisan.actor, {
+        messageId: sent.ok ? sent.value.messageId : "",
+        fileId: files[0]!.id,
+      }),
+    ).toMatchObject({
       contentType: "application/pdf",
     });
 
@@ -776,12 +784,13 @@ describe("the Engagement's Conversation", () => {
     ).toEqual({ ok: false, refusal: { reason: "video", message: "Video cannot be sent." } });
   });
 
-  test("shows the Admin a Held voice note or PDF to decide it", async () => {
+  test("shows the Admin a Held voice note or PDF to decide it, with what was read from them", async () => {
     const harness = await createHarness();
     const { domain, given } = harness;
     const admin = await given.admin();
     const { client, conversationId } = await engaged(given, domain);
     harness.contentReader.force({ kind: "unsure", reason: "It may ask for cash." });
+    harness.contentReader.voiceNotesSay("Bring cash on the day.");
 
     const sent = await domain.conversations.send(client.actor, {
       conversationId,
@@ -808,16 +817,25 @@ describe("the Engagement's Conversation", () => {
           ],
         },
         {},
-        {},
+        {
+          label: "Content check",
+          blocks: [
+            { kind: "text", text: "It may ask for cash." },
+            { kind: "text", text: "Read from its files:\n\nBring cash on the day.\n\nPlans" },
+          ],
+        },
       ],
     });
     const viewed = (await domain.conversations.view(client.actor, { conversationId }))!.items.at(
       -1,
     );
-    const fileId = viewed?.kind === "message" ? viewed.files[0]!.id : "";
-    expect(await domain.conversations.file(admin.actor, { fileId })).toMatchObject({
-      contentType: "audio/webm",
-    });
+    const file = viewed?.kind === "message" ? viewed.files[0]!.id : "";
+    const messageId = sent.ok ? sent.value.messageId : "";
+    expect(await domain.conversations.file(admin.actor, { messageId, fileId: file })).toMatchObject(
+      {
+        contentType: "audio/webm",
+      },
+    );
   });
 
   test("goes read-only once the Engagement is Completed, and its messages stay", async () => {

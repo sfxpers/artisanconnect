@@ -979,7 +979,9 @@ describe("an Artisan who has Quoted", () => {
     const job = await viewOf(domain, artisan, jobId);
 
     expect(job).toMatchObject({ state: "closed", quote: { state: "declined" } });
-    expect(await domain.jobs.photo(artisan.actor, { photoId: job!.photos[0]!.id })).not.toBeNull();
+    expect(
+      await domain.jobs.photo(artisan.actor, { jobId, photoId: job!.photos[0]!.id }),
+    ).not.toBeNull();
     expect(await domain.quotes.mine(artisan.actor)).toEqual([]);
   });
 

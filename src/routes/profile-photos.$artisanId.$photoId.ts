@@ -1,14 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { requestActor, requestDomain } from "@/web/session";
 
-// A Job photo, or its thumbnail with ?size=thumbnail. The domain module
-// serves it only to the Job's Client and the Admin, so nothing caches it.
-export const Route = createFileRoute("/job-photos/$photoId")({
+// A Profile photo, or its thumbnail with ?size=thumbnail. The domain module
+// serves it to anyone once it is on a Profile anyone may open, and before
+// that only to its Artisan and the Admin.
+export const Route = createFileRoute("/profile-photos/$artisanId/$photoId")({
   server: {
     handlers: {
       GET: async ({ params, request }) => {
         const domain = requestDomain();
-        const photo = await domain.jobs.photo(await requestActor(domain), {
+        const photo = await domain.profiles.photo(await requestActor(domain), {
+          artisanId: params.artisanId,
           photoId: params.photoId,
           thumbnail: new URL(request.url).searchParams.get("size") === "thumbnail",
         });
@@ -17,7 +19,8 @@ export const Route = createFileRoute("/job-photos/$photoId")({
           headers: {
             "content-type": photo.contentType,
             "content-length": String(photo.size),
-            "cache-control": "private, no-store",
+            // A photo not yet shown is its Artisan's and the Admin's only.
+            "cache-control": photo.shown ? "public, max-age=300" : "private, no-store",
             "x-content-type-options": "nosniff",
           },
         });

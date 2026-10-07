@@ -556,7 +556,7 @@ describe("a Profile photo", () => {
     const other = await given.verifiedArtisan({ name: "Ayesha Khan" });
     await edit(harness, artisan, { about: "My work.", add: [await photo()] });
     const [waiting] = (await domain.profiles.mine(artisan.actor))!.beingChecked!.photos;
-    const input = { photoId: waiting!.id };
+    const input = { artisanId: artisan.actor.accountId, photoId: waiting!.id };
 
     expect(await domain.profiles.photo(visitor, input)).toBeNull();
     expect(await domain.profiles.photo(other.actor, input)).toBeNull();
@@ -574,6 +574,9 @@ describe("a Profile photo", () => {
     expect(shown).toMatchObject({ contentType: "image/webp" });
     expect(thumbnail).toMatchObject({ contentType: "image/webp" });
     expect(thumbnail!.size).toBeLessThanOrEqual(shown!.size);
+    expect(
+      await domain.profiles.photo(visitor, { ...input, artisanId: other.actor.accountId }),
+    ).toBeNull();
   });
 
   test("is no longer served to anyone else once an edit removes it", async () => {
@@ -584,10 +587,20 @@ describe("a Profile photo", () => {
     const [shown] = (await domain.profiles.mine(artisan.actor))!.shown.photos;
 
     await edit(harness, artisan, { about: "Mine.", keep: [] });
-    expect(await domain.profiles.photo(visitor, { photoId: shown!.id })).not.toBeNull();
+    expect(
+      await domain.profiles.photo(visitor, {
+        artisanId: artisan.actor.accountId,
+        photoId: shown!.id,
+      }),
+    ).not.toBeNull();
     await decide(harness, admin, "release");
 
-    expect(await domain.profiles.photo(visitor, { photoId: shown!.id })).toBeNull();
+    expect(
+      await domain.profiles.photo(visitor, {
+        artisanId: artisan.actor.accountId,
+        photoId: shown!.id,
+      }),
+    ).toBeNull();
   });
 
   test("added by an edit the Artisan withdraws is deleted, and one kept stays", async () => {
@@ -601,11 +614,25 @@ describe("a Profile photo", () => {
 
     await domain.profiles.withdraw(artisan.actor);
 
-    expect(await domain.profiles.photo(artisan.actor, { photoId: added!.id })).toBeNull();
     expect(
-      await domain.profiles.photo(artisan.actor, { photoId: added!.id, thumbnail: true }),
+      await domain.profiles.photo(artisan.actor, {
+        artisanId: artisan.actor.accountId,
+        photoId: added!.id,
+      }),
     ).toBeNull();
-    expect(await domain.profiles.photo(visitor, { photoId: kept!.id })).not.toBeNull();
+    expect(
+      await domain.profiles.photo(artisan.actor, {
+        artisanId: artisan.actor.accountId,
+        photoId: added!.id,
+        thumbnail: true,
+      }),
+    ).toBeNull();
+    expect(
+      await domain.profiles.photo(visitor, {
+        artisanId: artisan.actor.accountId,
+        photoId: kept!.id,
+      }),
+    ).not.toBeNull();
   });
 
   test("of an Artisan verified for nothing is served to nobody else", async () => {
@@ -618,7 +645,17 @@ describe("a Profile photo", () => {
     const [shown] = (await domain.profiles.mine(artisan.actor))!.shown.photos;
 
     expect(await domain.profiles.mine(artisan.actor)).toMatchObject({ profile: null });
-    expect(await domain.profiles.photo(visitor, { photoId: shown!.id })).toBeNull();
-    expect(await domain.profiles.photo(artisan.actor, { photoId: shown!.id })).not.toBeNull();
+    expect(
+      await domain.profiles.photo(visitor, {
+        artisanId: artisan.actor.accountId,
+        photoId: shown!.id,
+      }),
+    ).toBeNull();
+    expect(
+      await domain.profiles.photo(artisan.actor, {
+        artisanId: artisan.actor.accountId,
+        photoId: shown!.id,
+      }),
+    ).not.toBeNull();
   });
 });

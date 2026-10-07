@@ -76,7 +76,17 @@ export const heldMessage = defineHeldKind("held.message", {
         {
           key: "check",
           label: "Content check",
-          blocks: [{ kind: "text", text: message.heldFor ?? "The Content check could not run." }],
+          blocks: [
+            { kind: "text", text: message.heldFor ?? "The Content check could not run." },
+            ...(message.heldFilesText
+              ? [
+                  {
+                    kind: "text" as const,
+                    text: `Read from its files:\n\n${message.heldFilesText}`,
+                  },
+                ]
+              : []),
+          ],
         },
       ],
       sidebar: await accountSidebar(
@@ -102,7 +112,7 @@ function messageBlocks(message: MessageRow): Block[] {
         return {
           kind: file.kind,
           label: `${FILE_LABELS[file.kind]} ${counted[file.kind]}`,
-          href: messageFilePath(file),
+          href: messageFilePath(message.id, file),
         };
       }),
     });

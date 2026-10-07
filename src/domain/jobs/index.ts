@@ -354,19 +354,17 @@ export const jobsSection = defineSection({
      * too: to the Job's Client and the Admin. An Artisan who sees the Job
      * sees the photos it shows, never an edit's.
      */
-    async photo(viewer: Actor, input: { photoId: string; thumbnail?: boolean }) {
-      const onJob = await jobPhotoById(ctx, input.photoId);
-      const found = onJob ?? (await editPhotoById(ctx, input.photoId));
-      if (!found) return null;
+    async photo(viewer: Actor, input: { jobId: string; photoId: string; thumbnail?: boolean }) {
+      const onJob = await jobPhotoById(ctx, input.jobId, input.photoId);
+      const photo = onJob ?? (await editPhotoById(ctx, input.jobId, input.photoId));
+      if (!photo) return null;
       if (viewer.kind !== "admin") {
-        const job = await jobRow(ctx, found.jobId);
+        const job = await jobRow(ctx, input.jobId);
         const holding =
           !!onJob && !!job && viewer.kind === "artisan" && (await seesJob(ctx, job, viewer));
         if (!job || (job.clientId !== accountIdOf(viewer) && !holding)) return null;
       }
-      const object = await ctx.ports.files.get(
-        input.thumbnail ? found.photo.thumbnailKey : found.photo.key,
-      );
+      const object = await ctx.ports.files.get(input.thumbnail ? photo.thumbnailKey : photo.key);
       if (!object) return null;
       return {
         body: object.body,
@@ -397,7 +395,7 @@ export const jobsSection = defineSection({
         street: job.street,
         title: job.title,
         description: job.description,
-        photos: job.photos.map(photoView),
+        photos: job.photos.map((photo) => photoView(job.id, photo)),
         gasWork: job.gasWork,
         preferredStart: job.preferredStart,
         matching: job.matching,
@@ -411,9 +409,9 @@ export const jobsSection = defineSection({
         refused: refusal === null ? null : { reason: refusal },
         /** An edit being checked, which only the Client and the Admin see, or one refused. */
         edit: {
-          beingChecked: edits.beingChecked && versionView(edits.beingChecked),
+          beingChecked: edits.beingChecked && versionView(job.id, edits.beingChecked),
           refused: edits.refused && {
-            ...versionView(edits.refused),
+            ...versionView(job.id, edits.refused),
             reason: edits.refused.reason,
           },
         },
@@ -465,7 +463,7 @@ export const jobsSection = defineSection({
         },
         title: job.title,
         description: job.description,
-        photos: job.photos.map(photoView),
+        photos: job.photos.map((photo) => photoView(job.id, photo)),
         gasWork: job.gasWork,
         preferredStart: job.preferredStart,
         /** The Engagement, if the Artisan was Hired. */

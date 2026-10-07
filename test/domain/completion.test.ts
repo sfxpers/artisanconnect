@@ -66,27 +66,27 @@ describe("the Artisan marks the work complete", () => {
       documents: [await pdf(["Paint data sheet"])],
     });
     const completion = (await domain.jobs.view(client.actor, { jobId }))!.engagement!.completion!;
-    const photoId = idOf(completion.photos[0]!.href);
-    const documentId = idOf(completion.documents[0]!.href);
+    const photo = idOf(completion.photos[0]!.href);
+    const document = idOf(completion.documents[0]!.href);
     const stranger = await given.client();
 
     for (const party of [client, artisan]) {
+      expect(await domain.engagements.completionFile(party.actor, photo)).toMatchObject({
+        contentType: "image/webp",
+      });
       expect(
-        await domain.engagements.completionFile(party.actor, { fileId: photoId }),
+        await domain.engagements.completionFile(party.actor, { ...photo, thumbnail: true }),
       ).toMatchObject({ contentType: "image/webp" });
-      expect(
-        await domain.engagements.completionFile(party.actor, {
-          fileId: photoId,
-          thumbnail: true,
-        }),
-      ).toMatchObject({ contentType: "image/webp" });
-      expect(
-        await domain.engagements.completionFile(party.actor, { fileId: documentId }),
-      ).toMatchObject({ contentType: "application/pdf" });
+      expect(await domain.engagements.completionFile(party.actor, document)).toMatchObject({
+        contentType: "application/pdf",
+      });
     }
     for (const actor of [stranger.actor, { kind: "visitor" } as Actor]) {
-      expect(await domain.engagements.completionFile(actor, { fileId: photoId })).toBeNull();
+      expect(await domain.engagements.completionFile(actor, photo)).toBeNull();
     }
+    expect(
+      await domain.engagements.completionFile(client.actor, { ...photo, completionId: "nope" }),
+    ).toBeNull();
   });
 
   test("shows in the Conversation as a row that is not speech", async () => {
@@ -727,9 +727,9 @@ describe("Completion evidence", () => {
     });
     const tab = item!.tabs[0] as { blocks: { files?: { href: string }[] }[] };
     const certificate = tab.blocks[1]!.files![1]!.href;
-    expect(
-      await domain.engagements.completionFile(admin.actor, { fileId: idOf(certificate) }),
-    ).toMatchObject({ contentType: "application/pdf" });
+    expect(await domain.engagements.completionFile(admin.actor, idOf(certificate))).toMatchObject({
+      contentType: "application/pdf",
+    });
     expect(item?.tabs).toContainEqual({
       key: "checks",
       label: "Checks",
@@ -1261,8 +1261,10 @@ async function pdf(lines: string[]): Promise<Blob> {
 }
 
 /** The file's id in a path that serves it. */
-function idOf(href: string): string {
-  return new URL(href, "https://x.test").pathname.split("/").at(-1)!;
+/** The Completion and the file a file's path names. */
+function idOf(href: string): { completionId: string; fileId: string } {
+  const [completionId, fileId] = new URL(href, "https://x.test").pathname.split("/").slice(-2);
+  return { completionId: completionId!, fileId: fileId! };
 }
 
 /** The newest row of the Job's one Conversation, as the party sees it. */

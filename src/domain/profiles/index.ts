@@ -80,11 +80,11 @@ export const profilesSection = defineSection({
         publicProfile(ctx, viewer.accountId),
       ]);
       return {
-        shown: versionView(shown),
+        shown: versionView(viewer.accountId, shown),
         profile,
-        beingChecked: standing.beingChecked && versionView(standing.beingChecked),
+        beingChecked: standing.beingChecked && versionView(viewer.accountId, standing.beingChecked),
         refused: standing.refused && {
-          ...versionView(standing.refused),
+          ...versionView(viewer.accountId, standing.refused),
           reason: standing.refused.reason,
         },
       };
@@ -169,18 +169,15 @@ export const profilesSection = defineSection({
      * on a Profile anyone may open, and before that, or after an edit removes
      * it, only to its Artisan and the Admin.
      */
-    async photo(viewer: Actor, input: { photoId: string; thumbnail?: boolean }) {
-      const found = await photoById(ctx, input.photoId);
-      if (!found) return null;
+    async photo(viewer: Actor, input: { artisanId: string; photoId: string; thumbnail?: boolean }) {
+      const photo = await photoById(ctx, input.artisanId, input.photoId);
+      if (!photo) return null;
       const shown =
-        (await shownVersion(ctx, found.artisanId)).photos.some(
-          (photo) => photo.id === found.photo.id,
-        ) && (await openableArtisan(ctx, found.artisanId)) !== null;
-      const maySee = shown || viewer.kind === "admin" || accountIdOf(viewer) === found.artisanId;
+        (await shownVersion(ctx, input.artisanId)).photos.some((each) => each.id === photo.id) &&
+        (await openableArtisan(ctx, input.artisanId)) !== null;
+      const maySee = shown || viewer.kind === "admin" || accountIdOf(viewer) === input.artisanId;
       if (!maySee) return null;
-      const object = await ctx.ports.files.get(
-        input.thumbnail ? found.photo.thumbnailKey : found.photo.key,
-      );
+      const object = await ctx.ports.files.get(input.thumbnail ? photo.thumbnailKey : photo.key);
       if (!object) return null;
       return {
         body: object.body,
@@ -228,16 +225,16 @@ function beingChecked() {
   );
 }
 
-/** A version as a viewer sees it: each photo by the path that serves it. */
-function versionView(version: ProfileVersion) {
+/** A version of the Artisan's Profile as a viewer sees it: each photo by the path that serves it. */
+function versionView(artisanId: string, version: ProfileVersion) {
   return {
     about: version.about,
     photos: version.photos.map((photo) => ({
       id: photo.id,
       width: photo.width,
       height: photo.height,
-      href: photoPath(photo),
-      thumbnailHref: photoPath(photo, true),
+      href: photoPath(artisanId, photo),
+      thumbnailHref: photoPath(artisanId, photo, true),
     })),
   };
 }
@@ -314,7 +311,7 @@ async function publicProfile(ctx: Context, artisanId: string) {
   return {
     artisanId: row.id,
     publicName: publicName(row),
-    ...versionView(shown),
+    ...versionView(row.id, shown),
     categories: row.categories.map(({ category, gasWork }) => ({
       category,
       name: SERVICE_CATEGORY_NAMES[category],

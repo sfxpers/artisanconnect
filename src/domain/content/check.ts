@@ -33,8 +33,12 @@ export type ContentToCheck = {
 export type Checked =
   /** It may go out. */
   | { verdict: "clear"; text: string }
-  /** It waits for the Admin's Pre-check, and the reason is shown to the Admin. */
-  | { verdict: "held"; reason: string; text: string };
+  /**
+   * It waits for the Admin's Pre-check, and the reason is shown to the Admin,
+   * with the text read from its files, which the Admin cannot read at a
+   * glance (a voice note's above all).
+   */
+  | { verdict: "held"; reason: string; text: string; filesText: string };
 
 /**
  * Reads what is sent. A sure hit is a refusal saying what to take out; the
@@ -46,13 +50,14 @@ export async function checkContent(
   item: ContentToCheck,
 ): Promise<Result<Checked, "content">> {
   const read = await readFiles(ctx, item.files ?? []);
-  const text = [item.text, ...read.texts].filter((part) => part.trim()).join("\n\n");
+  const filesText = read.texts.filter((part) => part.trim()).join("\n\n");
+  const text = [item.text, filesText].filter((part) => part.trim()).join("\n\n");
 
   const hit = patternHit(text, item.context);
   if (hit) return refuse("content", patternMessage(hit));
   const withheld = item.context.kind === "before-payment" && withheldHit(text, item.withheld ?? {});
   if (withheld) return refuse("content", withheldMessage(withheld));
-  if (read.unread) return ok({ verdict: "held", reason: read.unread, text });
+  if (read.unread) return ok({ verdict: "held", reason: read.unread, text, filesText });
 
   let verdict: ContentVerdict;
   try {
@@ -72,7 +77,7 @@ export async function checkContent(
       return refuse("content", verdict.reason);
     case "unsure":
     case "cannot-run":
-      return ok({ verdict: "held", reason: verdict.reason, text });
+      return ok({ verdict: "held", reason: verdict.reason, text, filesText });
   }
 }
 

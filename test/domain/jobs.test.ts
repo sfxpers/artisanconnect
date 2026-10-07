@@ -817,18 +817,26 @@ describe("who sees a Job", () => {
 
     for (const photoId of [shown!.id, waiting!.id]) {
       for (const viewer of [client.actor, admin.actor]) {
-        expect(await domain.jobs.photo(viewer, { photoId })).toMatchObject({
+        expect(await domain.jobs.photo(viewer, { jobId, photoId })).toMatchObject({
           contentType: "image/webp",
         });
-        expect(await domain.jobs.photo(viewer, { photoId, thumbnail: true })).toMatchObject({
+        expect(await domain.jobs.photo(viewer, { jobId, photoId, thumbnail: true })).toMatchObject({
           contentType: "image/webp",
         });
       }
       for (const viewer of [visitor, other.actor, artisan.actor]) {
-        expect(await domain.jobs.photo(viewer, { photoId })).toBeNull();
+        expect(await domain.jobs.photo(viewer, { jobId, photoId })).toBeNull();
       }
     }
-    expect(await domain.jobs.photo(client.actor, { photoId: "nope" })).toBeNull();
+    expect(await domain.jobs.photo(client.actor, { jobId, photoId: "nope" })).toBeNull();
+    // Only the Job named holds it.
+    harness.contentReader.force({ kind: "clear" });
+    expect(
+      await domain.jobs.photo(admin.actor, {
+        jobId: await given.openJob(client),
+        photoId: waiting!.id,
+      }),
+    ).toBeNull();
   });
 });
 

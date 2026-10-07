@@ -72,8 +72,12 @@ export function approvalAt(madeAt: Date): Date {
 }
 
 /** The path that serves a Completion's file, or a photo's thumbnail. */
-export function completionFilePath(file: { id: string }, thumbnail = false): string {
-  return `/completion-files/${file.id}${thumbnail ? "?size=thumbnail" : ""}`;
+export function completionFilePath(
+  completionId: string,
+  file: { id: string },
+  thumbnail = false,
+): string {
+  return `/completion-files/${completionId}/${file.id}${thumbnail ? "?size=thumbnail" : ""}`;
 }
 
 /**
@@ -395,17 +399,19 @@ export async function requestFix(
 export async function completionFile(
   ctx: Context,
   viewer: Actor,
-  input: { fileId: string; thumbnail?: boolean },
+  input: { completionId: string; fileId: string; thumbnail?: boolean },
 ) {
   const [row] = await ctx.db
     .select({ completion: completions, engagement: engagements })
     .from(completions)
     .innerJoin(engagements, eq(engagements.id, completions.engagementId))
-    .where(
-      sql`exists (select 1 from json_each(${completions.photos}) where json_extract(value, '$.id') = ${input.fileId})
-        or exists (select 1 from json_each(${completions.documents}) where json_extract(value, '$.id') = ${input.fileId})`,
+    .where(eq(completions.id, input.completionId));
+  const file =
+    row &&
+    [...row.completion.photos, ...row.completion.documents].find(
+      (each) => each.id === input.fileId,
     );
-  if (!row) return null;
+  if (!row || !file) return null;
   const { completion, engagement } = row;
   const sees =
     viewer.kind === "admin"
@@ -416,9 +422,6 @@ export async function completionFile(
           viewer.accountId === engagement.clientId &&
           completion.state === "made";
   if (!sees) return null;
-  const file = [...completion.photos, ...completion.documents].find(
-    (each) => each.id === input.fileId,
-  )!;
   if (input.thumbnail && file.kind !== "photo") return null;
   const object = await ctx.ports.files.get(
     input.thumbnail && file.kind === "photo" ? file.thumbnailKey : file.key,
@@ -538,14 +541,14 @@ export const heldCompletion = defineHeldKind("held.completion", {
       ...completion.photos.map((photo, index) => ({
         kind: "photo" as const,
         label: `Photo ${index + 1}`,
-        href: completionFilePath(photo),
+        href: completionFilePath(completion.id, photo),
       })),
       ...completion.documents.map((document, index) => ({
         kind: document.kind,
         label: document.certificate
           ? capitalised(CERTIFICATES[certificateNeeded(found.engagement) ?? "compliance"].name)
           : `Document ${index + 1}`,
-        href: completionFilePath(document),
+        href: completionFilePath(completion.id, document),
       })),
     ];
     const checks: Block[] = (completion.heldFor ?? "The checks could not run.")

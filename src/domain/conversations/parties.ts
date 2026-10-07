@@ -75,6 +75,10 @@ async function namesRow(ctx: Context, accountId: string) {
 }
 
 /** The web app's path to a file in a message, or a photo's thumbnail. */
-export function messageFilePath(file: { id: string }, thumbnail = false): string {
-  return `/message-files/${file.id}${thumbnail ? "?size=thumbnail" : ""}`;
+export function messageFilePath(
+  messageId: string,
+  file: { id: string },
+  thumbnail = false,
+): string {
+  return `/message-files/${messageId}/${file.id}${thumbnail ? "?size=thumbnail" : ""}`;
 }

@@ -116,14 +116,14 @@ export async function editsStanding(ctx: Context, jobId: string) {
     : { beingChecked: null, refused: { ...version, reason: reason ?? "" } };
 }
 
-/** An edit as its Client sees it: each photo by the path that serves it. */
-export function versionView(version: JobVersion) {
+/** An edit to the Job as its Client sees it: each photo by the path that serves it. */
+export function versionView(jobId: string, version: JobVersion) {
   return {
     title: version.title,
     description: version.description,
     siteType: version.siteType,
     preferredStart: version.preferredStart,
-    photos: version.photos.map(photoView),
+    photos: version.photos.map((photo) => photoView(jobId, photo)),
   };
 }
 
@@ -149,17 +149,19 @@ async function editRow(ctx: Context, editId: string) {
   return row ?? null;
 }
 
-/** A photo some edit holds, and whose Job it is on. */
-export async function editPhotoById(ctx: Context, photoId: string) {
+/** A photo some edit to the Job holds; null if none holds one by that id. */
+export async function editPhotoById(ctx: Context, jobId: string, photoId: string) {
   const [edit] = await ctx.db
-    .select({ jobId: jobEdits.jobId, photos: jobEdits.photos })
+    .select({ photos: jobEdits.photos })
     .from(jobEdits)
     .where(
-      sql`exists (select 1 from json_each(${jobEdits.photos}) where json_extract(json_each.value, '$.id') = ${photoId})`,
+      and(
+        eq(jobEdits.jobId, jobId),
+        sql`exists (select 1 from json_each(${jobEdits.photos}) where json_extract(json_each.value, '$.id') = ${photoId})`,
+      ),
     )
     .limit(1);
-  const photo = edit?.photos.find((each) => each.id === photoId);
-  return edit && photo ? { jobId: edit.jobId, photo } : null;
+  return edit?.photos.find((each) => each.id === photoId) ?? null;
 }
 
 export const heldJobEdit = defineHeldKind("held.job-edit", {

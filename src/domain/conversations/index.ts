@@ -1,4 +1,4 @@
-import { and, asc, eq, getTableColumns, inArray, or, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, or, sql } from "drizzle-orm";
 import { accountIdOf, type Actor } from "../actor";
 import { checkContent } from "../content/check";
 import { alreadyChecked, isAlreadyDecided } from "../content/held";
@@ -171,6 +171,7 @@ export const conversationsSection = defineSection({
         files: stored.filter((file): file is MessageFile => file.kind !== "photo"),
         state: "held",
         heldFor: null,
+        heldFilesText: null,
         sentAt: now,
         deliveredAt: null,
       };
@@ -186,7 +187,15 @@ export const conversationsSection = defineSection({
         }
         if (checked.value.verdict === "held") {
           await ctx.commit(
-            holdWrites(ctx, { ...message, heldFor: checked.value.reason }, conversation.job.title),
+            holdWrites(
+              ctx,
+              {
+                ...message,
+                heldFor: checked.value.reason,
+                heldFilesText: checked.value.filesText || null,
+              },
+              conversation.job.title,
+            ),
           );
           return ok({ messageId: message.id, state: "held" as const });
         }
@@ -249,10 +258,11 @@ export const conversationsSection = defineSection({
      * message, and to the Admin for a message that was Held, which they read
      * to decide it. Null for anyone else.
      */
-    async file(viewer: Actor, input: { fileId: string; thumbnail?: boolean }) {
-      const found = await fileById(ctx, input.fileId);
-      if (!found) return null;
-      const { message, file } = found;
+    async file(viewer: Actor, input: { messageId: string; fileId: string; thumbnail?: boolean }) {
+      const message = await messageRow(ctx, input.messageId);
+      const file =
+        message && [...message.photos, ...message.files].find((each) => each.id === input.fileId);
+      if (!message || !file) return null;
       if (viewer.kind === "admin") {
         if (message.heldFor === null) return null;
       } else {
@@ -290,13 +300,18 @@ function itemView(row: MessageRow, viewerId: string, reasons: Map<string, string
       id: photo.id,
       width: photo.width,
       height: photo.height,
-      href: messageFilePath(photo),
-      thumbnailHref: messageFilePath(photo, true),
+      href: messageFilePath(row.id, photo),
+      thumbnailHref: messageFilePath(row.id, photo, true),
     })),
     files: row.files.map((file) =>
       file.kind === "voice-note"
-        ? { id: file.id, kind: file.kind, seconds: file.seconds, href: messageFilePath(file) }
-        : { id: file.id, kind: file.kind, href: messageFilePath(file) },
+        ? {
+            id: file.id,
+            kind: file.kind,
+            seconds: file.seconds,
+            href: messageFilePath(row.id, file),
+          }
+        : { id: file.id, kind: file.kind, href: messageFilePath(row.id, file) },
     ),
     // Only these are selected: one withdrawn or unsent is nobody's to see.
     state: row.state as "delivered" | (typeof SENDER_ONLY)[number],
@@ -370,18 +385,6 @@ async function takeFiles(ctx: Context, add: Blob[], afterPayment: boolean) {
     throw error;
   }
   return ok(added);
-}
-
-/** The message holding the file, and the file; null if none does. */
-async function fileById(ctx: Context, fileId: string) {
-  const holds = (column: typeof messages.photos | typeof messages.files) =>
-    sql`exists (select 1 from json_each(${column}) where json_extract(value, '$.id') = ${fileId})`;
-  const [row] = await ctx.db
-    .select(getTableColumns(messages))
-    .from(messages)
-    .where(or(holds(messages.photos), holds(messages.files)));
-  const file = [...(row?.photos ?? []), ...(row?.files ?? [])].find((each) => each.id === fileId);
-  return row && file ? { message: row, file } : null;
 }
 
 function readOnly() {

@@ -6,12 +6,13 @@ import { requestActor, requestDomain } from "@/web/session";
 // parties who see the message, and to the Admin for a Held one, so nothing
 // caches it. A part of it is served when asked for, as Safari plays a voice
 // note only from a server that does.
-export const Route = createFileRoute("/message-files/$fileId")({
+export const Route = createFileRoute("/message-files/$messageId/$fileId")({
   server: {
     handlers: {
       GET: async ({ params, request }) => {
         const domain = requestDomain();
         const file = await domain.conversations.file(await requestActor(domain), {
+          messageId: params.messageId,
           fileId: params.fileId,
           thumbnail: new URL(request.url).searchParams.get("size") === "thumbnail",
         });

@@ -54,7 +54,9 @@ describe("an invited Artisan", () => {
       client: { shownName: "Thandi M." },
     });
     expect(JSON.stringify(job)).not.toMatch(/Sea Point|Main Road/);
-    expect(await domain.jobs.photo(artisan.actor, { photoId: job!.photos[0]!.id })).toMatchObject({
+    expect(
+      await domain.jobs.photo(artisan.actor, { jobId, photoId: job!.photos[0]!.id }),
+    ).toMatchObject({
       contentType: expect.stringMatching(/^image\//),
     });
   });
@@ -73,7 +75,7 @@ describe("an invited Artisan", () => {
     expect(await domain.matches.mine(other.actor)).toEqual([]);
     expect(await domain.invitations.mine(other.actor)).toEqual([]);
     expect(await domain.jobs.viewAsArtisan(other.actor, { jobId })).toBeNull();
-    expect(await domain.jobs.photo(other.actor, { photoId: photo!.id })).toBeNull();
+    expect(await domain.jobs.photo(other.actor, { jobId, photoId: photo!.id })).toBeNull();
     expect(await toldOf(domain, other, jobId)).toEqual([]);
   });
 });
@@ -193,7 +195,7 @@ describe("passing an Invitation", () => {
 
     expect(await domain.invitations.mine(artisan.actor)).toEqual([]);
     expect(await domain.jobs.viewAsArtisan(artisan.actor, { jobId })).toBeNull();
-    expect(await domain.jobs.photo(artisan.actor, { photoId: photo!.id })).toBeNull();
+    expect(await domain.jobs.photo(artisan.actor, { jobId, photoId: photo!.id })).toBeNull();
     expect(await domain.notices.list(client.actor)).toEqual(told.client);
     expect(await domain.notices.list(artisan.actor)).toEqual(told.artisan);
     expect(await domain.invitations.list(client.actor, { jobId })).toEqual(listed);

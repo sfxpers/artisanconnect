@@ -55,7 +55,9 @@ export const engagementsSection = defineSection({
     requestFix: (actor: Actor, input: { engagementId: string; note: string }) =>
       requestFix(ctx, actor, input),
     /** A Completion's photo or document, to whoever may see it; null to anyone else. */
-    completionFile: (viewer: Actor, input: { fileId: string; thumbnail?: boolean }) =>
-      completionFile(ctx, viewer, input),
+    completionFile: (
+      viewer: Actor,
+      input: { completionId: string; fileId: string; thumbnail?: boolean },
+    ) => completionFile(ctx, viewer, input),
   }),
 });

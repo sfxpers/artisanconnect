@@ -145,6 +145,7 @@ export function eventWrite(
         files: sql<string>`'[]'`.as("files"),
         state: sql<string>`'delivered'`.as("state"),
         heldFor: sql<null>`null`.as("held_for"),
+        heldFilesText: sql<null>`null`.as("held_files_text"),
         sentAt: sql<number>`${now.getTime()}`.as("sent_at"),
         deliveredAt: sql<number>`${now.getTime()}`.as("delivered_at"),
       })

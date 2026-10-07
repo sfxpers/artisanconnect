@@ -1,0 +1,1 @@
+ALTER TABLE `messages` ADD `held_files_text` text;

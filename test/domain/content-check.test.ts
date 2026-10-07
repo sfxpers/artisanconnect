@@ -150,7 +150,12 @@ describe("the content reader's verdict", () => {
 
     expect(result).toEqual({
       ok: true,
-      value: { verdict: "held", reason, text: "Can we sort out the money ourselves?" },
+      value: {
+        verdict: "held",
+        reason,
+        text: "Can we sort out the money ourselves?",
+        filesText: "",
+      },
     });
   });
 

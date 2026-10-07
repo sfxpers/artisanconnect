@@ -843,6 +843,8 @@ export const messages = sqliteTable(
     state: text("state", { enum: MESSAGE_STATES }).notNull(),
     /** Why the Content check Held it, for the Admin. */
     heldFor: text("held_for"),
+    /** What the Content check read from its files when it Held it, for the Admin. */
+    heldFilesText: text("held_files_text"),
     sentAt: instant("sent_at").notNull(),
     /** When the other party could first see it. */
     deliveredAt: instant("delivered_at"),

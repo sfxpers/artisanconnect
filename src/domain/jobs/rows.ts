@@ -1,4 +1,4 @@
-import { and, desc, eq, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, type SQL } from "drizzle-orm";
 import { startClock } from "../clocks";
 import type { Context } from "../context";
 import { jobs, regions, suburbs } from "../schema";
@@ -117,18 +117,18 @@ export function openWrites(
 }
 
 /** A photo's path in the web app, which serves it only to whoever may see it. */
-export function jobPhotoPath(photo: { id: string }, thumbnail = false): string {
-  return `/job-photos/${photo.id}${thumbnail ? "?size=thumbnail" : ""}`;
+export function jobPhotoPath(jobId: string, photo: { id: string }, thumbnail = false): string {
+  return `/job-photos/${jobId}/${photo.id}${thumbnail ? "?size=thumbnail" : ""}`;
 }
 
-/** A photo as a viewer sees it, by the paths that serve it. */
-export function photoView(photo: JobPhoto) {
+/** A photo of the Job, or of an edit to it, as a viewer sees it, by the paths that serve it. */
+export function photoView(jobId: string, photo: JobPhoto) {
   return {
     id: photo.id,
     width: photo.width,
     height: photo.height,
-    href: jobPhotoPath(photo),
-    thumbnailHref: jobPhotoPath(photo, true),
+    href: jobPhotoPath(jobId, photo),
+    thumbnailHref: jobPhotoPath(jobId, photo, true),
   };
 }
 
@@ -150,25 +150,23 @@ export const JOB_AS_ARTISAN_COLUMNS = {
 
 /** A row of `JOB_AS_ARTISAN_COLUMNS` as the Artisan sees it, with its first photo. */
 export function jobAsArtisanView<
-  Row extends { photos: JobPhoto[]; category: ServiceCategory | null; regionName: string | null },
+  Row extends {
+    jobId: string;
+    photos: JobPhoto[];
+    category: ServiceCategory | null;
+    regionName: string | null;
+  },
 >({ photos, category, regionName, ...row }: Row) {
   return {
     ...row,
     category: category && { id: category, name: SERVICE_CATEGORY_NAMES[category] },
     region: regionName,
-    photo: photos[0] ? photoView(photos[0]) : null,
+    photo: photos[0] ? photoView(row.jobId, photos[0]) : null,
   };
 }
 
-/** A photo a Job holds, and whose Job it is. */
-export async function jobPhotoById(ctx: Context, photoId: string) {
-  const [job] = await ctx.db
-    .select({ jobId: jobs.id, photos: jobs.photos })
-    .from(jobs)
-    .where(
-      sql`exists (select 1 from json_each(${jobs.photos}) where json_extract(json_each.value, '$.id') = ${photoId})`,
-    )
-    .limit(1);
-  const photo = job?.photos.find((each) => each.id === photoId);
-  return job && photo ? { jobId: job.jobId, photo } : null;
+/** A photo the Job holds; null if it holds none by that id. */
+export async function jobPhotoById(ctx: Context, jobId: string, photoId: string) {
+  const [job] = await ctx.db.select({ photos: jobs.photos }).from(jobs).where(eq(jobs.id, jobId));
+  return job?.photos.find((each) => each.id === photoId) ?? null;
 }

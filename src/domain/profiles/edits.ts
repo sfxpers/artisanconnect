@@ -122,25 +122,31 @@ async function editRow(ctx: Context, id: string) {
   return row ?? null;
 }
 
-/** A photo some edit holds, and whose Profile it is for. */
-export async function photoById(ctx: Context, photoId: string) {
+/** A photo some edit to the Artisan's Profile holds; null if none holds one by that id. */
+export async function photoById(ctx: Context, artisanId: string, photoId: string) {
   const [edit] = await ctx.db
-    .select({ artisanId: profileEdits.artisanId, photos: profileEdits.photos })
+    .select({ photos: profileEdits.photos })
     .from(profileEdits)
     .where(
-      sql`exists (select 1 from json_each(${profileEdits.photos}) where json_extract(json_each.value, '$.id') = ${photoId})`,
+      and(
+        eq(profileEdits.artisanId, artisanId),
+        sql`exists (select 1 from json_each(${profileEdits.photos}) where json_extract(json_each.value, '$.id') = ${photoId})`,
+      ),
     )
     .limit(1);
-  const photo = edit?.photos.find((each) => each.id === photoId);
-  return edit && photo ? { artisanId: edit.artisanId, photo } : null;
+  return edit?.photos.find((each) => each.id === photoId) ?? null;
 }
 
 /** A photo's path in the web app, which serves it only to whoever may see it. */
-export function photoPath(photo: { id: string }, thumbnail = false): string {
-  return `/profile-photos/${photo.id}${thumbnail ? "?size=thumbnail" : ""}`;
+export function photoPath(artisanId: string, photo: { id: string }, thumbnail = false): string {
+  return `/profile-photos/${artisanId}/${photo.id}${thumbnail ? "?size=thumbnail" : ""}`;
 }
 
-function versionBlocks(version: ProfileVersion, isNew?: (photo: ProfilePhoto) => boolean) {
+function versionBlocks(
+  artisanId: string,
+  version: ProfileVersion,
+  isNew?: (photo: ProfilePhoto) => boolean,
+) {
   const blocks: Block[] = [{ kind: "text", text: version.about || "No About text." }];
   if (version.photos.length > 0) {
     blocks.push({
@@ -148,7 +154,7 @@ function versionBlocks(version: ProfileVersion, isNew?: (photo: ProfilePhoto) =>
       files: version.photos.map((photo, index) => ({
         kind: "photo",
         label: `Photo ${index + 1}${isNew?.(photo) ? " (new)" : ""}`,
-        href: photoPath(photo),
+        href: photoPath(artisanId, photo),
       })),
     });
   }
@@ -190,9 +196,9 @@ export const heldProfile = defineHeldKind("held.profile", {
         {
           key: "edit",
           label: "The edit",
-          blocks: versionBlocks(edit, (photo) => !shownIds.has(photo.id)),
+          blocks: versionBlocks(edit.artisanId, edit, (photo) => !shownIds.has(photo.id)),
         },
-        { key: "shown", label: "Shown now", blocks: versionBlocks(shown) },
+        { key: "shown", label: "Shown now", blocks: versionBlocks(edit.artisanId, shown) },
         {
           key: "check",
           label: "Content check",

@@ -293,7 +293,7 @@ describe("a Job Match", () => {
       client: { shownName: "Thandi M.", reviews: { average: null, count: 0 }, completed: 0 },
     });
     const [photo] = job!.photos;
-    expect(await domain.jobs.photo(artisan.actor, { photoId: photo!.id })).toMatchObject({
+    expect(await domain.jobs.photo(artisan.actor, { jobId, photoId: photo!.id })).toMatchObject({
       contentType: expect.stringMatching(/^image\//),
     });
     expect(await domain.matches.mine(artisan.actor)).toEqual([
@@ -324,8 +324,8 @@ describe("a Job Match", () => {
       expect(await domain.jobs.viewAsArtisan(actor, { jobId })).toBeNull();
     }
     expect(await domain.jobs.view(artisan.actor, { jobId })).toBeNull();
-    expect(await domain.jobs.photo(other.actor, { photoId: photo!.id })).toBeNull();
-    expect(await domain.jobs.photo(visitor, { photoId: photo!.id })).toBeNull();
+    expect(await domain.jobs.photo(other.actor, { jobId, photoId: photo!.id })).toBeNull();
+    expect(await domain.jobs.photo(visitor, { jobId, photoId: photo!.id })).toBeNull();
   });
 
   test("may be passed, telling nobody, and the Job is not offered to the Artisan again", async () => {
@@ -343,7 +343,7 @@ describe("a Job Match", () => {
 
     expect(await domain.matches.mine(artisan.actor)).toEqual([]);
     expect(await domain.jobs.viewAsArtisan(artisan.actor, { jobId })).toBeNull();
-    expect(await domain.jobs.photo(artisan.actor, { photoId: photo!.id })).toBeNull();
+    expect(await domain.jobs.photo(artisan.actor, { jobId, photoId: photo!.id })).toBeNull();
     expect(await domain.notices.list(client.actor)).toEqual(told.client);
     expect(await domain.notices.list(artisan.actor)).toEqual(told.artisan);
     expect(await domain.matches.pass(artisan.actor, { jobId })).toMatchObject({
