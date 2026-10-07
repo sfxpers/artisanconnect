@@ -8,6 +8,7 @@ import { accountsSection } from "./accounts";
 import { adminsSection, setUpFirstAdmin } from "./admins";
 import { marketplaceRulesSection } from "./accounts/rules";
 import { createContext } from "./context";
+import { conversationsSection } from "./conversations";
 import { invitationsSection } from "./invitations";
 import { jobsSection } from "./jobs";
 import { matchesSection } from "./matches";
@@ -26,6 +27,7 @@ export const sections = [
   accountsSection,
   adminsSection,
   availabilitySection,
+  conversationsSection,
   invitationsSection,
   jobsSection,
   marketplaceRulesSection,

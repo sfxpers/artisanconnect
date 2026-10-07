@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useRouter } from "@tanstack/react-router";
 import { ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Fact } from "@/components/job-details";
 import { Refusal } from "@/components/page";
 import { formatRands, PROTECTION_FEE_PERCENT } from "@/domain/money";
@@ -10,6 +10,7 @@ import type { MaterialsBy } from "@/domain/quotes/inputs";
 import { formatDay } from "@/domain/sa-days";
 import { copy, formatDate } from "@/web/copy";
 import { declineQuote, type getJobQuotes } from "@/web/quotes";
+import type { ConversationSummary } from "@/components/conversation";
 
 const t = copy.quote;
 
@@ -58,10 +59,21 @@ const q = copy.quotes;
  * The Quotes on the Client's Job (#124): those Sent, in the order sent or by
  * total, each with the Artisan's record, their badges for the category, and
  * the Payment with the Protection Fee; then those no longer open. Nothing is
- * labelled best or cheapest. Hire and Message come with their tickets (#126,
- * #125).
+ * labelled best or cheapest, and each opens its Conversation. Hire comes with
+ * its ticket (#126).
  */
-export function ClientQuotes({ quotes }: { quotes: ClientQuote[] }) {
+export function ClientQuotes({
+  jobId,
+  quotes,
+  conversations,
+}: {
+  jobId: string;
+  quotes: ClientQuote[];
+  conversations: ConversationSummary[];
+}) {
+  const conversationOf = (artisanId: string) =>
+    conversations.find((each) => "artisanId" in each.with && each.with.artisanId === artisanId)
+      ?.conversationId;
   const [byTotal, setByTotal] = useState(false);
   const open = quotes.filter((quote) => quote.state === "sent");
   const ended = quotes.filter((quote) => quote.state !== "sent");
@@ -94,7 +106,12 @@ export function ClientQuotes({ quotes }: { quotes: ClientQuote[] }) {
           </div>
           <ul className="divide-y rounded-lg border">
             {shown.map((quote) => (
-              <QuoteRow key={quote.quoteId} quote={quote} />
+              <QuoteRow
+                key={quote.quoteId}
+                jobId={jobId}
+                quote={quote}
+                conversationId={conversationOf(quote.artisan.artisanId)}
+              />
             ))}
           </ul>
         </>
@@ -117,7 +134,15 @@ export function ClientQuotes({ quotes }: { quotes: ClientQuote[] }) {
   );
 }
 
-function QuoteRow({ quote }: { quote: ClientQuote }) {
+function QuoteRow({
+  jobId,
+  quote,
+  conversationId,
+}: {
+  jobId: string;
+  quote: ClientQuote;
+  conversationId: string | undefined;
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -194,6 +219,16 @@ function QuoteRow({ quote }: { quote: ClientQuote }) {
         <Button size="sm" variant="outline" onClick={() => setOpen((shown) => !shown)}>
           {open ? q.hideDetails : q.details}
         </Button>
+        {conversationId && (
+          <Link
+            to="/jobs/$jobId"
+            params={{ jobId }}
+            search={{ tab: "messages", conversation: conversationId }}
+            className={buttonVariants({ size: "sm", variant: "outline" })}
+          >
+            {copy.conversation.message}
+          </Link>
+        )}
         <Button size="sm" variant="ghost" disabled={busy} onClick={() => void decline()}>
           {q.decline}
         </Button>

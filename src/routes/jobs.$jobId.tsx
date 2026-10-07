@@ -11,8 +11,15 @@ import { Details, Fact } from "@/components/job-details";
 import { InviteList, type InviteListView } from "@/components/invite-list";
 import { OfferedJob } from "@/components/offered-job";
 import { ClientQuotes } from "@/components/quotes";
+import {
+  Messages,
+  type ConversationSummary,
+  type ConversationView,
+} from "@/components/conversation";
+import { JobTabs, type JobTab } from "@/components/job-tabs";
 import { copy, formatDate } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
+import { getConversation, getConversations } from "@/web/conversations";
 import { getInviteList } from "@/web/invitations";
 import { getJobQuotes } from "@/web/quotes";
 import { getRegionNames } from "@/web/profiles";
@@ -28,23 +35,55 @@ import {
 } from "@/web/jobs";
 
 export const Route = createFileRoute("/jobs/$jobId")({
-  // The one Region the invite list shows, if one is chosen, as on Browse.
-  validateSearch: (search: Record<string, unknown>): { region?: string } => ({
+  // The one Region the invite list shows, if one is chosen, as on Browse; the
+  // tab shown; and the Conversation open in Messages, if one is chosen.
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { region?: string; tab?: JobTab; conversation?: string } => ({
     region: typeof search.region === "string" && search.region ? search.region : undefined,
+    tab: search.tab === "overview" || search.tab === "messages" ? search.tab : undefined,
+    conversation:
+      typeof search.conversation === "string" && search.conversation
+        ? search.conversation
+        : undefined,
   }),
   beforeLoad: ({ context }) => ({ me: onlyFor("account", context) }),
-  loaderDeps: ({ search }) => ({ region: search.region }),
+  loaderDeps: ({ search }) => ({ region: search.region, conversation: search.conversation }),
   loader: async ({ params, deps }) => {
     const job = await getJob({ data: { jobId: params.jobId } });
-    if (job.as !== "client") return { job, invite: null, quotes: [] };
-    const [invite, quotes] = await Promise.all([
+    if (job.as !== "client") {
+      return {
+        job,
+        invite: null,
+        quotes: [],
+        ...(await conversationsOf(job.jobId, deps.conversation)),
+      };
+    }
+    if (job.state === "draft") {
+      return { job, invite: null, quotes: [], conversations: [], open: null };
+    }
+    const [invite, quotes, conversations] = await Promise.all([
       inviteListFor(job, deps.region),
-      job.state === "draft" ? null : getJobQuotes({ data: { jobId: job.jobId } }),
+      getJobQuotes({ data: { jobId: job.jobId } }),
+      conversationsOf(job.jobId, deps.conversation),
     ]);
-    return { job, invite, quotes: quotes ?? [] };
+    return { job, invite, quotes: quotes ?? [], ...conversations };
   },
   component: JobPage,
 });
+
+/** The Conversations on the Job the viewer sees, and the one chosen, else the first, open. */
+async function conversationsOf(
+  jobId: string,
+  chosen: string | undefined,
+): Promise<{ conversations: ConversationSummary[]; open: ConversationView | null }> {
+  const conversations = (await getConversations({ data: { jobId } })) ?? [];
+  const conversationId =
+    conversations.find((each) => each.conversationId === chosen)?.conversationId ??
+    conversations[0]?.conversationId;
+  const open = conversationId ? await getConversation({ data: { conversationId } }) : null;
+  return { conversations, open };
+}
 
 /** Whom the Client may invite while the Job takes Quotes, in the Region chosen if any. */
 async function inviteListFor(job: JobView, region: string | undefined) {
@@ -66,12 +105,27 @@ type ClientQuote = NonNullable<Awaited<ReturnType<typeof getJobQuotes>>>[number]
  * offered it sees it.
  */
 function JobPage() {
-  const { job, invite, quotes } = Route.useLoaderData();
+  const { job, invite, quotes, conversations, open } = Route.useLoaderData();
   const { me } = Route.useRouteContext();
+  const search = Route.useSearch();
+  const tab = search.tab ?? (search.conversation ? "messages" : "overview");
   return job.as === "artisan" ? (
-    <OfferedJob job={job} vatNumber={me.vatNumber} />
+    <OfferedJob
+      job={job}
+      vatNumber={me.vatNumber}
+      tab={tab}
+      conversations={conversations}
+      open={open}
+    />
   ) : (
-    <ClientJob job={job} invite={invite} quotes={quotes} />
+    <ClientJob
+      job={job}
+      invite={invite}
+      quotes={quotes}
+      tab={tab}
+      conversations={conversations}
+      open={open}
+    />
   );
 }
 
@@ -80,10 +134,16 @@ function ClientJob({
   job,
   invite,
   quotes,
+  tab,
+  conversations,
+  open,
 }: {
   job: JobView;
   invite: InviteListView | null;
   quotes: ClientQuote[];
+  tab: JobTab;
+  conversations: ConversationSummary[];
+  open: ConversationView | null;
 }) {
   return (
     <Page>
@@ -111,7 +171,17 @@ function ClientJob({
       {job.state === "draft" ? (
         <Draft job={job} />
       ) : (
-        <Posted job={job} invite={invite} quotes={quotes} />
+        <JobTabs
+          jobId={job.jobId}
+          tab={tab}
+          conversations={conversations}
+          overview={
+            <Posted job={job} invite={invite} quotes={quotes} conversations={conversations} />
+          }
+          messages={
+            <Messages jobId={job.jobId} conversations={conversations} open={open} asClient />
+          }
+        />
       )}
     </Page>
   );
@@ -176,10 +246,12 @@ function Posted({
   job,
   invite,
   quotes,
+  conversations,
 }: {
   job: JobView;
   invite: InviteListView | null;
   quotes: ClientQuote[];
+  conversations: ConversationSummary[];
 }) {
   const action = useAction();
   const [editing, setEditing] = useState(false);
@@ -208,7 +280,9 @@ function Posted({
           {job.state === "open" && !job.takesQuotes && (
             <p className="text-sm text-muted-foreground">{t.fullLead}</p>
           )}
-          {job.state !== "held" && <ClientQuotes quotes={quotes} />}
+          {job.state !== "held" && (
+            <ClientQuotes jobId={job.jobId} quotes={quotes} conversations={conversations} />
+          )}
           {notice && <p className="text-sm text-muted-foreground">{notice}</p>}
           {refused && !beingChecked && <Refusal message={t.editRefused(refused.reason)} />}
           {!editing && <Refusal message={action.refusal} />}

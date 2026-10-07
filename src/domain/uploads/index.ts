@@ -5,6 +5,7 @@
 // Nothing is stored until every check has passed.
 
 import type { Context } from "../context";
+import { MESSAGE_ATTACHMENTS_MAX } from "../conversations/inputs";
 import { PROFILE_PHOTOS_MAX } from "../profiles/inputs";
 import { ok, refuse, type Result } from "../result";
 import { Locked, startsWith, Unreadable } from "./bytes";
@@ -218,7 +219,10 @@ export const FILE_COUNT_LIMITS = {
   jobPhotos: { max: 10, message: "A Job has at most 10 photos." },
   completionPhotos: { max: 10, message: "A Completion has at most 10 photos." },
   completionDocuments: { max: 5, message: "A Completion has at most 5 documents." },
-  messageAttachments: { max: 5, message: "A message has at most 5 attachments." },
+  messageAttachments: {
+    max: MESSAGE_ATTACHMENTS_MAX,
+    message: `A message has at most ${MESSAGE_ATTACHMENTS_MAX} attachments.`,
+  },
   profilePhotos: {
     max: PROFILE_PHOTOS_MAX,
     message: `A Profile has at most ${PROFILE_PHOTOS_MAX} photos.`,

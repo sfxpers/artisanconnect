@@ -4,7 +4,13 @@ import { ok, refuse, type Result } from "../result";
 import type { StoredFile } from "../uploads";
 import { Locked } from "../uploads/bytes";
 import { pdfText } from "../uploads/pdf";
-import { patternHit, patternMessage } from "./patterns";
+import {
+  patternHit,
+  patternMessage,
+  withheldHit,
+  withheldMessage,
+  type Withheld,
+} from "./patterns";
 
 // The Content check (ADR 0011): everything sent is read before anyone sees
 // it. Photos are read by OCR, voice notes turned into text, and PDFs have
@@ -20,6 +26,8 @@ export type ContentToCheck = {
   files?: readonly StoredFile[];
   /** Before Payment, or after it inside one Engagement's Conversation (#104). */
   context: ContentContext;
+  /** Before Payment, what a Conversation must not be told: its Job's address, and surnames. */
+  withheld?: Withheld;
 };
 
 export type Checked =
@@ -42,6 +50,8 @@ export async function checkContent(
 
   const hit = patternHit(text, item.context);
   if (hit) return refuse("content", patternMessage(hit));
+  const withheld = item.context.kind === "before-payment" && withheldHit(text, item.withheld ?? {});
+  if (withheld) return refuse("content", withheldMessage(withheld));
   if (read.unread) return ok({ verdict: "held", reason: read.unread, text });
 
   let verdict: ContentVerdict;

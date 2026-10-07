@@ -3,6 +3,7 @@ import { accounts, authUsers, queueItems, quotes } from "../schema";
 import { startClock } from "../clocks";
 import type { Context, Write } from "../context";
 import { defineHeldKind } from "../content/held";
+import { quoteSentWrites } from "../conversations/rows";
 import { jobBlocks } from "../jobs/held";
 import { jobRow } from "../jobs/rows";
 import { formatRands } from "../money";
@@ -75,7 +76,7 @@ export const heldQuote = defineHeldKind("held.quote", {
           blocks: [{ kind: "text", text: quote.heldFor ?? "The Content check could not run." }],
         },
       ],
-      sidebar: await artisanSidebar(ctx, quote.artisanId),
+      sidebar: await accountSidebar(ctx, quote.artisanId),
     };
   },
 });
@@ -87,7 +88,7 @@ export const heldQuote = defineHeldKind("held.quote", {
  */
 function sendHeldWrites(
   ctx: Context,
-  quote: { id: string; jobId: string },
+  quote: { id: string; jobId: string; artisanId: string },
   job: { clientId: string; title: string },
 ): Write[] {
   const now = ctx.now();
@@ -101,6 +102,7 @@ function sendHeldWrites(
     unsentWrite(ctx, quote.id),
     // One for a Quote that was not Sent does nothing when it fires.
     startClock(ctx, { kind: EXPIRY_CLOCK, subjectId: quote.id, dueAt: expiresAt }),
+    ...quoteSentWrites(ctx, quote),
     ...tellWhile(
       ctx,
       { kind: "system" },
@@ -161,16 +163,16 @@ export function quoteBlocks(quote: QuoteVersion): Block[] {
   ];
 }
 
-/** Who sent the Quote, for the Admin. */
-export async function artisanSidebar(ctx: Context, artisanId: string) {
+/** Who sent the item, for the Admin: an Artisan, unless titled otherwise. */
+export async function accountSidebar(ctx: Context, accountId: string, title = "Artisan") {
   const [artisan] = await ctx.db
     .select({ name: accounts.name, email: authUsers.email })
     .from(accounts)
     .innerJoin(authUsers, eq(authUsers.id, accounts.id))
-    .where(eq(accounts.id, artisanId));
+    .where(eq(accounts.id, accountId));
   return [
     {
-      title: "Artisan",
+      title,
       blocks: [
         {
           kind: "facts" as const,

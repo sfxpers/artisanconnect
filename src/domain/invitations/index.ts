@@ -11,6 +11,7 @@ import {
 } from "drizzle-orm";
 import { accountIdOf, type Actor } from "../actor";
 import type { Context } from "../context";
+import { openWrites } from "../conversations/rows";
 import { causedBy } from "../errors";
 import { JOB_AS_ARTISAN_COLUMNS, jobAsArtisanView, jobRow, type JobRow } from "../jobs/rows";
 import { browse, type Narrowing } from "../profiles";
@@ -39,8 +40,14 @@ export const invitationsSection = defineSection({
         return notListed();
       }
       // Each write is guarded on the Job still taking Quotes. The Invitation
-      // opens a Conversation too, once there are Conversations (#125).
+      // opens the Conversation too, unless a Quote did.
       const stillOpen = and(eq(jobs.id, job.id), eq(jobs.state, "open"), belowFive())!;
+      const landed = exists(
+        ctx.db
+          .select({ one: sql`1` })
+          .from(jobs)
+          .where(stillOpen),
+      );
       try {
         const [invited] = await ctx.db.batch([
           ctx.db
@@ -67,13 +74,9 @@ export const invitationsSection = defineSection({
               title: `Invited to Quote: ${job.title}`,
               link: `/jobs/${job.id}`,
             },
-            exists(
-              ctx.db
-                .select({ one: sql`1` })
-                .from(jobs)
-                .where(stillOpen),
-            ),
+            landed,
           ),
+          ...openWrites(ctx, { jobId: job.id, artisanId: input.artisanId }, landed),
         ]);
         if (invited.length === 0) {
           return (await jobRow(ctx, job.id))?.state === "open" ? jobFull() : notOpen();

@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, exists, getTableColumns, inArray, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, exists, inArray, sql } from "drizzle-orm";
 import { accountIdOf, type Actor } from "../actor";
 import { firstProblem } from "../accounts/inputs";
 import { publicName } from "../accounts/names";
@@ -13,9 +13,11 @@ import { defineSection } from "../section";
 import { badgesOf } from "../verification";
 import { protectionFeeCents } from "../money";
 import { causedBy } from "../errors";
+import { insertWhile } from "../guarded";
 import { emailTells, tellWhile } from "../tells";
 import { startClock } from "../clocks";
 import { alreadyChecked, isAlreadyDecided } from "../content/held";
+import { quoteSentWrites } from "../conversations/rows";
 import { endWrites, expiryClocks } from "./ends";
 import { heldQuote, holdWrites, withdrawHeldQuote } from "./held";
 import { quoteFields, type ParsedQuote, type QuoteFields } from "./inputs";
@@ -117,10 +119,13 @@ export const quotesSection = defineSection({
         const [sent] = await ctx.db.batch([
           insertWhile(
             ctx,
+            quotes,
             { ...quote, state: "sent", sentAt: now, expiresAt },
             takesQuotes(ctx, job.id),
           ).returning({ id: quotes.id }),
           startClock(ctx, { kind: EXPIRY_CLOCK, subjectId: quote.id, dueAt: expiresAt }),
+          // The first Quote Sent opens the Conversation, unless an Invitation did.
+          ...quoteSentWrites(ctx, quote),
           ...tellWhile(
             ctx,
             actor,
@@ -352,28 +357,6 @@ function alreadyQuoted() {
   return refuse(
     "already-quoted",
     "You have Quoted on this Job already. Revise your Quote instead.",
-  );
-}
-
-/**
- * The insert of a Quote, written only while the condition holds, as a
- * Quote's Job may stop taking Quotes between the read and the batch.
- */
-function insertWhile(ctx: Context, quote: QuoteRow, condition: SQL) {
-  const columns = getTableColumns(quotes);
-  const selected = Object.fromEntries(
-    Object.entries(quote).map(([key, value]) => [
-      key,
-      sql`${value instanceof Date ? value.getTime() : value}`.as(
-        columns[key as keyof QuoteRow].name,
-      ),
-    ]),
-  );
-  return ctx.db.insert(quotes).select(
-    ctx.db
-      .select(selected as { [Key in keyof QuoteRow]: SQL.Aliased<QuoteRow[Key]> })
-      .from(sql`(select 1)`)
-      .where(condition),
   );
 }
 

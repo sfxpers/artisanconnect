@@ -11,6 +11,12 @@ import { NextStepCard, Page, Refusal } from "@/components/page";
 import { useAction } from "@/components/use-action";
 import { QuoteForm } from "@/components/quote-form";
 import { QuoteFacts } from "@/components/quotes";
+import {
+  Messages,
+  type ConversationSummary,
+  type ConversationView,
+} from "@/components/conversation";
+import { JobTabs, type JobTab } from "@/components/job-tabs";
 import type { QuoteFields } from "@/domain/quotes/inputs";
 import { copy, formatDate } from "@/web/copy";
 import type { getJob } from "@/web/jobs";
@@ -29,9 +35,22 @@ const tq = copy.quote;
  * street, the details and photos, and the Client by shown name and record.
  * The Next step card holds the Quote form while the Artisan holds a Job Match
  * or an Invitation, and their Quote once they have sent one. Either may be
- * passed before a Quote, telling nobody.
+ * passed before a Quote, telling nobody. Messages holds their Conversation
+ * with the Client, once an Invitation or their Quote opened it.
  */
-export function OfferedJob({ job, vatNumber }: { job: OfferedJobView; vatNumber: string | null }) {
+export function OfferedJob({
+  job,
+  vatNumber,
+  tab,
+  conversations,
+  open,
+}: {
+  job: OfferedJobView;
+  vatNumber: string | null;
+  tab: JobTab;
+  conversations: ConversationSummary[];
+  open: ConversationView | null;
+}) {
   const clientName = job.client.shownName ?? t.noName;
   const invited = job.invitedAt !== null;
   const holding = job.offeredAt !== null || invited;
@@ -50,9 +69,11 @@ export function OfferedJob({ job, vatNumber }: { job: OfferedJobView; vatNumber:
           <Badge>
             {quote && quote.state !== "refused"
               ? tq.states[quote.state]
-              : invited
-                ? t.invitationBadge
-                : t.badge}
+              : job.state !== "open"
+                ? copy.jobs.states[job.state]
+                : invited
+                  ? t.invitationBadge
+                  : t.badge}
           </Badge>
         </div>
         <p className="text-sm text-muted-foreground">
@@ -61,55 +82,65 @@ export function OfferedJob({ job, vatNumber }: { job: OfferedJobView; vatNumber:
             .join(" · ")}
         </p>
       </div>
-      <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
-        <div className="min-w-0 space-y-6">
-          {quote && quote.state !== "refused" ? (
-            <QuoteStep job={job} quote={quote} vatNumber={vatNumber} />
-          ) : (
-            holding && <QuoteOrPass job={job} invited={invited} vatNumber={vatNumber} />
-          )}
-          <Card>
-            <CardHeader>
-              <CardTitle>{copy.job.details}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Details job={job} />
-            </CardContent>
-          </Card>
-        </div>
-        <aside className="space-y-6">
-          <Card size="sm">
-            <CardHeader>
-              <CardTitle>{t.client}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-3">
-                <Avatar size="lg">
-                  <AvatarFallback>{initials(clientName)}</AvatarFallback>
-                </Avatar>
-                <div className="min-w-0">
-                  <div className="truncate font-medium">{clientName}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {t.reviews(job.client.reviews.average, job.client.reviews.count)} ·{" "}
-                    {t.completed(job.client.completed)}
+      <JobTabs
+        jobId={job.jobId}
+        tab={tab}
+        conversations={conversations}
+        overview={
+          <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
+            <div className="min-w-0 space-y-6">
+              {quote && quote.state !== "refused" ? (
+                <QuoteStep job={job} quote={quote} vatNumber={vatNumber} />
+              ) : (
+                holding && <QuoteOrPass job={job} invited={invited} vatNumber={vatNumber} />
+              )}
+              <Card>
+                <CardHeader>
+                  <CardTitle>{copy.job.details}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Details job={job} />
+                </CardContent>
+              </Card>
+            </div>
+            <aside className="space-y-6">
+              <Card size="sm">
+                <CardHeader>
+                  <CardTitle>{t.client}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-3">
+                    <Avatar size="lg">
+                      <AvatarFallback>{initials(clientName)}</AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                      <div className="truncate font-medium">{clientName}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {t.reviews(job.client.reviews.average, job.client.reviews.count)} ·{" "}
+                        {t.completed(job.client.completed)}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card size="sm">
-            <CardContent>
-              <dl className="space-y-3 text-sm">
-                <Fact label={copy.job.category}>
-                  {job.category?.name}
-                  {job.gasWork && ` · ${t.gasWork}`}
-                </Fact>
-                <Fact label={t.region}>{job.region?.name}</Fact>
-              </dl>
-            </CardContent>
-          </Card>
-        </aside>
-      </div>
+                </CardContent>
+              </Card>
+              <Card size="sm">
+                <CardContent>
+                  <dl className="space-y-3 text-sm">
+                    <Fact label={copy.job.category}>
+                      {job.category?.name}
+                      {job.gasWork && ` · ${t.gasWork}`}
+                    </Fact>
+                    <Fact label={t.region}>{job.region?.name}</Fact>
+                  </dl>
+                </CardContent>
+              </Card>
+            </aside>
+          </div>
+        }
+        messages={
+          <Messages jobId={job.jobId} conversations={conversations} open={open} asClient={false} />
+        }
+      />
     </Page>
   );
 }

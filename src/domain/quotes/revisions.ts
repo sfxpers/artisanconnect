@@ -5,7 +5,7 @@ import { defineHeldKind } from "../content/held";
 import { jobRow } from "../jobs/rows";
 import { queueItems, quoteRevisions, quotes } from "../schema";
 import { tellWhile } from "../tells";
-import { artisanSidebar, quoteBlocks } from "./held";
+import { accountSidebar, quoteBlocks } from "./held";
 import { quoteRow, type QuoteRow } from "./rows";
 import { startPassed } from "./rules";
 
@@ -232,7 +232,7 @@ export const heldRevision = defineHeldKind("held.quote-revision", {
           blocks: [{ kind: "text", text: revision.heldFor ?? "The Content check could not run." }],
         },
       ],
-      sidebar: await artisanSidebar(ctx, quote.artisanId),
+      sidebar: await accountSidebar(ctx, quote.artisanId),
     };
   },
 });

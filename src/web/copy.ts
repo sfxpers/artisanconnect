@@ -1,4 +1,5 @@
 import { EMAIL_CODE } from "@/domain/accounts/inputs";
+import type { MessageEvent } from "@/domain/conversations/inputs";
 
 // Every word the web app shows, in one place for later translation. Copy is a
 // placeholder until final copy is written (#111).
@@ -509,6 +510,35 @@ export const copy = {
     ended: "No longer open",
     sent: (when: string) => `Sent ${when}`,
     expires: (when: string) => `Expires ${when}`,
+  },
+  conversation: {
+    tabs: {
+      overview: "Overview",
+      messages: (unread: number) => (unread > 0 ? `Messages (${unread})` : "Messages"),
+    },
+    none: "No Conversations yet. One opens with an Invitation or the first Quote.",
+    noneArtisan: "No Conversation yet. One opens when you are invited or your Quote is Sent.",
+    noName: "Name being checked",
+    unread: (count: number) => `${count} new`,
+    ended: "Ended",
+    empty: "No messages yet.",
+    adminMayRead:
+      "The Admin may read this Conversation, for a Report, a Dispute, or a Chargeback. Before Payment, share no contact details, links, address, or surname, and pay only through ArtisanConnect.",
+    placeholder: "Write a message",
+    photos: "Add photos",
+    photosHint: (max: number) =>
+      `Up to ${max} photos. No video, voice notes, or PDFs before Payment.`,
+    photosChosen: (count: number) => (count === 1 ? "1 photo" : `${count} photos`),
+    clearPhotos: "Remove photos",
+    send: "Send",
+    beingChecked: "Being checked",
+    beingCheckedLead: "Only you see this until the Admin has checked it.",
+    withdraw: "Withdraw",
+    refused: (reason: string) => `Refused by the Admin: ${reason}`,
+    readOnly: "This Conversation has ended. It stays here to read.",
+    events: { "quote.sent": "Quote sent" } satisfies Record<MessageEvent, string>,
+    photo: (index: number) => `Photo ${index}`,
+    message: "Message",
   },
   match: {
     breadcrumb: "Home",

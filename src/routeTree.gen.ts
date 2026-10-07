@@ -36,6 +36,7 @@ import { Route as JobPhotosPhotoIdRouteImport } from './routes/job-photos.$photo
 import { Route as JobsIndexRouteImport } from './routes/jobs.index'
 import { Route as JobsJobIdRouteImport } from './routes/jobs.$jobId'
 import { Route as JobsNewRouteImport } from './routes/jobs.new'
+import { Route as MessagePhotosPhotoIdRouteImport } from './routes/message-photos.$photoId'
 import { Route as ProfilePhotosPhotoIdRouteImport } from './routes/profile-photos.$photoId'
 import { Route as AdminFilesTokenRouteImport } from './routes/admin/files.$token'
 import { Route as AdminItemsItemIdRouteImport } from './routes/admin/items.$itemId'
@@ -175,6 +176,11 @@ const JobsNewRoute = JobsNewRouteImport.update({
   path: '/jobs/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MessagePhotosPhotoIdRoute = MessagePhotosPhotoIdRouteImport.update({
+  id: '/message-photos/$photoId',
+  path: '/message-photos/$photoId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProfilePhotosPhotoIdRoute = ProfilePhotosPhotoIdRouteImport.update({
   id: '/profile-photos/$photoId',
   path: '/profile-photos/$photoId',
@@ -216,6 +222,7 @@ export interface FileRoutesByFullPath {
   '/job-photos/$photoId': typeof JobPhotosPhotoIdRoute
   '/jobs/$jobId': typeof JobsJobIdRoute
   '/jobs/new': typeof JobsNewRoute
+  '/message-photos/$photoId': typeof MessagePhotosPhotoIdRoute
   '/profile-photos/$photoId': typeof ProfilePhotosPhotoIdRoute
   '/admin/': typeof AdminIndexRoute
   '/artisans/': typeof ArtisansIndexRoute
@@ -248,6 +255,7 @@ export interface FileRoutesByTo {
   '/job-photos/$photoId': typeof JobPhotosPhotoIdRoute
   '/jobs/$jobId': typeof JobsJobIdRoute
   '/jobs/new': typeof JobsNewRoute
+  '/message-photos/$photoId': typeof MessagePhotosPhotoIdRoute
   '/profile-photos/$photoId': typeof ProfilePhotosPhotoIdRoute
   '/admin': typeof AdminIndexRoute
   '/artisans': typeof ArtisansIndexRoute
@@ -281,6 +289,7 @@ export interface FileRoutesById {
   '/job-photos/$photoId': typeof JobPhotosPhotoIdRoute
   '/jobs/$jobId': typeof JobsJobIdRoute
   '/jobs/new': typeof JobsNewRoute
+  '/message-photos/$photoId': typeof MessagePhotosPhotoIdRoute
   '/profile-photos/$photoId': typeof ProfilePhotosPhotoIdRoute
   '/admin/': typeof AdminIndexRoute
   '/artisans/': typeof ArtisansIndexRoute
@@ -315,6 +324,7 @@ export interface FileRouteTypes {
     | '/job-photos/$photoId'
     | '/jobs/$jobId'
     | '/jobs/new'
+    | '/message-photos/$photoId'
     | '/profile-photos/$photoId'
     | '/admin/'
     | '/artisans/'
@@ -347,6 +357,7 @@ export interface FileRouteTypes {
     | '/job-photos/$photoId'
     | '/jobs/$jobId'
     | '/jobs/new'
+    | '/message-photos/$photoId'
     | '/profile-photos/$photoId'
     | '/admin'
     | '/artisans'
@@ -379,6 +390,7 @@ export interface FileRouteTypes {
     | '/job-photos/$photoId'
     | '/jobs/$jobId'
     | '/jobs/new'
+    | '/message-photos/$photoId'
     | '/profile-photos/$photoId'
     | '/admin/'
     | '/artisans/'
@@ -412,6 +424,7 @@ export interface RootRouteChildren {
   JobPhotosPhotoIdRoute: typeof JobPhotosPhotoIdRoute
   JobsJobIdRoute: typeof JobsJobIdRoute
   JobsNewRoute: typeof JobsNewRoute
+  MessagePhotosPhotoIdRoute: typeof MessagePhotosPhotoIdRoute
   ProfilePhotosPhotoIdRoute: typeof ProfilePhotosPhotoIdRoute
   AdminIndexRoute: typeof AdminIndexRoute
   ArtisansIndexRoute: typeof ArtisansIndexRoute
@@ -611,6 +624,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JobsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/message-photos/$photoId': {
+      id: '/message-photos/$photoId'
+      path: '/message-photos/$photoId'
+      fullPath: '/message-photos/$photoId'
+      preLoaderRoute: typeof MessagePhotosPhotoIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/profile-photos/$photoId': {
       id: '/profile-photos/$photoId'
       path: '/profile-photos/$photoId'
@@ -660,6 +680,7 @@ const rootRouteChildren: RootRouteChildren = {
   JobPhotosPhotoIdRoute: JobPhotosPhotoIdRoute,
   JobsJobIdRoute: JobsJobIdRoute,
   JobsNewRoute: JobsNewRoute,
+  MessagePhotosPhotoIdRoute: MessagePhotosPhotoIdRoute,
   ProfilePhotosPhotoIdRoute: ProfilePhotosPhotoIdRoute,
   AdminIndexRoute: AdminIndexRoute,
   ArtisansIndexRoute: ArtisansIndexRoute,

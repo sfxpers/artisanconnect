@@ -79,7 +79,7 @@ The offer of a Job to one Artisan in a Batch. The Artisan may Quote or pass.
 _Avoid_: Lead, Dispatch, Assignment
 
 **Invitation**:
-A Client's request to one Artisan to Quote on a Job. It reaches the Artisan even if they passed on a Job Match for it. The Artisan may Quote or pass, and passing tells nobody.
+A Client's request to one Artisan to Quote on a Job. It reaches the Artisan even if they passed on a Job Match for it. The Artisan may Quote or pass, and passing tells nobody: the Client may still write in their Conversation, which the Artisan no longer sees.
 _Avoid_: Lead, Direct hire
 
 **Available for Jobs**:
@@ -107,7 +107,7 @@ The Client's choice of a Sent Quote, made by paying for it. Other Sent Quotes on
 _Avoid_: Accept, Booking
 
 **Conversation**:
-The messages between one Client and one Artisan on one Job, opened by a Quote or an Invitation. The Admin may read it and not write in it. Before Payment it takes text and photos; after Payment also voice notes and PDFs; never video.
+The messages between one Client and one Artisan on one Job, opened by the first Quote Sent or the Invitation. The Admin may read it and not write in it. Before Payment it takes text and photos; after Payment also voice notes and PDFs; never video. It goes read-only once the Quote is Declined, Withdrawn, or Expired, or the Job closes; a delivered message is never changed or removed.
 _Avoid_: Chat, Inbox, DM
 
 ### Doing the work

@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { MATCHINGS, SITE_TYPES } from "./jobs/inputs";
+import { MESSAGE_EVENTS } from "./conversations/inputs";
 import { MATERIALS_BY } from "./quotes/inputs";
 import { QUEUE_NAMES } from "./queue-names";
 import { SUPPORT_TOPICS } from "./support/topics";
@@ -769,5 +770,68 @@ export const quoteRevisions = sqliteTable(
       "quote_revisions_state",
       sql.raw(`state in (${QUOTE_REVISION_STATES.map((state) => `'${state}'`).join(", ")})`),
     ),
+  ],
+);
+
+/**
+ * The messages between one Client and one Artisan on one Job (#125, ADR
+ * 0010), opened by the first Quote Sent or the Invitation. Each party's
+ * mark says when they last opened it: what was delivered to them since is
+ * unread, and they are told of the first of it only.
+ */
+export const conversations = sqliteTable(
+  "conversations",
+  {
+    id: text("id").primaryKey(),
+    jobId: text("job_id")
+      .notNull()
+      .references(() => jobs.id),
+    artisanId: text("artisan_id")
+      .notNull()
+      .references(() => accounts.id),
+    openedAt: instant("opened_at").notNull(),
+    clientReadAt: instant("client_read_at"),
+    artisanReadAt: instant("artisan_read_at"),
+  },
+  (table) => [uniqueIndex("conversations_once_per_job").on(table.jobId, table.artisanId)],
+);
+
+export const MESSAGE_STATES = ["held", "delivered", "refused", "withdrawn", "unsent"] as const;
+
+/**
+ * A message, or a row for an event that is not speech (a Quote Sent). A Held
+ * one exists only for its sender and the Admin until it is delivered or
+ * refused; one delivered is never changed or removed (a trigger in the
+ * migration refuses both).
+ */
+export const messages = sqliteTable(
+  "messages",
+  {
+    id: text("id").primaryKey(),
+    conversationId: text("conversation_id")
+      .notNull()
+      .references(() => conversations.id),
+    /** The Account that sent it; null for an event's row. */
+    senderId: text("sender_id").references(() => accounts.id),
+    /** The event a row is for, such as "quote.sent"; null for a message. */
+    event: text("event", { enum: MESSAGE_EVENTS }),
+    text: text("text").notNull(),
+    photos: text("photos", { mode: "json" })
+      .$type<Extract<StoredFile, { kind: "photo" }>[]>()
+      .notNull(),
+    state: text("state", { enum: MESSAGE_STATES }).notNull(),
+    /** Why the Content check Held it, for the Admin. */
+    heldFor: text("held_for"),
+    sentAt: instant("sent_at").notNull(),
+    /** When the other party could first see it. */
+    deliveredAt: instant("delivered_at"),
+  },
+  (table) => [
+    index("messages_conversation").on(table.conversationId, table.sentAt),
+    check(
+      "messages_state",
+      sql.raw(`state in (${MESSAGE_STATES.map((state) => `'${state}'`).join(", ")})`),
+    ),
+    check("messages_speech_or_event", sql.raw("(sender_id is null) <> (event is null)")),
   ],
 );

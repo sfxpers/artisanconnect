@@ -419,8 +419,9 @@ export const jobsSection = defineSection({
     },
 
     /**
-     * The Job as an Artisan sees it while they hold a Job Match or an
-     * Invitation for it and it is Open, or once they have Quoted on it: the
+     * The Job as an Artisan sees it while they hold a Job Match for it and it
+     * is Open, while they hold an Invitation for it, or once they have Quoted
+     * on it: the
      * Region, never the suburb or street, and the Client by shown name and
      * record; null for anyone else.
      */
@@ -428,9 +429,10 @@ export const jobsSection = defineSection({
       if (viewer.kind !== "artisan") return null;
       const job = await jobRow(ctx, input.jobId);
       if (!job) return null;
-      const [held, quote, [client]] = await Promise.all([
+      const [held, quote, invitation, [client]] = await Promise.all([
         heldOnJob(ctx, job, viewer),
         newestQuote(ctx, job.id, viewer.accountId),
+        heldInvitation(ctx, job.id, viewer.accountId),
         ctx.db
           .select({
             name: accounts.name,
@@ -440,8 +442,9 @@ export const jobsSection = defineSection({
           .from(accounts)
           .where(eq(accounts.id, job.clientId)),
       ]);
-      // A Quote keeps the Job in view, whatever becomes of it or the Job.
-      if (!held && !isLive(quote)) return null;
+      // A Quote keeps the Job in view, whatever becomes of it or the Job, and
+      // so does an Invitation not passed, for its Conversation.
+      if (!held && !isLive(quote) && !invitation) return null;
       return {
         jobId: job.id,
         state: job.state,
@@ -489,13 +492,17 @@ async function heldOnJob(ctx: Context, job: JobRow, artisan: { accountId: string
   return { offeredAt: match?.offeredAt ?? null, invitedAt: invitation?.invitedAt ?? null };
 }
 
-/** Whether the Artisan sees the Job: they hold it while it is Open, or they have Quoted on it. */
+/**
+ * Whether the Artisan sees the Job: they hold it while it is Open, they hold
+ * an Invitation for it, or they have Quoted on it.
+ */
 async function seesJob(ctx: Context, job: JobRow, artisan: { accountId: string }) {
-  const [held, quote] = await Promise.all([
+  const [held, quote, invitation] = await Promise.all([
     heldOnJob(ctx, job, artisan),
     newestQuote(ctx, job.id, artisan.accountId),
+    heldInvitation(ctx, job.id, artisan.accountId),
   ]);
-  return !!held || isLive(quote);
+  return !!held || isLive(quote) || !!invitation;
 }
 
 /** Sends a Job just opened its first Batch, if it is matched, and the Tells' emails. */
