@@ -13,6 +13,8 @@ import { QuoteForm } from "@/components/quote-form";
 import { QuoteFacts } from "@/components/quotes";
 import {
   ActivityCard,
+  CompletionActions,
+  CompletionCard,
   EngagementNextStep,
   HiredQuoteCard,
   MoneyCard,
@@ -102,7 +104,9 @@ export function OfferedJob({
                 <>
                   <EngagementNextStep engagement={engagement} asClient={false}>
                     <StartActions engagement={engagement} asClient={false} />
+                    <CompletionActions engagement={engagement} asClient={false} />
                   </EngagementNextStep>
+                  <CompletionCard engagement={engagement} />
                   <PaymentsCard engagement={engagement} />
                   <ActivityCard engagement={engagement} />
                 </>

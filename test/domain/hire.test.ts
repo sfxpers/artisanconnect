@@ -262,6 +262,34 @@ describe("when the Payment arrives", () => {
     ).toMatchObject({ artisanFeePercent: 10 });
   });
 
+  test("the Artisan Fee is 5% once the Client Relationship has a Completed Engagement, and the first keeps 10%", async () => {
+    const { domain, given } = await createHarness();
+    const { client, artisan, jobId, quoteId } = await quoted(given);
+    await given.hired(client, quoteId);
+    const first = await given.engagementOf(client, jobId);
+    await given.workStarted(client, first);
+    await given.markedComplete(artisan, first);
+    const approved = await domain.engagements.approve(client.actor, { engagementId: first });
+    expect(approved).toMatchObject({ ok: true });
+
+    const second = await given.openJob(client, {
+      matching: "invite-only",
+      title: "Paint the stoep",
+    });
+    await domain.invitations.invite(client.actor, {
+      jobId: second,
+      artisanId: artisan.actor.accountId,
+    });
+    await given.hired(client, await given.sentQuote(artisan, second));
+
+    expect(
+      (await domain.jobs.viewAsArtisan(artisan.actor, { jobId: second }))?.engagement?.money,
+    ).toMatchObject({ artisanFeePercent: 5 });
+    expect(
+      (await domain.jobs.viewAsArtisan(artisan.actor, { jobId }))?.engagement?.money,
+    ).toMatchObject({ artisanFeePercent: 10 });
+  });
+
   test("the Artisan sees the suburb and street, which no Artisan saw before", async () => {
     const { domain, given } = await createHarness();
     const { client, artisan, jobId, quoteId } = await quoted(given);

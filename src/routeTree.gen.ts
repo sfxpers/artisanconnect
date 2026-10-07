@@ -31,6 +31,7 @@ import { Route as AdminAuditRouteImport } from './routes/admin/audit'
 import { Route as AdminSignInRouteImport } from './routes/admin/sign-in'
 import { Route as ArtisansIndexRouteImport } from './routes/artisans.index'
 import { Route as ArtisansArtisanIdRouteImport } from './routes/artisans.$artisanId'
+import { Route as CompletionFilesFileIdRouteImport } from './routes/completion-files.$fileId'
 import { Route as DevMailRouteImport } from './routes/dev/mail'
 import { Route as FakeCheckoutCollectionIdRouteImport } from './routes/fake-checkout.$collectionId'
 import { Route as JobPhotosPhotoIdRouteImport } from './routes/job-photos.$photoId'
@@ -155,6 +156,11 @@ const ArtisansArtisanIdRoute = ArtisansArtisanIdRouteImport.update({
   path: '/artisans/$artisanId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CompletionFilesFileIdRoute = CompletionFilesFileIdRouteImport.update({
+  id: '/completion-files/$fileId',
+  path: '/completion-files/$fileId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DevMailRoute = DevMailRouteImport.update({
   id: '/dev/mail',
   path: '/dev/mail',
@@ -243,6 +249,7 @@ export interface FileRoutesByFullPath {
   '/admin/audit': typeof AdminAuditRoute
   '/admin/sign-in': typeof AdminSignInRoute
   '/artisans/$artisanId': typeof ArtisansArtisanIdRoute
+  '/completion-files/$fileId': typeof CompletionFilesFileIdRoute
   '/dev/mail': typeof DevMailRoute
   '/fake-checkout/$collectionId': typeof FakeCheckoutCollectionIdRoute
   '/job-photos/$photoId': typeof JobPhotosPhotoIdRoute
@@ -280,6 +287,7 @@ export interface FileRoutesByTo {
   '/admin/audit': typeof AdminAuditRoute
   '/admin/sign-in': typeof AdminSignInRoute
   '/artisans/$artisanId': typeof ArtisansArtisanIdRoute
+  '/completion-files/$fileId': typeof CompletionFilesFileIdRoute
   '/dev/mail': typeof DevMailRoute
   '/fake-checkout/$collectionId': typeof FakeCheckoutCollectionIdRoute
   '/job-photos/$photoId': typeof JobPhotosPhotoIdRoute
@@ -318,6 +326,7 @@ export interface FileRoutesById {
   '/admin/audit': typeof AdminAuditRoute
   '/admin/sign-in': typeof AdminSignInRoute
   '/artisans/$artisanId': typeof ArtisansArtisanIdRoute
+  '/completion-files/$fileId': typeof CompletionFilesFileIdRoute
   '/dev/mail': typeof DevMailRoute
   '/fake-checkout/$collectionId': typeof FakeCheckoutCollectionIdRoute
   '/job-photos/$photoId': typeof JobPhotosPhotoIdRoute
@@ -357,6 +366,7 @@ export interface FileRouteTypes {
     | '/admin/audit'
     | '/admin/sign-in'
     | '/artisans/$artisanId'
+    | '/completion-files/$fileId'
     | '/dev/mail'
     | '/fake-checkout/$collectionId'
     | '/job-photos/$photoId'
@@ -394,6 +404,7 @@ export interface FileRouteTypes {
     | '/admin/audit'
     | '/admin/sign-in'
     | '/artisans/$artisanId'
+    | '/completion-files/$fileId'
     | '/dev/mail'
     | '/fake-checkout/$collectionId'
     | '/job-photos/$photoId'
@@ -431,6 +442,7 @@ export interface FileRouteTypes {
     | '/admin/audit'
     | '/admin/sign-in'
     | '/artisans/$artisanId'
+    | '/completion-files/$fileId'
     | '/dev/mail'
     | '/fake-checkout/$collectionId'
     | '/job-photos/$photoId'
@@ -469,6 +481,7 @@ export interface RootRouteChildren {
   AdminAuditRoute: typeof AdminAuditRoute
   AdminSignInRoute: typeof AdminSignInRoute
   ArtisansArtisanIdRoute: typeof ArtisansArtisanIdRoute
+  CompletionFilesFileIdRoute: typeof CompletionFilesFileIdRoute
   DevMailRoute: typeof DevMailRoute
   FakeCheckoutCollectionIdRoute: typeof FakeCheckoutCollectionIdRoute
   JobPhotosPhotoIdRoute: typeof JobPhotosPhotoIdRoute
@@ -642,6 +655,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ArtisansArtisanIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/completion-files/$fileId': {
+      id: '/completion-files/$fileId'
+      path: '/completion-files/$fileId'
+      fullPath: '/completion-files/$fileId'
+      preLoaderRoute: typeof CompletionFilesFileIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dev/mail': {
       id: '/dev/mail'
       path: '/dev/mail'
@@ -757,6 +777,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminAuditRoute: AdminAuditRoute,
   AdminSignInRoute: AdminSignInRoute,
   ArtisansArtisanIdRoute: ArtisansArtisanIdRoute,
+  CompletionFilesFileIdRoute: CompletionFilesFileIdRoute,
   DevMailRoute: DevMailRoute,
   FakeCheckoutCollectionIdRoute: FakeCheckoutCollectionIdRoute,
   JobPhotosPhotoIdRoute: JobPhotosPhotoIdRoute,

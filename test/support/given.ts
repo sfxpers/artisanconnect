@@ -279,6 +279,29 @@ export function given({
     if (!started.ok) throw new Error(started.refusal.message);
   }
 
+  type CompletionFields = Partial<
+    Omit<Parameters<Domain["engagements"]["complete"]>[1], "engagementId">
+  >;
+
+  /**
+   * The Artisan marks the work complete, with a note and one after-work
+   * photo unless given, and the Content check lets it through.
+   */
+  async function markedComplete(
+    artisan: { actor: Actor },
+    engagementId: string,
+    fields: CompletionFields = {},
+  ) {
+    const marked = await domain.engagements.complete(artisan.actor, {
+      engagementId,
+      note: "Both walls have two coats, and the room is cleaned.",
+      photos: [await photo()],
+      ...fields,
+    });
+    if (!marked.ok) throw new Error(marked.refusal.message);
+    if (marked.value.state !== "made") throw new Error("Expected the Completion to be made");
+  }
+
   return {
     codeSentTo,
     admin,
@@ -298,6 +321,7 @@ export function given({
     hired,
     engagementOf,
     workStarted,
+    markedComplete,
   };
 }
 

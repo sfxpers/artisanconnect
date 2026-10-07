@@ -7,6 +7,12 @@ export const MESSAGE_MAX = 2000;
 export const MESSAGE_ATTACHMENTS_MAX = 5;
 
 /** The events a Conversation shows as rows that are not speech. Hire comes with #131. */
-export const MESSAGE_EVENTS = ["quote.sent", "work.started"] as const;
+export const MESSAGE_EVENTS = [
+  "quote.sent",
+  "work.started",
+  "completion.made",
+  "fix.requested",
+  "approved",
+] as const;
 
 export type MessageEvent = (typeof MESSAGE_EVENTS)[number];

@@ -6,6 +6,7 @@
 
 import type { Context } from "../context";
 import { MESSAGE_ATTACHMENTS_MAX } from "../conversations/inputs";
+import { COMPLETION_DOCUMENTS_MAX, COMPLETION_PHOTOS_MAX } from "../engagements/inputs";
 import { PROFILE_PHOTOS_MAX } from "../profiles/inputs";
 import { ok, refuse, type Result } from "../result";
 import { Locked, startsWith, Unreadable } from "./bytes";
@@ -25,8 +26,12 @@ export type UploadContext = { takes: readonly FileKind[] };
 export const UPLOAD_CONTEXTS = {
   /** A Job, or a Conversation before Payment: what is sent may reach a stranger. */
   beforePayment: { takes: ["photo"] },
-  /** An Engagement's Conversation, or a Completion. */
+  /** An Engagement's Conversation. */
   afterPayment: { takes: ["photo", "pdf", "voice-note"] },
+  /** A Completion's after-work photos. */
+  afterWorkPhotos: { takes: ["photo"] },
+  /** A Completion's documents, such as its certificate: a photo or a scan of one, or a PDF. */
+  completionDocuments: { takes: ["photo", "pdf"] },
   /** Verification documents, which only the Admin sees. */
   verification: { takes: ["photo", "pdf"] },
 } as const satisfies Record<string, UploadContext>;
@@ -217,8 +222,14 @@ function isMarkup(bytes: Uint8Array): boolean {
 /** The caller counts what the thing holds, plus what it is adding, and checks before uploading. */
 export const FILE_COUNT_LIMITS = {
   jobPhotos: { max: 10, message: "A Job has at most 10 photos." },
-  completionPhotos: { max: 10, message: "A Completion has at most 10 photos." },
-  completionDocuments: { max: 5, message: "A Completion has at most 5 documents." },
+  completionPhotos: {
+    max: COMPLETION_PHOTOS_MAX,
+    message: `A Completion has at most ${COMPLETION_PHOTOS_MAX} photos.`,
+  },
+  completionDocuments: {
+    max: COMPLETION_DOCUMENTS_MAX,
+    message: `A Completion has at most ${COMPLETION_DOCUMENTS_MAX} documents.`,
+  },
   messageAttachments: {
     max: MESSAGE_ATTACHMENTS_MAX,
     message: `A message has at most ${MESSAGE_ATTACHMENTS_MAX} attachments.`,

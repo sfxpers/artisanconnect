@@ -19,6 +19,8 @@ export const LEDGER_KINDS = {
   refundOwed: "refund.owed",
   /** The Materials released at Work started, before the Artisan Fee (ADR 0006). */
   materialsReleased: "release.materials",
+  /** The Labour released at Approval, before the Artisan Fee (ADR 0006, #130). */
+  labourReleased: "release.labour",
   /** The Artisan Fee kept from a Release (ADR 0009). */
   artisanFee: "release.artisan-fee",
   /** A Release less its Artisan Fee, owed to the Artisan until a Payout sends it (#128). */
@@ -35,9 +37,10 @@ export const LEDGER_KINDS = {
 
 export type LedgerKind = (typeof LEDGER_KINDS)[keyof typeof LEDGER_KINDS];
 
-/** The part of the Hired Quote each Release kind releases. The Labour's comes with #130. */
+/** The part of the Hired Quote each Release kind releases. */
 export const RELEASED_PARTS: Partial<Record<LedgerKind, "materials" | "labour">> = {
   [LEDGER_KINDS.materialsReleased]: "materials",
+  [LEDGER_KINDS.labourReleased]: "labour",
 };
 
 /** One row of an event. A zero amount is left out: nothing moved. */
@@ -72,7 +75,7 @@ export function ledgerWrites(ctx: Context, rows: LedgerRow[], condition?: SQL): 
  */
 export function releaseRows(
   engagement: { id: string; paymentId: string; artisanFeePercent: number },
-  kind: typeof LEDGER_KINDS.materialsReleased,
+  kind: typeof LEDGER_KINDS.materialsReleased | typeof LEDGER_KINDS.labourReleased,
   amountCents: number,
 ): LedgerRow[] {
   const feeCents = artisanFeeCents(amountCents, engagement.artisanFeePercent);
@@ -124,8 +127,12 @@ export async function engagementMoney(ctx: Context, engagementId: string) {
     .where(eq(ledgerEntries.engagementId, engagementId))
     .groupBy(ledgerEntries.kind);
   const sum = (kind: LedgerKind) => rows.find((row) => row.kind === kind)?.cents ?? 0;
-  // The Labour's Release and Refunds come with their tickets (#130, #132).
-  const labour = { paidInCents: sum(LEDGER_KINDS.labourIn), releasedCents: 0, refundedCents: 0 };
+  // Refunds come with their ticket (#132).
+  const labour = {
+    paidInCents: sum(LEDGER_KINDS.labourIn),
+    releasedCents: sum(LEDGER_KINDS.labourReleased),
+    refundedCents: 0,
+  };
   const materials = {
     paidInCents: sum(LEDGER_KINDS.materialsIn),
     releasedCents: sum(LEDGER_KINDS.materialsReleased),

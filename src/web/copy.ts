@@ -621,6 +621,63 @@ export const copy = {
       `You can tap I've started from ${start}, the Quote's start date. Starting sooner? The Client can mark Work started.`,
     claimStartedConfirm:
       "Tell the Client you are working on site? Unless they answer Not started within 24 hours, it is Work started.",
+    awaitingClient: "The work is marked complete",
+    awaitingClientLead: (by: string) =>
+      `Check the work below. Approve it to release the Labour to the Artisan, or ask for a fix. If you do not answer by ${by}, it is Approved then.`,
+    awaitingArtisan: "Waiting for the Client's Approval",
+    awaitingArtisanLead: (by: string) =>
+      `The Client approves the work or asks for a fix. If they do not answer by ${by}, it is Approved then, and the Labour is released to you.`,
+    fixClient: "You asked for a fix",
+    fixClientLead:
+      "The Artisan puts it right and marks the work complete again, which gives you a new seven days to answer.",
+    fixArtisan: "The Client asked for a fix",
+    fixArtisanLead:
+      "Put it right, then mark the work complete again. The Client then has a new seven days to answer.",
+    completedTitle: "Completed",
+    completedClientLead: "The work is approved, and the Labour was released to the Artisan.",
+    completedArtisanLead:
+      "The work is approved, and the Labour was released to you, less the Artisan Fee.",
+    markComplete: "Mark the work complete",
+    completionNote: "What was done",
+    completionNoteHint: "The Client reads this with the photos before approving.",
+    afterPhotos: "Photos of the finished work",
+    afterPhotosHint: (max: number) => `1 to ${max} photos.`,
+    certificate: (name: string) => name.charAt(0).toUpperCase() + name.slice(1),
+    certificateHint: (name: string, neededOn: string) =>
+      `The law requires a ${name} on ${neededOn}. A PDF or a photo of it, showing your registration number.`,
+    documents: "Other documents (optional)",
+    documentsHint: (max: number) =>
+      `PDFs or photos, such as a guarantee or a data sheet. Up to ${max} documents in all.`,
+    markCompleteConfirm:
+      "Mark the work complete? The Client then has seven days to approve it or ask for a fix.",
+    completionBeingChecked: "Your Completion is being checked",
+    completionBeingCheckedLead:
+      "Only you see it until the Admin has checked it. The Client is told once it is released, and their seven days start then.",
+    withdrawCompletion: "Withdraw",
+    completionRefused: (reason: string) => `The Admin refused your Completion: ${reason}`,
+    approve: "Approve",
+    approveConfirm: (labour: string | null) =>
+      labour
+        ? `Approve the work? This releases the Labour, ${labour}, to the Artisan, and cannot be undone.`
+        : "Approve the work? This cannot be undone.",
+    askFix: "Ask for a fix",
+    fixNote: "What needs fixing",
+    sendFix: "Send Fix request",
+    cancel: "Cancel",
+    fixRequestNote: "The Client's note",
+    fixNoteBeingChecked:
+      "The note is being checked. Only you see it until the Admin has checked it.",
+    fixNoteHiddenArtisan: "The Client's note is being checked, and shows here once it is.",
+    fixNoteRefusedClient: (reason: string) =>
+      `The Admin refused your note, so the Artisan does not see it: ${reason}`,
+    fixNoteRefusedArtisan:
+      "The Client's note was not passed on. Ask them in Messages what needs fixing.",
+    completion: "Completion",
+    completionMade: (at: string) => `Marked complete ${at}`,
+    photo: (index: number) => `Photo ${index}`,
+    document: (index: number) => `Document ${index}`,
+    certificateDocument: "Certificate",
+    approvalBar: (by: string) => `Approved by silence on ${by}`,
     payments: "Payments",
     parts: {
       materials: { title: "Materials", released: "Released at Work started" },
@@ -628,7 +685,14 @@ export const copy = {
     },
     partStates: { unreleased: "Paid in", released: "Released", refunded: "Refunded" },
     activity: "Activity",
-    events: { "quote.sent": "Quote sent", hired: "Hired and paid", "work.started": "Work started" },
+    events: {
+      "quote.sent": "Quote sent",
+      hired: "Hired and paid",
+      "work.started": "Work started",
+      "completion.made": "Marked complete",
+      "fix.requested": "Fix requested",
+      approved: "Approved",
+    },
     artisan: "Artisan",
     money: "Money",
     paidIn: "Paid in",
@@ -678,6 +742,9 @@ export const copy = {
     events: {
       "quote.sent": "Quote sent",
       "work.started": "Work started",
+      "completion.made": "Marked complete",
+      "fix.requested": "Fix requested",
+      approved: "Approved",
     } satisfies Record<MessageEvent, string>,
     photo: (index: number) => `Photo ${index}`,
     message: "Message",

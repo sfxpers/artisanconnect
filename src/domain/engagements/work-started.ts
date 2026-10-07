@@ -6,8 +6,9 @@ import { eventWrite } from "../conversations/rows";
 import { engagementMoney, LEDGER_KINDS, ledgerWrites, releaseRows } from "../ledger";
 import { ok, refuse } from "../result";
 import { formatDay, formatTime, saDay } from "../sa-days";
-import { engagements, jobs, quotes, type WORK_STARTED_BY } from "../schema";
+import { engagements, type WORK_STARTED_BY } from "../schema";
 import { emailTells, tellWhile } from "../tells";
+import { engagementRow, type EngagementRow } from "./rows";
 
 // Work started (#127, ADR 0006): the moment the Artisan is working on site.
 // The Client sets it, or the Artisan says they've started and it is Work
@@ -21,7 +22,6 @@ export const START_CLAIM_CLOCK = "engagement.start-claim";
 /** How long the Client has to answer "Not started". */
 const ANSWER_MS = 24 * 60 * 60 * 1000;
 
-type EngagementRow = NonNullable<Awaited<ReturnType<typeof engagementRow>>>;
 type StartedBy = (typeof WORK_STARTED_BY)[number];
 
 /** Whether the Hired Quote's start date has come, in South Africa, so the Artisan may say they've started. */
@@ -283,15 +283,4 @@ function notPaid(engagement: EngagementRow) {
       ? "Work has already started on this Job."
       : "This Engagement is no longer Paid.",
   );
-}
-
-/** The Engagement with its Job's title and the Hired Quote's start date; null if there is none. */
-async function engagementRow(ctx: Context, engagementId: string) {
-  const [row] = await ctx.db
-    .select({ engagement: engagements, jobTitle: jobs.title, startOn: quotes.startOn })
-    .from(engagements)
-    .innerJoin(jobs, eq(jobs.id, engagements.jobId))
-    .innerJoin(quotes, eq(quotes.id, engagements.quoteId))
-    .where(eq(engagements.id, engagementId));
-  return row ? { ...row.engagement, jobTitle: row.jobTitle, startOn: row.startOn } : null;
 }

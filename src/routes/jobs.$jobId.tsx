@@ -13,6 +13,8 @@ import { OfferedJob } from "@/components/offered-job";
 import { ClientQuotes } from "@/components/quotes";
 import {
   ActivityCard,
+  CompletionActions,
+  CompletionCard,
   EngagementNextStep,
   HiredQuoteCard,
   MoneyCard,
@@ -478,7 +480,9 @@ function Hired({
         <EngagementNextStep engagement={engagement} asClient>
           <NotHired job={job} />
           <StartActions engagement={engagement} asClient />
+          <CompletionActions engagement={engagement} asClient />
         </EngagementNextStep>
+        <CompletionCard engagement={engagement} />
         <PaymentsCard engagement={engagement} />
         <ActivityCard engagement={engagement} />
         <Card>

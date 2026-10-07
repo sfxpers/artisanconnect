@@ -39,6 +39,24 @@ export async function hired(env: Env) {
 }
 
 /**
+ * The Hired Artisan of an Engagement marks the work complete, with a note and
+ * a photo the Content check passes (#130). Work must have started.
+ */
+export async function markedComplete(env: Env, engagementId: string) {
+  const { make } = await world(env);
+  const engagement = await env.DB.prepare("select artisan_id from engagements where id = ?")
+    .bind(engagementId)
+    .first<{ artisan_id: string }>();
+  if (!engagement) throw new Error(`No Engagement ${engagementId}`);
+  await make.markedComplete(
+    { actor: { kind: "artisan", accountId: engagement.artisan_id } },
+    engagementId,
+    { note: "Both walls have two coats, and the room is cleaned." },
+  );
+  return { engagementId };
+}
+
+/**
  * An Artisan with two Releases owed: one paid by today's Payout run, with its
  * Receipt, unless the run already went today, and one Released after the run,
  * waiting for the next. Prints the Artisan's sign-in.

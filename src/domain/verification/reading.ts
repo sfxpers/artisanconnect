@@ -123,7 +123,8 @@ function squeeze(text: string): string {
     .toUpperCase();
 }
 
-function found(value: string, text: string): string {
+/** Whether the value is in the text, said for the Admin: "Yes", "No", or "Nothing read". */
+export function found(value: string, text: string): string {
   if (!text.trim()) return "Nothing read";
   return squeeze(text).includes(squeeze(value)) ? "Yes" : "No";
 }

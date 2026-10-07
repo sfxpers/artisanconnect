@@ -141,6 +141,13 @@
       "when": 1791393170495,
       "tag": "0019_payouts-stopped",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1791395436521,
+      "tag": "0020_completion",
+      "breakpoints": true
     }
   ]
 }

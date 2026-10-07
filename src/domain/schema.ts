@@ -957,6 +957,8 @@ export const engagements = sqliteTable(
     startClaimedAt: instant("start_claimed_at"),
     workStartedAt: instant("work_started_at"),
     workStartedBy: text("work_started_by", { enum: WORK_STARTED_BY }),
+    /** When it was Approved, by the Client or by seven days of silence (#130). */
+    completedAt: instant("completed_at"),
   },
   (table) => [
     index("engagements_relationship").on(table.clientId, table.artisanId),
@@ -965,6 +967,81 @@ export const engagements = sqliteTable(
       sql.raw(`state in (${ENGAGEMENT_STATES.map((state) => `'${state}'`).join(", ")})`),
     ),
     check("engagements_artisan_fee", sql.raw("artisan_fee_percent in (5, 10)")),
+  ],
+);
+
+/**
+ * A Completion's states: Held for the Admin's Pre-check, made (the Client
+ * may answer it), refused by the Admin, withdrawn by the Artisan while Held,
+ * or unsent if the Engagement had moved on by its release.
+ */
+export const COMPLETION_STATES = ["held", "made", "refused", "withdrawn", "unsent"] as const;
+
+/** The Client's answer to a made Completion; silence for seven days is Approval. */
+export const COMPLETION_ANSWERS = ["approved", "approved-by-silence", "fix-requested"] as const;
+
+/** Where a Fix request's note stands: shown to the Artisan, Held for the Admin, or refused. */
+export const FIX_NOTE_STATES = ["shown", "held", "refused"] as const;
+
+/** A Completion's document, and whether it is the certificate the law requires (Completion evidence). */
+export type CompletionDocument = Extract<StoredFile, { kind: "photo" | "pdf" }> & {
+  certificate: boolean;
+};
+
+/**
+ * Each time the Artisan marks the work complete (#130): a note, the
+ * after-work photos, and any documents, the certificate among them. Once made,
+ * the Client answers it once: Approval, or a Fix request with a note, after
+ * which the next Completion is a new row. A trigger in the migration refuses
+ * any other change.
+ */
+export const completions = sqliteTable(
+  "completions",
+  {
+    id: text("id").primaryKey(),
+    engagementId: text("engagement_id")
+      .notNull()
+      .references(() => engagements.id),
+    note: text("note").notNull(),
+    photos: text("photos", { mode: "json" })
+      .$type<Extract<StoredFile, { kind: "photo" }>[]>()
+      .notNull(),
+    documents: text("documents", { mode: "json" }).$type<CompletionDocument[]>().notNull(),
+    state: text("state", { enum: COMPLETION_STATES }).notNull(),
+    /** Why the Content check or the certificate's reading Held it, for the Admin. */
+    heldFor: text("held_for"),
+    /** What the certificate's reading found, for the Admin. */
+    certificateFacts: text("certificate_facts", { mode: "json" })
+      .$type<{ label: string; value: string }[]>()
+      .notNull(),
+    sentAt: instant("sent_at").notNull(),
+    /** When the Client could first see it: the seven days run from here. */
+    madeAt: instant("made_at"),
+    answer: text("answer", { enum: COMPLETION_ANSWERS }),
+    answeredAt: instant("answered_at"),
+    fixNote: text("fix_note"),
+    fixNoteState: text("fix_note_state", { enum: FIX_NOTE_STATES }),
+    /** Why the Content check Held the Fix request's note, for the Admin. */
+    fixNoteHeldFor: text("fix_note_held_for"),
+  },
+  (table) => [
+    index("completions_engagement").on(table.engagementId, table.sentAt),
+    uniqueIndex("completions_one_held").on(table.engagementId).where(sql.raw("state = 'held'")),
+    uniqueIndex("completions_one_unanswered")
+      .on(table.engagementId)
+      .where(sql.raw("state = 'made' and answer is null")),
+    check(
+      "completions_state",
+      sql.raw(`state in (${COMPLETION_STATES.map((state) => `'${state}'`).join(", ")})`),
+    ),
+    check(
+      "completions_answer",
+      sql.raw(`answer in (${COMPLETION_ANSWERS.map((answer) => `'${answer}'`).join(", ")})`),
+    ),
+    check(
+      "completions_fix_note_state",
+      sql.raw(`fix_note_state in (${FIX_NOTE_STATES.map((state) => `'${state}'`).join(", ")})`),
+    ),
   ],
 );
 
