@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { NextStepCard, Refusal } from "@/components/page";
 import { useAction } from "@/components/use-action";
 import {
+  CANCELLATION_REASON_MAX,
   CERTIFICATES,
   COMPLETION_DOCUMENTS_MAX,
   COMPLETION_PHOTOS_MAX,
@@ -22,6 +23,7 @@ import { copy, formatDate } from "@/web/copy";
 import {
   answerNotStarted,
   approveCompletion,
+  cancelEngagement,
   claimStarted,
   markComplete,
   markWorkStarted,
@@ -34,10 +36,11 @@ import { shrinkPhoto } from "@/web/shrink-photo";
 
 // The Job page once a Quote is Hired (#107, #126): the next step, with what
 // each party may do toward Work started (#127) and then Completion, Approval,
-// and Fix requests (#130), the Completion itself, the Payments card with
-// Materials and Labour as two numbered payments and the bar to Approval by
-// silence, the Refunds and the Artisan's Refund form (#132), the Activity,
-// and in the sidebar the Money and the Hired Quote's dates. The Client never
+// and Fix requests (#130), and either party's Cancellation (#133), the
+// Completion itself, the Payments card with Materials and Labour as two
+// numbered payments and the bar to Approval by silence, the Refunds and the
+// Artisan's Refund form (#132), the Activity, and in the sidebar the Money
+// and the Hired Quote's dates. The Client never
 // sees the Artisan Fee; the Artisan never sees the Protection Fee.
 
 type JobView = Awaited<ReturnType<typeof getJob>>;
@@ -81,6 +84,24 @@ function nextStep(engagement: Engagement, asClient: boolean): [string, string] {
       return asClient ? [t.fixClient, t.fixClientLead] : [t.fixArtisan, t.fixArtisanLead];
     case "completed":
       return [t.completedTitle, asClient ? t.completedClientLead : t.completedArtisanLead];
+    case "cancelled": {
+      const { cancellation } = engagement;
+      if (!cancellation) break;
+      const own = (cancellation.by === "client") === asClient;
+      const { labourRefund } = cancellation;
+      return [
+        t.cancelledTitle,
+        t.cancelledLead({
+          who: own ? t.you : asClient ? t.theArtisan : t.theClient,
+          afterWorkStarted: cancellation.afterWorkStarted,
+          asClient,
+          labourRefund: labourRefund && {
+            amount: formatRands(labourRefund.amountCents),
+            on: formatDate(labourRefund.dueAt),
+          },
+        }),
+      ];
+    }
   }
   if (engagement.startClaim) {
     const answerBy = formatDate(engagement.startClaim.answerBy);
@@ -198,6 +219,74 @@ export function CompletionActions({
             </>
           )}
     </>
+  );
+}
+
+/**
+ * Either party cancels before Approval, with an optional reason only the
+ * Admin reads, once told what happens to the money (ADR 0007).
+ */
+export function CancelAction({
+  engagement,
+  asClient,
+}: {
+  engagement: Engagement;
+  asClient: boolean;
+}) {
+  const action = useAction();
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  if (!engagement.canCancel) return null;
+  if (!open) {
+    return (
+      <div>
+        <Button variant="outline" onClick={() => setOpen(true)}>
+          {t.cancelJob}
+        </Button>
+      </div>
+    );
+  }
+  const afterWorkStarted = engagement.state !== "paid";
+  const labour = engagement.money.payments.find((each) => each.part === "labour");
+  const lead = t.cancelLead({
+    afterWorkStarted,
+    asClient,
+    amount: formatRands(
+      afterWorkStarted ? (labour?.unreleasedCents ?? 0) : engagement.money.unreleasedCents,
+    ),
+  });
+  const { engagementId } = engagement;
+  return (
+    <form
+      className="space-y-3 rounded-lg border p-3"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (!window.confirm(t.cancelConfirm(lead))) return;
+        void action.run(() => cancelEngagement({ data: { engagementId, reason } }));
+      }}
+    >
+      <p className="text-sm text-muted-foreground">{lead}</p>
+      <div className="space-y-1.5">
+        <Label htmlFor="cancel-reason">{t.cancelReason}</Label>
+        <Textarea
+          id="cancel-reason"
+          value={reason}
+          rows={2}
+          maxLength={CANCELLATION_REASON_MAX}
+          onChange={(event) => setReason(event.target.value)}
+        />
+        <p className="text-xs text-muted-foreground">{t.cancelReasonHint(asClient)}</p>
+      </div>
+      <Refusal message={action.refusal} />
+      <div className="flex flex-wrap gap-2">
+        <Button type="submit" variant="destructive" disabled={action.busy}>
+          {t.cancelJob}
+        </Button>
+        <Button type="button" variant="ghost" disabled={action.busy} onClick={() => setOpen(false)}>
+          {t.keepJob}
+        </Button>
+      </div>
+    </form>
   );
 }
 

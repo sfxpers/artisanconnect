@@ -2,11 +2,14 @@ import * as z from "zod";
 import { rands } from "../quotes/inputs";
 import type { ServiceCategory } from "../service-categories";
 
-// What a Completion, a Fix request, and a Refund take, shared with the web app's forms.
+// What a Completion, a Fix request, a Refund, and a Cancellation take, shared with the web app's forms.
 // Nothing here may import what only runs on the server.
 
 /** The most characters a Completion's note or a Fix request's note may have. */
 export const NOTE_MAX = 2000;
+
+/** The most characters a Cancellation's reason may have. */
+export const CANCELLATION_REASON_MAX = 500;
 
 /** The most after-work photos a Completion may hold. */
 export const COMPLETION_PHOTOS_MAX = 10;

@@ -933,6 +933,9 @@ export const ENGAGEMENT_STATES = [
 /** Who set Work started: the Client, or the Artisan when the Client did not answer in 24 hours. */
 export const WORK_STARTED_BY = ["client", "artisan"] as const;
 
+/** Which party cancelled an Engagement (#133). */
+export const CANCELLED_BY = ["client", "artisan"] as const;
+
 /**
  * A Hired Quote's work and money, made at Hire, when its Payment arrived:
  * one per Job, Quote, and Payment. The Artisan Fee is fixed here for its whole
@@ -971,9 +974,15 @@ export const engagements = sqliteTable(
     workStartedBy: text("work_started_by", { enum: WORK_STARTED_BY }),
     /** When it was Approved, by the Client or by seven days of silence (#130). */
     completedAt: instant("completed_at"),
+    /** When either party cancelled it before Approval (#133). */
+    cancelledAt: instant("cancelled_at"),
+    cancelledBy: text("cancelled_by", { enum: CANCELLED_BY }),
+    /** The reason the party gave, if any, for the Artisan record: only the Admin reads it. */
+    cancellationReason: text("cancellation_reason"),
   },
   (table) => [
     index("engagements_relationship").on(table.clientId, table.artisanId),
+    index("engagements_cancelled").on(table.artisanId, table.cancelledAt),
     check(
       "engagements_state",
       sql.raw(`state in (${ENGAGEMENT_STATES.map((state) => `'${state}'`).join(", ")})`),
@@ -1072,8 +1081,8 @@ export const REFUND_STATES = [
   "paid-by-hand",
 ] as const;
 
-/** Why a Refund was made: the Artisan's choice, or a Payment that Hired nobody. */
-export const REFUND_CAUSES = ["artisan", "not-hired"] as const;
+/** Why a Refund was made: the Artisan's choice, a Payment that Hired nobody, or a Cancellation (#133). */
+export const REFUND_CAUSES = ["artisan", "not-hired", "cancellation"] as const;
 
 /**
  * Each Refund of a Payment to its Client (#132): unreleased money, never the

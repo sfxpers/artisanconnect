@@ -17,6 +17,7 @@ import {
   type CompletionRow,
 } from "./completion";
 import { certificateNeeded } from "./inputs";
+import { canCancel, labourRefundAt } from "./cancellation";
 import { answerBy, startDayCome } from "./work-started";
 
 // An Engagement as each party sees it on the Job page (#107): the Client
@@ -46,7 +47,7 @@ export async function engagementAsClient(
   ]);
   const { protectionFeeCents, ...shared } = money;
   return {
-    ...common(ctx, found, completions, refunded),
+    ...common(ctx, found, completions, refunded, money),
     fixRequest: await fixRequestView(ctx, found, completions, "client"),
     artisan: {
       artisanId: engagement.artisanId,
@@ -72,7 +73,7 @@ export async function engagementAsArtisan(ctx: Context, jobId: string, artisanId
   const newest = completions.at(-1);
   const held = newest?.state === "held";
   return {
-    ...common(ctx, found, completions, refunded),
+    ...common(ctx, found, completions, refunded, money),
     fixRequest: await fixRequestView(ctx, found, completions, "artisan"),
     money: { ...moneyView(money), artisanFeePercent: found.engagement.artisanFeePercent },
     /**
@@ -148,15 +149,17 @@ type Money = Omit<Awaited<ReturnType<typeof engagementMoney>>, "protectionFeeCen
  * What both parties see alike: its state, the Hired Quote's dates, the
  * Artisan's claim to have started while it waits for the Client, the newest
  * Completion the Client could see and the bar to its Approval by silence,
- * its Refunds, and its Activity.
+ * whether it may be cancelled and its Cancellation, its Refunds, and its
+ * Activity.
  */
 function common(
   ctx: Context,
   { engagement, quote }: Found,
   completions: CompletionRow[],
   refunded: Refunded,
+  money: Money,
 ) {
-  const { startClaimedAt, workStartedAt, completedAt } = engagement;
+  const { startClaimedAt, workStartedAt, completedAt, cancelledAt } = engagement;
   const made = completions.filter((completion) => completion.state === "made");
   const newest = made.at(-1);
   return {
@@ -178,6 +181,9 @@ function common(
         ? approvalBar(ctx, newest.madeAt)
         : null,
     completedAt,
+    /** Whether either party may cancel now: before Approval (#133). */
+    canCancel: canCancel(engagement).ok,
+    cancellation: cancellationView(engagement, money.labour.unreleasedCents),
     refunds: refunded,
     /** What happened, oldest first. Each later step adds its own. */
     activity: [
@@ -198,8 +204,29 @@ function common(
             ]
           : []),
       ]),
+      ...(cancelledAt ? [{ event: "cancelled" as const, at: cancelledAt }] : []),
       ...refunded.map((refund) => ({ event: "refunded" as const, at: refund.madeAt })),
     ].sort((a, b) => a.at.getTime() - b.at.getTime()),
+  };
+}
+
+/**
+ * The Cancellation, once Cancelled: by which party, when, whether after Work
+ * started, and then the unreleased Labour still to be refunded, and when.
+ * The reason is the Admin's to read, on the Artisan record.
+ */
+function cancellationView(engagement: Found["engagement"], labourUnreleasedCents: number) {
+  const { state, cancelledAt, cancelledBy, workStartedAt } = engagement;
+  if (state !== "cancelled" || !cancelledAt || !cancelledBy) return null;
+  const afterWorkStarted = workStartedAt !== null;
+  return {
+    by: cancelledBy,
+    cancelledAt,
+    afterWorkStarted,
+    labourRefund:
+      afterWorkStarted && labourUnreleasedCents > 0
+        ? { dueAt: labourRefundAt(cancelledAt), amountCents: labourUnreleasedCents }
+        : null,
   };
 }
 

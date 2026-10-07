@@ -3,6 +3,7 @@ import { accounts, authUsers, quotes } from "../schema";
 import { startClock } from "../clocks";
 import type { Context, Write } from "../context";
 import { defineHeldKind, refusedFor } from "../content/held";
+import { artisanRecordBlocks } from "../engagements/record";
 import { quoteSentWrites } from "../conversations/rows";
 import { jobBlocks } from "../jobs/held";
 import { jobRow } from "../jobs/rows";
@@ -157,10 +158,13 @@ export function quoteBlocks(quote: QuoteVersion): Block[] {
   ];
 }
 
-/** Who sent the item, for the Admin: an Artisan, unless titled otherwise. */
+/**
+ * Who sent the item, for the Admin: an Artisan, unless titled otherwise. An
+ * Artisan's Artisan record follows (#133).
+ */
 export async function accountSidebar(ctx: Context, accountId: string, title = "Artisan") {
-  const [artisan] = await ctx.db
-    .select({ name: accounts.name, email: authUsers.email })
+  const [account] = await ctx.db
+    .select({ name: accounts.name, email: authUsers.email, kind: accounts.kind })
     .from(accounts)
     .innerJoin(authUsers, eq(authUsers.id, accounts.id))
     .where(eq(accounts.id, accountId));
@@ -171,12 +175,15 @@ export async function accountSidebar(ctx: Context, accountId: string, title = "A
         {
           kind: "facts" as const,
           facts: [
-            { label: "Name", value: artisan?.name ?? "" },
-            { label: "Email", value: artisan?.email ?? "" },
+            { label: "Name", value: account?.name ?? "" },
+            { label: "Email", value: account?.email ?? "" },
           ],
         },
-      ],
+      ] as Block[],
     },
+    ...(account?.kind === "artisan"
+      ? [{ title: "Artisan record", blocks: await artisanRecordBlocks(ctx, accountId) }]
+      : []),
   ];
 }
 

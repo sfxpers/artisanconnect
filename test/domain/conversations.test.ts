@@ -866,6 +866,30 @@ describe("the Engagement's Conversation", () => {
       expect.objectContaining({ conversationId, takesMessages: false }),
     ]);
   });
+
+  test("goes read-only once the Engagement is Cancelled; a message Held before is then unsent", async () => {
+    const harness = await createHarness();
+    const { domain, given } = harness;
+    const admin = await given.admin();
+    const { client, artisan, conversationId, engagementId, jobId } = await engaged(given, domain);
+    await sendHeld(harness, artisan, conversationId);
+
+    const cancelled = await domain.engagements.cancel(client.actor, { engagementId });
+    if (!cancelled.ok) throw new Error(cancelled.refusal.message);
+    await decide(harness, admin, "release");
+
+    for (const party of [client, artisan]) {
+      expect(await domain.conversations.view(party.actor, { conversationId })).toMatchObject({
+        takesMessages: false,
+      });
+    }
+    const asClient = await domain.conversations.view(client.actor, { conversationId });
+    expect(asClient?.items.some((item) => "text" in item && item.text === HELD_TEXT)).toBe(false);
+    expect(await messageTells(domain, client, jobId)).toEqual([]);
+    expect(await domain.notices.list(artisan.actor)).toContainEqual(
+      expect.objectContaining({ title: "Your message is checked, but the Conversation has ended" }),
+    );
+  });
 });
 
 /** A Quote's fields, as the Artisan's form sends them. */

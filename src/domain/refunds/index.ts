@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql, type SQL } from "drizzle-orm";
 import type { Actor } from "../actor";
 import { system } from "../actor";
 import { firstProblem } from "../accounts/inputs";
@@ -6,6 +6,7 @@ import { startClock, type ClockHandler } from "../clocks";
 import type { Context, Write } from "../context";
 import { eventWrite } from "../conversations/rows";
 import { refundFields, type RefundFields } from "../engagements/inputs";
+import { insertWhile } from "../guarded";
 import { engagementRow, type EngagementRow } from "../engagements/rows";
 import {
   engagementMoney,
@@ -31,8 +32,8 @@ import {
 } from "./rows";
 
 // Refunds (#132, ADR 0008): unreleased money sent back to the Client, never
-// the Protection Fee, by the Artisan's choice at any time; and a Payment that
-// Hired nobody, sent back whole (#126). The payment adapter takes one Refund
+// the Protection Fee, by the Artisan's choice at any time or a Cancellation
+// (#133); and a Payment that Hired nobody, sent back whole (#126). The payment adapter takes one Refund
 // at a time per collection, so a Refund waits while another of its Payment
 // is with it. On the bank paying it, the Client is told with a Receipt. One
 // the bank cannot take stays owed to the Client and raises a system Support
@@ -46,6 +47,13 @@ export const PAUSED_CLOCK = "refund.paused";
 const PAUSED_FOR_MS = 3 * 24 * 60 * 60 * 1000;
 
 const PARTS = { materials: "Materials", labour: "Labour" } as const;
+
+/** Why a Refund was made, as the payment adapter is told. */
+const ADAPTER_REASONS: Record<RefundCause, (notHiredFor: string | null) => string> = {
+  artisan: () => "Refund by the Artisan",
+  "not-hired": (notHiredFor) => `No Hire: ${notHiredFor}`,
+  cancellation: () => "Cancellation",
+};
 
 /**
  * The Artisan refunds an amount of each unreleased line of their Engagement,
@@ -86,7 +94,7 @@ export async function refundByArtisan(
     }
     const refundId = ctx.newId();
     try {
-      await ctx.commit(refundWrites(ctx, engagement, refundId, parsed.data));
+      await ctx.commit(refundWrites(ctx, engagement, refundId, "artisan", parsed.data));
     } catch (error) {
       // A Release or another Refund took the money meanwhile: read it again.
       if (isOverdrawn(error)) continue;
@@ -101,16 +109,20 @@ export async function refundByArtisan(
 }
 
 /**
- * The writes of the Artisan's Refund, in one batch: the Refund, waiting to
- * be sent; what it refunds of each line, and owes the Client, in the ledger;
- * and its row in the Conversation. The ledger aborts the batch if a line
- * would go below nothing unreleased.
+ * The writes of a Refund of an Engagement's unreleased money, by the Artisan
+ * or a Cancellation, in one batch: the Refund, waiting to be sent; what it
+ * refunds of each line, and owes the Client, in the ledger; and its row in
+ * the Conversation. With a condition, each is written only while it holds
+ * when the batch runs. The ledger aborts the batch if a line would go below
+ * nothing unreleased. Send it with `sendRefunds` once committed.
  */
-function refundWrites(
+export function refundWrites(
   ctx: Context,
-  engagement: EngagementRow,
+  engagement: Pick<EngagementRow, "id" | "paymentId" | "clientId" | "jobId" | "artisanId">,
   refundId: string,
+  cause: Exclude<RefundCause, "not-hired">,
   amounts: { materials: number; labour: number },
+  condition?: SQL,
 ): Write[] {
   const amountCents = amounts.materials + amounts.labour;
   const of = (kind: LedgerRow["kind"], amountCents: number): LedgerRow => ({
@@ -119,24 +131,29 @@ function refundWrites(
     paymentId: engagement.paymentId,
     engagementId: engagement.id,
   });
+  const refund = waitingRefund(ctx, refundId, {
+    paymentId: engagement.paymentId,
+    engagementId: engagement.id,
+    clientId: engagement.clientId,
+    cause,
+    labourCents: amounts.labour,
+    materialsCents: amounts.materials,
+    protectionFeeCents: 0,
+  });
   return [
-    ctx.db.insert(refunds).values(
-      waitingRefund(ctx, refundId, {
-        paymentId: engagement.paymentId,
-        engagementId: engagement.id,
-        clientId: engagement.clientId,
-        cause: "artisan",
-        labourCents: amounts.labour,
-        materialsCents: amounts.materials,
-        protectionFeeCents: 0,
-      }),
+    condition
+      ? insertWhile(ctx, refunds, refund, condition)
+      : ctx.db.insert(refunds).values(refund),
+    ...ledgerWrites(
+      ctx,
+      [
+        of(LEDGER_KINDS.materialsRefunded, amounts.materials),
+        of(LEDGER_KINDS.labourRefunded, amounts.labour),
+        of(LEDGER_KINDS.refundOwed, amountCents),
+      ],
+      condition,
     ),
-    ...ledgerWrites(ctx, [
-      of(LEDGER_KINDS.materialsRefunded, amounts.materials),
-      of(LEDGER_KINDS.labourRefunded, amounts.labour),
-      of(LEDGER_KINDS.refundOwed, amountCents),
-    ]),
-    eventWrite(ctx, engagement, "refund", sql`1`, formatRands(amountCents)),
+    eventWrite(ctx, engagement, "refund", condition ?? sql`1`, formatRands(amountCents)),
   ];
 }
 
@@ -170,6 +187,7 @@ export function notHiredRefundWrite(
 }
 
 type RefundRecord = typeof refunds.$inferSelect;
+type RefundCause = RefundRecord["cause"];
 
 /** A Refund just made, waiting to be sent: its amount is what it refunds of each part. */
 function waitingRefund(
@@ -227,7 +245,7 @@ export async function sendRefunds(ctx: Context, paymentId: string) {
     id: refund.id,
     collectionId: paymentId,
     amountCents: refund.amountCents,
-    reason: refund.cause === "not-hired" ? `No Hire: ${notHiredFor}` : "Refund by the Artisan",
+    reason: ADAPTER_REASONS[refund.cause](notHiredFor),
   });
   const now = ctx.now();
   await ctx.commit([

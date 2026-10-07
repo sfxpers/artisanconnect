@@ -643,6 +643,45 @@ export const copy = {
     fixArtisan: "The Client asked for a fix",
     fixArtisanLead:
       "Put it right, then mark the work complete again. The Client then has a new seven days to answer.",
+    cancelledTitle: "Cancelled",
+    cancelledLead: (of: {
+      who: string;
+      afterWorkStarted: boolean;
+      asClient: boolean;
+      labourRefund: { amount: string; on: string } | null;
+    }) => {
+      if (!of.afterWorkStarted) {
+        return of.asClient
+          ? `${of.who} cancelled before Work started. What was not yet released is refunded to you; the Protection Fee is kept.`
+          : `${of.who} cancelled before Work started, and the Client is refunded what was not yet released.`;
+      }
+      const materials = of.asClient
+        ? "The Materials stay with the Artisan"
+        : "The Materials stay with you";
+      if (of.labourRefund) {
+        return of.asClient
+          ? `${of.who} cancelled after Work started. ${materials}, and the Labour not yet released, ${of.labourRefund.amount}, is refunded to you on ${of.labourRefund.on}.`
+          : `${of.who} cancelled after Work started. ${materials}, and the Labour not yet released, ${of.labourRefund.amount}, is refunded to the Client on ${of.labourRefund.on}. You may refund it sooner under Payments.`;
+      }
+      return `${of.who} cancelled after Work started. ${materials}, and the Labour not yet released was refunded ${of.asClient ? "to you" : "to the Client"}.`;
+    },
+    you: "You",
+    theClient: "The Client",
+    theArtisan: "The Artisan",
+    cancelJob: "Cancel this Job",
+    cancelLead: (of: { afterWorkStarted: boolean; asClient: boolean; amount: string }) =>
+      of.afterWorkStarted
+        ? of.asClient
+          ? `Cancelling now: the Materials stay with the Artisan, and the Labour not yet released, ${of.amount}, is refunded to you 72 hours later.`
+          : `Cancelling now: the Materials stay with you, and the Labour not yet released, ${of.amount}, is refunded to the Client 72 hours later, unless you refund it sooner.`
+        : of.asClient
+          ? `Cancelling now refunds ${of.amount} to you at once. The Protection Fee is kept.`
+          : `Cancelling now refunds ${of.amount} to the Client at once.`,
+    cancelReason: "Reason (optional)",
+    cancelReasonHint: (asClient: boolean) =>
+      `Only the ArtisanConnect Admin reads it; the ${asClient ? "Artisan" : "Client"} does not see it.`,
+    cancelConfirm: (lead: string) => `Cancel this Job? ${lead} This cannot be undone.`,
+    keepJob: "Keep the Job",
     completedTitle: "Completed",
     completedClientLead: "The work is approved, and the Labour was released to the Artisan.",
     completedArtisanLead:
@@ -702,6 +741,7 @@ export const copy = {
       "completion.made": "Marked complete",
       "fix.requested": "Fix requested",
       approved: "Approved",
+      cancelled: "Cancelled",
       refunded: "Refunded",
     },
     refunds: "Refunds",
@@ -789,6 +829,7 @@ export const copy = {
       "fix.requested": "Fix requested",
       approved: "Approved",
       refund: "Refunded",
+      cancelled: "Cancelled",
     } satisfies Record<MessageEvent, string>,
     photo: (index: number) => `Photo ${index}`,
     message: "Message",

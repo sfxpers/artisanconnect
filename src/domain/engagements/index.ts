@@ -11,6 +11,8 @@ import {
   withdrawCompletion,
 } from "./completion";
 import { refundByArtisan, refundClocks } from "../refunds";
+import { cancel, cancellationClocks } from "./cancellation";
+import { artisanRecord } from "./record";
 import type { RefundFields } from "./inputs";
 import { openCheckout } from "./hire";
 import { answerNotStarted, claimStarted, markWorkStarted, workStartedClocks } from "./work-started";
@@ -20,7 +22,7 @@ import { answerNotStarted, claimStarted, markWorkStarted, workStartedClocks } fr
 
 export const engagementsSection = defineSection({
   name: "engagements",
-  clocks: { ...workStartedClocks, ...completionClocks, ...refundClocks },
+  clocks: { ...workStartedClocks, ...completionClocks, ...refundClocks, ...cancellationClocks },
   queueItems: [heldCompletion, heldFixNote],
   api: (ctx) => ({
     /**
@@ -62,6 +64,16 @@ export const engagementsSection = defineSection({
      */
     refund: (actor: Actor, input: { engagementId: string } & RefundFields) =>
       refundByArtisan(ctx, actor, input),
+    /**
+     * Either party cancels before Approval, with an optional reason only the
+     * Admin reads. Before Work started the Client is refunded at once; after
+     * it the unreleased Labour is refunded in 72 hours (ADR 0007).
+     */
+    cancel: (actor: Actor, input: { engagementId: string; reason?: string }) =>
+      cancel(ctx, actor, input),
+    /** An Artisan's record of Cancellations, for the Admin only; null to anyone else. */
+    artisanRecord: async (viewer: Actor, input: { artisanId: string }) =>
+      viewer.kind === "admin" ? artisanRecord(ctx, input.artisanId) : null,
     /** A Completion's photo or document, to whoever may see it; null to anyone else. */
     completionFile: (
       viewer: Actor,

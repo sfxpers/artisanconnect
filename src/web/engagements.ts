@@ -2,7 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { requestActor, requestDomain } from "./session";
 
 // Engagements: thin adapters onto the domain module, which decides who may
-// set Work started, mark the work complete, approve it, and refund, and when (ADR 0006).
+// set Work started, mark the work complete, approve it, refund, and cancel,
+// and when (ADR 0006, ADR 0007).
 
 const byEngagement = (input: { engagementId: string }) => input;
 
@@ -85,4 +86,12 @@ export const refund = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const domain = requestDomain();
     return domain.engagements.refund(await requestActor(domain), data);
+  });
+
+/** Either party cancels before Approval, with an optional reason. */
+export const cancelEngagement = createServerFn({ method: "POST" })
+  .validator((input: { engagementId: string; reason?: string }) => input)
+  .handler(async ({ data }) => {
+    const domain = requestDomain();
+    return domain.engagements.cancel(await requestActor(domain), data);
   });

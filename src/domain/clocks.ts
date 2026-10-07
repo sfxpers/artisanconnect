@@ -1,6 +1,7 @@
 import { and, asc, eq, isNull, lte } from "drizzle-orm";
 import type { Context, Write } from "./context";
 import { causedBy } from "./errors";
+import { isOverdrawn } from "./ledger";
 import { dueClocks } from "./schema";
 
 export type DueClock = {
@@ -96,18 +97,26 @@ export async function fireDueClock(
   return clock ? fireClock(ctx, clock, handler) : false;
 }
 
-/** Fires one clock with its writes; false if another run fired it first. */
+/**
+ * Fires one clock with its writes; false if another run fired it first. A
+ * Release or Refund it worked out from the money unreleased is worked out
+ * again if a command took that money meanwhile, as the ledger then aborts
+ * the batch rather than overdraw.
+ */
 async function fireClock(ctx: Context, clock: DueClock, handler: ClockHandler): Promise<boolean> {
-  const writes = await handler(ctx, clock);
-  const markFired = ctx.db
-    .update(dueClocks)
-    .set({ firedAt: ctx.now() })
-    .where(eq(dueClocks.id, clock.id));
-  try {
-    await ctx.commit([markFired, ...writes]);
-    return true;
-  } catch (error) {
-    if (causedBy(error, "clock already fired")) return false;
-    throw error;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const writes = await handler(ctx, clock);
+    const markFired = ctx.db
+      .update(dueClocks)
+      .set({ firedAt: ctx.now() })
+      .where(eq(dueClocks.id, clock.id));
+    try {
+      await ctx.commit([markFired, ...writes]);
+      return true;
+    } catch (error) {
+      if (causedBy(error, "clock already fired")) return false;
+      if (!isOverdrawn(error)) throw error;
+    }
   }
+  throw new Error(`Clock ${clock.id}'s money kept changing while it fired`);
 }

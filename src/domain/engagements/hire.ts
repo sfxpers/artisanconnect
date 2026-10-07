@@ -212,6 +212,9 @@ async function hireWrites(
         workStartedAt: null,
         workStartedBy: null,
         completedAt: null,
+        cancelledAt: null,
+        cancelledBy: null,
+        cancellationReason: null,
       },
       and(
         sql`exists (select 1 from ${payments} where ${payments.id} = ${payment.id} and ${inArray(payments.state, ["open", "failed"])})`,
