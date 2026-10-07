@@ -6,7 +6,7 @@ import { requestActor, requestDomain } from "./session";
 
 /** Whom the Job's Client may invite, optionally only in one Region. */
 export const getInviteList = createServerFn({ method: "GET" })
-  .inputValidator((input: { jobId: string; regionId?: string }) => input)
+  .validator((input: { jobId: string; regionId?: string }) => input)
   .handler(async ({ data }) => {
     const domain = requestDomain();
     return domain.invitations.list(await requestActor(domain), data);
@@ -14,7 +14,7 @@ export const getInviteList = createServerFn({ method: "GET" })
 
 /** Invites an Artisan to Quote on the Client's Open Job. */
 export const inviteArtisan = createServerFn({ method: "POST" })
-  .inputValidator((input: { jobId: string; artisanId: string }) => input)
+  .validator((input: { jobId: string; artisanId: string }) => input)
   .handler(async ({ data }) => {
     const domain = requestDomain();
     return domain.invitations.invite(await requestActor(domain), data);
@@ -22,7 +22,7 @@ export const inviteArtisan = createServerFn({ method: "POST" })
 
 /** Passes on an Invitation the Artisan holds. Nobody is told. */
 export const passInvitation = createServerFn({ method: "POST" })
-  .inputValidator((input: { jobId: string }) => input)
+  .validator((input: { jobId: string }) => input)
   .handler(async ({ data }) => {
     const domain = requestDomain();
     return domain.invitations.pass(await requestActor(domain), data);

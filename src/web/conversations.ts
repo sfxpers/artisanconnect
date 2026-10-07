@@ -8,7 +8,7 @@ const byConversation = (input: { conversationId: string }) => input;
 
 /** The Conversations on the Job the signed-in Account sees. */
 export const getConversations = createServerFn({ method: "GET" })
-  .inputValidator((input: { jobId: string }) => input)
+  .validator((input: { jobId: string }) => input)
   .handler(async ({ data }) => {
     const domain = requestDomain();
     return domain.conversations.forJob(await requestActor(domain), data);
@@ -16,7 +16,7 @@ export const getConversations = createServerFn({ method: "GET" })
 
 /** One Conversation as the signed-in Account sees it. */
 export const getConversation = createServerFn({ method: "GET" })
-  .inputValidator(byConversation)
+  .validator(byConversation)
   .handler(async ({ data }) => {
     const domain = requestDomain();
     return domain.conversations.view(await requestActor(domain), data);
@@ -24,7 +24,7 @@ export const getConversation = createServerFn({ method: "GET" })
 
 /** Sends a message: "conversationId", "text", and up to five "photos". */
 export const sendMessage = createServerFn({ method: "POST" })
-  .inputValidator((input: FormData) => {
+  .validator((input: FormData) => {
     if (!(input instanceof FormData)) throw new Error("Expected a form");
     const text = input.get("text");
     return {
@@ -40,7 +40,7 @@ export const sendMessage = createServerFn({ method: "POST" })
 
 /** Marks the Conversation opened: what was delivered to the Account is read. */
 export const openConversation = createServerFn({ method: "POST" })
-  .inputValidator(byConversation)
+  .validator(byConversation)
   .handler(async ({ data }) => {
     const domain = requestDomain();
     return domain.conversations.opened(await requestActor(domain), data);
@@ -48,7 +48,7 @@ export const openConversation = createServerFn({ method: "POST" })
 
 /** Withdraws the Account's message being checked. */
 export const withdrawMessage = createServerFn({ method: "POST" })
-  .inputValidator((input: { messageId: string }) => input)
+  .validator((input: { messageId: string }) => input)
   .handler(async ({ data }) => {
     const domain = requestDomain();
     return domain.conversations.withdrawHeld(await requestActor(domain), data);

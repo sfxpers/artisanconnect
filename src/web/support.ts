@@ -9,7 +9,7 @@ export const getMySupport = createServerFn({ method: "GET" }).handler(async () =
 
 /** Sends the Admin a Support request under one of the fixed topics. */
 export const sendSupport = createServerFn({ method: "POST" })
-  .inputValidator((input: { topic: string; message: string }) => input)
+  .validator((input: { topic: string; message: string }) => input)
   .handler(async ({ data }) => {
     const domain = requestDomain();
     return domain.support.send(await requestActor(domain), data);

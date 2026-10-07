@@ -32,7 +32,7 @@ export const getCurrentRules = createServerFn({ method: "GET" }).handler(async (
 );
 
 export const signUp = createServerFn({ method: "POST" })
-  .inputValidator((input: Guarded<SignUpDetails>) => input)
+  .validator((input: Guarded<SignUpDetails>) => input)
   .handler(async ({ data: { turnstileToken, ...details } }) => {
     const refused = await turnstileRefusal(turnstileToken);
     if (refused) return refused;
@@ -40,7 +40,7 @@ export const signUp = createServerFn({ method: "POST" })
   });
 
 export const resendCode = createServerFn({ method: "POST" })
-  .inputValidator((input: Guarded<{ email: string }>) => input)
+  .validator((input: Guarded<{ email: string }>) => input)
   .handler(async ({ data }) => {
     const refused = await turnstileRefusal(data.turnstileToken);
     if (refused) return refused;
@@ -48,7 +48,7 @@ export const resendCode = createServerFn({ method: "POST" })
   });
 
 export const confirmEmail = createServerFn({ method: "POST" })
-  .inputValidator((input: { email: string; code: string }) => input)
+  .validator((input: { email: string; code: string }) => input)
   .handler(async ({ data }) => {
     const domain = requestDomain();
     const confirmed = await domain.accounts.confirmEmail(visitor, { ...data, ip: requestIp() });
@@ -58,7 +58,7 @@ export const confirmEmail = createServerFn({ method: "POST" })
   });
 
 export const signIn = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     (input: Guarded<{ email: string; password: string; acceptsRules?: Acceptance }>) => input,
   )
   .handler(async ({ data: { turnstileToken, ...credentials } }) => {
@@ -81,7 +81,7 @@ export const signOut = createServerFn({ method: "POST" }).handler(async () => {
 });
 
 export const requestRecovery = createServerFn({ method: "POST" })
-  .inputValidator((input: Guarded<{ email: string }>) => input)
+  .validator((input: Guarded<{ email: string }>) => input)
   .handler(async ({ data }) => {
     const refused = await turnstileRefusal(data.turnstileToken);
     if (refused) return refused;
@@ -92,14 +92,14 @@ export const requestRecovery = createServerFn({ method: "POST" })
   });
 
 export const recover = createServerFn({ method: "POST" })
-  .inputValidator((input: { email: string; code: string; password: string }) => input)
+  .validator((input: { email: string; code: string; password: string }) => input)
   .handler(async ({ data }) =>
     requestDomain().accounts.recover(visitor, { ...data, ip: requestIp() }),
   );
 
 /** Gives the signed-in Account new names, which go through the Content check. */
 export const changeNames = createServerFn({ method: "POST" })
-  .inputValidator((input: { name: string; tradingName?: string }) => input)
+  .validator((input: { name: string; tradingName?: string }) => input)
   .handler(async ({ data }) => {
     const domain = requestDomain();
     return domain.accounts.changeNames(await requestActor(domain), data);
@@ -107,7 +107,7 @@ export const changeNames = createServerFn({ method: "POST" })
 
 /** States the signed-in Artisan's VAT number, or clears it. */
 export const setVatNumber = createServerFn({ method: "POST" })
-  .inputValidator((input: { vatNumber: string }) => input)
+  .validator((input: { vatNumber: string }) => input)
   .handler(async ({ data }) => {
     const domain = requestDomain();
     return domain.accounts.setVatNumber(await requestActor(domain), data);

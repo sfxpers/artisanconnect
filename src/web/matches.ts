@@ -6,7 +6,7 @@ import { requestActor, requestDomain } from "./session";
 
 /** Passes on a Job Match the Artisan holds. Nobody is told. */
 export const passMatch = createServerFn({ method: "POST" })
-  .inputValidator((input: { jobId: string }) => input)
+  .validator((input: { jobId: string }) => input)
   .handler(async ({ data }) => {
     const domain = requestDomain();
     return domain.matches.pass(await requestActor(domain), data);

@@ -16,7 +16,7 @@ function checkoutAdapter() {
 
 /** The collection the checkout is for: its amount and state. */
 export const getFakeCheckout = createServerFn({ method: "GET" })
-  .inputValidator((input: { collectionId: string }) => input)
+  .validator((input: { collectionId: string }) => input)
   .handler(async ({ data }) => {
     const checkout = await checkoutAdapter().checkout(data.collectionId);
     if (!checkout) throw notFound();
@@ -25,7 +25,7 @@ export const getFakeCheckout = createServerFn({ method: "GET" })
 
 /** Pays or fails the collection, as a person at the provider's checkout would; where to return. */
 export const completeFakeCheckout = createServerFn({ method: "POST" })
-  .inputValidator((input: { collectionId: string; outcome: "succeed" | "fail" }) => input)
+  .validator((input: { collectionId: string; outcome: "succeed" | "fail" }) => input)
   .handler(async ({ data }) => {
     const payments = checkoutAdapter();
     const checkout = await payments.checkout(data.collectionId);

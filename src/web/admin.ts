@@ -8,7 +8,7 @@ import { requestActor, requestDomain, requestIp, sendCookies, turnstileRefusal }
 // refuses anyone but an Admin (ADR 0017).
 
 export const requestAdminCode = createServerFn({ method: "POST" })
-  .inputValidator((input: { email: string; turnstileToken?: string }) => input)
+  .validator((input: { email: string; turnstileToken?: string }) => input)
   .handler(async ({ data }) => {
     const refused = await turnstileRefusal(data.turnstileToken);
     if (refused) return refused;
@@ -19,7 +19,7 @@ export const requestAdminCode = createServerFn({ method: "POST" })
   });
 
 export const adminSignIn = createServerFn({ method: "POST" })
-  .inputValidator((input: { email: string; code: string }) => input)
+  .validator((input: { email: string; code: string }) => input)
   .handler(async ({ data }) => {
     const signedIn = await requestDomain().admins.signIn(visitor, { ...data, ip: requestIp() });
     if (!signedIn.ok) return signedIn;
@@ -29,21 +29,21 @@ export const adminSignIn = createServerFn({ method: "POST" })
 
 /** The home stream of the eight queues, or of one. */
 export const getAdminHome = createServerFn({ method: "GET" })
-  .inputValidator((input: { queue?: QueueName }) => input)
+  .validator((input: { queue?: QueueName }) => input)
   .handler(async ({ data }) => {
     const domain = requestDomain();
     return orNotFound(await domain.queues.home(await requestActor(domain), data));
   });
 
 export const getQueueItem = createServerFn({ method: "GET" })
-  .inputValidator((input: { itemId: string }) => input)
+  .validator((input: { itemId: string }) => input)
   .handler(async ({ data }) => {
     const domain = requestDomain();
     return orNotFound(await domain.queues.item(await requestActor(domain), data));
   });
 
 export const decideQueueItem = createServerFn({ method: "POST" })
-  .inputValidator((input: { itemId: string; decision: string; reason?: string }) => input)
+  .validator((input: { itemId: string; decision: string; reason?: string }) => input)
   .handler(async ({ data }) => {
     const domain = requestDomain();
     return domain.queues.decide(await requestActor(domain), data);
@@ -51,7 +51,7 @@ export const decideQueueItem = createServerFn({ method: "POST" })
 
 /** Records the Admin's decision on one row of an item, such as one Verification check. */
 export const decideQueueRow = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     (input: {
       itemId: string;
       rowId: string;
@@ -67,7 +67,7 @@ export const decideQueueRow = createServerFn({ method: "POST" })
 
 /** Opens what an item, or one of its rows, shows only on a logged click. */
 export const openLoggedRead = createServerFn({ method: "POST" })
-  .inputValidator((input: { itemId: string; read: string; rowId?: string }) => input)
+  .validator((input: { itemId: string; read: string; rowId?: string }) => input)
   .handler(async ({ data }) => {
     const domain = requestDomain();
     return domain.queues.open(await requestActor(domain), data);
@@ -79,21 +79,21 @@ export const getAdmins = createServerFn({ method: "GET" }).handler(async () => {
 });
 
 export const inviteAdmin = createServerFn({ method: "POST" })
-  .inputValidator((input: { email: string }) => input)
+  .validator((input: { email: string }) => input)
   .handler(async ({ data }) => {
     const domain = requestDomain();
     return domain.admins.invite(await requestActor(domain), data);
   });
 
 export const removeAdmin = createServerFn({ method: "POST" })
-  .inputValidator((input: { adminId: string }) => input)
+  .validator((input: { adminId: string }) => input)
   .handler(async ({ data }) => {
     const domain = requestDomain();
     return domain.admins.remove(await requestActor(domain), data);
   });
 
 export const getAuditLog = createServerFn({ method: "GET" })
-  .inputValidator((input: { before?: string }) => input)
+  .validator((input: { before?: string }) => input)
   .handler(async ({ data }) => {
     const domain = requestDomain();
     return orNotFound(await domain.admins.auditLog(await requestActor(domain), data));

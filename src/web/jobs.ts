@@ -16,7 +16,7 @@ export const getMyJobs = createServerFn({ method: "GET" }).handler(async () => {
  * viewer may not see is a page that does not exist.
  */
 export const getJob = createServerFn({ method: "GET" })
-  .inputValidator((input: { jobId: string }) => input)
+  .validator((input: { jobId: string }) => input)
   .handler(async ({ data }) => {
     const domain = requestDomain();
     const actor = await requestActor(domain);
@@ -51,7 +51,7 @@ function asForm(input: unknown): FormData {
 
 /** Saves a Draft whole, a new one or the one named under "jobId". */
 export const saveJobDraft = createServerFn({ method: "POST" })
-  .inputValidator((input: FormData) => {
+  .validator((input: FormData) => {
     const form = asForm(input);
     const gasWork = field(form, "gasWork");
     return {
@@ -79,7 +79,7 @@ export const saveJobDraft = createServerFn({ method: "POST" })
 
 /** Changes a posted Job's title, description, photos, Site type, and Preferred start. */
 export const editJob = createServerFn({ method: "POST" })
-  .inputValidator((input: FormData) => {
+  .validator((input: FormData) => {
     const form = asForm(input);
     return {
       jobId: field(form, "jobId") ?? "",
@@ -103,7 +103,7 @@ const byJob = (input: { jobId: string }) => input;
 
 /** Posts the Client's saved Draft. */
 export const postJob = createServerFn({ method: "POST" })
-  .inputValidator(byJob)
+  .validator(byJob)
   .handler(async ({ data }) => {
     const domain = requestDomain();
     return domain.jobs.post(await requestActor(domain), data);
@@ -111,7 +111,7 @@ export const postJob = createServerFn({ method: "POST" })
 
 /** Withdraws what of the Job is being checked. */
 export const withdrawJob = createServerFn({ method: "POST" })
-  .inputValidator(byJob)
+  .validator(byJob)
   .handler(async ({ data }) => {
     const domain = requestDomain();
     return domain.jobs.withdraw(await requestActor(domain), data);
@@ -119,7 +119,7 @@ export const withdrawJob = createServerFn({ method: "POST" })
 
 /** Discards the Client's Draft. */
 export const discardJob = createServerFn({ method: "POST" })
-  .inputValidator(byJob)
+  .validator(byJob)
   .handler(async ({ data }) => {
     const domain = requestDomain();
     return domain.jobs.discard(await requestActor(domain), data);
@@ -127,7 +127,7 @@ export const discardJob = createServerFn({ method: "POST" })
 
 /** Closes the Client's Open Job. */
 export const closeJob = createServerFn({ method: "POST" })
-  .inputValidator(byJob)
+  .validator(byJob)
   .handler(async ({ data }) => {
     const domain = requestDomain();
     return domain.jobs.close(await requestActor(domain), data);
@@ -135,7 +135,7 @@ export const closeJob = createServerFn({ method: "POST" })
 
 /** Renews the Client's Expired Job for 14 days. */
 export const renewJob = createServerFn({ method: "POST" })
-  .inputValidator(byJob)
+  .validator(byJob)
   .handler(async ({ data }) => {
     const domain = requestDomain();
     return domain.jobs.renew(await requestActor(domain), data);

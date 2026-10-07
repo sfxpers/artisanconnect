@@ -15,7 +15,7 @@ const PARTS: FilePart["part"][] = ["document", "selfie", "photos"];
  * under the part each is ("document", "selfie", "photos").
  */
 export const submitCheck = createServerFn({ method: "POST" })
-  .inputValidator((input: FormData) => {
+  .validator((input: FormData) => {
     if (!(input instanceof FormData)) throw new Error("Expected a form");
     const details = JSON.parse(String(input.get("details") ?? "{}")) as CheckDetailsInput;
     const files: Partial<Record<FilePart["part"], Blob[]>> = {};

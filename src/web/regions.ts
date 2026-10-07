@@ -14,7 +14,7 @@ export const getRegions = createServerFn({ method: "GET" }).handler(async () => 
 
 /** Suburbs matching what was typed, each with its Region. */
 export const searchSuburbs = createServerFn({ method: "GET" })
-  .inputValidator((input: { query: string }) => input)
+  .validator((input: { query: string }) => input)
   .handler(async ({ data }) => {
     const domain = requestDomain();
     return domain.regions.searchSuburbs(await requestActor(domain), data);
@@ -22,7 +22,7 @@ export const searchSuburbs = createServerFn({ method: "GET" })
 
 /** Replaces the Regions the Artisan works in. */
 export const chooseRegions = createServerFn({ method: "POST" })
-  .inputValidator((input: { regionIds: string[] }) => input)
+  .validator((input: { regionIds: string[] }) => input)
   .handler(async ({ data }) => {
     const domain = requestDomain();
     return domain.regions.choose(await requestActor(domain), data);
@@ -59,7 +59,7 @@ export const getMyWork = createServerFn({ method: "GET" }).handler(async () => {
 
 /** Turns Available for Jobs on or off. */
 export const setAvailableForJobs = createServerFn({ method: "POST" })
-  .inputValidator((input: { available: boolean }) => input)
+  .validator((input: { available: boolean }) => input)
   .handler(async ({ data }) => {
     const domain = requestDomain();
     return domain.availability.set(await requestActor(domain), data);

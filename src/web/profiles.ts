@@ -7,7 +7,7 @@ import { requestActor, requestDomain } from "./session";
 
 /** The Artisans verified for one Service Category, optionally in one Region. */
 export const getBrowse = createServerFn({ method: "GET" })
-  .inputValidator((input: { category: string; regionId?: string }) => input)
+  .validator((input: { category: string; regionId?: string }) => input)
   .handler(async ({ data }) => {
     const domain = requestDomain();
     return domain.profiles.browse(await requestActor(domain), data);
@@ -15,7 +15,7 @@ export const getBrowse = createServerFn({ method: "GET" })
 
 /** An Artisan's public Profile; one nobody may open is a page that does not exist. */
 export const getProfile = createServerFn({ method: "GET" })
-  .inputValidator((input: { artisanId: string }) => input)
+  .validator((input: { artisanId: string }) => input)
   .handler(async ({ data }) => {
     const domain = requestDomain();
     const profile = await domain.profiles.view(await requestActor(domain), data);
@@ -34,7 +34,7 @@ export const getMyProfile = createServerFn({ method: "GET" }).handler(async () =
  * the ids of the photos kept under "keep", and photos to add under "add".
  */
 export const editProfile = createServerFn({ method: "POST" })
-  .inputValidator((input: FormData) => {
+  .validator((input: FormData) => {
     if (!(input instanceof FormData)) throw new Error("Expected a form");
     return {
       about: String(input.get("about") ?? ""),
