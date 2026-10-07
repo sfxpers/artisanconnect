@@ -183,7 +183,7 @@ Money sent to the Artisan's Payout account after a Release, in the next daily ru
 _Avoid_: Withdrawal, Settlement
 
 **Payout account**:
-The bank account in the Artisan's own name, proven by a bank letter, that Payouts are sent to. No two Artisans may hold the same one. A bank refusing or sending back a Payout makes it no longer current, and Payouts wait until the Admin accepts a new one.
+The bank account in the Artisan's own name, proven by a bank letter, that Payouts are sent to. No two Artisans may hold the same one. A bank refusing or sending back a Payout makes it no longer current, and Payouts wait until the Admin accepts a new one; it still counts for Verification, so the Artisan may still Quote and be Hired.
 _Avoid_: Wallet, Bank details
 
 **Chargeback**:

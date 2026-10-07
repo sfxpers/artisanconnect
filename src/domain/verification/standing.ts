@@ -69,11 +69,18 @@ export class Standing {
     return this.needsWorkPermit() || isForeignPassport(this.waiting("identity"));
   }
 
-  /** Every check needed once is current: identity, any work permit, and a Payout account. */
+  /**
+   * Every check needed once is current: identity and any work permit, and a
+   * Payout account accepted. One a bank stopped still counts: it proved an
+   * account in the Artisan's own name, and only their Payouts wait for a
+   * current one (#129).
+   */
   onceChecksCurrent(): boolean {
+    const payoutAccount = this.accepted("payout-account");
     return (
       this.current("identity") !== null &&
-      this.current("payout-account") !== null &&
+      payoutAccount !== null &&
+      isCurrent({ ...payoutAccount, payoutsStoppedAt: null }, this.today) &&
       (!this.needsWorkPermit() || this.current("work-permit") !== null)
     );
   }

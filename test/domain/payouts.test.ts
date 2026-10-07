@@ -153,12 +153,13 @@ describe("a Payout refused or sent back", () => {
     expect(slotOf(await domain.verification.mine(artisan.actor), "payout-account")).toMatchObject({
       state: "stopped",
     });
+    // Only the Payouts wait: the account still counts for Verification.
     expect(
       await domain.verification.verified(artisan.actor, {
         artisanId: artisan.actor.accountId,
         category: "painting",
       }),
-    ).toBe(false);
+    ).toBe(true);
     expect(await ledgerRows(engagementId, "%")).toEqual(
       expect.arrayContaining([
         { kind: "payout.refused", amount_cents: 45_000 },
@@ -250,6 +251,7 @@ describe("a Payout refused or sent back", () => {
       "owed to you again",
       `Capitec account ending ${payout!.bankAccount.accountNumber.slice(-4)}`,
       "Verification",
+      "You may still Quote and be Hired",
     ]) {
       expect(told.text).toContain(line);
     }
@@ -303,10 +305,10 @@ describe("a Payout refused or sent back", () => {
     await domain.system.runPayouts();
     const [first] = payoutsAsked(payments);
     await receive(domain, await payments.succeedPayout(first!.id));
-    // A second Release is owed after the day's run.
-    await releasedJob(given, { artisan });
     clock.advance({ hours: 2 });
     await receive(domain, await payments.sendBackPayout(first!.id));
+    // The Artisan is still verified: a second Job is Hired, and its Release is owed.
+    await releasedJob(given, { artisan });
     clock.advance({ days: 1 });
     expect(await domain.system.runPayouts()).toMatchObject({ ran: true, sent: 0 });
 

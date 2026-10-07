@@ -37,6 +37,8 @@ export async function payoutSucceeded(
   const payout = await payoutRow(ctx, event.payoutId);
   if (payout?.state === "unsent") {
     // Settled as never sent, so its Release went again: the bank has paid it twice.
+    // Harmless while launch money is fake; with a real provider, raise a system
+    // Support request here, as paused money does, so the Admin recovers it.
     console.error(`Payout ${payout.id}, settled as never sent, was paid by the bank`);
   }
   if (!payout || !isUnpaid(payout.state)) return;
@@ -341,7 +343,7 @@ function stoppedText(
       : `Your bank ${how.verb} the Payout ${reference} of ${amount} for ${payout.jobTitle}, so it was not paid and no Receipt was sent for it.`,
     "The money is owed to you again, and the Artisan Fee is not charged again.",
     how.stopsAccount || !how.hasCurrent
-      ? `Your Payout account, ${account}, is no longer current, so nothing more is sent to it, and you cannot send Quotes until you have a current one. Send a bank letter for another account in Verification: everything waiting for you goes in the first daily Payout run after the Admin accepts it.`
+      ? `Your Payout account, ${account}, is no longer current, so nothing more is sent to it. You may still Quote and be Hired. Send a bank letter for another account in Verification: everything waiting for you goes in the first daily Payout run after the Admin accepts it.`
       : `Nothing more is sent to ${account}. It goes to your current Payout account in the next daily Payout run.`,
   ].join("\n\n");
 }

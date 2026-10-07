@@ -357,7 +357,7 @@ export const copy = {
       removed: "Badge removed",
     },
     stopped:
-      "Your bank refused or sent back a Payout to this account, so it is no longer current and nothing more is sent to it. Send a bank letter for another account; your Payouts wait until the Admin accepts it.",
+      "Your bank refused or sent back a Payout to this account, so it is no longer current and nothing more is sent to it. You may still Quote. Send a bank letter for another account; your Payouts wait until the Admin accepts it.",
     notNeeded: "Only needed with a foreign passport.",
     optionalCheck: "Optional",
     expires: (day: string) => `Expires ${day}`,
