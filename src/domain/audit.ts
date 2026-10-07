@@ -34,6 +34,27 @@ export function audit(ctx: Context, admin: AdminActor, entry: AuditEntry, condit
 }
 
 /**
+ * The write that logs something the system did that the Admin should see,
+ * such as a Payout sent back, only while the condition holds. Its row has no
+ * Admin.
+ */
+export function systemAudit(ctx: Context, entry: AuditEntry, condition: SQL): Write {
+  return insertWhile(
+    ctx,
+    auditLog,
+    {
+      id: ctx.newId(),
+      adminId: null,
+      action: entry.action,
+      summary: entry.summary,
+      subjectId: entry.subjectId ?? null,
+      at: ctx.now(),
+    },
+    condition,
+  );
+}
+
+/**
  * Logs a read (a Conversation, an identity document) before it is shown, so
  * nothing is read that the log does not hold.
  */

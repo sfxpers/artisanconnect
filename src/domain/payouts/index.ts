@@ -4,17 +4,27 @@ import { audit } from "../audit";
 import type { Context } from "../context";
 import { LEDGER_KINDS, RELEASED_PARTS, type LedgerKind } from "../ledger";
 import { adminOnly, ok, refuse } from "../result";
-import { accounts, authUsers, engagements, jobs, ledgerEntries, payouts } from "../schema";
+import {
+  accounts,
+  authUsers,
+  engagements,
+  jobs,
+  ledgerEntries,
+  payouts,
+  STOPPED_PAYOUT_STATES,
+} from "../schema";
 import { defineSection } from "../section";
 import { emailTells, tellWhile } from "../tells";
 import { currentPayoutAccount } from "../verification";
 import { payoutClocks } from "./events";
-import { latestRun, payoutReference, unpaidCents } from "./run";
+import { payoutReference } from "./rows";
+import { latestRun, unpaidCents } from "./run";
 
 // Payouts (#128): money sent to the Artisan's Payout account after a
 // Release, in the next daily run. The Artisan follows each Release to its
-// Payout; the Admin sees each Artisan's unpaid total, may hold an Artisan's
-// Payouts, and is shown a banner while the float cannot cover them.
+// Payouts; the Admin sees each Artisan's unpaid total and money history, may
+// hold an Artisan's Payouts, and is shown a banner while the float cannot
+// cover them. A Payout the bank refused or sent back shows red (#129).
 
 /** Why a Release owed has no Payout yet. */
 type WaitingFor = "next-run" | "hold" | "payout-account";
@@ -30,35 +40,22 @@ export const payoutsSection = defineSection({
      */
     async mine(viewer: Actor) {
       if (viewer.kind !== "artisan") return null;
-      const artisanId = viewer.accountId;
+      return moneyOf(ctx, viewer.accountId);
+    },
+
+    /**
+     * An Artisan's money history, for the Admin: the Artisan's Payouts view,
+     * with every Payout of each Release, refused and sent back ones too.
+     */
+    async history(viewer: Actor, input: { artisanId: string }) {
+      if (viewer.kind !== "admin") return null;
       const [artisan] = await ctx.db
-        .select({ payoutsHeldAt: accounts.payoutsHeldAt })
+        .select({ artisanId: accounts.id, name: accounts.name, email: authUsers.email })
         .from(accounts)
-        .where(eq(accounts.id, artisanId));
-      const held = !!artisan?.payoutsHeldAt;
-      const releases = await releasesOf(ctx, artisanId);
-      const waitingFor: WaitingFor = held
-        ? "hold"
-        : (await currentPayoutAccount(ctx, artisanId))
-          ? "next-run"
-          : "payout-account";
-      const paidCents = releases.reduce(
-        (sum, release) => sum + (release.payout?.state === "paid" ? release.amountCents : 0),
-        0,
-      );
-      const owedCents = releases.reduce((sum, release) => sum + release.amountCents, 0);
-      return {
-        held,
-        unpaidCents: owedCents - paidCents,
-        paidCents,
-        releases: releases.map(({ payout, ...release }) => ({
-          ...release,
-          state: stateOf(payout),
-          waitingFor: payout ? null : waitingFor,
-          reference: payout ? payoutReference(payout.id) : null,
-          paidAt: payout?.paidAt ?? null,
-        })),
-      };
+        .innerJoin(authUsers, eq(authUsers.id, accounts.id))
+        .where(and(eq(accounts.id, input.artisanId), eq(accounts.kind, "artisan")));
+      if (!artisan) return null;
+      return { ...artisan, ...(await moneyOf(ctx, artisan.artisanId)) };
     },
 
     /**
@@ -67,7 +64,8 @@ export const payoutsSection = defineSection({
      */
     async unpaid(viewer: Actor) {
       if (viewer.kind !== "admin") return null;
-      const unpaid = sql<number>`coalesce(sum(case ${ledgerEntries.kind} when ${LEDGER_KINDS.payoutOwed} then ${ledgerEntries.amountCents} when ${LEDGER_KINDS.payoutPaid} then -${ledgerEntries.amountCents} else 0 end), 0)`;
+      // What was owed, less what was paid, plus what the bank sent back.
+      const unpaid = sql<number>`coalesce(sum(case ${ledgerEntries.kind} when ${LEDGER_KINDS.payoutOwed} then ${ledgerEntries.amountCents} when ${LEDGER_KINDS.payoutPaid} then -${ledgerEntries.amountCents} when ${LEDGER_KINDS.payoutSentBack} then ${ledgerEntries.amountCents} else 0 end), 0)`;
       const rows = await ctx.db
         .select({
           artisanId: accounts.id,
@@ -83,7 +81,11 @@ export const payoutsSection = defineSection({
           ledgerEntries,
           and(
             eq(ledgerEntries.engagementId, engagements.id),
-            inArray(ledgerEntries.kind, [LEDGER_KINDS.payoutOwed, LEDGER_KINDS.payoutPaid]),
+            inArray(ledgerEntries.kind, [
+              LEDGER_KINDS.payoutOwed,
+              LEDGER_KINDS.payoutPaid,
+              LEDGER_KINDS.payoutSentBack,
+            ]),
           ),
         )
         .where(eq(accounts.kind, "artisan"))
@@ -194,47 +196,99 @@ export const payoutsSection = defineSection({
 });
 
 /**
+ * The Artisan's money: each Release, newest first, with its Artisan Fee, what
+ * it owes, its Payouts, and where it stands; what is still unpaid and what
+ * was paid; and whether the Admin holds their Payouts.
+ */
+async function moneyOf(ctx: Context, artisanId: string) {
+  const [artisan] = await ctx.db
+    .select({ payoutsHeldAt: accounts.payoutsHeldAt })
+    .from(accounts)
+    .where(eq(accounts.id, artisanId));
+  const held = !!artisan?.payoutsHeldAt;
+  const releases = await releasesOf(ctx, artisanId);
+  const waitingFor: WaitingFor = held
+    ? "hold"
+    : (await currentPayoutAccount(ctx, artisanId))
+      ? "next-run"
+      : "payout-account";
+  const shown = releases.map(({ payouts: all, ...release }) => {
+    // The Payout going, if one is; else the last one the bank stopped. One
+    // never sent is nothing to the Artisan.
+    const attempts = all.filter((payout) => payout.state !== "unsent");
+    const going = attempts.find((payout) => !STOPPED.includes(payout.state));
+    const latest = going ?? attempts[0] ?? null;
+    return {
+      ...release,
+      state: stateOf(latest),
+      waitingFor: going ? null : waitingFor,
+      reference: latest ? payoutReference(latest.id) : null,
+      paidAt: latest?.state === "paid" ? latest.paidAt : null,
+      payouts: attempts.map((payout) => ({
+        reference: payoutReference(payout.id),
+        state: stateOf(payout),
+        amountCents: payout.amountCents,
+        sentAt: payout.createdAt,
+        paidAt: payout.paidAt,
+        stoppedAt: payout.stoppedAt,
+        /** The bank's reason for refusing it or sending it back. */
+        reason: payout.refusedFor,
+      })),
+    };
+  });
+  const paidCents = shown.reduce(
+    (sum, release) => sum + (release.state === "paid" ? release.amountCents : 0),
+    0,
+  );
+  const owedCents = shown.reduce((sum, release) => sum + release.amountCents, 0);
+  return { held, unpaidCents: owedCents - paidCents, paidCents, releases: shown };
+}
+
+/**
  * Each Release owed to the Artisan, newest first: the Job, the part
- * released, the Artisan Fee kept, what it owes, and its Payout if it has one.
+ * released, the Artisan Fee kept, what it owes, and its Payouts, newest first.
  */
 async function releasesOf(ctx: Context, artisanId: string) {
   const owed = await ctx.db
     .select({
+      owedEntryId: ledgerEntries.id,
       releaseId: ledgerEntries.eventId,
       jobId: jobs.id,
       jobTitle: jobs.title,
       releasedAt: ledgerEntries.recordedAt,
       amountCents: ledgerEntries.amountCents,
-      payout: payouts,
     })
     .from(ledgerEntries)
     .innerJoin(engagements, eq(engagements.id, ledgerEntries.engagementId))
     .innerJoin(jobs, eq(jobs.id, engagements.jobId))
-    .leftJoin(payouts, eq(payouts.owedEntryId, ledgerEntries.id))
     .where(
       and(eq(ledgerEntries.kind, LEDGER_KINDS.payoutOwed), eq(engagements.artisanId, artisanId)),
     )
     .orderBy(desc(ledgerEntries.recordedAt), desc(ledgerEntries.id));
+  if (owed.length === 0) return [];
   // The rest of each Release's event: the part released and the Artisan Fee.
-  const parts = owed.length
-    ? await ctx.db
-        .select({
-          eventId: ledgerEntries.eventId,
-          kind: ledgerEntries.kind,
-          amountCents: ledgerEntries.amountCents,
-        })
-        .from(ledgerEntries)
-        .where(
-          and(
-            inArray(
-              ledgerEntries.eventId,
-              owed.map((release) => release.releaseId),
-            ),
-            inArray(ledgerEntries.kind, [...RELEASED_KINDS, LEDGER_KINDS.artisanFee]),
-          ),
-        )
-    : [];
-  return owed.map((release) => {
+  const parts = await ctx.db
+    .select({
+      eventId: ledgerEntries.eventId,
+      kind: ledgerEntries.kind,
+      amountCents: ledgerEntries.amountCents,
+    })
+    .from(ledgerEntries)
+    .where(
+      and(
+        inArray(
+          ledgerEntries.eventId,
+          owed.map((release) => release.releaseId),
+        ),
+        inArray(ledgerEntries.kind, [...RELEASED_KINDS, LEDGER_KINDS.artisanFee]),
+      ),
+    );
+  const sent = await ctx.db
+    .select()
+    .from(payouts)
+    .where(eq(payouts.artisanId, artisanId))
+    .orderBy(desc(payouts.createdAt), desc(payouts.id));
+  return owed.map(({ owedEntryId, ...release }) => {
     const of = parts.filter((part) => part.eventId === release.releaseId);
     const released = of.find((part) => part.kind !== LEDGER_KINDS.artisanFee);
     return {
@@ -246,23 +300,27 @@ async function releasesOf(ctx: Context, artisanId: string) {
       releasedCents: released?.amountCents ?? 0,
       artisanFeeCents: of.find((part) => part.kind === LEDGER_KINDS.artisanFee)?.amountCents ?? 0,
       amountCents: release.amountCents,
-      payout: release.payout,
+      payouts: sent.filter((payout) => payout.owedEntryId === owedEntryId),
     };
   });
 }
 
 const RELEASED_KINDS = Object.keys(RELEASED_PARTS);
 
+const STOPPED: readonly string[] = STOPPED_PAYOUT_STATES;
+
 type PayoutRow = typeof payouts.$inferSelect;
 
 /**
- * Where a Release's Payout stands for the Artisan: waiting for one, sent (a
- * paused one too, as nobody is told of a pause), paid, or refused.
+ * Where a Payout stands for the Artisan: waiting for one, sent (a paused one
+ * too, as nobody is told of a pause), paid, or refused or sent back by the
+ * bank, which show red.
  */
 function stateOf(payout: PayoutRow | null) {
   if (!payout) return "waiting" as const;
   if (payout.state === "paid") return "paid" as const;
   if (payout.state === "refused") return "refused" as const;
+  if (payout.state === "sent-back") return "sent-back" as const;
   return "sent" as const;
 }
 

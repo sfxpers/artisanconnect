@@ -230,7 +230,8 @@ export const adminsSection = defineSection({
             subjectId: auditLog.subjectId,
           })
           .from(auditLog)
-          .innerJoin(admins, eq(admins.id, auditLog.adminId))
+          // A row the system logged has no Admin.
+          .leftJoin(admins, eq(admins.id, auditLog.adminId))
           .where(
             before
               ? or(

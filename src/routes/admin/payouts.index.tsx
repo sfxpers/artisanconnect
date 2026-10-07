@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { Link, createFileRoute, useRouter } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -9,7 +9,7 @@ import { copy } from "@/web/copy";
 import { onlyForAdmins } from "@/web/guards";
 import { getUnpaidTotals, holdPayouts, liftPayoutHold } from "@/web/payouts";
 
-export const Route = createFileRoute("/admin/payouts")({
+export const Route = createFileRoute("/admin/payouts/")({
   beforeLoad: ({ context }) => {
     onlyForAdmins(context);
   },
@@ -62,7 +62,13 @@ function ArtisanRow({ row }: { row: Row }) {
       <div className="flex flex-wrap items-center gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="truncate font-medium">{row.name}</span>
+            <Link
+              to="/admin/payouts/$artisanId"
+              params={{ artisanId: row.artisanId }}
+              className="truncate font-medium hover:underline"
+            >
+              {row.name}
+            </Link>
             {row.held && <Badge variant="destructive">{t.held}</Badge>}
           </div>
           <div className="truncate text-xs text-muted-foreground">{row.email}</div>

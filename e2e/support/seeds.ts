@@ -1,4 +1,5 @@
 import { createDomain, type DomainConfig } from "@/domain";
+import type { Clock } from "@/domain/ports";
 import type { AdminActor } from "@/domain/actor";
 import { createFakeContentReader } from "@/domain/fakes/content-reader";
 import { createFakeMailer } from "@/domain/fakes/mailer";
@@ -73,6 +74,54 @@ export async function payouts(env: Env) {
   };
 }
 
+/**
+ * An Artisan whose Payout the bank paid and then sent back (#129): the
+ * Release owed again, the Payout account stopped, and a second Release
+ * waiting with it. A day's run goes once, so this one happens on the first
+ * day with no run yet, as if it were that day. Prints the Artisan's sign-in.
+ */
+export async function sentBack(env: Env) {
+  const { domain, make } = await world(env, { payoutRunTime: "00:00" }, await dayWithNoRun(env));
+  const payments = fakePaymentsFromEnv(env);
+  const receive = async (webhook: Parameters<typeof domain.system.receivePaymentEvent>[0]) => {
+    const received = await domain.system.receivePaymentEvent(webhook);
+    if (!received.ok) throw new Error(received.refusal.message);
+  };
+  const { client, artisan, jobId, quoteId } = await quoted(domain, make);
+  await make.hired(client, quoteId);
+  await make.workStarted(client, await make.engagementOf(client, jobId));
+  await domain.system.runPayouts();
+  const [paid] = await sentPayouts(env, artisan.actor.accountId);
+  if (!paid) throw new Error("The run sent no Payout");
+  await receive(await payments.succeedPayout(paid));
+  const second = await make.openJob(client, { matching: "invite-only", title: "Paint the stoep" });
+  const invited = await domain.invitations.invite(client.actor, {
+    jobId: second,
+    artisanId: artisan.actor.accountId,
+  });
+  if (!invited.ok) throw new Error(invited.refusal.message);
+  const secondQuote = await make.sentQuote(artisan, second, {
+    startOn: saDay(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)),
+  });
+  await make.hired(client, secondQuote);
+  await make.workStarted(client, await make.engagementOf(client, second));
+  await receive(await payments.sendBackPayout(paid));
+  return {
+    artisanId: artisan.actor.accountId,
+    artisan: { email: artisan.email, password: artisan.password },
+  };
+}
+
+/** A clock that runs from the first day the daily Payout run has not gone, at this time of day. */
+async function dayWithNoRun(env: Env) {
+  const last = await env.DB.prepare("select max(day) as day from payout_runs").first<{
+    day: string | null;
+  }>();
+  let offset = 0;
+  while (last?.day && saDay(new Date(Date.now() + offset)) <= last.day) offset += 86_400_000;
+  return { now: () => new Date(Date.now() + offset) };
+}
+
 /** The ids of the Payouts the run sent the Artisan and the bank has not yet paid. */
 async function sentPayouts(env: Env, artisanId: string) {
   const { results } = await env.DB.prepare(
@@ -84,10 +133,11 @@ async function sentPayouts(env: Env, artisanId: string) {
 }
 
 /** The module on the local app's D1, and the builders over it. */
-async function world(env: Env, config: Partial<DomainConfig> = {}) {
+async function world(env: Env, config: Partial<DomainConfig> = {}, clock?: Clock) {
   const mailer = createFakeMailer();
+  const ports = portsFromEnv(env);
   const domain = createDomain(
-    { ...portsFromEnv(env), contentReader: createFakeContentReader(), mailer },
+    { ...ports, clock: clock ?? ports.clock, contentReader: createFakeContentReader(), mailer },
     { ...configFromEnv(env), ...config },
   );
   const make = given({

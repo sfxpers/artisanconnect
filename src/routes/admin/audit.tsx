@@ -35,7 +35,7 @@ function AuditLog() {
                 <time className="text-xs text-muted-foreground tabular-nums sm:text-sm">
                   {formatDate(row.at)}
                 </time>
-                <span className="truncate text-sm font-medium">{row.admin}</span>
+                <span className="truncate text-sm font-medium">{row.admin ?? t.system}</span>
                 <span className="text-sm">{row.summary}</span>
               </li>
             ))}

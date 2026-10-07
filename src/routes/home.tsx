@@ -19,7 +19,7 @@ import { copy, formatDate } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
 import { passInvitation } from "@/web/invitations";
 import { passMatch } from "@/web/matches";
-import { getMyPayouts } from "@/web/payouts";
+import { getMyPayouts, isStopped } from "@/web/payouts";
 import { getMyWork, setAvailableForJobs } from "@/web/regions";
 
 export const Route = createFileRoute("/home")({
@@ -332,6 +332,9 @@ function PayoutsCard({ payouts }: { payouts: Awaited<ReturnType<typeof getMyPayo
           <span className="tabular-nums">{formatRands(payouts.paidCents)}</span>
         </div>
         {payouts.held && <Badge variant="destructive">{t.payoutsHeld}</Badge>}
+        {payouts.releases.some((release) => isStopped(release.state)) && (
+          <Badge variant="destructive">{t.payoutsStopped}</Badge>
+        )}
       </CardContent>
     </Card>
   );

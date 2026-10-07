@@ -134,6 +134,7 @@ const STATE_VARIANTS = {
   waiting: "secondary",
   accepted: "default",
   expired: "destructive",
+  stopped: "destructive",
   rejected: "destructive",
   removed: "destructive",
 } as const;
@@ -184,6 +185,7 @@ function CheckDetailsLine({ check }: { check: VerificationSlot }) {
   }
   if (check.state === "expired" && check.expiresOn)
     lines.push(t.expired(formatDay(check.expiresOn)));
+  if (check.state === "stopped") lines.push(t.stopped);
   if (check.reason) lines.push(t.reason(check.reason));
   if (check.replacement?.state === "waiting") lines.push(t.replacementWaiting);
   if (check.replacement?.state === "rejected") {

@@ -6,6 +6,7 @@ import type { FakePayments } from "@/domain/fakes/payments";
 import { formatRands } from "@/domain/money";
 import { formatDay } from "@/domain/sa-days";
 import { createHarness, type Harness } from "../support/harness";
+import { decideCheck, payoutAccount, submit, verificationItem } from "../support/verification";
 
 // The daily Payout run (#128): once a day, at one South African time, every
 // Release owed to an Artisan with a current Payout account and no Payout
@@ -87,20 +88,444 @@ describe("the daily Payout run", () => {
     ]);
   });
 
-  test("a Payout the bank refuses at once is not sent again", async () => {
+  test("a run that fails part-way retries the rest later that day, checking the float once", async () => {
+    const { domain, given, payments, mailer, clock } = await createHarness();
+    const admin = await given.admin();
+    const { artisan } = await releasedJob(given);
+    await releasedJob(given, { artisan });
+    payments.setFloat(10_000);
+    const createPayout = payments.createPayout;
+    let asked = 0;
+    payments.createPayout = async (payout) => {
+      asked += 1;
+      if (asked === 2) throw new Error("The provider did not answer");
+      return createPayout(payout);
+    };
+    clock.set(RUN_AT);
+    await expect(domain.system.runPayouts()).rejects.toThrow(/1 Payouts did not go/);
+    payments.createPayout = createPayout;
+
+    clock.advance({ minutes: 1 });
+    expect(await domain.system.runPayouts()).toEqual({ ran: true, sent: 0, floatShort: true });
+    expect(
+      (await domain.payouts.mine(artisan.actor))?.releases.map((release) => release.state),
+    ).toEqual(["sent", "sent"]);
+    expect(new Set(payoutsAsked(payments).map((payout) => payout.id)).size).toBe(2);
+
+    // The day's run is done: a later minute does nothing, and the float email went once.
+    clock.advance({ minutes: 1 });
+    expect(await domain.system.runPayouts()).toEqual({ ran: false });
+    expect(
+      mailer.sentTo(admin.email).filter((email) => email.subject.includes("float")),
+    ).toHaveLength(1);
+  });
+
+  test("a run that fails part-way sends a Release it never created a Payout for later that day", async () => {
+    const { domain, given, clock } = await createHarness();
+    const { artisan, engagementId } = await releasedJob(given);
+    clock.set(RUN_AT);
+    await env.DB.prepare(
+      "CREATE TRIGGER no_payouts BEFORE INSERT ON payouts BEGIN SELECT RAISE(ABORT, 'no'); END",
+    ).run();
+    await expect(domain.system.runPayouts()).rejects.toThrow(/1 Payouts did not go/);
+    await env.DB.prepare("DROP TRIGGER no_payouts").run();
+
+    clock.advance({ minutes: 5 });
+    expect(await domain.system.runPayouts()).toEqual({ ran: true, sent: 1, floatShort: false });
+    expect((await domain.payouts.mine(artisan.actor))?.releases).toMatchObject([{ state: "sent" }]);
+    expect(await ledgerRows(engagementId, "payout.created")).toHaveLength(1);
+  });
+});
+
+describe("a Payout refused or sent back", () => {
+  test("refused at sending leaves the Release standing and owed, and the account not current", async () => {
+    const { domain, given, payments, clock } = await createHarness();
+    const { artisan, engagementId } = await releasedJob(given);
+    payments.refuseNextPayout("invalid_check_digit");
+    clock.set(RUN_AT);
+    await domain.system.runPayouts();
+
+    expect(await domain.payouts.mine(artisan.actor)).toMatchObject({
+      unpaidCents: 45_000,
+      paidCents: 0,
+      releases: [{ state: "refused", waitingFor: "payout-account", amountCents: 45_000 }],
+    });
+    expect(slotOf(await domain.verification.mine(artisan.actor), "payout-account")).toMatchObject({
+      state: "stopped",
+    });
+    expect(
+      await domain.verification.verified(artisan.actor, {
+        artisanId: artisan.actor.accountId,
+        category: "painting",
+      }),
+    ).toBe(false);
+    expect(await ledgerRows(engagementId, "%")).toEqual(
+      expect.arrayContaining([
+        { kind: "payout.refused", amount_cents: 45_000 },
+        { kind: "release.artisan-fee", amount_cents: 5_000 },
+      ]),
+    );
+
+    // It is not retried to that account.
+    clock.advance({ days: 1 });
+    expect(await domain.system.runPayouts()).toMatchObject({ ran: true, sent: 0 });
+    expect(payoutsAsked(payments)).toHaveLength(1);
+  });
+
+  test("refused by the bank after sending is the same", async () => {
+    const { domain, given, payments, clock } = await createHarness();
+    const { artisan } = await releasedJob(given);
+    clock.set(RUN_AT);
+    await domain.system.runPayouts();
+    const [payout] = payoutsAsked(payments);
+    clock.advance({ hours: 2 });
+
+    await receive(domain, await payments.failPayout(payout!.id, "inactive_account"));
+
+    expect(await domain.payouts.mine(artisan.actor)).toMatchObject({
+      unpaidCents: 45_000,
+      releases: [{ state: "refused", waitingFor: "payout-account" }],
+    });
+    expect(slotOf(await domain.verification.mine(artisan.actor), "payout-account")).toMatchObject({
+      state: "stopped",
+    });
+  });
+
+  test("sent back days later makes the money owed again; the Artisan Fee is kept once", async () => {
+    const { domain, given, payments, clock } = await createHarness();
+    const admin = await given.admin();
+    const { artisan, engagementId } = await releasedJob(given);
+    clock.set(RUN_AT);
+    await domain.system.runPayouts();
+    const [payout] = payoutsAsked(payments);
+    await receive(domain, await payments.succeedPayout(payout!.id));
+    clock.advance({ days: 4 });
+
+    await receive(domain, await payments.sendBackPayout(payout!.id, "account_closed"));
+
+    expect(await domain.payouts.mine(artisan.actor)).toMatchObject({
+      unpaidCents: 45_000,
+      paidCents: 0,
+      releases: [{ state: "sent-back", waitingFor: "payout-account" }],
+    });
+    expect((await domain.payouts.unpaid(admin.actor))?.[0]).toMatchObject({
+      artisanId: artisan.actor.accountId,
+      unpaidCents: 45_000,
+    });
+    expect(slotOf(await domain.verification.mine(artisan.actor), "payout-account")).toMatchObject({
+      state: "stopped",
+    });
+    expect(await ledgerRows(engagementId, "release.artisan-fee")).toEqual([
+      { kind: "release.artisan-fee", amount_cents: 5_000 },
+    ]);
+    expect(await ledgerRows(engagementId, "payout.sent-back")).toEqual([
+      { kind: "payout.sent-back", amount_cents: 45_000 },
+    ]);
+  });
+
+  test("tells the Artisan, naming the original Receipt, which stands", async () => {
+    const { domain, given, payments, mailer, clock } = await createHarness();
+    const { artisan } = await releasedJob(given);
+    clock.set(RUN_AT);
+    await domain.system.runPayouts();
+    const [payout] = payoutsAsked(payments);
+    await receive(domain, await payments.succeedPayout(payout!.id));
+    const receipt = mailer.sentTo(artisan.email).at(-1)!;
+    clock.advance({ days: 4 });
+
+    await receive(domain, await payments.sendBackPayout(payout!.id));
+
+    expect((await payoutNotices(domain, artisan.actor))[0]).toMatchObject({
+      event: "payout.sent-back",
+      title: `Your bank sent back a Payout of ${formatRands(45_000)}: Paint the lounge`,
+      link: "/payouts",
+    });
+    const told = mailer.sentTo(artisan.email).at(-1)!;
+    expect(told.subject).toBe(
+      `Your bank sent back a Payout of ${formatRands(45_000)}: Paint the lounge`,
+    );
+    for (const line of [
+      `Receipt ${payout!.beneficiaryReference} of ${formatDay("2026-10-05")}`,
+      "That Receipt stands",
+      "owed to you again",
+      `Capitec account ending ${payout!.bankAccount.accountNumber.slice(-4)}`,
+      "Verification",
+    ]) {
+      expect(told.text).toContain(line);
+    }
+    // The Receipt is never edited or withdrawn.
+    expect(mailer.sentTo(artisan.email)).toContainEqual(receipt);
+  });
+
+  test("refused, tells the Artisan with the Payout's reference and no Receipt", async () => {
+    const { domain, given, payments, mailer, clock } = await createHarness();
+    const { artisan } = await releasedJob(given);
+    payments.refuseNextPayout();
+    clock.set(RUN_AT);
+
+    await domain.system.runPayouts();
+
+    const [payout] = payoutsAsked(payments);
+    expect((await payoutNotices(domain, artisan.actor))[0]).toMatchObject({
+      event: "payout.refused",
+      title: `Your bank refused a Payout of ${formatRands(45_000)}: Paint the lounge`,
+    });
+    const told = mailer.sentTo(artisan.email).at(-1)!;
+    expect(told.text).toContain(payout!.beneficiaryReference);
+    expect(told.text).toContain("no Receipt");
+  });
+
+  test("happens once, however often its event comes", async () => {
+    const { domain, given, payments, clock } = await createHarness();
+    const { artisan, engagementId } = await releasedJob(given);
+    clock.set(RUN_AT);
+    await domain.system.runPayouts();
+    const [payout] = payoutsAsked(payments);
+    await receive(domain, await payments.succeedPayout(payout!.id));
+    clock.advance({ days: 1 });
+    const sentBack = await payments.sendBackPayout(payout!.id);
+
+    await receive(domain, sentBack);
+    await receive(domain, sentBack);
+
+    expect((await payoutNotices(domain, artisan.actor)).map((notice) => notice.event)).toEqual([
+      "payout.sent-back",
+      "payout.paid",
+    ]);
+    expect(await ledgerRows(engagementId, "payout.sent-back")).toHaveLength(1);
+  });
+
+  test("every waiting Payout goes in the first daily run after the Admin accepts a new account", async () => {
+    const { domain, given, payments, mailer, clock } = await createHarness();
+    const admin = await given.admin();
+    const { artisan, engagementId } = await releasedJob(given);
+    clock.set(RUN_AT);
+    await domain.system.runPayouts();
+    const [first] = payoutsAsked(payments);
+    await receive(domain, await payments.succeedPayout(first!.id));
+    // A second Release is owed after the day's run.
+    await releasedJob(given, { artisan });
+    clock.advance({ hours: 2 });
+    await receive(domain, await payments.sendBackPayout(first!.id));
+    clock.advance({ days: 1 });
+    expect(await domain.system.runPayouts()).toMatchObject({ ran: true, sent: 0 });
+
+    const checkId = await submit(domain, artisan, payoutAccount({ accountNumber: "9876543210" }));
+    const { id: itemId } = await verificationItem(domain, admin);
+    const accepted = await decideCheck(domain, admin, { itemId, checkId }, "accept");
+    if (!accepted.ok) throw new Error(accepted.refusal.message);
+    expect(slotOf(await domain.verification.mine(artisan.actor), "payout-account")).toMatchObject({
+      state: "accepted",
+    });
+    clock.advance({ days: 1 });
+
+    expect(await domain.system.runPayouts()).toMatchObject({ ran: true, sent: 2 });
+    const [again, second] = payoutsAsked(payments).slice(1);
+    expect(
+      [again, second].map((payout) => [payout!.amountCents, payout!.bankAccount.accountNumber]),
+    ).toEqual([
+      [45_000, "9876543210"],
+      [45_000, "9876543210"],
+    ]);
+
+    // The Payout that lands gets its own Receipt.
+    await receive(domain, await payments.succeedPayout(again!.id));
+    expect(mailer.sentTo(artisan.email).at(-1)!.text).toContain(
+      `Reference: ${again!.beneficiaryReference}`,
+    );
+    expect(await ledgerRows(engagementId, "release.artisan-fee")).toHaveLength(1);
+    expect((await domain.payouts.mine(artisan.actor))?.releases).toMatchObject([
+      { state: "sent" },
+      {
+        state: "paid",
+        payouts: [
+          { reference: again!.beneficiaryReference, state: "paid" },
+          { reference: first!.beneficiaryReference, state: "sent-back" },
+        ],
+      },
+    ]);
+  });
+
+  test("a Payout account the bank stopped cannot be sent again", async () => {
     const { domain, given, payments, clock } = await createHarness();
     const { artisan } = await releasedJob(given);
     payments.refuseNextPayout();
     clock.set(RUN_AT);
     await domain.system.runPayouts();
+    const [payout] = payoutsAsked(payments);
 
-    clock.advance({ days: 1 });
+    const again = await domain.verification.submit(
+      artisan.actor,
+      await payoutAccount({ accountNumber: payout!.bankAccount.accountNumber }),
+    );
+
+    expect(again).toMatchObject({ ok: false, refusal: { reason: "stopped" } });
+  });
+
+  test("a Payout never answered on the stopped account goes to the new one", async () => {
+    const { domain, given, payments, clock } = await createHarness();
+    const admin = await given.admin();
+    const { artisan } = await releasedJob(given);
+    clock.set(RUN_AT);
     await domain.system.runPayouts();
+    const [paid] = payoutsAsked(payments);
+    await receive(domain, await payments.succeedPayout(paid!.id));
+    // The next day the provider never answers on a second Payout...
+    await releasedJob(given, { artisan });
+    const createPayout = payments.createPayout;
+    payments.createPayout = async () => {
+      throw new Error("The provider did not answer");
+    };
+    clock.advance({ days: 1 });
+    await expect(domain.system.runPayouts()).rejects.toThrow(/1 Payouts did not go/);
+    payments.createPayout = createPayout;
+    // ...and the bank sends back the first, stopping the account.
+    await receive(domain, await payments.sendBackPayout(paid!.id));
+
+    const checkId = await submit(domain, artisan, payoutAccount({ accountNumber: "9876543210" }));
+    const { id: itemId } = await verificationItem(domain, admin);
+    await decideCheck(domain, admin, { itemId, checkId }, "accept");
+    clock.advance({ days: 1 });
+
+    expect(await domain.system.runPayouts()).toMatchObject({ ran: true, sent: 2 });
+    expect(
+      payoutsAsked(payments)
+        .filter((payout) => payout.bankAccount.accountNumber === "9876543210")
+        .map((payout) => payout.amountCents),
+    ).toEqual([45_000, 45_000]);
+    expect(
+      (await domain.payouts.mine(artisan.actor))?.releases.map((release) => release.state),
+    ).toEqual(["sent", "sent"]);
+  });
+
+  test("a Payout the provider had, though its answer was lost, is not sent again", async () => {
+    const { domain, given, payments, clock } = await createHarness();
+    const admin = await given.admin();
+    const { artisan } = await releasedJob(given);
+    clock.set(RUN_AT);
+    await domain.system.runPayouts();
+    const [paid] = payoutsAsked(payments);
+    await receive(domain, await payments.succeedPayout(paid!.id));
+    await releasedJob(given, { artisan });
+    // The provider takes the second Payout, but its answer never arrives.
+    const createPayout = payments.createPayout;
+    payments.createPayout = async (payout) => {
+      await createPayout(payout);
+      throw new Error("The answer was lost");
+    };
+    clock.advance({ days: 1 });
+    await expect(domain.system.runPayouts()).rejects.toThrow(/1 Payouts did not go/);
+    payments.createPayout = createPayout;
+    const [, taken] = payoutsAsked(payments);
+    await receive(domain, await payments.sendBackPayout(paid!.id));
+    const checkId = await submit(domain, artisan, payoutAccount({ accountNumber: "9876543210" }));
+    const { id: itemId } = await verificationItem(domain, admin);
+    await decideCheck(domain, admin, { itemId, checkId }, "accept");
+    clock.advance({ days: 1 });
+
+    expect(await domain.system.runPayouts()).toMatchObject({ ran: true, sent: 1 });
+    expect(
+      payoutsAsked(payments)
+        .filter((payout) => payout.bankAccount.accountNumber === "9876543210")
+        .map((payout) => payout.amountCents),
+    ).toEqual([45_000]);
+    // It stands as the provider has it, and is paid as any other.
+    await receive(domain, await payments.succeedPayout(taken!.id));
+    expect(
+      (await domain.payouts.mine(artisan.actor))?.releases.map((release) => release.state),
+    ).toEqual(["paid", "sent"]);
+  });
+
+  test("a later Payout of the run is not sent to an account the bank refused earlier in it", async () => {
+    const { domain, given, payments, clock } = await createHarness();
+    const { artisan } = await releasedJob(given);
+    await releasedJob(given, { artisan });
+    payments.refuseNextPayout();
+    clock.set(RUN_AT);
+
+    expect(await domain.system.runPayouts()).toMatchObject({ ran: true, sent: 1 });
 
     expect(payoutsAsked(payments)).toHaveLength(1);
+    expect(
+      (await domain.payouts.mine(artisan.actor))?.releases.map((release) => release.state),
+    ).toEqual(["waiting", "refused"]);
+  });
+
+  test("a Payout hold applies to the money sent back", async () => {
+    const { domain, given, payments, clock } = await createHarness();
+    const admin = await given.admin();
+    const { artisan } = await releasedJob(given);
+    const artisanId = artisan.actor.accountId;
+    clock.set(RUN_AT);
+    await domain.system.runPayouts();
+    const [payout] = payoutsAsked(payments);
+    await receive(domain, await payments.succeedPayout(payout!.id));
+    await receive(domain, await payments.sendBackPayout(payout!.id));
+    const checkId = await submit(domain, artisan, payoutAccount({ accountNumber: "9876543210" }));
+    const { id: itemId } = await verificationItem(domain, admin);
+    await decideCheck(domain, admin, { itemId, checkId }, "accept");
+    await domain.payouts.hold(admin.actor, { artisanId });
+
+    clock.advance({ days: 1 });
+    expect(await domain.system.runPayouts()).toMatchObject({ sent: 0 });
     expect((await domain.payouts.mine(artisan.actor))?.releases).toMatchObject([
-      { state: "refused" },
+      { state: "sent-back", waitingFor: "hold" },
     ]);
+
+    await domain.payouts.lift(admin.actor, { artisanId });
+    clock.advance({ days: 1 });
+    expect(await domain.system.runPayouts()).toMatchObject({ sent: 1 });
+  });
+
+  test("the Admin sees it in the Artisan's money history and the log, with no queue item", async () => {
+    const { domain, given, payments, clock } = await createHarness();
+    const admin = await given.admin();
+    const { artisan } = await releasedJob(given);
+    const artisanId = artisan.actor.accountId;
+    clock.set(RUN_AT);
+    await domain.system.runPayouts();
+    const [payout] = payoutsAsked(payments);
+    await receive(domain, await payments.succeedPayout(payout!.id));
+    clock.advance({ days: 3 });
+    await receive(domain, await payments.sendBackPayout(payout!.id, "account_closed"));
+
+    expect(await domain.payouts.history(admin.actor, { artisanId })).toMatchObject({
+      artisanId,
+      name: "Sipho Dlamini",
+      held: false,
+      unpaidCents: 45_000,
+      releases: [
+        {
+          state: "sent-back",
+          payouts: [
+            {
+              reference: payout!.beneficiaryReference,
+              state: "sent-back",
+              amountCents: 45_000,
+              reason: "account_closed",
+              stoppedAt: clock.now(),
+            },
+          ],
+        },
+      ],
+    });
+    expect((await domain.admins.auditLog(admin.actor))!.rows[0]).toMatchObject({
+      adminId: null,
+      action: "payout.sent-back",
+      summary: `The bank sent back the Payout ${payout!.beneficiaryReference} of ${formatRands(45_000)} to Sipho Dlamini; their Payout account is no longer current`,
+      subjectId: artisanId,
+    });
+    const home = await domain.queues.home(admin.actor, {});
+    expect(home?.items).toEqual([]);
+  });
+
+  test("the money history is the Admin's only to see", async () => {
+    const { domain, given } = await createHarness();
+    const { artisan } = await releasedJob(given);
+
+    expect(
+      await domain.payouts.history(artisan.actor, { artisanId: artisan.actor.accountId }),
+    ).toBeNull();
   });
 });
 
@@ -148,9 +573,7 @@ describe("a Payout hold", () => {
     clock.advance({ days: 1 });
     await domain.system.runPayouts();
     expect(payoutsAsked(payments)).toMatchObject([{ amountCents: 45_000 }]);
-    expect((await domain.payouts.mine(artisan.actor))?.releases).toMatchObject([
-      { state: "sent" },
-    ]);
+    expect((await domain.payouts.mine(artisan.actor))?.releases).toMatchObject([{ state: "sent" }]);
   });
 
   test("tells the Artisan, and is written to the audit log", async () => {
@@ -433,6 +856,7 @@ describe("the Payouts view", () => {
           waitingFor: "next-run",
           reference: null,
           paidAt: null,
+          payouts: [],
         },
       ],
     });
@@ -581,4 +1005,12 @@ async function ledgerRows(engagementId: string, kinds: string) {
     .bind(engagementId, kinds)
     .all<{ kind: string; amount_cents: number }>();
   return results;
+}
+
+/** The Artisan's Verification slot of this kind. */
+function slotOf(
+  mine: Awaited<ReturnType<Harness["domain"]["verification"]["mine"]>>,
+  kind: string,
+) {
+  return mine?.once.find((slot) => slot.kind === kind);
 }

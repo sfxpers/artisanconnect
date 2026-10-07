@@ -8,9 +8,16 @@ import { CATEGORY_CREDENTIALS, CHECKS, SOUTH_AFRICA, slotOf, type CheckKind } fr
 
 export type CheckRow = typeof verificationChecks.$inferSelect;
 
-/** An accepted check whose expiry date (if it has one) has not come. */
+/**
+ * An accepted check whose expiry date (if it has one) has not come, and, for
+ * a Payout account, that no bank has refused or sent back a Payout to.
+ */
 export function isCurrent(check: CheckRow, today: string): boolean {
-  return check.state === "accepted" && (!check.expiresOn || today < check.expiresOn);
+  return (
+    check.state === "accepted" &&
+    (!check.expiresOn || today < check.expiresOn) &&
+    !check.payoutsStoppedAt
+  );
 }
 
 /** Each slot's checks, newest first. */

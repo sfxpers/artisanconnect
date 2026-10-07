@@ -6,7 +6,7 @@ import { Page } from "@/components/page";
 import { formatRands } from "@/domain/money";
 import { copy, formatDate } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
-import { getMyPayouts } from "@/web/payouts";
+import { getMyPayouts, isStopped } from "@/web/payouts";
 
 export const Route = createFileRoute("/payouts")({
   beforeLoad: ({ context }) => {
@@ -28,6 +28,7 @@ type Release = Awaited<ReturnType<typeof getMyPayouts>>["releases"][number];
 function Payouts() {
   const payouts = Route.useLoaderData();
   const noAccount = payouts.releases.some((release) => release.waitingFor === "payout-account");
+  const stopped = payouts.releases.some((release) => isStopped(release.state));
   return (
     <Page title={t.title}>
       <p className="max-w-2xl text-sm text-muted-foreground">{t.lead}</p>
@@ -45,7 +46,7 @@ function Payouts() {
       {noAccount && !payouts.held && (
         <Card size="sm" className="ring-2 ring-primary/80">
           <CardContent className="flex flex-wrap items-center gap-3">
-            <p className="flex-1 text-sm">{t.noAccount}</p>
+            <p className="flex-1 text-sm">{stopped ? t.stopped : t.noAccount}</p>
             <Link to="/verification" className={buttonVariants({ size: "sm" })}>
               {t.openVerification}
             </Link>
@@ -98,12 +99,13 @@ function ReleaseRow({ release }: { release: Release }) {
           {release.jobTitle}
         </Link>
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          <Badge variant={release.state === "refused" ? "destructive" : "secondary"}>
+          <Badge variant={isStopped(release.state) ? "destructive" : "secondary"}>
             {t.states[release.state]}
           </Badge>
           <span>{stateLine(release)}</span>
           {release.reference && <span>{t.reference(release.reference)}</span>}
         </div>
+        <EarlierPayouts release={release} />
       </div>
       <dl className="grid shrink-0 grid-cols-3 gap-4 text-sm sm:w-80">
         <Amount label={t.releasedAmount} cents={release.releasedCents} />
@@ -118,6 +120,30 @@ function stateLine(release: Release): string {
   if (release.waitingFor) return t.waitingFor[release.waitingFor];
   if (release.paidAt) return t.paidOn(formatDate(release.paidAt));
   return release.state === "refused" ? t.refused : t.sent;
+}
+
+/**
+ * The Release's earlier Payouts the bank refused or sent back, in red, once
+ * another is going or paid: its Receipt, if it had one, still stands.
+ */
+function EarlierPayouts({ release }: { release: Release }) {
+  // The newest is the Release's own state when it is the one stopped.
+  const earlier = release.payouts.slice(isStopped(release.state) ? 1 : 0);
+  const shown = earlier.flatMap((payout) =>
+    isStopped(payout.state) && payout.stoppedAt
+      ? [{ ...payout, state: payout.state, stoppedAt: payout.stoppedAt }]
+      : [],
+  );
+  if (shown.length === 0) return null;
+  return (
+    <ul className="space-y-0.5 text-xs text-destructive">
+      {shown.map((payout) => (
+        <li key={payout.reference}>
+          {t.earlier(payout.reference, t.earlierStates[payout.state], formatDate(payout.stoppedAt))}
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 function Amount({ label, cents, strong }: { label: string; cents: number; strong?: boolean }) {

@@ -558,6 +558,17 @@ async function parseSubmission(
     );
   }
   if (heldKey && (await heldByOther(ctx, heldKey, artisanId))) return heldByAnother(kind);
+  if (
+    kind === "payout-account" &&
+    standing
+      .checks(slotOf(kind, null))
+      .some((check) => check.heldKey === heldKey && check.payoutsStoppedAt)
+  ) {
+    return refuse(
+      "stopped",
+      "Your bank refused or sent back a Payout to this account, so nothing more is sent to it. Send a bank letter for another account.",
+    );
+  }
 
   for (const part of CHECKS[kind].files) {
     const count = input.files[part.part]?.length ?? 0;
@@ -839,7 +850,11 @@ function acceptedRow(check: CheckRow, today: string): ItemRow {
   return {
     id: check.id,
     title: titleOf(check),
-    state: expired ? "Badge, expired" : "Badge",
+    state: check.payoutsStoppedAt
+      ? "Badge, stopped by the bank"
+      : expired
+        ? "Badge, expired"
+        : "Badge",
     blocks: [{ kind: "facts", facts: sentFacts(check) }],
     reads: [{ key: "documents", label: "the documents" }],
     decisions: [
@@ -933,7 +948,14 @@ function acceptFields(check: CheckRow): DecisionField[] {
 
 // The Artisan's view of one slot
 
-type SlotState = "missing" | "waiting" | "accepted" | "expired" | "rejected" | "removed";
+type SlotState =
+  | "missing"
+  | "waiting"
+  | "accepted"
+  | "expired"
+  | "stopped"
+  | "rejected"
+  | "removed";
 
 function slotView(
   standing: Standing,
@@ -955,7 +977,8 @@ function slotView(
   } else if (newest?.state === "removed") {
     state = "removed";
     reason = newest.removedReason;
-  } else if (accepted) state = "expired";
+  } else if (accepted?.payoutsStoppedAt) state = "stopped";
+  else if (accepted) state = "expired";
   else state = "missing";
 
   // A replacement sent while the badge is current: waiting, or rejected since.

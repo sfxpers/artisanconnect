@@ -415,7 +415,10 @@ export type FakePaymentsStore = {
  * controls, and the bank paying a Payout, for a seed of the local app.
  */
 export type StoredFakePayments = PaymentAdapter &
-  Pick<FakePayments, "succeedCollection" | "failCollection" | "checkout" | "succeedPayout">;
+  Pick<
+    FakePayments,
+    "succeedCollection" | "failCollection" | "checkout" | "succeedPayout" | "sendBackPayout"
+  >;
 
 /**
  * The fake with its state in a store, as the Worker runs it: each operation
@@ -456,6 +459,7 @@ export function createStoredFakePayments({
     failCollection: (id, reason) => run((fake) => fake.failCollection(id, reason)),
     checkout: (id) => run((fake) => fake.checkout(id)),
     succeedPayout: (id) => run((fake) => fake.succeedPayout(id)),
+    sendBackPayout: (id, reason) => run((fake) => fake.sendBackPayout(id, reason)),
   };
 }
 

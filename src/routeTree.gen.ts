@@ -28,7 +28,6 @@ import { Route as VerificationRouteImport } from './routes/verification'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminAdminsRouteImport } from './routes/admin/admins'
 import { Route as AdminAuditRouteImport } from './routes/admin/audit'
-import { Route as AdminPayoutsRouteImport } from './routes/admin/payouts'
 import { Route as AdminSignInRouteImport } from './routes/admin/sign-in'
 import { Route as ArtisansIndexRouteImport } from './routes/artisans.index'
 import { Route as ArtisansArtisanIdRouteImport } from './routes/artisans.$artisanId'
@@ -43,6 +42,8 @@ import { Route as ProfilePhotosPhotoIdRouteImport } from './routes/profile-photo
 import { Route as WebhooksPaymentsRouteImport } from './routes/webhooks/payments'
 import { Route as AdminFilesTokenRouteImport } from './routes/admin/files.$token'
 import { Route as AdminItemsItemIdRouteImport } from './routes/admin/items.$itemId'
+import { Route as AdminPayoutsIndexRouteImport } from './routes/admin/payouts.index'
+import { Route as AdminPayoutsArtisanIdRouteImport } from './routes/admin/payouts.$artisanId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -139,11 +140,6 @@ const AdminAuditRoute = AdminAuditRouteImport.update({
   path: '/admin/audit',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminPayoutsRoute = AdminPayoutsRouteImport.update({
-  id: '/admin/payouts',
-  path: '/admin/payouts',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AdminSignInRoute = AdminSignInRouteImport.update({
   id: '/admin/sign-in',
   path: '/admin/sign-in',
@@ -215,6 +211,16 @@ const AdminItemsItemIdRoute = AdminItemsItemIdRouteImport.update({
   path: '/admin/items/$itemId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminPayoutsIndexRoute = AdminPayoutsIndexRouteImport.update({
+  id: '/admin/payouts/',
+  path: '/admin/payouts/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminPayoutsArtisanIdRoute = AdminPayoutsArtisanIdRouteImport.update({
+  id: '/admin/payouts/$artisanId',
+  path: '/admin/payouts/$artisanId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -235,7 +241,6 @@ export interface FileRoutesByFullPath {
   '/verification': typeof VerificationRoute
   '/admin/admins': typeof AdminAdminsRoute
   '/admin/audit': typeof AdminAuditRoute
-  '/admin/payouts': typeof AdminPayoutsRoute
   '/admin/sign-in': typeof AdminSignInRoute
   '/artisans/$artisanId': typeof ArtisansArtisanIdRoute
   '/dev/mail': typeof DevMailRoute
@@ -251,6 +256,8 @@ export interface FileRoutesByFullPath {
   '/jobs/': typeof JobsIndexRoute
   '/admin/files/$token': typeof AdminFilesTokenRoute
   '/admin/items/$itemId': typeof AdminItemsItemIdRoute
+  '/admin/payouts/$artisanId': typeof AdminPayoutsArtisanIdRoute
+  '/admin/payouts/': typeof AdminPayoutsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -271,7 +278,6 @@ export interface FileRoutesByTo {
   '/verification': typeof VerificationRoute
   '/admin/admins': typeof AdminAdminsRoute
   '/admin/audit': typeof AdminAuditRoute
-  '/admin/payouts': typeof AdminPayoutsRoute
   '/admin/sign-in': typeof AdminSignInRoute
   '/artisans/$artisanId': typeof ArtisansArtisanIdRoute
   '/dev/mail': typeof DevMailRoute
@@ -287,6 +293,8 @@ export interface FileRoutesByTo {
   '/jobs': typeof JobsIndexRoute
   '/admin/files/$token': typeof AdminFilesTokenRoute
   '/admin/items/$itemId': typeof AdminItemsItemIdRoute
+  '/admin/payouts/$artisanId': typeof AdminPayoutsArtisanIdRoute
+  '/admin/payouts': typeof AdminPayoutsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -308,7 +316,6 @@ export interface FileRoutesById {
   '/verification': typeof VerificationRoute
   '/admin/admins': typeof AdminAdminsRoute
   '/admin/audit': typeof AdminAuditRoute
-  '/admin/payouts': typeof AdminPayoutsRoute
   '/admin/sign-in': typeof AdminSignInRoute
   '/artisans/$artisanId': typeof ArtisansArtisanIdRoute
   '/dev/mail': typeof DevMailRoute
@@ -324,6 +331,8 @@ export interface FileRoutesById {
   '/jobs/': typeof JobsIndexRoute
   '/admin/files/$token': typeof AdminFilesTokenRoute
   '/admin/items/$itemId': typeof AdminItemsItemIdRoute
+  '/admin/payouts/$artisanId': typeof AdminPayoutsArtisanIdRoute
+  '/admin/payouts/': typeof AdminPayoutsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -346,7 +355,6 @@ export interface FileRouteTypes {
     | '/verification'
     | '/admin/admins'
     | '/admin/audit'
-    | '/admin/payouts'
     | '/admin/sign-in'
     | '/artisans/$artisanId'
     | '/dev/mail'
@@ -362,6 +370,8 @@ export interface FileRouteTypes {
     | '/jobs/'
     | '/admin/files/$token'
     | '/admin/items/$itemId'
+    | '/admin/payouts/$artisanId'
+    | '/admin/payouts/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -382,7 +392,6 @@ export interface FileRouteTypes {
     | '/verification'
     | '/admin/admins'
     | '/admin/audit'
-    | '/admin/payouts'
     | '/admin/sign-in'
     | '/artisans/$artisanId'
     | '/dev/mail'
@@ -398,6 +407,8 @@ export interface FileRouteTypes {
     | '/jobs'
     | '/admin/files/$token'
     | '/admin/items/$itemId'
+    | '/admin/payouts/$artisanId'
+    | '/admin/payouts'
   id:
     | '__root__'
     | '/'
@@ -418,7 +429,6 @@ export interface FileRouteTypes {
     | '/verification'
     | '/admin/admins'
     | '/admin/audit'
-    | '/admin/payouts'
     | '/admin/sign-in'
     | '/artisans/$artisanId'
     | '/dev/mail'
@@ -434,6 +444,8 @@ export interface FileRouteTypes {
     | '/jobs/'
     | '/admin/files/$token'
     | '/admin/items/$itemId'
+    | '/admin/payouts/$artisanId'
+    | '/admin/payouts/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -455,7 +467,6 @@ export interface RootRouteChildren {
   VerificationRoute: typeof VerificationRoute
   AdminAdminsRoute: typeof AdminAdminsRoute
   AdminAuditRoute: typeof AdminAuditRoute
-  AdminPayoutsRoute: typeof AdminPayoutsRoute
   AdminSignInRoute: typeof AdminSignInRoute
   ArtisansArtisanIdRoute: typeof ArtisansArtisanIdRoute
   DevMailRoute: typeof DevMailRoute
@@ -471,6 +482,8 @@ export interface RootRouteChildren {
   JobsIndexRoute: typeof JobsIndexRoute
   AdminFilesTokenRoute: typeof AdminFilesTokenRoute
   AdminItemsItemIdRoute: typeof AdminItemsItemIdRoute
+  AdminPayoutsArtisanIdRoute: typeof AdminPayoutsArtisanIdRoute
+  AdminPayoutsIndexRoute: typeof AdminPayoutsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -608,13 +621,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAuditRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/payouts': {
-      id: '/admin/payouts'
-      path: '/admin/payouts'
-      fullPath: '/admin/payouts'
-      preLoaderRoute: typeof AdminPayoutsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/admin/sign-in': {
       id: '/admin/sign-in'
       path: '/admin/sign-in'
@@ -713,6 +719,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminItemsItemIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/payouts/': {
+      id: '/admin/payouts/'
+      path: '/admin/payouts'
+      fullPath: '/admin/payouts/'
+      preLoaderRoute: typeof AdminPayoutsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/payouts/$artisanId': {
+      id: '/admin/payouts/$artisanId'
+      path: '/admin/payouts/$artisanId'
+      fullPath: '/admin/payouts/$artisanId'
+      preLoaderRoute: typeof AdminPayoutsArtisanIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -735,7 +755,6 @@ const rootRouteChildren: RootRouteChildren = {
   VerificationRoute: VerificationRoute,
   AdminAdminsRoute: AdminAdminsRoute,
   AdminAuditRoute: AdminAuditRoute,
-  AdminPayoutsRoute: AdminPayoutsRoute,
   AdminSignInRoute: AdminSignInRoute,
   ArtisansArtisanIdRoute: ArtisansArtisanIdRoute,
   DevMailRoute: DevMailRoute,
@@ -751,6 +770,8 @@ const rootRouteChildren: RootRouteChildren = {
   JobsIndexRoute: JobsIndexRoute,
   AdminFilesTokenRoute: AdminFilesTokenRoute,
   AdminItemsItemIdRoute: AdminItemsItemIdRoute,
+  AdminPayoutsArtisanIdRoute: AdminPayoutsArtisanIdRoute,
+  AdminPayoutsIndexRoute: AdminPayoutsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -296,7 +296,8 @@ export const admins = sqliteTable(
 );
 
 /**
- * Every Admin decision and every logged read: who, what, and when. Append-only
+ * Every Admin decision and every logged read: who, what, and when; and what
+ * the system logs for the Admin, such as a Payout sent back (#129). Append-only
  * (a trigger in the migration refuses updates and deletes). A decision's row
  * is written in the decision's own batch, and a read's before it is shown.
  */
@@ -304,9 +305,8 @@ export const auditLog = sqliteTable(
   "audit_log",
   {
     id: text("id").primaryKey(),
-    adminId: text("admin_id")
-      .notNull()
-      .references(() => admins.id),
+    /** Null for what the system logs the Admin should see, such as a Payout sent back. */
+    adminId: text("admin_id").references(() => admins.id),
     /** What was done, by kind, such as "admin.invited" or "read". */
     action: text("action").notNull(),
     /** What it was done to, said for the Admin. */
@@ -422,6 +422,11 @@ export const verificationChecks = sqliteTable(
     removedAt: instant("removed_at"),
     removedReason: text("removed_reason"),
     supersededAt: instant("superseded_at"),
+    /**
+     * When the bank refused or sent back a Payout to this Payout account,
+     * whatever its reason: it stops being current (#129).
+     */
+    payoutsStoppedAt: instant("payouts_stopped_at"),
   },
   (table) => [
     index("verification_checks_artisan").on(table.artisanId, table.slot, table.submittedAt),
@@ -963,16 +968,30 @@ export const engagements = sqliteTable(
   ],
 );
 
-export const PAYOUT_STATES = ["created", "pending", "paused", "paid", "refused"] as const;
+export const PAYOUT_STATES = [
+  "created",
+  "pending",
+  "paused",
+  "paid",
+  "refused",
+  "sent-back",
+  "unsent",
+] as const;
+
+/** The states a Payout ends in without paying its Release, which is then owed again (#129). */
+export const STOPPED_PAYOUT_STATES = ["refused", "sent-back", "unsent"] as const;
 
 /**
  * Each Release owed to an Artisan, sent to their current Payout account by
- * the daily run (#128): one Payout per `payout.owed` ledger row. Our id is
- * the payment adapter's idempotency key and, shortened, the reference on the
- * Artisan's bank statement. It is created before the adapter is asked, so
- * its events always find it; pending once the adapter has it; paused while
- * the float is low; and paid, or refused at once by the bank. A trigger in
- * the migration refuses any other change.
+ * the daily run (#128). Our id is the payment adapter's idempotency key and,
+ * shortened, the reference on the Artisan's bank statement. It is created
+ * before the adapter is asked, so its events always find it; pending once
+ * the adapter has it; paused while the float is low; and paid. The bank may
+ * refuse it, at once or later, or send it back even days after it was paid;
+ * one that never reached the adapter before its account stopped being
+ * current is unsent (#129). Those three leave the Release owed again, and a
+ * Release has at most one Payout in any other state. A trigger in the
+ * migration refuses any other change.
  */
 export const payouts = sqliteTable(
   "payouts",
@@ -981,7 +1000,6 @@ export const payouts = sqliteTable(
     /** The Release's `payout.owed` ledger row. */
     owedEntryId: text("owed_entry_id")
       .notNull()
-      .unique()
       .references(() => ledgerEntries.id),
     artisanId: text("artisan_id")
       .notNull()
@@ -995,13 +1013,18 @@ export const payouts = sqliteTable(
       .references(() => verificationChecks.id),
     amountCents: integer("amount_cents").notNull(),
     state: text("state", { enum: PAYOUT_STATES }).notNull(),
-    /** Why the bank refused it when it was sent. */
+    /** Why the bank refused it, or sent it back. */
     refusedFor: text("refused_for"),
     createdAt: instant("created_at").notNull(),
     pausedAt: instant("paused_at"),
     paidAt: instant("paid_at"),
+    /** When it was refused, sent back, or found unsent. */
+    stoppedAt: instant("stopped_at"),
   },
   (table) => [
+    uniqueIndex("payouts_one_going")
+      .on(table.owedEntryId)
+      .where(sql.raw("state not in ('refused', 'sent-back', 'unsent')")),
     index("payouts_artisan").on(table.artisanId, table.createdAt),
     index("payouts_unpaid")
       .on(table.state)
@@ -1022,6 +1045,8 @@ export const payoutRuns = sqliteTable("payout_runs", {
   /** The South African calendar day, YYYY-MM-DD. */
   day: text("day").primaryKey(),
   ranAt: instant("ran_at").notNull(),
+  /** When every Payout it had to send went; until then, later minutes that day retry. */
+  finishedAt: instant("finished_at"),
   floatCents: integer("float_cents").notNull(),
   neededCents: integer("needed_cents").notNull(),
 });

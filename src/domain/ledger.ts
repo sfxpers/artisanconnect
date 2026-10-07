@@ -27,6 +27,10 @@ export const LEDGER_KINDS = {
   payoutCreated: "payout.created",
   /** A Payout the bank paid into the Artisan's Payout account: no longer owed. */
   payoutPaid: "payout.paid",
+  /** A Payout the bank refused, at sending or later: its Release is still owed (#129). */
+  payoutRefused: "payout.refused",
+  /** A paid Payout the bank sent back: owed to the Artisan again (#129). */
+  payoutSentBack: "payout.sent-back",
 } as const;
 
 export type LedgerKind = (typeof LEDGER_KINDS)[keyof typeof LEDGER_KINDS];

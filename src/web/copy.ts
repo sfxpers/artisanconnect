@@ -352,9 +352,12 @@ export const copy = {
       waiting: "Waiting for the Admin",
       accepted: "Badge",
       expired: "Expired",
+      stopped: "Stopped by your bank",
       rejected: "Rejected",
       removed: "Badge removed",
     },
+    stopped:
+      "Your bank refused or sent back a Payout to this account, so it is no longer current and nothing more is sent to it. Send a bank letter for another account; your Payouts wait until the Admin accepts it.",
     notNeeded: "Only needed with a foreign passport.",
     optionalCheck: "Optional",
     expires: (day: string) => `Expires ${day}`,
@@ -441,6 +444,7 @@ export const copy = {
     unpaid: "Still to be paid",
     paid: "Paid to you",
     payoutsHeld: "Held by the Admin",
+    payoutsStopped: "A Payout came back from your bank",
   },
   payouts: {
     title: "Payouts",
@@ -450,6 +454,8 @@ export const copy = {
     held: "The Admin holds your Payouts. They wait until the hold is lifted; you are told when it is.",
     noAccount:
       "You have no current Payout account, so your Payouts wait. Send a bank letter in Verification.",
+    stopped:
+      "Your bank refused or sent back a Payout, so that Payout account is no longer current and nothing more is sent to it. The money is still owed to you. Send a bank letter for another account in Verification: everything waiting goes in the first daily run after the Admin accepts it.",
     openVerification: "Open Verification",
     empty:
       "No Releases yet. The Materials are released at Work started, and the Labour at Approval.",
@@ -460,7 +466,13 @@ export const copy = {
     amount: "Paid to you",
     reference: (reference: string) => `Reference ${reference}`,
     paidOn: (when: string) => `Paid ${when}`,
-    states: { waiting: "Waiting", sent: "On its way", paid: "Paid", refused: "Refused" },
+    states: {
+      waiting: "Waiting",
+      sent: "On its way",
+      paid: "Paid",
+      refused: "Refused",
+      "sent-back": "Sent back",
+    },
     waitingFor: {
       "next-run": "Goes in the next daily run",
       hold: "Held by the Admin",
@@ -468,6 +480,9 @@ export const copy = {
     },
     sent: "Sent to your bank.",
     refused: "Your bank refused this Payout.",
+    earlier: (reference: string, state: string, when: string) =>
+      `Payout ${reference}: ${state.toLowerCase()} by your bank ${when}`,
+    earlierStates: { refused: "Refused", "sent-back": "Sent back" },
   },
   quote: {
     write: "Write a Quote",
@@ -837,11 +852,24 @@ export const copy = {
       held: "Held",
       hold: "Hold Payouts",
       lift: "Lift the hold",
+      history: "Money history",
+    },
+    history: {
+      lead: "Each Release owed to this Artisan, newest first, with every Payout of it. A Payout the bank refused or sent back leaves the Release owed again; the next goes to a new Payout account once you accept one in Verification.",
+      empty: "No Releases yet.",
+      paid: "Paid",
+      noPayout: "No Payout yet.",
+      payout: (reference: string) => `Payout ${reference}`,
+      sentOn: (when: string) => `sent ${when}`,
+      paidOn: (when: string) => `paid ${when}`,
+      stoppedOn: (state: string, when: string) => `${state.toLowerCase()} ${when}`,
+      reason: (reason: string) => `Bank's reason: ${reason}`,
     },
     audit: {
       title: "Audit log",
-      lead: "Every Admin decision and every logged read: who, what, and when. Newest first. Nothing in it can be changed.",
+      lead: "Every Admin decision and every logged read: who, what, and when, with what the system logs for you, such as a Payout the bank sent back. Newest first. Nothing in it can be changed.",
       empty: "Nothing has been logged yet.",
+      system: "ArtisanConnect",
       older: "Older",
     },
   },
