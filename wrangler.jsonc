@@ -31,7 +31,7 @@
     "ENVIRONMENT": "local",
     "MAIL_FROM": "ArtisanConnect <no-reply@example.com>",
     "APP_URL": "http://localhost:3000",
-    "PAYOUT_RUN_TIME": "10:00",
+    "PAYOUT_RUN_TIME": "09:00",
     "TURNSTILE_SITE_KEY": "1x00000000000000000000AA",
   },
   "secrets": {
@@ -73,7 +73,7 @@
         "ENVIRONMENT": "staging",
         "MAIL_FROM": "ArtisanConnect <no-reply@example.com>",
         "APP_URL": "https://staging.artisanconnect.example.com",
-        "PAYOUT_RUN_TIME": "10:00",
+        "PAYOUT_RUN_TIME": "09:00",
         "TURNSTILE_SITE_KEY": "replace-with-the-staging-turnstile-site-key",
       },
       "secrets": {
@@ -111,7 +111,7 @@
         "ENVIRONMENT": "production",
         "MAIL_FROM": "ArtisanConnect <no-reply@example.com>",
         "APP_URL": "https://artisanconnect.example.com",
-        "PAYOUT_RUN_TIME": "10:00",
+        "PAYOUT_RUN_TIME": "09:00",
         "TURNSTILE_SITE_KEY": "replace-with-the-production-turnstile-site-key",
       },
       "secrets": {
