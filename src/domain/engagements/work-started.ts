@@ -5,8 +5,8 @@ import type { Context, Write } from "../context";
 import { eventWrite } from "../conversations/rows";
 import { engagementMoney, LEDGER_KINDS, ledgerWrites, releaseRows } from "../ledger";
 import { ok, refuse } from "../result";
-import { formatTime } from "../sa-days";
-import { engagements, jobs, type WORK_STARTED_BY } from "../schema";
+import { formatDay, formatTime, saDay } from "../sa-days";
+import { engagements, jobs, quotes, type WORK_STARTED_BY } from "../schema";
 import { emailTells, tellWhile } from "../tells";
 
 // Work started (#127, ADR 0006): the moment the Artisan is working on site.
@@ -24,6 +24,11 @@ const ANSWER_MS = 24 * 60 * 60 * 1000;
 type EngagementRow = NonNullable<Awaited<ReturnType<typeof engagementRow>>>;
 type StartedBy = (typeof WORK_STARTED_BY)[number];
 
+/** Whether the Hired Quote's start date has come, in South Africa, so the Artisan may say they've started. */
+export function startDayCome(ctx: Context, startOn: string): boolean {
+  return startOn <= saDay(ctx.now());
+}
+
 /** When the Client must answer the Artisan's claim by. */
 export function answerBy(claimedAt: Date): Date {
   return new Date(claimedAt.getTime() + ANSWER_MS);
@@ -36,6 +41,7 @@ export async function markWorkStarted(ctx: Context, actor: Actor, input: { engag
     return refuse("not-found", "That Engagement does not exist.");
   }
   if (engagement.state !== "paid") return notPaid(engagement);
+  // Not while a Chargeback freezes the Engagement, too, once there are Chargebacks (#137).
   await ctx.commit(await startWrites(ctx, actor, engagement, "client"));
   await emailTells(ctx).catch((error: unknown) => {
     console.error("Tell emails did not go", error);
@@ -53,6 +59,13 @@ export async function claimStarted(ctx: Context, actor: Actor, input: { engageme
     return refuse("not-found", "That Engagement does not exist.");
   }
   if (engagement.state !== "paid") return notPaid(engagement);
+  // The 24 hours of silence stand only once work could be on site; the Client may still mark it sooner.
+  if (!startDayCome(ctx, engagement.startOn)) {
+    return refuse(
+      "before-start",
+      `You can say you've started from the Quote's start date, ${formatDay(engagement.startOn)}.`,
+    );
+  }
   if (engagement.startClaimedAt) {
     return refuse(
       "already-claimed",
@@ -144,7 +157,11 @@ export async function answerNotStarted(
   return ok(null);
 }
 
-/** Makes the Artisan's claim Work started once the Client has not answered in 24 hours. */
+/**
+ * Makes the Artisan's claim Work started once the Client has not answered in
+ * 24 hours. Not while a Chargeback freezes the Engagement, too, once there
+ * are Chargebacks (#137): the clock pauses and nothing is released.
+ */
 const startClaim: ClockHandler = async (ctx, clock) => {
   const engagement = await engagementRow(ctx, clock.subjectId);
   if (
@@ -268,12 +285,13 @@ function notPaid(engagement: EngagementRow) {
   );
 }
 
-/** The Engagement with its Job's title; null if there is none. */
+/** The Engagement with its Job's title and the Hired Quote's start date; null if there is none. */
 async function engagementRow(ctx: Context, engagementId: string) {
   const [row] = await ctx.db
-    .select({ engagement: engagements, jobTitle: jobs.title })
+    .select({ engagement: engagements, jobTitle: jobs.title, startOn: quotes.startOn })
     .from(engagements)
     .innerJoin(jobs, eq(jobs.id, engagements.jobId))
+    .innerJoin(quotes, eq(quotes.id, engagements.quoteId))
     .where(eq(engagements.id, engagementId));
-  return row ? { ...row.engagement, jobTitle: row.jobTitle } : null;
+  return row ? { ...row.engagement, jobTitle: row.jobTitle, startOn: row.startOn } : null;
 }

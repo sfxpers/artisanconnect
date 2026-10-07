@@ -241,6 +241,47 @@ describe("the Artisan says they've started", () => {
     expect(await toldOf(domain, artisan, jobId)).toHaveLength(1);
   });
 
+  test("not before the Hired Quote's start date", async () => {
+    const { domain, given, clock } = await createHarness();
+    const { client, artisan, jobId, engagementId } = await hiredJob(given, {
+      startOn: "2026-10-07",
+    });
+    clock.set(new Date("2026-10-06T21:59:00Z")); // a minute before 7 October in South Africa
+
+    expect(await domain.engagements.claimStarted(artisan.actor, { engagementId })).toEqual({
+      ok: false,
+      refusal: {
+        reason: "before-start",
+        message: "You can say you've started from the Quote's start date, 07 Oct 2026.",
+      },
+    });
+    expect((await domain.jobs.viewAsArtisan(artisan.actor, { jobId }))?.engagement).toMatchObject({
+      startClaim: null,
+      canClaimStart: false,
+    });
+    expect(await toldOf(domain, client, jobId)).toEqual([]);
+
+    clock.advance({ minutes: 1 });
+    expect((await domain.jobs.viewAsArtisan(artisan.actor, { jobId }))?.engagement).toMatchObject({
+      canClaimStart: true,
+    });
+    expect(await domain.engagements.claimStarted(artisan.actor, { engagementId })).toMatchObject({
+      ok: true,
+    });
+  });
+
+  test("the Client may mark Work started before the start date", async () => {
+    const { domain, given } = await createHarness();
+    const { client, jobId, engagementId } = await hiredJob(given, { startOn: "2026-10-20" });
+
+    expect(await domain.engagements.workStarted(client.actor, { engagementId })).toMatchObject({
+      ok: true,
+    });
+    expect((await domain.jobs.view(client.actor, { jobId }))?.engagement?.state).toBe(
+      "work-started",
+    );
+  });
+
   test("not twice while the Client has not answered", async () => {
     const { domain, given } = await createHarness();
     const { artisan, engagementId } = await hiredJob(given);
@@ -395,12 +436,15 @@ describe("an Engagement's state", () => {
 
 type QuoteFields = Parameters<Harness["given"]["sentQuote"]>[2];
 
-/** A Client's Job Hired from the default R2 000 Quote (R500 of it Materials), unless said. */
+/**
+ * A Client's Job Hired from the default R2 000 Quote (R500 of it Materials),
+ * starting today (5 October 2026), unless said.
+ */
 async function hiredJob(given: Harness["given"], fields: QuoteFields = {}) {
   const client = await given.client();
   const artisan = await given.matchableArtisan({ name: "Sipho Dlamini" });
   const jobId = await given.openJob(client);
-  const quoteId = await given.sentQuote(artisan, jobId, fields);
+  const quoteId = await given.sentQuote(artisan, jobId, { startOn: "2026-10-05", ...fields });
   await given.hired(client, quoteId);
   const engagementId = await given.engagementOf(client, jobId);
   return { client, artisan, jobId, quoteId, engagementId };

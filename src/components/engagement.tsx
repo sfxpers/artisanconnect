@@ -106,7 +106,8 @@ export function StartActions({
             )}
           </>
         ) : (
-          !engagement.startClaim && (
+          "canClaimStart" in engagement &&
+          (engagement.canClaimStart ? (
             <Button
               disabled={action.busy}
               onClick={() => {
@@ -116,7 +117,14 @@ export function StartActions({
             >
               {t.claimStarted}
             </Button>
-          )
+          ) : (
+            // Before the start date; once said, the Next step says what follows.
+            !engagement.startClaim && (
+              <p className="text-sm text-muted-foreground">
+                {t.claimFrom(formatDay(engagement.startOn))}
+              </p>
+            )
+          ))
         )}
       </div>
     </>

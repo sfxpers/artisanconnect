@@ -6,7 +6,7 @@ import { fieldsView } from "../quotes/views";
 import { accounts, engagements, payments, quotes } from "../schema";
 import type { ServiceCategory } from "../service-categories";
 import { badgesOf } from "../verification";
-import { answerBy } from "./work-started";
+import { answerBy, startDayCome } from "./work-started";
 
 // An Engagement as each party sees it on the Job page (#107): the Client
 // never sees the Artisan Fee, and the Artisan never sees the Protection Fee.
@@ -53,6 +53,11 @@ export async function engagementAsArtisan(ctx: Context, jobId: string, artisanId
   return {
     ...common(found),
     money: { ...moneyView(money), artisanFeePercent: found.engagement.artisanFeePercent },
+    /** Whether the Artisan may say they've started now. */
+    canClaimStart:
+      found.engagement.state === "paid" &&
+      !found.engagement.startClaimedAt &&
+      startDayCome(ctx, found.quote.startOn),
   };
 }
 

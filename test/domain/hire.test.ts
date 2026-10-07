@@ -582,7 +582,8 @@ describe("Verification after Hire", () => {
     expect(await domain.jobs.viewAsArtisan(artisan.actor, { jobId })).toMatchObject({
       state: "hired",
       address: before?.address,
-      engagement: { ...before?.engagement },
+      // Only the Quote's start date has come since, and the Artisan may say they've started.
+      engagement: { ...before?.engagement, canClaimStart: true },
     });
   });
 });

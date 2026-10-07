@@ -564,6 +564,8 @@ export const copy = {
     notStarted: "Not started",
     notStartedConfirm: "Tell the Artisan that work has not started on site?",
     claimStarted: "I've started",
+    claimFrom: (start: string) =>
+      `You can tap I've started from ${start}, the Quote's start date. Starting sooner? The Client can mark Work started.`,
     claimStartedConfirm:
       "Tell the Client you are working on site? Unless they answer Not started within 24 hours, it is Work started.",
     payments: "Payments",
