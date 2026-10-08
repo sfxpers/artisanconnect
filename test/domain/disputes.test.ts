@@ -9,8 +9,8 @@ import { photo } from "../support/verification";
 // request or within a Cancellation's 72 hours. Only the disputed amount is
 // held; the parties may still settle it, the Client by releasing and the
 // Artisan by refunding, and otherwise the Admin splits it between Release and
-// Refund, finally. Afterwards the Engagement is Completed if there was a
-// Completion, otherwise Cancelled.
+// Refund, finally. Afterwards the Engagement is Cancelled again if the
+// Dispute was against a Cancellation, otherwise Completed.
 
 describe("a Client's Dispute", () => {
   test("holds the named amount of the Labour: the Engagement is Disputed, the Admin's queue has it, and the Artisan is told", async () => {
@@ -285,7 +285,7 @@ describe("an Artisan's Dispute within a Cancellation's 72 hours", () => {
     });
   });
 
-  test("after a Completion, decided, the Engagement is Completed, and the seven days release nothing meanwhile", async () => {
+  test("after a Completion, decided, the Engagement is Cancelled again, and the seven days release nothing meanwhile", async () => {
     const { domain, given, clock } = await createHarness();
     const admin = await given.admin();
     const { client, artisan, jobId, engagementId } = await awaitingApproval(given);
@@ -302,7 +302,9 @@ describe("an Artisan's Dispute within a Cancellation's 72 hours", () => {
     await decided(domain, admin, "150000");
 
     expect((await domain.jobs.view(client.actor, { jobId }))?.engagement).toMatchObject({
-      state: "completed",
+      state: "cancelled",
+      completedAt: null,
+      cancellation: { by: "client", afterWorkStarted: true, labourRefund: null },
       money: { releasedCents: 200_000, unreleasedCents: 0 },
     });
   });

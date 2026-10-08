@@ -58,7 +58,8 @@ import { endProposedWrite } from "./updated-quote";
 // and the Artisan may still refund; when nothing is held the Dispute is
 // settled. The Admin splits what is held between Release and Refund, with a
 // reason to both, and the decision is final. Afterwards the Engagement is
-// Completed if there was a Completion, otherwise Cancelled.
+// Cancelled again if the Dispute was against a Cancellation, otherwise
+// Completed.
 
 export type DisputeRow = typeof disputes.$inferSelect;
 type DisputedBy = (typeof DISPUTED_BY)[number];
@@ -412,7 +413,7 @@ export async function settleIfNothingHeld(ctx: Context, engagementId: string) {
     if (heldCents > 0) return [];
     const now = ctx.now();
     const settledNow = disputeIn(ctx, dispute.id, "settled", now);
-    const ends = await endsAs(ctx, engagement);
+    const ends = endsAs(dispute);
     const told =
       ends === "completed" ? "and the work is Completed" : "and the Engagement stays Cancelled";
     return [
@@ -467,12 +468,15 @@ export async function settleDisputesHoldingNothing(ctx: Context) {
   for (const { engagementId } of open) await settleIfNothingHeld(ctx, engagementId);
 }
 
-/** How the Engagement ends once its Dispute does: Completed after a Completion, otherwise Cancelled. */
-async function endsAs(ctx: Context, engagement: EngagementRow) {
-  const made = (await completionsOf(ctx, engagement.id)).some(
-    (completion) => completion.state === "made",
-  );
-  return made ? ("completed" as const) : ("cancelled" as const);
+/**
+ * How the Engagement ends once its Dispute does: Cancelled again after a
+ * Cancellation, even one that followed a Completion, as the parties had ended
+ * it, and a Completed Engagement would open Reviews and lower the Artisan Fee
+ * on the Client Relationship's later work (ADR 0009); otherwise Completed, as
+ * a Client's Dispute and one against a Fix request follow a Completion.
+ */
+function endsAs(dispute: DisputeRow) {
+  return dispute.against === "cancellation" ? ("cancelled" as const) : ("completed" as const);
 }
 
 /**
@@ -715,7 +719,7 @@ async function decisionWrites(
   const now = ctx.now();
   const refundedCents = of.heldCents - of.releasedCents;
   const decidedNow = disputeIn(ctx, dispute.id, "decided", now);
-  const ends = await endsAs(ctx, engagement);
+  const ends = endsAs(dispute);
   const row = (kind: (typeof LEDGER_KINDS)[keyof typeof LEDGER_KINDS], amountCents: number) => ({
     kind,
     amountCents,
