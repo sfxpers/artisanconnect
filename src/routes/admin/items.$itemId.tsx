@@ -449,6 +449,28 @@ function DecisionFieldInput({
       </div>
     );
   }
+  if (field.type === "choice") {
+    return (
+      <div className="space-y-1.5">
+        <Label id={id}>{label}</Label>
+        <div role="radiogroup" aria-labelledby={id} className="flex flex-wrap gap-2">
+          {field.options?.map((option) => (
+            <Button
+              key={option.value}
+              type="button"
+              role="radio"
+              aria-checked={value === option.value}
+              variant={value === option.value ? "default" : "outline"}
+              size="sm"
+              onClick={() => onChange(option.value)}
+            >
+              {option.label}
+            </Button>
+          ))}
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="space-y-1.5">
       <Label htmlFor={id}>{label}</Label>

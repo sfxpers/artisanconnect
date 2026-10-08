@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import type { QuoteFields } from "@/domain/quotes/inputs";
-import { requestActor, requestDomain } from "./session";
+import { keepDevice, requestActor, requestDomain, requestSeen } from "./session";
 
 // Quotes: thin adapters onto the domain module, which decides who may send,
 // revise, withdraw, or decline one, and who sees what of it (ADR 0002).
@@ -65,5 +65,8 @@ export const hireQuote = createServerFn({ method: "POST" })
   .validator((input: { quoteId: string; feeAcknowledged: boolean }) => input)
   .handler(async ({ data }) => {
     const domain = requestDomain();
-    return domain.engagements.hire(await requestActor(domain), data);
+    const actor = await requestActor(domain);
+    const seen = requestSeen();
+    keepDevice(seen.device);
+    return domain.engagements.hire(actor, { ...data, ...seen });
   });

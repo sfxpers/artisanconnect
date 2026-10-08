@@ -36,6 +36,7 @@ import {
 } from "../schema";
 import { isSuspended, suspendWrites } from "../standing";
 import { isAlreadySuspended } from "../standing/people";
+import { signalIfChargingBack } from "../signals";
 import { emailTells, tellWhile } from "../tells";
 import { discardFiles } from "../uploads";
 import { CHARGEBACK_DECIDED, disputeItem, endsAs, openDisputeOf } from "../engagements/dispute";
@@ -169,6 +170,7 @@ async function recordOpened(
       throw error;
     }
     await discardFiles(ctx, opened.discard);
+    await signalIfChargingBack(ctx, payment.clientId);
     await emailTells(ctx).catch((error: unknown) => {
       console.error("Tell emails did not go", error);
     });

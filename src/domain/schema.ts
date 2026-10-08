@@ -491,6 +491,121 @@ export const suspensions = sqliteTable(
   ],
 );
 
+/** When a device and IP are recorded (#140): at sign-in, and at each Payment. */
+export const SIGHTED_AT = ["sign-in", "payment"] as const;
+
+/**
+ * Each device and IP an Account was seen on (#140), at sign-in and when it
+ * opens a Payment's checkout, for the Signals that look for Accounts sharing
+ * them. The device is the browser's own long-lived id. Only the Admin sees them.
+ */
+export const sightings = sqliteTable(
+  "sightings",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    device: text("device"),
+    ip: text("ip"),
+    at: text("at", { enum: SIGHTED_AT }).notNull(),
+    seenAt: instant("seen_at").notNull(),
+  },
+  (table) => [
+    index("sightings_account").on(table.accountId, table.seenAt),
+    index("sightings_device").on(table.device),
+    index("sightings_ip").on(table.ip),
+    check("sightings_at", sql.raw(`at in (${SIGHTED_AT.map((at) => `'${at}'`).join(", ")})`)),
+  ],
+);
+
+/**
+ * Each send on a Job the Content check refused as a sure hit (#140): it
+ * counts toward nothing but the Signal of one Account refused again and
+ * again on one Job.
+ */
+export const refusedSends = sqliteTable(
+  "refused_sends",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    /** A Draft discarded takes its refusals with it. */
+    jobId: text("job_id")
+      .notNull()
+      .references(() => jobs.id, { onDelete: "cascade" }),
+    /** What was sent, for the Admin: "a Quote", "a message", … */
+    what: text("what").notNull(),
+    /** The reason the sender was shown. */
+    reason: text("reason").notNull(),
+    refusedAt: instant("refused_at").notNull(),
+  },
+  (table) => [index("refused_sends_job").on(table.accountId, table.jobId)],
+);
+
+/** The patterns detection sends to the Admin as Signals (#140). */
+export const SIGNAL_KINDS = [
+  /** A Client and an Artisan who transact sharing a device, an IP, or a Payout-account name. */
+  "shared",
+  /** An Artisan's repeated Cancellations or no-shows. */
+  "cancellations",
+  /** A Client's repeated Disputes. */
+  "disputes",
+  /** A Client's repeated Fix requests. */
+  "fix-requests",
+  /** A Client's repeated Chargebacks. */
+  "chargebacks",
+  /** One Account refused again and again on one Job. */
+  "refusals",
+  /** A new Account sharing a device or IP with a Suspended one. */
+  "linked",
+  /** A second sent-back Payout within 90 days. */
+  "sent-back",
+] as const;
+
+/**
+ * Each Signal (#140, ADR 0020): a pattern of behaviour detection found,
+ * raised as a Signals queue item, which the Admin closes or acts on. It
+ * sanctions nobody and nobody is told. What it found is kept, so the same
+ * finding is not raised again; something new is, once none is open.
+ */
+export const signals = sqliteTable(
+  "signals",
+  {
+    id: text("id").primaryKey(),
+    kind: text("kind", { enum: SIGNAL_KINDS }).notNull(),
+    /** The Account it is about: a Client of a pair, or a new Account linked to a Suspended one. */
+    accountId: text("account_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    /** The pair's Artisan, or the Suspended Account linked. */
+    otherAccountId: text("other_account_id").references(() => accounts.id, {
+      onDelete: "cascade",
+    }),
+    /** The Job an Account was refused on again and again; null once a Draft is discarded. */
+    jobId: text("job_id").references(() => jobs.id, { onDelete: "set null" }),
+    /** Its kind and whom it is about: one is open at a time per key. */
+    key: text("key").notNull(),
+    /** Each thing it found, by an id or value, so a later finding raises only what is new. */
+    found: text("found", { mode: "json" }).$type<string[]>().notNull(),
+    /** What it found, as the Admin reads it. */
+    evidence: text("evidence", { mode: "json" }).$type<string[]>().notNull(),
+    queueItemId: text("queue_item_id")
+      .notNull()
+      .references(() => queueItems.id),
+    raisedAt: instant("raised_at").notNull(),
+  },
+  (table) => [
+    index("signals_key").on(table.key, table.raisedAt),
+    uniqueIndex("signals_item").on(table.queueItemId),
+    check(
+      "signals_kind",
+      sql.raw(`kind in (${SIGNAL_KINDS.map((kind) => `'${kind}'`).join(", ")})`),
+    ),
+  ],
+);
+
 export const CHECK_STATES = ["submitted", "accepted", "rejected", "removed", "superseded"] as const;
 
 /**

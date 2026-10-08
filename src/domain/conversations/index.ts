@@ -180,6 +180,7 @@ export const conversationsSection = defineSection({
           text,
           files: stored,
           ...(await checkedAs(ctx, conversation)),
+          refusedOn: { accountId, jobId: conversation.jobId, what: "A message" },
         });
         if (!checked.ok) {
           await discardFiles(ctx, stored);

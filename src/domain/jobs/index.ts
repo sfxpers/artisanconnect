@@ -152,6 +152,7 @@ export const jobsSection = defineSection({
         text: jobText(job),
         files: job.photos,
         context: { kind: "before-payment" },
+        refusedOn: { accountId: job.clientId, jobId: job.id, what: "The Job" },
       });
       if (!checked.ok) return checked;
       const verdict = checked.value;
@@ -227,6 +228,7 @@ export const jobsSection = defineSection({
           text: jobText(fields),
           files: added,
           context: { kind: "before-payment" },
+          refusedOn: { accountId: job.clientId, jobId: job.id, what: "An edit of the Job" },
         });
         if (!checked.ok) {
           await discardFiles(ctx, added);

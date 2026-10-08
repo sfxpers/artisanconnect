@@ -3,6 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { hashPassword } from "better-auth/crypto";
 import { accountIdOf, visitor, type AccountActor, type Actor } from "../actor";
 import { tryWithin } from "../rate-limits";
+import { recordSighting, type Seen } from "../signals";
 import { ok, refuse } from "../result";
 import { adminActorFor } from "../admins/identity";
 import { alreadyChecked, isAlreadyDecided } from "../content/held";
@@ -184,8 +185,11 @@ export const accountsSection = defineSection({
         return ok({ email: address.data });
       },
 
-      /** Proves the Email with its Email code, which makes the Account and signs it in. */
-      async confirmEmail(actor: Actor, input: { email: string; code: string } & From) {
+      /**
+       * Proves the Email with its Email code, which makes the Account and
+       * signs it in. The device and IP are recorded, as at every sign-in (#140).
+       */
+      async confirmEmail(actor: Actor, input: { email: string; code: string } & From & Seen) {
         if (actor.kind !== "visitor") {
           return refuse("signed-in", "Sign out before signing up for another Account.");
         }
@@ -223,13 +227,15 @@ export const accountsSection = defineSection({
           await signedOut();
           return rulesChangedAtSignIn();
         }
+        await recordSighting(ctx, account.id, input, "sign-in");
         const signedInAs: AccountActor = { kind: account.kind, accountId: account.id };
         return ok({ actor: signedInAs, cookies: verified.headers.getSetCookie() });
       },
 
       /**
        * Signs in with Email and password. An Account that has not accepted the
-       * current Marketplace rules accepts them here, or is not signed in.
+       * current Marketplace rules accepts them here, or is not signed in. The
+       * device and IP are recorded (#140).
        */
       async signIn(
         actor: Actor,
@@ -237,7 +243,8 @@ export const accountsSection = defineSection({
           email: string;
           password: string;
           acceptsRules?: { rulesVersion: number; consentsToDataUse: boolean };
-        } & From,
+        } & From &
+          Seen,
       ) {
         if (actor.kind !== "visitor") return refuse("signed-in", "You are already signed in.");
         const address = email.safeParse(input.email);
@@ -292,6 +299,7 @@ export const accountsSection = defineSection({
         }
         // In case they did not reach the Admin when the Email was proven.
         await raiseHeldNames(ctx, account.id);
+        await recordSighting(ctx, account.id, input, "sign-in");
         const signedInAs: AccountActor = { kind: account.kind, accountId: account.id };
         return ok({ actor: signedInAs, cookies: signedIn.headers.getSetCookie() });
       },

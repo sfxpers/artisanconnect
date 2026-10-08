@@ -8,7 +8,9 @@ import {
   requestActor,
   requestCookie,
   requestDomain,
+  keepDevice,
   requestIp,
+  requestSeen,
   sendCookies,
   turnstileRefusal,
 } from "./session";
@@ -51,9 +53,11 @@ export const confirmEmail = createServerFn({ method: "POST" })
   .validator((input: { email: string; code: string }) => input)
   .handler(async ({ data }) => {
     const domain = requestDomain();
-    const confirmed = await domain.accounts.confirmEmail(visitor, { ...data, ip: requestIp() });
+    const seen = requestSeen();
+    const confirmed = await domain.accounts.confirmEmail(visitor, { ...data, ...seen });
     if (!confirmed.ok) return confirmed;
     sendCookies(confirmed.value.cookies);
+    keepDevice(seen.device);
     return { ok: true as const, value: { me: await domain.accounts.me(confirmed.value.actor) } };
   });
 
@@ -65,9 +69,11 @@ export const signIn = createServerFn({ method: "POST" })
     const refused = await turnstileRefusal(turnstileToken);
     if (refused) return refused;
     const domain = requestDomain();
-    const signedIn = await domain.accounts.signIn(visitor, { ...credentials, ip: requestIp() });
+    const seen = requestSeen();
+    const signedIn = await domain.accounts.signIn(visitor, { ...credentials, ...seen });
     if (!signedIn.ok) return signedIn;
     sendCookies(signedIn.value.cookies);
+    keepDevice(seen.device);
     return { ok: true as const, value: { me: await domain.accounts.me(signedIn.value.actor) } };
   });
 

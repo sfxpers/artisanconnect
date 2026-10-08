@@ -31,6 +31,7 @@ import {
   type CompletionDocument,
   type ENGAGEMENT_STATES,
 } from "../schema";
+import { signalIfAskingFixes } from "../signals";
 import { emailTells, tellWhile } from "../tells";
 import {
   checkFileCount,
@@ -168,6 +169,7 @@ export async function markComplete(
       text: note,
       files: [...photos.value, ...others.value],
       context: { kind: "engagement-conversation", engagementId: engagement.id },
+      refusedOn: { accountId: engagement.artisanId, jobId: engagement.jobId, what: "A Completion" },
     });
     if (!checked.ok) return await discarded(ctx, stored, checked);
     const [certificateFile] = certificate.value;
@@ -347,6 +349,7 @@ export async function requestFix(
   const checked = await checkContent(ctx, {
     text: note,
     context: { kind: "engagement-conversation", engagementId: engagement.id },
+    refusedOn: { accountId: engagement.clientId, jobId: engagement.jobId, what: "A Fix request" },
   });
   if (!checked.ok) return checked;
   const heldFor = checked.value.verdict === "held" ? checked.value.reason : null;
@@ -415,6 +418,7 @@ export async function requestFix(
   if (after?.answer !== "fix-requested" || after.answeredAt?.getTime() !== now.getTime()) {
     return refuse("not-awaiting", "This Engagement is Completed.");
   }
+  await signalIfAskingFixes(ctx, engagement.clientId);
   await emailTells(ctx).catch((error: unknown) => {
     console.error("Tell emails did not go", error);
   });

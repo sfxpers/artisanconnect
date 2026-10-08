@@ -84,6 +84,7 @@ export const reviewsSection = defineSection({
           text: comment,
           context: { kind: "before-payment" },
           withheld: { street: job?.street ?? undefined },
+          refusedOn: { accountId, jobId: engagement.jobId, what: "A Review" },
         });
         if (!checked.ok) return checked;
         if (checked.value.verdict === "held") commentHeldFor = checked.value.reason;

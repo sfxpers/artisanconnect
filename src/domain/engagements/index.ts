@@ -1,4 +1,5 @@
 import type { Actor } from "../actor";
+import type { Seen } from "../signals";
 import { defineSection } from "../section";
 import {
   approve,
@@ -37,8 +38,9 @@ export const engagementsSection = defineSection({
      * Opens a checkout for the Client to Hire a Sent Quote on their Job, by
      * card or Instant EFT, once they acknowledge the Protection Fee is not
      * refunded. The Hire happens when the money arrives, as a payment event.
+     * The device and IP it is opened from are recorded (#140).
      */
-    hire: (actor: Actor, input: { quoteId: string; feeAcknowledged: boolean }) =>
+    hire: (actor: Actor, input: { quoteId: string; feeAcknowledged: boolean } & Seen) =>
       openCheckout(ctx, actor, input),
     /** The Client marks Work started, which releases the Materials (ADR 0006). */
     workStarted: (actor: Actor, input: { engagementId: string }) =>
@@ -94,11 +96,12 @@ export const engagementsSection = defineSection({
     /**
      * Opens a checkout for the Client to accept the proposed Updated Quote by
      * paying the difference plus its Protection Fee, once they acknowledge
-     * the fee is not refunded. It applies when the money arrives.
+     * the fee is not refunded. It applies when the money arrives. The device
+     * and IP it is opened from are recorded (#140).
      */
     acceptUpdatedQuote: (
       actor: Actor,
-      input: { updatedQuoteId: string; feeAcknowledged: boolean },
+      input: { updatedQuoteId: string; feeAcknowledged: boolean } & Seen,
     ) => acceptUpdatedQuote(ctx, actor, input),
     /**
      * Either party opens a Dispute, with a reason and optional photos: the

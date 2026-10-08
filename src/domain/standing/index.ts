@@ -9,6 +9,7 @@ import { withdrawHeldQuote } from "../quotes/held";
 import { withdrawRevisionWrites } from "../quotes/revisions";
 import { refuse } from "../result";
 import { jobs, quotes, suspensions, warnings } from "../schema";
+import { linkedSignalWrites } from "../signals";
 import { tell, tellWhile } from "../tells";
 import type { StoredFile } from "../uploads";
 
@@ -164,6 +165,18 @@ export async function suspendWrites(
   finding: Finding,
 ): Promise<{ writes: Write[]; discard: StoredFile[] }> {
   const ended = await newWorkEnded(ctx, by, account);
+  const suspensionId = ctx.newId();
+  // A new Account seen where this one was is a Signal (#140), raised as it is Suspended.
+  const linked = await linkedSignalWrites(
+    ctx,
+    account.id,
+    exists(
+      ctx.db
+        .select({ one: sql`1` })
+        .from(suspensions)
+        .where(eq(suspensions.id, suspensionId)),
+    ),
+  );
   const logged = {
     action: "account.suspended",
     summary: `Suspended ${account.name}${finding.leaving ? " for Leaving" : ""}: ${finding.reason}`,
@@ -171,7 +184,7 @@ export async function suspendWrites(
   };
   const writes: Write[] = [
     ctx.db.insert(suspensions).values({
-      id: ctx.newId(),
+      id: suspensionId,
       accountId: account.id,
       reason: finding.reason,
       leaving: finding.leaving,
@@ -187,6 +200,7 @@ export async function suspendWrites(
     }),
     by.kind === "admin" ? audit(ctx, by, logged) : systemAudit(ctx, logged, sql`1`),
     ...ended.writes,
+    ...linked,
   ];
   return { writes, discard: ended.discard };
 }

@@ -283,6 +283,20 @@ export async function heldJobItem(env: Env, jobId: string) {
   return { itemId: row.id };
 }
 
+/**
+ * The open Signal item of what the Client and Artisan of a Hired Job share
+ * (#140): a device, an IP, or a Payout-account name.
+ */
+export async function sharedSignalItem(env: Env, jobId: string) {
+  const row = await env.DB.prepare(
+    "select signals.queue_item_id as id from signals join engagements on engagements.client_id = signals.account_id and engagements.artisan_id = signals.other_account_id join queue_items on queue_items.id = signals.queue_item_id where signals.kind = 'shared' and engagements.job_id = ? and queue_items.decided_at is null",
+  )
+    .bind(jobId)
+    .first<{ id: string }>();
+  if (!row) throw new Error(`No open Signal of what the parties to Job ${jobId} share`);
+  return { itemId: row.id };
+}
+
 /** The Payment that Hired the Engagement: its collection's id. */
 async function hirePaymentOf(env: Env, engagementId: string) {
   const row = await env.DB.prepare("select payment_id from engagements where id = ?")

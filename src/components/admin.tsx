@@ -69,6 +69,14 @@ export function Blocks({ blocks }: { blocks: Block[] }) {
                 ))}
               </dl>
             );
+          case "link":
+            return (
+              <p key={index}>
+                <a href={block.href} className="text-primary underline-offset-2 hover:underline">
+                  {block.label}
+                </a>
+              </p>
+            );
           case "files":
             return <Files key={index} files={block.files} />;
         }

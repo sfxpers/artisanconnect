@@ -181,12 +181,19 @@ export async function accountSidebar(ctx: Context, accountId: string, title = "A
             { label: "Email", value: account?.email ?? "" },
           ],
         },
+        // Where the Admin may warn, suspend, or hold Payouts directly (#136).
+        { kind: "link" as const, label: "Open on the People page", href: peoplePage(accountId) },
       ] as Block[],
     },
     ...(account?.kind === "artisan"
       ? [{ title: "Artisan record", blocks: await artisanRecordBlocks(ctx, accountId) }]
       : []),
   ];
+}
+
+/** An Account's page on the Admin's People page. */
+export function peoplePage(accountId: string) {
+  return `/admin/people/${accountId}`;
 }
 
 /** The writes that Hold a Quote for the Admin's Pre-check. */

@@ -26,6 +26,7 @@ import { refundWrites, sendEngagementRefunds } from "../refunds";
 import { ok, refuse } from "../result";
 import { formatTime } from "../sa-days";
 import { completions, disputes, engagements, queueItems, type DISPUTED_BY } from "../schema";
+import { signalIfDisputing } from "../signals";
 import { emailTells, tell, tellWhile } from "../tells";
 import {
   checkFileCount,
@@ -123,6 +124,11 @@ export async function openDispute(
       text: reason,
       files: stored,
       context: { kind: "engagement-conversation", engagementId: engagement.id },
+      refusedOn: {
+        accountId: by === "client" ? engagement.clientId : engagement.artisanId,
+        jobId: engagement.jobId,
+        what: "A Dispute",
+      },
     });
     if (!checked.ok) return await discarded(ctx, stored, checked);
     const heldFor = checked.value.verdict === "held" ? checked.value.reason : null;
@@ -207,6 +213,7 @@ export async function openDispute(
         ? standing
         : refuse("changed", "The Labour not yet released changed meanwhile. Look again.");
     }
+    if (by === "client") await signalIfDisputing(ctx, engagement.clientId);
     await emailTells(ctx).catch((error: unknown) => {
       console.error("Tell emails did not go", error);
     });

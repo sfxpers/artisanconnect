@@ -1,5 +1,5 @@
 import { and, asc, desc, eq, exists, inArray, isNotNull, isNull, or, sql } from "drizzle-orm";
-import type { Actor } from "../actor";
+import type { Actor, AdminActor } from "../actor";
 import { audit } from "../audit";
 import type { Context } from "../context";
 import { LEDGER_KINDS, RELEASED_PARTS, type LedgerKind } from "../ledger";
@@ -122,30 +122,7 @@ export const payoutsSection = defineSection({
       if (artisan.payoutsHeldAt) {
         return refuse("already-held", "This Artisan's Payouts are already held.");
       }
-      const now = ctx.now();
-      await ctx.commit([
-        ctx.db
-          .update(accounts)
-          .set({ payoutsHeldAt: now })
-          .where(and(eq(accounts.id, artisan.id), isNull(accounts.payoutsHeldAt))),
-        audit(
-          ctx,
-          actor,
-          {
-            action: "payouts.held",
-            summary: `Held the Payouts of ${artisan.name}`,
-            subjectId: artisan.id,
-          },
-          heldSince(ctx, artisan.id, now),
-        ),
-        ...tellWhile(
-          ctx,
-          actor,
-          [artisan.id],
-          { event: "payouts.held", title: "Your Payouts are held by the Admin", link: "/payouts" },
-          heldSince(ctx, artisan.id, now),
-        ),
-      ]);
+      await ctx.commit(holdPayoutsWrites(ctx, actor, artisan));
       await emailTells(ctx).catch((error: unknown) => {
         console.error("Tell emails did not go", error);
       });
@@ -194,6 +171,42 @@ export const payoutsSection = defineSection({
     },
   }),
 });
+
+/**
+ * The writes that hold the Artisan's Payouts, telling them, with the audit
+ * log's line, only if they are not held already: from the People page, or a
+ * Signal (#140).
+ */
+export function holdPayoutsWrites(
+  ctx: Context,
+  admin: AdminActor,
+  artisan: { id: string; name: string },
+) {
+  const now = ctx.now();
+  return [
+    ctx.db
+      .update(accounts)
+      .set({ payoutsHeldAt: now })
+      .where(and(eq(accounts.id, artisan.id), isNull(accounts.payoutsHeldAt))),
+    audit(
+      ctx,
+      admin,
+      {
+        action: "payouts.held",
+        summary: `Held the Payouts of ${artisan.name}`,
+        subjectId: artisan.id,
+      },
+      heldSince(ctx, artisan.id, now),
+    ),
+    ...tellWhile(
+      ctx,
+      admin,
+      [artisan.id],
+      { event: "payouts.held", title: "Your Payouts are held by the Admin", link: "/payouts" },
+      heldSince(ctx, artisan.id, now),
+    ),
+  ];
+}
 
 /**
  * The Artisan's money: each Release, newest first, with its Artisan Fee, what

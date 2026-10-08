@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { requestActor, requestDomain } from "./session";
+import { keepDevice, requestActor, requestDomain, requestSeen } from "./session";
 
 // Engagements: thin adapters onto the domain module, which decides who may
 // set Work started, mark the work complete, approve it, refund, cancel,
@@ -131,7 +131,10 @@ export const acceptUpdatedQuote = createServerFn({ method: "POST" })
   .validator((input: { updatedQuoteId: string; feeAcknowledged: boolean }) => input)
   .handler(async ({ data }) => {
     const domain = requestDomain();
-    return domain.engagements.acceptUpdatedQuote(await requestActor(domain), data);
+    const actor = await requestActor(domain);
+    const seen = requestSeen();
+    keepDevice(seen.device);
+    return domain.engagements.acceptUpdatedQuote(actor, { ...data, ...seen });
   });
 
 /**

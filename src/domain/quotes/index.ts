@@ -89,6 +89,7 @@ export const quotesSection = defineSection({
       const checked = await checkContent(ctx, {
         text: quoteText(fields),
         context: { kind: "before-payment" },
+        refusedOn: { accountId: actor.accountId, jobId: job.id, what: "A Quote" },
       });
       if (!checked.ok) return checked;
       const verdict = checked.value;
@@ -186,6 +187,7 @@ export const quotesSection = defineSection({
       const checked = await checkContent(ctx, {
         text: quoteText(version),
         context: { kind: "before-payment" },
+        refusedOn: { accountId: actor.accountId, jobId: job.id, what: "A revision of the Quote" },
       });
       if (!checked.ok) return checked;
       const verdict = checked.value;

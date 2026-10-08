@@ -10,6 +10,7 @@ import { refundWrites, sendEngagementRefunds } from "../refunds";
 import { ok, refuse, type Result } from "../result";
 import { formatTime } from "../sa-days";
 import { engagements, type CANCELLED_BY, type ENGAGEMENT_STATES } from "../schema";
+import { signalIfCancelling } from "../signals";
 import { emailTells, tellWhile } from "../tells";
 import { CANCELLATION_REASON_MAX } from "./inputs";
 import { engagementRow, type EngagementRow } from "./rows";
@@ -82,6 +83,7 @@ export async function cancel(
     const after = await engagementRow(ctx, engagement.id);
     if (after?.state === "cancelled" && after.cancelledAt?.getTime() === now.getTime()) {
       if (!after.workStartedAt) await sendEngagementRefunds(ctx, after.id);
+      await signalIfCancelling(ctx, after.artisanId);
       await emailTells(ctx).catch((error: unknown) => {
         console.error("Tell emails did not go", error);
       });

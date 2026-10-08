@@ -20,6 +20,7 @@ import { ok, refuse } from "../result";
 import { saDay, formatDay } from "../sa-days";
 import { accounts, authUsers, chargebacks, engagements, jobs, payments, quotes } from "../schema";
 import { isSuspended, suspendedRefusal } from "../standing";
+import { recordSighting, signalIfShared, type Seen } from "../signals";
 import { emailAddress, emailTells, tell } from "../tells";
 import {
   notHiredWrites,
@@ -44,7 +45,7 @@ import { updatedQuotePaid } from "./updated-quote";
 export async function openCheckout(
   ctx: Context,
   actor: Actor,
-  input: { quoteId: string; feeAcknowledged: boolean },
+  input: { quoteId: string; feeAcknowledged: boolean } & Seen,
 ) {
   const quote = await quoteRow(ctx, input.quoteId);
   const job = quote && (await jobRow(ctx, quote.jobId));
@@ -102,6 +103,7 @@ export async function openCheckout(
   };
   // Written first, so its event always finds it.
   await ctx.db.insert(payments).values(payment);
+  await recordSighting(ctx, job.clientId, input, "payment");
   return ok({ checkoutUrl: await openCollection(ctx, payment) });
 }
 
@@ -138,6 +140,8 @@ export async function collectionSucceeded(
     if (reason) return refundWhole(ctx, (await paymentRow(ctx, payment.id))!);
     // An edit waiting on the Job was withdrawn: what it added is nobody's now.
     if (beingChecked) await discardFiles(ctx, addedBy(beingChecked, job));
+    // They transact now: what they share is a Signal (#140).
+    await signalIfShared(ctx, payment.clientId, quote.artisanId);
     await emailTells(ctx).catch((error: unknown) => {
       console.error("Tell emails did not go", error);
     });
