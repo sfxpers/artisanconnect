@@ -12,6 +12,7 @@ import {
 } from "./completion";
 import { refundByArtisan, refundClocks } from "../refunds";
 import { cancel, cancellationClocks } from "./cancellation";
+import { disputeFile, disputeItem, openDispute, releaseHeld } from "./dispute";
 import { artisanRecord } from "./record";
 import type { RefundFields, UpdatedQuoteFields } from "./inputs";
 import { openCheckout } from "./hire";
@@ -29,7 +30,7 @@ import { answerNotStarted, claimStarted, markWorkStarted, workStartedClocks } fr
 export const engagementsSection = defineSection({
   name: "engagements",
   clocks: { ...workStartedClocks, ...completionClocks, ...refundClocks, ...cancellationClocks },
-  queueItems: [heldCompletion, heldFixNote],
+  queueItems: [heldCompletion, heldFixNote, disputeItem],
   api: (ctx) => ({
     /**
      * Opens a checkout for the Client to Hire a Sent Quote on their Job, by
@@ -98,7 +99,20 @@ export const engagementsSection = defineSection({
       actor: Actor,
       input: { updatedQuoteId: string; feeAcknowledged: boolean },
     ) => acceptUpdatedQuote(ctx, actor, input),
-    /** An Artisan's record of Cancellations, for the Admin only; null to anyone else. */
+    /**
+     * Either party opens a Dispute, with a reason and optional photos: the
+     * Client for a named amount of the Labour, in rands, at Awaiting
+     * approval; the Artisan for all the Labour unreleased, against a Fix
+     * request or within a Cancellation's 72 hours. The Admin decides it.
+     */
+    dispute: (
+      actor: Actor,
+      input: { engagementId: string; amount?: string; reason: string; photos?: Blob[] },
+    ) => openDispute(ctx, actor, input),
+    /** The Client releases an amount of the Labour a Dispute holds, in rands, to settle it. */
+    releaseHeld: (actor: Actor, input: { engagementId: string; amount: string }) =>
+      releaseHeld(ctx, actor, input),
+    /** An Artisan's record of Cancellations and Disputes, for the Admin only; null to anyone else. */
     artisanRecord: async (viewer: Actor, input: { artisanId: string }) =>
       viewer.kind === "admin" ? artisanRecord(ctx, input.artisanId) : null,
     /** A Completion's photo or document, to whoever may see it; null to anyone else. */
@@ -106,5 +120,10 @@ export const engagementsSection = defineSection({
       viewer: Actor,
       input: { completionId: string; fileId: string; thumbnail?: boolean },
     ) => completionFile(ctx, viewer, input),
+    /** A Dispute's photo, to whoever may see it; null to anyone else. */
+    disputeFile: (
+      viewer: Actor,
+      input: { disputeId: string; fileId: string; thumbnail?: boolean },
+    ) => disputeFile(ctx, viewer, input),
   }),
 });

@@ -673,7 +673,7 @@ export const copy = {
       if (of.labourRefund) {
         return of.asClient
           ? `${of.who} cancelled after Work started. ${materials}, and the Labour not yet released, ${of.labourRefund.amount}, is refunded to you on ${of.labourRefund.on}.`
-          : `${of.who} cancelled after Work started. ${materials}, and the Labour not yet released, ${of.labourRefund.amount}, is refunded to the Client on ${of.labourRefund.on}. You may refund it sooner under Payments.`;
+          : `${of.who} cancelled after Work started. ${materials}, and the Labour not yet released, ${of.labourRefund.amount}, is refunded to the Client on ${of.labourRefund.on}, unless you open a Dispute for work already done before then. You may refund it sooner under Payments.`;
       }
       return `${of.who} cancelled after Work started. ${materials}, and the Labour not yet released was refunded ${of.asClient ? "to you" : "to the Client"}.`;
     },
@@ -739,6 +739,7 @@ export const copy = {
     document: (index: number) => `Document ${index}`,
     certificateDocument: "Certificate",
     approvalBar: (by: string) => `Approved by silence on ${by}`,
+    restBar: (by: string) => `The Labour not in Dispute is released on ${by}`,
     payments: "Payments",
     parts: {
       materials: { title: "Materials", released: "Released at Work started" },
@@ -759,6 +760,9 @@ export const copy = {
       "updated-quote.withdrawn": "Updated Quote withdrawn",
       "updated-quote.rejected": "Updated Quote rejected",
       "updated-quote.accepted": "Updated Quote accepted and paid",
+      "dispute.opened": "Disputed",
+      "dispute.settled": "Dispute settled",
+      "dispute.decided": "Dispute decided by the Admin",
     },
     refunds: "Refunds",
     refundStates: {
@@ -784,12 +788,69 @@ export const copy = {
     paidIn: "Paid in",
     released: "Released",
     unreleased: "Not yet released",
+    held: "Held in Dispute",
     refunded: "Refunded",
     protectionFee: "Protection Fee (not refunded)",
     artisanFee: "Artisan Fee",
     artisanFeeShown: (percent: number) => `${percent}% of each Release`,
     hiredQuote: "Hired Quote",
     address: "Address",
+    dispute: {
+      title: "Disputed: the Admin decides",
+      lead: (of: { own: boolean; asClient: boolean; held: string }) =>
+        of.asClient
+          ? of.own
+            ? `You disputed part of the Labour, and ${of.held} is held. The Admin reads the Job, the Completion, and the Conversation, then splits what is held between the Artisan and you. Until then you may release it to the Artisan to settle.`
+            : `The Artisan opened a Dispute, and ${of.held} of the Labour is held. The Admin reads the Job, the Completion, and the Conversation, then splits what is held between the Artisan and you. Until then you may release it to the Artisan to settle.`
+          : of.own
+            ? `You opened a Dispute, and ${of.held} of the Labour is held. The Admin reads the Job, the Completion, and the Conversation, then splits what is held between you and the Client. Until then you may refund it to settle, under Payments.`
+            : `The Client disputed part of the Labour, and ${of.held} is held. The Admin reads the Job, the Completion, and the Conversation, then splits what is held between you and the Client. Until then you may refund it to settle, under Payments.`,
+      card: "Dispute",
+      against: {
+        completion: "Against the Completion",
+        "fix-request": "Against the Fix request",
+        cancellation: "Against the Cancellation's refund of the Labour",
+      },
+      openedBy: (who: string, at: string) => `Opened by ${who} · ${at}`,
+      you: "you",
+      theClient: "the Client",
+      theArtisan: "the Artisan",
+      named: "Disputed",
+      heldNow: "Held now",
+      reason: "Reason",
+      reasonHeld:
+        "The Content check was unsure of your reason, so only the Admin reads it and its photos.",
+      noReason: "The reason is for the Admin only.",
+      states: { open: "Open", settled: "Settled", decided: "Decided" },
+      settled: (at: string) => `Settled on ${at}, as nothing was held any more.`,
+      decided: (at: string) => `Decided by the Admin on ${at}. The decision is final.`,
+      releasedTo: (asClient: boolean) => (asClient ? "Released to the Artisan" : "Released to you"),
+      refundedTo: (asClient: boolean) => (asClient ? "Refunded to you" : "Refunded to the Client"),
+      decisionReason: "The Admin's reason",
+      photo: (index: number) => `Dispute photo ${index}`,
+      open: (asClient: boolean) => (asClient ? "Dispute part of the Labour" : "Open a Dispute"),
+      clientLead: (labour: string) =>
+        `Name how much of the Labour you dispute, up to ${labour}, and why. Only that is held for the Admin to decide; the rest is released when you approve or when the seven days end.`,
+      artisanLead: (labour: string, until: string | null) =>
+        `All the Labour not yet released, ${labour}, is held for the Admin to decide${until ? `, and is not refunded to the Client. Open it before ${until}` : ""}. Say why the work is done as quoted.`,
+      amount: "Amount of the Labour disputed, in rands",
+      why: "Why",
+      photos: "Photos (optional)",
+      photosHint: (max: number) => `Up to ${max} photos.`,
+      send: "Open the Dispute",
+      confirm: "Open a Dispute? The Admin's decision is final.",
+      cancel: "Cancel",
+      release: "Release from the Dispute",
+      releaseLead: (held: string) =>
+        `Release some or all of the ${held} held to the Artisan. Once nothing is held, the Dispute is settled.`,
+      releaseAmount: "Amount to release, in rands",
+      releaseSend: "Release",
+      releaseConfirm: (amount: string) =>
+        `Release ${amount} to the Artisan? This cannot be undone.`,
+      approveRest: "Approve the Labour not in Dispute",
+      approveRestConfirm: (rest: string) =>
+        `Approve the work but for what is in Dispute? This releases ${rest} to the Artisan, and cannot be undone.`,
+    },
     updatedQuote: {
       title: "Updated Quote",
       proposedClient: (at: string) => `The Artisan proposed it ${at}.`,
@@ -879,6 +940,10 @@ export const copy = {
       approved: "Approved",
       refund: "Refunded",
       cancelled: "Cancelled",
+      "dispute.opened": "Disputed",
+      "dispute.released": "Released in Dispute",
+      "dispute.settled": "Dispute settled",
+      "dispute.decided": "Dispute decided by the Admin",
     } satisfies Record<MessageEvent, string>,
     photo: (index: number) => `Photo ${index}`,
     message: "Message",
@@ -1025,6 +1090,8 @@ export const copy = {
       eachRow: "Decide each row on its own",
       rowsNow: "Each row as it stands now",
       noRows: "Nothing on this item is left to decide.",
+      splitRefunded: "Refunded to the Client",
+      splitOf: (total: string) => `Of ${total} held`,
     },
     admins: {
       title: "Admins",

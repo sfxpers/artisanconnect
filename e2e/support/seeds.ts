@@ -194,6 +194,27 @@ async function sentPayouts(env: Env, artisanId: string) {
   return results.map((row) => row.id);
 }
 
+/** The Email of an Admin of the local app, set up first if there is none, to sign in with a code. */
+export async function admin(env: Env) {
+  const { domain } = await world(env);
+  const { actor } = await anAdmin(env, domain);
+  const row = await env.DB.prepare("select email from admins where id = ?")
+    .bind(actor.adminId)
+    .first<{ email: string }>();
+  return { email: row!.email };
+}
+
+/** The Admin's queue item of the Engagement's Dispute (#135). */
+export async function disputeItem(env: Env, engagementId: string) {
+  const row = await env.DB.prepare(
+    "select queue_items.id from queue_items join disputes on disputes.id = queue_items.subject_id where queue_items.kind = 'dispute' and disputes.engagement_id = ?",
+  )
+    .bind(engagementId)
+    .first<{ id: string }>();
+  if (!row) throw new Error(`No Dispute item for Engagement ${engagementId}`);
+  return { itemId: row.id };
+}
+
 /** The module on the local app's D1, and the builders over it. */
 async function world(env: Env, config: Partial<DomainConfig> = {}, clock?: Clock) {
   const mailer = createFakeMailer();

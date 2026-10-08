@@ -145,7 +145,7 @@ Either Account's ending of an Engagement before Approval. Before Work started th
 _Avoid_: Termination, Withdrawal
 
 **Dispute**:
-A request that the Admin decide how much of a held amount of Labour is released and how much refunded. The Client opens one for a named amount at Completion; the Artisan opens one against a Fix request or a Cancellation. The Admin's decision is final.
+A request that the Admin decide how much of a held amount of Labour is released and how much refunded. The Client opens one for a named amount at Completion, and the rest of the Labour is released at Approval or when the seven days end; the Artisan opens one for all the Labour unreleased, against a Fix request or within a Cancellation's 72 hours. Until the Admin decides, the Client may release what is held and the Artisan may refund it; when nothing is held it is settled. The Admin's decision is final. Afterwards the Engagement is Completed if there was a Completion, otherwise Cancelled.
 _Avoid_: Appeal, Complaint, Claim
 
 **Hire Again**:

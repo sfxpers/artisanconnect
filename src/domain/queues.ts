@@ -36,23 +36,37 @@ export type DecisionOption = {
   reasonLabel?: string;
 };
 
-/** A decision allowed on an item now, by its key. */
-export type AllowedDecision = DecisionOption & { key: string };
+/** A decision allowed on an item now, by its key, with the values it is recorded with. */
+export type AllowedDecision = DecisionOption & { key: string; fields: DecisionField[] };
 
-/** A value the Admin records with a row's decision, such as an Identity Number read from the document. */
+/**
+ * A value the Admin records with a decision, such as an Identity Number read
+ * from the document, or how a Dispute's held amount is split.
+ */
 export type DecisionField = {
   key: string;
   label: string;
   /** What it holds before the Admin changes it: what the sender gave. */
   value: string;
-  /** A text, or a day (YYYY-MM-DD). */
-  type: "text" | "day";
+  /**
+   * A text, a day (YYYY-MM-DD), or a split of an amount between Release and
+   * Refund: the cents released, from 0 to the whole, sent back with the whole
+   * under `splitOf(key)`.
+   */
+  type: "text" | "day" | "split";
   required: boolean;
   /** For a choice, the values allowed and how each is shown. */
   options?: { value: string; label: string }[];
+  /** For a split, the whole amount in cents. */
+  totalCents?: number;
 };
 
-export type RowDecision = AllowedDecision & { fields: DecisionField[] };
+export type RowDecision = AllowedDecision;
+
+/** The key a split's whole, as the Admin saw it, is sent back under, beside the split's own. */
+export function splitOf(key: string) {
+  return `${key}.of`;
+}
 
 /**
  * One row of an item whose rows are decided one at a time, such as each
@@ -130,6 +144,8 @@ type QueueItemKindDefinition = {
   decisions: Record<string, DecisionOption>;
   /** The keys of the decisions allowed now. All of them, if left out. */
   allowed?(ctx: Context, item: QueueItem): Promise<string[]>;
+  /** The values each decision allowed now is recorded with, by its key. None, if left out. */
+  fields?(ctx: Context, item: QueueItem): Promise<Record<string, DecisionField[]>>;
   /**
    * The writes a decision makes (its state change, its Tells), or a refusal.
    * They are committed with the decision, so a refusal records nothing. A
@@ -140,8 +156,15 @@ type QueueItemKindDefinition = {
     ctx: Context,
     admin: AdminActor,
     item: QueueItem,
-    choice: { decision: string; reason: string | null },
+    choice: { decision: string; reason: string | null; fields: Record<string, string> },
   ): Promise<Result<Write[]>>;
+  /**
+   * The refusal for a batch a trigger aborted, such as one taking money a
+   * party's command took first; null for any other error.
+   */
+  refusalOf?(error: unknown): ReturnType<typeof refuse> | null;
+  /** What follows a decision once it is committed, such as sending a Refund it made. */
+  after?(ctx: Context, item: QueueItem): Promise<void>;
   view(ctx: Context, item: QueueItem): Promise<ItemView>;
   /** What opens on a logged click, by key. Each opening is written to the audit log. */
   reads?: Record<string, { label: string; open(ctx: Context, item: QueueItem): Promise<Block[]> }>;
@@ -243,9 +266,10 @@ export function createQueues(ctx: Context, kinds: Record<string, QueueItemKind>)
 
   async function allowedNow(kind: QueueItemKind, item: QueueItem): Promise<AllowedDecision[]> {
     const keys = kind.allowed ? await kind.allowed(ctx, item) : Object.keys(kind.decisions);
+    const fields = kind.fields ? await kind.fields(ctx, item) : {};
     return keys.flatMap((key) => {
       const option = kind.decisions[key];
-      return option ? [{ key, ...option }] : [];
+      return option ? [{ key, ...option, fields: fields[key] ?? [] }] : [];
     });
   }
 
@@ -336,7 +360,15 @@ export function createQueues(ctx: Context, kinds: Record<string, QueueItemKind>)
      * makes and a line in the audit log, in one batch. A recorded decision
      * cannot be reopened.
      */
-    async decide(actor: Actor, input: { itemId: string; decision: string; reason?: string }) {
+    async decide(
+      actor: Actor,
+      input: {
+        itemId: string;
+        decision: string;
+        reason?: string;
+        fields?: Record<string, string>;
+      },
+    ) {
       if (actor.kind !== "admin") return adminOnly();
       const row = await find(input.itemId);
       if (!row) return notFound();
@@ -350,7 +382,17 @@ export function createQueues(ctx: Context, kinds: Record<string, QueueItemKind>)
       if (!given.ok) return given;
       const reason = given.value;
 
-      const made = await kind.decide(ctx, actor, row, { decision: option.key, reason });
+      const fields = input.fields ?? {};
+      const missing = option.fields.find((field) => field.required && !fields[field.key]?.trim());
+      if (missing) return refuse("invalid", `Give the ${missing.label}.`);
+      // A split comes with the whole it split, as the Admin saw it, which must still be the whole.
+      const moved = option.fields.find(
+        (field) =>
+          field.type === "split" && fields[splitOf(field.key)] !== String(field.totalCents),
+      );
+      if (moved) return refuse("changed", "What is being split changed meanwhile. Look again.");
+
+      const made = await kind.decide(ctx, actor, row, { decision: option.key, reason, fields });
       if (!made.ok) return made;
       try {
         await ctx.commit([
@@ -373,8 +415,11 @@ export function createQueues(ctx: Context, kinds: Record<string, QueueItemKind>)
         ]);
       } catch (error) {
         if (causedBy(error, "a recorded decision cannot be reopened")) return alreadyDecided();
+        const refused = kind.refusalOf?.(error);
+        if (refused) return refused;
         throw error;
       }
+      await kind.after?.(ctx, row);
       await emailTells(ctx);
       return ok({ itemId: row.id, decision: option.key });
     },

@@ -184,7 +184,7 @@ describe("a Cancellation after Work started", () => {
     expect(await toldOf(domain, artisan, jobId)).toContainEqual(
       expect.objectContaining({
         event: "engagement.cancelled",
-        title: `The Client cancelled. The Materials stay with you, and the Labour not yet released, ${formatRands(150_000)}, is refunded to them at 08 Oct 2026, 08:00: Paint the lounge`,
+        title: `The Client cancelled. The Materials stay with you, and the Labour not yet released, ${formatRands(150_000)}, is refunded to them at 08 Oct 2026, 08:00, unless you open a Dispute for work already done before then: Paint the lounge`,
       }),
     );
 
@@ -235,7 +235,7 @@ describe("a Cancellation after Work started", () => {
     await domain.system.runDueClocks();
     expect(await reminders(domain, artisan)).toEqual([
       expect.objectContaining({
-        title: `The Labour not yet released, ${formatRands(150_000)}, is refunded to the Client in 24 hours, at 08 Oct 2026, 08:00: Paint the lounge`,
+        title: `The Labour not yet released, ${formatRands(150_000)}, is refunded to the Client in 24 hours, at 08 Oct 2026, 08:00. Open a Dispute before then for work already done: Paint the lounge`,
         link: `/jobs/${jobId}`,
       }),
     ]);
@@ -572,6 +572,8 @@ describe("the Artisan record", () => {
           reason: "Never arrived.",
         },
       ],
+      disputesDecidedAgainst: 0,
+      disputes: [],
     });
     for (const party of [first.client, first.artisan]) {
       expect(await domain.engagements.artisanRecord(party.actor, { artisanId })).toBeNull();
@@ -602,6 +604,7 @@ describe("the Artisan record", () => {
           facts: [
             { label: "Cancelled by the Artisan", value: "0" },
             { label: "Cancelled by Clients before Work started", value: "1" },
+            { label: "Disputes decided against the Artisan", value: "0" },
           ],
         },
         {

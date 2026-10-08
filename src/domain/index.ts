@@ -10,6 +10,7 @@ import { marketplaceRulesSection } from "./accounts/rules";
 import { createContext } from "./context";
 import { conversationsSection } from "./conversations";
 import { engagementsSection } from "./engagements";
+import { settleDisputesHoldingNothing } from "./engagements/dispute";
 import { invitationsSection } from "./invitations";
 import { jobsSection } from "./jobs";
 import { matchesSection } from "./matches";
@@ -88,7 +89,8 @@ export function assembleDomain<const Sections extends readonly Section[]>(
     system: {
       /**
        * Called by the every-minute cron. Also sends any Refund a command
-       * could not send, and any Tell's email that has not gone.
+       * could not send, settles any Dispute left holding nothing, and sends
+       * any Tell's email that has not gone.
        */
       async runDueClocks() {
         try {
@@ -96,6 +98,9 @@ export function assembleDomain<const Sections extends readonly Section[]>(
         } finally {
           await sendWaitingRefunds(ctx).catch((error: unknown) => {
             console.error("Refunds were not sent", error);
+          });
+          await settleDisputesHoldingNothing(ctx).catch((error: unknown) => {
+            console.error("Disputes holding nothing were not settled", error);
           });
           // Never in place of a clock's failure.
           await emailTells(ctx).catch((error: unknown) => {

@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "460461f1-a40d-42d8-92ac-5eae2d1fafd2",
-  "prevId": "ba68c574-4efb-4291-ab78-954eed5672c3",
+  "id": "b398f26e-aef1-48e1-8870-df18eb12c1e0",
+  "prevId": "460461f1-a40d-42d8-92ac-5eae2d1fafd2",
   "tables": {
     "accounts": {
       "name": "accounts",
@@ -911,6 +911,155 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
+    },
+    "disputes": {
+      "name": "disputes",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "engagement_id": {
+          "name": "engagement_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "opened_by": {
+          "name": "opened_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "against": {
+          "name": "against",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "completion_id": {
+          "name": "completion_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "held_cents": {
+          "name": "held_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "photos": {
+          "name": "photos",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "reason_state": {
+          "name": "reason_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "reason_held_for": {
+          "name": "reason_held_for",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "state": {
+          "name": "state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "opened_at": {
+          "name": "opened_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "closed_at": {
+          "name": "closed_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "released_cents": {
+          "name": "released_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "refunded_cents": {
+          "name": "refunded_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "disputes_engagement_id_unique": {
+          "name": "disputes_engagement_id_unique",
+          "columns": ["engagement_id"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "disputes_engagement_id_engagements_id_fk": {
+          "name": "disputes_engagement_id_engagements_id_fk",
+          "tableFrom": "disputes",
+          "tableTo": "engagements",
+          "columnsFrom": ["engagement_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "disputes_completion_id_completions_id_fk": {
+          "name": "disputes_completion_id_completions_id_fk",
+          "tableFrom": "disputes",
+          "tableTo": "completions",
+          "columnsFrom": ["completion_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "disputes_state": {
+          "name": "disputes_state",
+          "value": "state in ('open', 'settled', 'decided')"
+        },
+        "disputes_held": {
+          "name": "disputes_held",
+          "value": "typeof(held_cents) = 'integer' and held_cents > 0"
+        }
+      }
     },
     "due_clocks": {
       "name": "due_clocks",
@@ -3182,7 +3331,7 @@
         },
         "refunds_cause": {
           "name": "refunds_cause",
-          "value": "cause in ('artisan', 'not-hired', 'cancellation')"
+          "value": "cause in ('artisan', 'not-hired', 'cancellation', 'dispute')"
         },
         "refunds_amounts": {
           "name": "refunds_amounts",

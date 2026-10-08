@@ -202,7 +202,7 @@ function cancelledTitle(
   const at = formatTime(of.refundAt);
   if (by === "client") {
     return of.labourCents > 0
-      ? `The Client cancelled. The Materials stay with you, and ${labour}, is refunded to them at ${at}`
+      ? `The Client cancelled. The Materials stay with you, and ${labour}, is refunded to them at ${at}, unless you open a Dispute for work already done before then`
       : "The Client cancelled. The Materials stay with you";
   }
   return of.labourCents > 0
@@ -233,14 +233,13 @@ const refundReminder: ClockHandler = async (ctx, clock) => {
   const due = await labourDue(ctx, clock.subjectId, clock.dueAt, REMIND_BEFORE_MS);
   if (!due) return [];
   const { engagement, labourCents, refundAt } = due;
-  // Open a Dispute for work already done before then, too, once there are Disputes (#135).
   return tellWhile(
     ctx,
     system,
     [engagement.artisanId],
     {
       event: "engagement.cancellation-reminder",
-      title: `The Labour not yet released, ${formatRands(labourCents)}, is refunded to the Client in 24 hours, at ${formatTime(refundAt)}: ${engagement.jobTitle}`,
+      title: `The Labour not yet released, ${formatRands(labourCents)}, is refunded to the Client in 24 hours, at ${formatTime(refundAt)}. Open a Dispute before then for work already done: ${engagement.jobTitle}`,
       link: `/jobs/${engagement.jobId}`,
     },
     due.stillCancelled,

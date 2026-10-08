@@ -16,6 +16,8 @@ import {
   CancelAction,
   CompletionActions,
   CompletionCard,
+  DisputeActions,
+  DisputeCard,
   EngagementNextStep,
   HiredQuoteCard,
   MoneyCard,
@@ -485,9 +487,11 @@ function Hired({
           <NotHired job={job} />
           <StartActions engagement={engagement} asClient />
           <CompletionActions engagement={engagement} asClient />
+          <DisputeActions engagement={engagement} asClient />
           <CancelAction engagement={engagement} asClient />
         </EngagementNextStep>
         <UpdatedQuoteCard engagement={engagement} asClient />
+        <DisputeCard engagement={engagement} asClient />
         <CompletionCard engagement={engagement} />
         <PaymentsCard engagement={engagement} />
         <ActivityCard engagement={engagement} />

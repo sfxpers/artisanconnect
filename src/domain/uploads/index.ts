@@ -6,7 +6,11 @@
 
 import type { Context } from "../context";
 import { MESSAGE_ATTACHMENTS_MAX } from "../conversations/inputs";
-import { COMPLETION_DOCUMENTS_MAX, COMPLETION_PHOTOS_MAX } from "../engagements/inputs";
+import {
+  COMPLETION_DOCUMENTS_MAX,
+  COMPLETION_PHOTOS_MAX,
+  DISPUTE_PHOTOS_MAX,
+} from "../engagements/inputs";
 import { PROFILE_PHOTOS_MAX } from "../profiles/inputs";
 import { ok, refuse, type Result } from "../result";
 import { Locked, startsWith, Unreadable } from "./bytes";
@@ -34,6 +38,8 @@ export const UPLOAD_CONTEXTS = {
   completionDocuments: { takes: ["photo", "pdf"] },
   /** Verification documents, which only the Admin sees. */
   verification: { takes: ["photo", "pdf"] },
+  /** A Dispute's photos (#135). */
+  disputePhotos: { takes: ["photo"] },
 } as const satisfies Record<string, UploadContext>;
 
 export type StoredFile =
@@ -237,6 +243,10 @@ export const FILE_COUNT_LIMITS = {
   completionDocuments: {
     max: COMPLETION_DOCUMENTS_MAX,
     message: `A Completion has at most ${COMPLETION_DOCUMENTS_MAX} documents.`,
+  },
+  disputePhotos: {
+    max: DISPUTE_PHOTOS_MAX,
+    message: `A Dispute has at most ${DISPUTE_PHOTOS_MAX} photos.`,
   },
   messageAttachments: {
     max: MESSAGE_ATTACHMENTS_MAX,

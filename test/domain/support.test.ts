@@ -216,6 +216,7 @@ describe("answering a Support request", () => {
         told: "The Account, by email",
         reason: "required",
         reasonLabel: "Answer",
+        fields: [],
       },
     ]);
     const answered = await domain.queues.decide(admin.actor, {

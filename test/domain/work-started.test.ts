@@ -56,6 +56,7 @@ describe("the Client marks Work started", () => {
       releasedCents: 50_000,
       unreleasedCents: 150_000,
       refundedCents: 0,
+      heldCents: 0,
       payments: [
         { part: "materials", amountCents: 50_000, unreleasedCents: 0, state: "released" },
         { part: "labour", amountCents: 150_000, unreleasedCents: 150_000, state: "unreleased" },

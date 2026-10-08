@@ -2,8 +2,9 @@ import { createServerFn } from "@tanstack/react-start";
 import { requestActor, requestDomain } from "./session";
 
 // Engagements: thin adapters onto the domain module, which decides who may
-// set Work started, mark the work complete, approve it, refund, cancel, and
-// propose or answer an Updated Quote, and when (ADR 0006, ADR 0007, ADR 0019).
+// set Work started, mark the work complete, approve it, refund, cancel,
+// propose or answer an Updated Quote, and open or settle a Dispute, and when
+// (ADR 0006, ADR 0007, ADR 0019).
 
 const byEngagement = (input: { engagementId: string }) => input;
 
@@ -131,4 +132,33 @@ export const acceptUpdatedQuote = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const domain = requestDomain();
     return domain.engagements.acceptUpdatedQuote(await requestActor(domain), data);
+  });
+
+/**
+ * Either party opens a Dispute: "engagementId", "reason", "photos", and the
+ * Client's "amount" of the Labour, in rands.
+ */
+export const openDispute = createServerFn({ method: "POST" })
+  .validator((input: FormData) => {
+    if (!(input instanceof FormData)) throw new Error("Expected a form");
+    const reason = input.get("reason");
+    const amount = input.get("amount");
+    return {
+      engagementId: String(input.get("engagementId") ?? ""),
+      reason: typeof reason === "string" ? reason : "",
+      photos: files(input, "photos"),
+      ...(typeof amount === "string" ? { amount } : {}),
+    };
+  })
+  .handler(async ({ data }) => {
+    const domain = requestDomain();
+    return domain.engagements.dispute(await requestActor(domain), data);
+  });
+
+/** The Client releases an amount, in rands, of what their Dispute holds. */
+export const releaseHeld = createServerFn({ method: "POST" })
+  .validator((input: { engagementId: string; amount: string }) => input)
+  .handler(async ({ data }) => {
+    const domain = requestDomain();
+    return domain.engagements.releaseHeld(await requestActor(domain), data);
   });

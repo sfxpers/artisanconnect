@@ -17,7 +17,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Blocks, QueueCounts } from "@/components/admin";
 import { Page, Refusal } from "@/components/page";
-import type { Block, ItemRow } from "@/domain/queues";
+import { formatRands } from "@/domain/money";
+import { splitOf, type Block, type DecisionField, type ItemRow } from "@/domain/queues";
 import { cn } from "@/lib/utils";
 import { decideQueueItem, decideQueueRow, getQueueItem, openLoggedRead } from "@/web/admin";
 import { copy, formatDate } from "@/web/copy";
@@ -133,16 +134,33 @@ function DecisionCard({ item }: { item: Item }) {
   const router = useRouter();
   const [chosen, setChosen] = useState<string | null>(null);
   const [reason, setReason] = useState("");
+  const [fields, setFields] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);
   const option = item.decisions.find((decision) => decision.key === chosen);
+
+  function choose(key: string) {
+    setChosen(key);
+    const decision = item.decisions.find((each) => each.key === key);
+    setFields(
+      Object.fromEntries((decision?.fields ?? []).map((field) => [field.key, field.value])),
+    );
+  }
 
   async function record() {
     if (!option) return;
     setBusy(true);
     setRefusal(null);
+    const wholes = option.fields.flatMap((field) =>
+      field.type === "split" ? [[splitOf(field.key), String(field.totalCents)]] : [],
+    );
     const result = await decideQueueItem({
-      data: { itemId: item.id, decision: option.key, reason },
+      data: {
+        itemId: item.id,
+        decision: option.key,
+        reason,
+        fields: { ...fields, ...Object.fromEntries(wholes) },
+      },
     });
     setBusy(false);
     if (!result.ok) return setRefusal(result.refusal.message);
@@ -165,13 +183,22 @@ function DecisionCard({ item }: { item: Item }) {
                 key={decision.key}
                 variant={decision.key === chosen ? "default" : "outline"}
                 aria-pressed={decision.key === chosen}
-                onClick={() => setChosen(decision.key)}
+                onClick={() => choose(decision.key)}
               >
                 {decision.label}
               </Button>
             ))}
           </div>
         )}
+        {option?.fields.map((field) => (
+          <DecisionFieldInput
+            key={field.key}
+            id={field.key}
+            field={field}
+            value={fields[field.key] ?? ""}
+            onChange={(value) => setFields((current) => ({ ...current, [field.key]: value }))}
+          />
+        ))}
         {option && option.reason !== "none" && (
           <div className="space-y-1.5">
             <Label htmlFor="reason">
@@ -196,7 +223,12 @@ function DecisionCard({ item }: { item: Item }) {
         <CardFooter>
           <Button
             size="lg"
-            disabled={busy || !option || (option.reason === "required" && !reason.trim())}
+            disabled={
+              busy ||
+              !option ||
+              (option.reason === "required" && !reason.trim()) ||
+              option.fields.some((field) => field.required && !fields[field.key]?.trim())
+            }
             onClick={() => void record()}
           >
             {t.record}
@@ -333,19 +365,13 @@ function RowDecision({ itemId, row }: { itemId: string; row: ItemRow }) {
             ))}
           </div>
           {option?.fields.map((field) => (
-            <div key={field.key} className="space-y-1.5">
-              <Label htmlFor={`${row.id}-${field.key}`}>
-                {field.required ? field.label : t.optional(field.label)}
-              </Label>
-              <Input
-                id={`${row.id}-${field.key}`}
-                type={field.type === "day" ? "date" : "text"}
-                value={fields[field.key] ?? ""}
-                onChange={(event) =>
-                  setFields((current) => ({ ...current, [field.key]: event.target.value }))
-                }
-              />
-            </div>
+            <DecisionFieldInput
+              key={field.key}
+              id={`${row.id}-${field.key}`}
+              field={field}
+              value={fields[field.key] ?? ""}
+              onChange={(value) => setFields((current) => ({ ...current, [field.key]: value }))}
+            />
           ))}
           {option && option.reason !== "none" && (
             <div className="space-y-1.5">
@@ -374,6 +400,62 @@ function RowDecision({ itemId, row }: { itemId: string; row: ItemRow }) {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * A value a decision is recorded with: a text, a day, or a split of a held
+ * amount between Release and Refund on a slider, its value the cents released.
+ */
+function DecisionFieldInput({
+  id,
+  field,
+  value,
+  onChange,
+}: {
+  id: string;
+  field: DecisionField;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const label = field.required ? field.label : t.optional(field.label);
+  if (field.type === "split") {
+    const total = field.totalCents ?? 0;
+    const released = Math.min(total, Math.max(0, Number(value) || 0));
+    return (
+      <div className="space-y-2">
+        <div className="flex justify-between gap-3 text-sm">
+          <Label htmlFor={id}>
+            {label}: {formatRands(released)}
+          </Label>
+          <span className="text-muted-foreground">
+            {t.splitRefunded}: {formatRands(total - released)}
+          </span>
+        </div>
+        <input
+          id={id}
+          type="range"
+          min={0}
+          max={total}
+          step={total % 100 === 0 ? 100 : 1}
+          value={released}
+          onChange={(event) => onChange(event.target.value)}
+          className="w-full accent-primary"
+        />
+        <p className="text-xs text-muted-foreground">{t.splitOf(formatRands(total))}</p>
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={id}>{label}</Label>
+      <Input
+        id={id}
+        type={field.type === "day" ? "date" : "text"}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      />
     </div>
   );
 }

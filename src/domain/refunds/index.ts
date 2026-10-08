@@ -5,6 +5,7 @@ import { firstProblem } from "../accounts/inputs";
 import { startClock, type ClockHandler } from "../clocks";
 import type { Context, Write } from "../context";
 import { eventWrite } from "../conversations/rows";
+import { heldRefundRows, settleIfNothingHeld } from "../engagements/dispute";
 import { refundFields, type RefundFields } from "../engagements/inputs";
 import { insertWhile } from "../guarded";
 import { engagementRow, type EngagementRow } from "../engagements/rows";
@@ -56,6 +57,7 @@ const ADAPTER_REASONS: Record<RefundCause, (notHiredFor: string | null) => strin
   artisan: () => "Refund by the Artisan",
   "not-hired": (notHiredFor) => `No Hire: ${notHiredFor}`,
   cancellation: () => "Cancellation",
+  dispute: () => "Dispute decision",
 };
 
 /**
@@ -77,7 +79,7 @@ export async function refundByArtisan(
   // Not while a Chargeback freezes the Engagement's money, too, once there are Chargebacks (#137).
   for (let attempt = 0; attempt < 3; attempt += 1) {
     // An Updated Quote's extra Materials and Labour are more of each line (#134).
-    const { materials, labour } = await engagementMoney(ctx, engagement.id);
+    const { materials, labour, heldCents } = await engagementMoney(ctx, engagement.id);
     const unreleased = { materials: materials.unreleasedCents, labour: labour.unreleasedCents };
     if (unreleased.materials + unreleased.labour === 0) {
       return refuse(
@@ -98,7 +100,12 @@ export async function refundByArtisan(
     let refundIds: string[];
     try {
       const made = await refundWrites(ctx, engagement, "artisan", parsed.data);
-      await ctx.commit(made.writes);
+      await ctx.commit([
+        // A Refund of Labour during a Dispute refunds what it holds first (#135), written
+        // first, as the ledger checks each row as it is written.
+        ...ledgerWrites(ctx, heldRefundRows(engagement, parsed.data.labour, heldCents)),
+        ...made.writes,
+      ]);
       refundIds = made.refundIds;
     } catch (error) {
       // A Release or another Refund took the money meanwhile: read it again.
@@ -106,6 +113,12 @@ export async function refundByArtisan(
       throw error;
     }
     await sendEngagementRefunds(ctx, engagement.id);
+    if (heldCents > 0) {
+      await settleIfNothingHeld(ctx, engagement.id);
+      await emailTells(ctx).catch((error: unknown) => {
+        console.error("Tell emails did not go", error);
+      });
+    }
     return ok({ refundIds });
   }
   throw new Error(`Engagement ${engagement.id}'s money kept changing while it was refunded`);

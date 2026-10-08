@@ -42,6 +42,7 @@ import { Route as AdminItemsItemIdRouteImport } from './routes/admin/items.$item
 import { Route as AdminPayoutsIndexRouteImport } from './routes/admin/payouts.index'
 import { Route as AdminPayoutsArtisanIdRouteImport } from './routes/admin/payouts.$artisanId'
 import { Route as CompletionFilesCompletionIdFileIdRouteImport } from './routes/completion-files.$completionId.$fileId'
+import { Route as DisputeFilesDisputeIdFileIdRouteImport } from './routes/dispute-files.$disputeId.$fileId'
 import { Route as JobPhotosJobIdPhotoIdRouteImport } from './routes/job-photos.$jobId.$photoId'
 import { Route as MessageFilesMessageIdFileIdRouteImport } from './routes/message-files.$messageId.$fileId'
 import { Route as ProfilePhotosArtisanIdPhotoIdRouteImport } from './routes/profile-photos.$artisanId.$photoId'
@@ -213,6 +214,12 @@ const CompletionFilesCompletionIdFileIdRoute =
     path: '/completion-files/$completionId/$fileId',
     getParentRoute: () => rootRouteImport,
   } as any)
+const DisputeFilesDisputeIdFileIdRoute =
+  DisputeFilesDisputeIdFileIdRouteImport.update({
+    id: '/dispute-files/$disputeId/$fileId',
+    path: '/dispute-files/$disputeId/$fileId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const JobPhotosJobIdPhotoIdRoute = JobPhotosJobIdPhotoIdRouteImport.update({
   id: '/job-photos/$jobId/$photoId',
   path: '/job-photos/$jobId/$photoId',
@@ -264,6 +271,7 @@ export interface FileRoutesByFullPath {
   '/admin/items/$itemId': typeof AdminItemsItemIdRoute
   '/admin/payouts/$artisanId': typeof AdminPayoutsArtisanIdRoute
   '/completion-files/$completionId/$fileId': typeof CompletionFilesCompletionIdFileIdRoute
+  '/dispute-files/$disputeId/$fileId': typeof DisputeFilesDisputeIdFileIdRoute
   '/job-photos/$jobId/$photoId': typeof JobPhotosJobIdPhotoIdRoute
   '/message-files/$messageId/$fileId': typeof MessageFilesMessageIdFileIdRoute
   '/profile-photos/$artisanId/$photoId': typeof ProfilePhotosArtisanIdPhotoIdRoute
@@ -302,6 +310,7 @@ export interface FileRoutesByTo {
   '/admin/items/$itemId': typeof AdminItemsItemIdRoute
   '/admin/payouts/$artisanId': typeof AdminPayoutsArtisanIdRoute
   '/completion-files/$completionId/$fileId': typeof CompletionFilesCompletionIdFileIdRoute
+  '/dispute-files/$disputeId/$fileId': typeof DisputeFilesDisputeIdFileIdRoute
   '/job-photos/$jobId/$photoId': typeof JobPhotosJobIdPhotoIdRoute
   '/message-files/$messageId/$fileId': typeof MessageFilesMessageIdFileIdRoute
   '/profile-photos/$artisanId/$photoId': typeof ProfilePhotosArtisanIdPhotoIdRoute
@@ -341,6 +350,7 @@ export interface FileRoutesById {
   '/admin/items/$itemId': typeof AdminItemsItemIdRoute
   '/admin/payouts/$artisanId': typeof AdminPayoutsArtisanIdRoute
   '/completion-files/$completionId/$fileId': typeof CompletionFilesCompletionIdFileIdRoute
+  '/dispute-files/$disputeId/$fileId': typeof DisputeFilesDisputeIdFileIdRoute
   '/job-photos/$jobId/$photoId': typeof JobPhotosJobIdPhotoIdRoute
   '/message-files/$messageId/$fileId': typeof MessageFilesMessageIdFileIdRoute
   '/profile-photos/$artisanId/$photoId': typeof ProfilePhotosArtisanIdPhotoIdRoute
@@ -381,6 +391,7 @@ export interface FileRouteTypes {
     | '/admin/items/$itemId'
     | '/admin/payouts/$artisanId'
     | '/completion-files/$completionId/$fileId'
+    | '/dispute-files/$disputeId/$fileId'
     | '/job-photos/$jobId/$photoId'
     | '/message-files/$messageId/$fileId'
     | '/profile-photos/$artisanId/$photoId'
@@ -419,6 +430,7 @@ export interface FileRouteTypes {
     | '/admin/items/$itemId'
     | '/admin/payouts/$artisanId'
     | '/completion-files/$completionId/$fileId'
+    | '/dispute-files/$disputeId/$fileId'
     | '/job-photos/$jobId/$photoId'
     | '/message-files/$messageId/$fileId'
     | '/profile-photos/$artisanId/$photoId'
@@ -457,6 +469,7 @@ export interface FileRouteTypes {
     | '/admin/items/$itemId'
     | '/admin/payouts/$artisanId'
     | '/completion-files/$completionId/$fileId'
+    | '/dispute-files/$disputeId/$fileId'
     | '/job-photos/$jobId/$photoId'
     | '/message-files/$messageId/$fileId'
     | '/profile-photos/$artisanId/$photoId'
@@ -496,6 +509,7 @@ export interface RootRouteChildren {
   AdminItemsItemIdRoute: typeof AdminItemsItemIdRoute
   AdminPayoutsArtisanIdRoute: typeof AdminPayoutsArtisanIdRoute
   CompletionFilesCompletionIdFileIdRoute: typeof CompletionFilesCompletionIdFileIdRoute
+  DisputeFilesDisputeIdFileIdRoute: typeof DisputeFilesDisputeIdFileIdRoute
   JobPhotosJobIdPhotoIdRoute: typeof JobPhotosJobIdPhotoIdRoute
   MessageFilesMessageIdFileIdRoute: typeof MessageFilesMessageIdFileIdRoute
   ProfilePhotosArtisanIdPhotoIdRoute: typeof ProfilePhotosArtisanIdPhotoIdRoute
@@ -735,6 +749,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CompletionFilesCompletionIdFileIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dispute-files/$disputeId/$fileId': {
+      id: '/dispute-files/$disputeId/$fileId'
+      path: '/dispute-files/$disputeId/$fileId'
+      fullPath: '/dispute-files/$disputeId/$fileId'
+      preLoaderRoute: typeof DisputeFilesDisputeIdFileIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/job-photos/$jobId/$photoId': {
       id: '/job-photos/$jobId/$photoId'
       path: '/job-photos/$jobId/$photoId'
@@ -793,6 +814,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminPayoutsArtisanIdRoute: AdminPayoutsArtisanIdRoute,
   CompletionFilesCompletionIdFileIdRoute:
     CompletionFilesCompletionIdFileIdRoute,
+  DisputeFilesDisputeIdFileIdRoute: DisputeFilesDisputeIdFileIdRoute,
   JobPhotosJobIdPhotoIdRoute: JobPhotosJobIdPhotoIdRoute,
   MessageFilesMessageIdFileIdRoute: MessageFilesMessageIdFileIdRoute,
   ProfilePhotosArtisanIdPhotoIdRoute: ProfilePhotosArtisanIdPhotoIdRoute,

@@ -46,6 +46,12 @@ export const LEDGER_KINDS = {
   payoutRefused: "payout.refused",
   /** A paid Payout the bank sent back: owed to the Artisan again (#129). */
   payoutSentBack: "payout.sent-back",
+  /** Unreleased Labour a Dispute holds when it opens (#135): no money moves. */
+  disputeHeld: "dispute.held",
+  /** Held Labour released, by the Client or the Admin's split, beside its Release's rows. */
+  disputeReleased: "dispute.released",
+  /** Held Labour refunded, by the Artisan or the Admin's split, beside its Refund's rows. */
+  disputeRefunded: "dispute.refunded",
 } as const;
 
 export type LedgerKind = (typeof LEDGER_KINDS)[keyof typeof LEDGER_KINDS];
@@ -99,12 +105,16 @@ export async function commitFromUnreleased(ctx: Context, writes: () => Promise<W
 
 /**
  * Whether a batch aborted as the money unreleased changed since it was read:
- * it would take more of a line than is unreleased, or a Release of Materials
- * would leave some unreleased, as when an Updated Quote's Payment paid more
- * in meanwhile (#134).
+ * it would take more of a line than is unreleased, or of a Dispute than it
+ * holds (#135), or a Release of Materials would leave some unreleased, as
+ * when an Updated Quote's Payment paid more in meanwhile (#134).
  */
 export function isOverdrawn(error: unknown) {
-  return causedBy(error, "more than is unreleased") || causedBy(error, "Materials left unreleased");
+  return (
+    causedBy(error, "more than is unreleased") ||
+    causedBy(error, "Materials left unreleased") ||
+    causedBy(error, "more than is held")
+  );
 }
 
 /**
@@ -114,6 +124,15 @@ export function isOverdrawn(error: unknown) {
  */
 export function paidInIs(ctx: Context, engagementId: string, cents: number) {
   return sql`(select coalesce(sum(${ledgerEntries.amountCents}), 0) from ${ledgerEntries} where ${ledgerEntries.engagementId} = ${engagementId} and ${ledgerEntries.kind} in (${LEDGER_KINDS.labourIn}, ${LEDGER_KINDS.materialsIn})) = ${cents}`;
+}
+
+/**
+ * The SQL that is true while the Labour of the Engagement not yet released is
+ * this much: no Release or Refund of it, nor Payment of more, since it was
+ * read (#135).
+ */
+export function labourUnreleasedIs(ctx: Context, engagementId: string, cents: number) {
+  return sql`(select coalesce(sum(case when ${ledgerEntries.kind} = ${LEDGER_KINDS.labourIn} then ${ledgerEntries.amountCents} else -${ledgerEntries.amountCents} end), 0) from ${ledgerEntries} where ${ledgerEntries.engagementId} = ${engagementId} and ${ledgerEntries.kind} in (${LEDGER_KINDS.labourIn}, ${LEDGER_KINDS.labourReleased}, ${LEDGER_KINDS.labourRefunded})) = ${cents}`;
 }
 
 /**
@@ -166,7 +185,8 @@ export function paymentInRows(
 /**
  * An Engagement's money, from its ledger rows: what was paid in for the
  * Hired Quote and any Updated Quotes (the Protection Fee apart), released, refunded, and not yet
- * released, each of Labour and Materials too.
+ * released, each of Labour and Materials too, and how much of the Labour
+ * not yet released a Dispute holds.
  */
 export async function engagementMoney(ctx: Context, engagementId: string) {
   const rows = await ctx.db
@@ -207,6 +227,11 @@ export async function engagementMoney(ctx: Context, engagementId: string) {
     releasedCents,
     refundedCents,
     unreleasedCents: paidInCents - releasedCents - refundedCents,
+    /** Of the Labour not yet released, what a Dispute holds (#135). */
+    heldCents:
+      sum(LEDGER_KINDS.disputeHeld) -
+      sum(LEDGER_KINDS.disputeReleased) -
+      sum(LEDGER_KINDS.disputeRefunded),
     protectionFeeCents: sum(LEDGER_KINDS.protectionFeeIn),
   };
 }

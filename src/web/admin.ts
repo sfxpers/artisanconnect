@@ -43,7 +43,14 @@ export const getQueueItem = createServerFn({ method: "GET" })
   });
 
 export const decideQueueItem = createServerFn({ method: "POST" })
-  .validator((input: { itemId: string; decision: string; reason?: string }) => input)
+  .validator(
+    (input: {
+      itemId: string;
+      decision: string;
+      reason?: string;
+      fields?: Record<string, string>;
+    }) => input,
+  )
   .handler(async ({ data }) => {
     const domain = requestDomain();
     return domain.queues.decide(await requestActor(domain), data);

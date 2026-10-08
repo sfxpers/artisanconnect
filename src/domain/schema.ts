@@ -1149,8 +1149,11 @@ export const REFUND_STATES = [
   "paid-by-hand",
 ] as const;
 
-/** Why a Refund was made: the Artisan's choice, a Payment that Hired nobody, or a Cancellation (#133). */
-export const REFUND_CAUSES = ["artisan", "not-hired", "cancellation"] as const;
+/**
+ * Why a Refund was made: the Artisan's choice, a Payment that Hired nobody, a
+ * Cancellation (#133), or the Admin's decision of a Dispute (#135).
+ */
+export const REFUND_CAUSES = ["artisan", "not-hired", "cancellation", "dispute"] as const;
 
 /**
  * Each Refund of a Payment to its Client (#132): unreleased money, never the
@@ -1204,6 +1207,69 @@ export const refunds = sqliteTable(
         "typeof(amount_cents) = 'integer' and amount_cents > 0 and labour_cents >= 0 and materials_cents >= 0 and protection_fee_cents >= 0 and amount_cents = labour_cents + materials_cents + protection_fee_cents",
       ),
     ),
+  ],
+);
+
+/** Which party opened a Dispute (#135). */
+export const DISPUTED_BY = ["client", "artisan"] as const;
+
+/**
+ * What a Dispute is against: the Client's, a Completion; the Artisan's, a Fix
+ * request or a Cancellation's refund of the Labour.
+ */
+export const DISPUTE_GROUNDS = ["completion", "fix-request", "cancellation"] as const;
+
+/**
+ * A Dispute's states: open until the Admin decides it, or until nothing is
+ * held, when it is settled by the parties.
+ */
+export const DISPUTE_STATES = ["open", "settled", "decided"] as const;
+
+/** Where a Dispute's reason stands: shown to the other party, or kept for the Admin, who was unsure of it. */
+export const DISPUTE_REASON_STATES = ["shown", "held"] as const;
+
+/**
+ * An Engagement's one Dispute (#135): the Labour it holds, named by the
+ * Client or all of it unreleased for the Artisan, which the Admin splits
+ * between Release and Refund, finally. What is held now is derived from the
+ * ledger. What it was opened for never changes, and its state moves forward
+ * once (a trigger in the migration refuses anything else).
+ */
+export const disputes = sqliteTable(
+  "disputes",
+  {
+    id: text("id").primaryKey(),
+    engagementId: text("engagement_id")
+      .notNull()
+      .unique()
+      .references(() => engagements.id),
+    openedBy: text("opened_by", { enum: DISPUTED_BY }).notNull(),
+    against: text("against", { enum: DISPUTE_GROUNDS }).notNull(),
+    /** The Completion disputed, or the one the Fix request answered; null for a Cancellation's. */
+    completionId: text("completion_id").references(() => completions.id),
+    /** The Labour it held when opened. */
+    heldCents: integer("held_cents").notNull(),
+    reason: text("reason").notNull(),
+    photos: text("photos", { mode: "json" })
+      .$type<Extract<StoredFile, { kind: "photo" }>[]>()
+      .notNull(),
+    reasonState: text("reason_state", { enum: DISPUTE_REASON_STATES }).notNull(),
+    /** Why the Content check was unsure of the reason or its photos, for the Admin. */
+    reasonHeldFor: text("reason_held_for"),
+    state: text("state", { enum: DISPUTE_STATES }).notNull(),
+    openedAt: instant("opened_at").notNull(),
+    /** When it was settled or decided. */
+    closedAt: instant("closed_at"),
+    /** What the Admin's decision released to the Artisan, and refunded to the Client. */
+    releasedCents: integer("released_cents"),
+    refundedCents: integer("refunded_cents"),
+  },
+  () => [
+    check(
+      "disputes_state",
+      sql.raw(`state in (${DISPUTE_STATES.map((state) => `'${state}'`).join(", ")})`),
+    ),
+    check("disputes_held", sql.raw("typeof(held_cents) = 'integer' and held_cents > 0")),
   ],
 );
 
