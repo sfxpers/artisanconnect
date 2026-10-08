@@ -1,4 +1,15 @@
-import { and, asc, eq, inArray, isNull, ne, notExists, type SQLWrapper } from "drizzle-orm";
+import {
+  and,
+  asc,
+  eq,
+  exists,
+  inArray,
+  isNull,
+  ne,
+  notExists,
+  sql,
+  type SQLWrapper,
+} from "drizzle-orm";
 import type { Actor, AdminActor } from "../actor";
 import { firstProblem } from "../accounts/inputs";
 import { publicName } from "../accounts/names";
@@ -17,6 +28,7 @@ import {
   SERVICE_CATEGORY_NAMES,
   type ServiceCategory,
 } from "../service-categories";
+import { payoutAccountSignalWrites } from "../signals";
 import { tell } from "../tells";
 import { discardFiles, uploadFile, UPLOAD_CONTEXTS } from "../uploads";
 import {
@@ -156,8 +168,28 @@ const verificationItem = defineQueueItemKind(KIND, {
         case "accept": {
           const accepted = await acceptance(ctx, check, choice.fields);
           if (!accepted.ok) return accepted;
+          // A Payout account in the name of a Client they transact with is a Signal (#140).
+          const signalled =
+            check.kind === "payout-account" && check.details.accountHolder
+              ? await payoutAccountSignalWrites(
+                  ctx,
+                  check.artisanId,
+                  check.details.accountHolder,
+                  exists(
+                    ctx.db
+                      .select({ one: sql`1` })
+                      .from(verificationChecks)
+                      .where(
+                        and(
+                          eq(verificationChecks.id, check.id),
+                          eq(verificationChecks.state, "accepted"),
+                        ),
+                      ),
+                  ),
+                )
+              : [];
           return ok({
-            writes: acceptWrites(ctx, admin, check, accepted.value),
+            writes: [...acceptWrites(ctx, admin, check, accepted.value), ...signalled],
             summary: `Accepted ${about}`,
           });
         }

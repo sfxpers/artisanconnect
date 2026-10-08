@@ -4,6 +4,7 @@ import type { CreatePayout } from "@/domain/ports";
 import type { FakePayments } from "@/domain/fakes/payments";
 import { collectionOf } from "../support/given";
 import { createHarness, type Harness } from "../support/harness";
+import { decideCheck, payoutAccount, submit, verificationItem } from "../support/verification";
 
 // Signals (#140, ADR 0020): detection puts patterns of behaviour in the
 // Admin's Signals queue, sanctioning nobody and telling nobody. The Admin
@@ -118,6 +119,27 @@ describe("a Client and an Artisan who transact", () => {
 
     expect(await signalTitles(domain, admin)).toEqual([
       "S. Dlamini and Sipho Dlamini share a Payout-account name",
+    ]);
+  });
+
+  test("a Payout account in the Client's name accepted after Hire raises a Signal", async () => {
+    const { domain, given } = await createHarness();
+    const admin = await given.admin();
+    const { client, artisan, quoteId } = await quotedJob(given);
+    await given.hired(client, quoteId);
+    expect(await signalTitles(domain, admin)).toEqual([]);
+    const checkId = await submit(
+      domain,
+      artisan,
+      payoutAccount({ accountHolder: "THANDI MOKOENA", accountNumber: "9876543210" }),
+    );
+    const { id: itemId } = await verificationItem(domain, admin);
+
+    const accepted = await decideCheck(domain, admin, { itemId, checkId }, "accept");
+    if (!accepted.ok) throw new Error(accepted.refusal.message);
+
+    expect(await signalTitles(domain, admin)).toEqual([
+      "Thandi Mokoena and Sipho Dlamini share a Payout-account name",
     ]);
   });
 
@@ -237,12 +259,17 @@ describe("repeated trouble", () => {
     const started = await hiredJob(given, { artisan });
     await given.workStarted(started.client, started.engagementId);
     await cancel(domain, started.client, started.engagementId);
+    // Nor one before the start date: the Artisan was not yet due.
+    const changedMind = await hiredJob(given, { artisan });
+    await cancel(domain, changedMind.client, changedMind.engagementId, "We changed our plans.");
     clock.advance({ days: 30 });
-    const noShow = await hiredJob(given, { artisan });
+    // 4 November 2026: due on the 6th, and not started by the 7th.
+    const noShow = await hiredJob(given, { artisan, startOn: "2026-11-06" });
+    clock.advance({ days: 3 });
     await cancel(domain, noShow.client, noShow.engagementId, "He never arrived.");
     expect(await signalTitles(domain, admin)).toEqual([]);
 
-    clock.advance({ days: 30 });
+    clock.advance({ days: 27 });
     const third = await hiredJob(given, { artisan });
     await cancel(domain, third.artisan, third.engagementId);
 
@@ -250,6 +277,18 @@ describe("repeated trouble", () => {
       "Repeated Cancellations or no-shows: Sipho Dlamini",
     ]);
     expect(await toldOfSignals(domain, [artisan, third.client])).toEqual([]);
+  });
+
+  test("a Client's Cancellations before the start date raise nothing", async () => {
+    const { domain, given } = await createHarness();
+    const admin = await given.admin();
+    const artisan = await given.matchableArtisan();
+    for (const _ of [1, 2, 3]) {
+      const job = await hiredJob(given, { artisan });
+      await cancel(domain, job.client, job.engagementId);
+    }
+
+    expect(await signalTitles(domain, admin)).toEqual([]);
   });
 
   test("Cancellations spread over more than 90 days raise nothing", async () => {
@@ -655,13 +694,15 @@ async function suspend(domain: Harness["domain"], admin: { actor: AdminActor }, 
  */
 async function hiredJob(
   given: Harness["given"],
-  parties: { client?: Party; artisan?: Party } = {},
+  parties: { client?: Party; artisan?: Party; startOn?: string } = {},
 ) {
   const client = parties.client ?? (await given.client());
   const artisan = parties.artisan ?? (await given.matchableArtisan());
   const jobId = await given.openJob(client);
-  // Starting after any day the tests move to.
-  const quoteId = await given.sentQuote(artisan, jobId, { startOn: "2027-06-01" });
+  // Starting after any day the tests move to, unless given.
+  const quoteId = await given.sentQuote(artisan, jobId, {
+    startOn: parties.startOn ?? "2027-06-01",
+  });
   const collectionId = await given.hired(client, quoteId);
   const engagementId = await given.engagementOf(client, jobId);
   return { client, artisan, jobId, engagementId, collectionId };

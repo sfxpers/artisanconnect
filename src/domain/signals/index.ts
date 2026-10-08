@@ -23,7 +23,7 @@ import { payoutReference } from "../payouts/rows";
 import { defineQueueItemKind, type Block, type DecisionField } from "../queues";
 import { accountSidebar } from "../quotes/held";
 import { ok, refuse } from "../result";
-import { formatTime } from "../sa-days";
+import { formatDay, formatTime, saDay } from "../sa-days";
 import {
   accounts,
   chargebacks,
@@ -34,6 +34,7 @@ import {
   payments,
   payouts,
   queueItems,
+  quotes,
   refusedSends,
   sightings,
   signals,
@@ -56,7 +57,10 @@ import { discardFiles } from "../uploads";
 export const REPEATED = {
   /** The days repeated trouble is counted over. */
   withinDays: 90,
-  /** An Artisan's Cancellations and no-shows (a Client's Cancellation before Work started). */
+  /**
+   * An Artisan's Cancellations and no-shows: a Client's Cancellation before
+   * Work started, once the Hired Quote's start date had passed.
+   */
   cancellations: 3,
   /** Disputes a Client opened. */
   disputes: 3,
@@ -301,6 +305,30 @@ export async function signalIfShared(ctx: Context, clientId: string, artisanId: 
   await raise(ctx, sharedFinding(ctx, clientId, artisanId));
 }
 
+/**
+ * The writes, in the batch that accepts an Artisan's Payout account, that
+ * raise a Signal for each Client they transact with in whose name it is
+ * held; only if the batch accepts it, as the condition says.
+ */
+export async function payoutAccountSignalWrites(
+  ctx: Context,
+  artisanId: string,
+  holder: string,
+  condition: SQL,
+): Promise<Write[]> {
+  const clients = await ctx.db
+    .selectDistinct({ id: accounts.id, name: accounts.name })
+    .from(engagements)
+    .innerJoin(accounts, eq(accounts.id, engagements.clientId))
+    .where(eq(engagements.artisanId, artisanId));
+  const writes: Write[] = [];
+  for (const client of clients.filter((each) => sameName(holder, each.name))) {
+    const finding = await sharedFinding(ctx, client.id, artisanId, holder);
+    if (finding) writes.push(...(await signalWrites(ctx, finding, condition)));
+  }
+  return writes;
+}
+
 /** The devices and IPs both Accounts were seen on. */
 async function sharedSightings(ctx: Context, accountId: string, otherId: string) {
   const other = alias(sightings, "other");
@@ -369,12 +397,14 @@ function listed(items: string[]) {
 
 /**
  * What a Client and an Artisan who transact share: a device, an IP, or a
- * Payout account of the Artisan's in the Client's name.
+ * Payout account of the Artisan's in the Client's name, accepted or, as
+ * `accepting`, being accepted.
  */
 async function sharedFinding(
   ctx: Context,
   clientId: string,
   artisanId: string,
+  accepting?: string,
 ): Promise<Finding | null> {
   const [shared, client, artisan, holders] = await Promise.all([
     sharedSightings(ctx, clientId, artisanId),
@@ -391,9 +421,9 @@ async function sharedFinding(
         ),
       ),
   ]);
-  const holder = holders
-    .map((row) => row.details.accountHolder ?? "")
-    .find((name) => sameName(name, client));
+  const holder = [...holders.map((row) => row.details.accountHolder ?? ""), accepting ?? ""].find(
+    (name) => sameName(name, client),
+  );
   const what = [...sharedWhat(shared), ...(holder ? ["a Payout-account name"] : [])];
   if (what.length === 0) return null;
   return {
@@ -496,7 +526,9 @@ async function repeated(
 
 /**
  * Looks at an Artisan's Cancellations and no-shows, after a Cancellation:
- * those the Artisan made, and a Client's before Work started.
+ * those the Artisan made, and a Client's before Work started once the start
+ * date had passed, when the Artisan was due. Before it, the Client may simply
+ * have changed their mind.
  */
 export async function signalIfCancelling(ctx: Context, artisanId: string) {
   const rows = await ctx.db
@@ -506,9 +538,11 @@ export async function signalIfCancelling(ctx: Context, artisanId: string) {
       at: engagements.cancelledAt,
       by: engagements.cancelledBy,
       reason: engagements.cancellationReason,
+      startOn: quotes.startOn,
     })
     .from(engagements)
     .innerJoin(jobs, eq(jobs.id, engagements.jobId))
+    .innerJoin(quotes, eq(quotes.id, engagements.quoteId))
     .where(
       and(
         eq(engagements.artisanId, artisanId),
@@ -520,10 +554,12 @@ export async function signalIfCancelling(ctx: Context, artisanId: string) {
       ),
     )
     .orderBy(desc(engagements.cancelledAt));
-  const trouble = rows.map((row) => ({
-    id: row.id,
-    line: `${formatTime(row.at!)} · ${row.title}: ${row.by === "artisan" ? "cancelled by the Artisan" : "cancelled by the Client before Work started"}${row.reason ? ` (“${row.reason}”)` : ""}.`,
-  }));
+  const trouble = rows
+    .filter((row) => row.by === "artisan" || saDay(row.at!) > row.startOn)
+    .map((row) => ({
+      id: row.id,
+      line: `${formatTime(row.at!)} · ${row.title}: ${row.by === "artisan" ? "cancelled by the Artisan" : `cancelled by the Client, not started by ${formatDay(row.startOn)}`}${row.reason ? ` (“${row.reason}”)` : ""}.`,
+    }));
   await raise(
     ctx,
     repeated(
@@ -690,7 +726,9 @@ export async function recordRefusal(ctx: Context, sent: SentOn, reason: string) 
 /**
  * The writes, in the batch that marks a Payout sent back, that raise a Signal
  * if the bank sent back another of the Artisan's within 90 days; only if the
- * batch does mark it, as the condition says.
+ * batch does mark it, as the condition says. The earlier ones are read before
+ * the batch, so two send-back events handled at the same moment would each
+ * miss the other; they come one by one, and both stay in the money history.
  */
 export async function sentBackSignalWrites(
   ctx: Context,
