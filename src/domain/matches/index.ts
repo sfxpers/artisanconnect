@@ -2,7 +2,7 @@ import { and, desc, eq, exists, isNull, notExists, sql } from "drizzle-orm";
 import type { Actor } from "../actor";
 import type { Context } from "../context";
 import { invitationOf } from "../invitations";
-import { JOB_AS_ARTISAN_COLUMNS, jobAsArtisanView } from "../jobs/rows";
+import { inView, JOB_AS_ARTISAN_COLUMNS, jobAsArtisanView } from "../jobs/rows";
 import { liveQuoteOf } from "../quotes/rows";
 import { ok, refuse } from "../result";
 import { jobMatches, jobs, regions, suburbs } from "../schema";
@@ -35,6 +35,7 @@ export const matchesSection = defineSection({
             eq(jobMatches.artisanId, viewer.accountId),
             isNull(jobMatches.passedAt),
             eq(jobs.state, "open"),
+            inView(),
             notInvited(ctx),
             notQuoted(ctx),
           ),

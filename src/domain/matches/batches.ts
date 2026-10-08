@@ -1,4 +1,4 @@
-import { and, asc, eq, exists, notExists, sql, type SQL } from "drizzle-orm";
+import { and, asc, eq, exists, not, notExists, sql, type SQL } from "drizzle-orm";
 import { system } from "../actor";
 import { fireDueClock, startClock, type ClockHandler } from "../clocks";
 import { invitationOf } from "../invitations";
@@ -13,6 +13,7 @@ import {
   jobs,
   verificationChecks,
 } from "../schema";
+import { suspendedNow } from "../standing";
 import { tellWhile } from "../tells";
 import { verifiedCategoriesOf } from "../verification";
 import { slotOf } from "../verification/checks";
@@ -52,13 +53,18 @@ const nextBatch: ClockHandler = async (ctx, clock) => {
     eq(jobs.nextBatchAt, clock.dueAt),
     belowFive(),
   )!;
+  const moveOn = [
+    ctx.db.update(jobs).set({ nextBatchAt: nextAt }).where(stillDue),
+    startClock(ctx, { kind: BATCH_CLOCK, subjectId: job.id, dueAt: nextAt }),
+  ];
+  // Out of view (#136) it offers nobody, but the clock goes on for when it is fixed.
+  if (job.outOfViewSince) return moveOn;
   if (!(await takesQuotesNow(ctx, job.id))) return [];
   const artisanIds = await batchFor(ctx, job);
   return [
     ...artisanIds.flatMap((artisanId) => offerWrites(ctx, job, artisanId, stillDue)),
     // Last, as the writes above read the time it moves on from.
-    ctx.db.update(jobs).set({ nextBatchAt: nextAt }).where(stillDue),
-    startClock(ctx, { kind: BATCH_CLOCK, subjectId: job.id, dueAt: nextAt }),
+    ...moveOn,
   ];
 };
 
@@ -80,8 +86,8 @@ export async function sendDueBatch(ctx: Context, jobId: string): Promise<void> {
  * those never offered a Job first, then the one offered least recently, ties
  * to the older Account. Eligible: verified for the Job's category (and for
  * gas work on a gas Job), working in its Region, Available for Jobs, and not
- * yet offered, invited to, or Quoted on this Job. Not Suspended, once
- * there are Suspensions (#136).
+ * yet offered, invited to, or Quoted on this Job, and not Suspended (#136).
+ * A Job Match held at a Suspension stays, but Quoting on it is refused.
  */
 async function batchFor(ctx: Context, job: JobRow): Promise<string[]> {
   const { category, regionId } = job;
@@ -131,6 +137,7 @@ async function batchFor(ctx: Context, job: JobRow): Promise<string[]> {
           ),
           notExists(invitationOf(ctx, job.id, accounts.id)),
           notExists(liveQuoteOf(ctx, job.id, accounts.id)),
+          not(suspendedNow(ctx, accounts.id)),
         ),
       );
   // By subquery, not by id: D1 binds at most 100 values to a query.

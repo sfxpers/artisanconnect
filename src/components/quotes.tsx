@@ -13,6 +13,7 @@ import { formatDay } from "@/domain/sa-days";
 import { copy, formatDate } from "@/web/copy";
 import { declineQuote, hireQuote, type getJobQuotes } from "@/web/quotes";
 import type { ConversationSummary } from "@/components/conversation";
+import { ReportAction } from "@/components/report";
 
 const t = copy.quote;
 
@@ -295,6 +296,7 @@ function QuoteRow({
         <Button size="sm" variant="ghost" disabled={busy} onClick={() => void decline()}>
           {q.decline}
         </Button>
+        <ReportAction about={{ kind: "quote", id: quote.quoteId }} />
         <span className="ml-auto">
           {quote.sentAt && q.sent(formatDate(quote.sentAt))}
           {quote.revisedAt && ` · ${t.revisedOn(formatDate(quote.revisedAt))}`}

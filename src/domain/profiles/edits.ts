@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, lte, sql } from "drizzle-orm";
 import { publicName } from "../accounts/names";
 import type { Context, Write } from "../context";
 import { defineHeldKind } from "../content/held";
@@ -111,6 +111,7 @@ async function editRow(ctx: Context, id: string) {
       photos: profileEdits.photos,
       state: profileEdits.state,
       heldFor: profileEdits.heldFor,
+      sentAt: profileEdits.sentAt,
       name: accounts.name,
       tradingName: accounts.tradingName,
       email: authUsers.email,
@@ -142,7 +143,7 @@ export function photoPath(artisanId: string, photo: { id: string }, thumbnail = 
   return `/profile-photos/${artisanId}/${photo.id}${thumbnail ? "?size=thumbnail" : ""}`;
 }
 
-function versionBlocks(
+export function versionBlocks(
   artisanId: string,
   version: ProfileVersion,
   isNew?: (photo: ProfilePhoto) => boolean,
@@ -166,11 +167,26 @@ export const heldProfile = defineHeldKind("held.profile", {
     return (await editRow(ctx, subjectId))?.artisanId ?? null;
   },
   async release(ctx, _admin, subjectId) {
+    const edit = await editRow(ctx, subjectId);
     return [
       ctx.db
         .update(profileEdits)
         .set({ state: "released", releasedAt: ctx.now() })
         .where(and(eq(profileEdits.id, subjectId), eq(profileEdits.state, "held"))),
+      // One sent since the Profile was taken out of view fixes it, which shows again (#136).
+      ...(edit
+        ? [
+            ctx.db
+              .update(accounts)
+              .set({ profileOutOfViewSince: null, profileOutOfViewFor: null })
+              .where(
+                and(
+                  eq(accounts.id, edit.artisanId),
+                  lte(accounts.profileOutOfViewSince, edit.sentAt),
+                ),
+              ),
+          ]
+        : []),
     ];
   },
   async refuse(ctx, _admin, subjectId) {

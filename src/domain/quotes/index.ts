@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, exists, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, exists, inArray, not, sql } from "drizzle-orm";
 import { accountIdOf, type Actor } from "../actor";
 import { firstProblem } from "../accounts/inputs";
 import { publicName } from "../accounts/names";
@@ -45,6 +45,7 @@ import {
   vatNumberOf,
   type QuoteRow,
 } from "./rows";
+import { isSuspended, suspendedNow } from "../standing";
 
 // Quotes (#124, ADR 0002, ADR 0004): an Artisan holding a Job Match or an
 // Invitation sends one fixed-price Quote on an Open Job. The Content check
@@ -63,6 +64,8 @@ export const quotesSection = defineSection({
       if (
         !job ||
         job.state !== "open" ||
+        // One out of view is nobody's to see but its Client's (#136).
+        job.outOfViewSince !== null ||
         !(await isOfferedOrInvited(ctx, job.id, actor.accountId))
       ) {
         return noJob();
@@ -121,7 +124,8 @@ export const quotesSection = defineSection({
             ctx,
             quotes,
             { ...quote, state: "sent", sentAt: now, expiresAt },
-            takesQuotes(ctx, job.id),
+            // Not if a Suspension landed since it was asked above.
+            and(takesQuotes(ctx, job.id), not(suspendedNow(ctx, actor.accountId)))!,
           ).returning({ id: quotes.id }),
           startClock(ctx, { kind: EXPIRY_CLOCK, subjectId: quote.id, dueAt: expiresAt }),
           // The first Quote Sent opens the Conversation, unless an Invitation did.
@@ -140,6 +144,9 @@ export const quotesSection = defineSection({
           ),
         ]);
         if (sent.length === 0) {
+          if (await isSuspended(ctx, actor.accountId)) {
+            return refuse("suspended", problemMessage("suspended", job.category));
+          }
           return (await jobRow(ctx, job.id))?.state === "open" ? jobFull() : noJob();
         }
       } catch (error) {

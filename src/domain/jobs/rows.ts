@@ -1,4 +1,4 @@
-import { and, desc, eq, type SQL } from "drizzle-orm";
+import { and, desc, eq, isNull, type SQL } from "drizzle-orm";
 import { startClock } from "../clocks";
 import type { Context } from "../context";
 import { engagements, jobs, regions, suburbs } from "../schema";
@@ -33,9 +33,19 @@ const JOB_COLUMNS = {
   openedAt: jobs.openedAt,
   expiresAt: jobs.expiresAt,
   nextBatchAt: jobs.nextBatchAt,
+  outOfViewSince: jobs.outOfViewSince,
+  outOfViewFor: jobs.outOfViewFor,
 };
 
 /** A Job, with its suburb's name and Region. */
+/**
+ * The SQL that is true while the outer `jobs` row is in view: the Admin has
+ * not taken it out of view from a Report, or an edit has fixed it (#136).
+ */
+export function inView() {
+  return isNull(jobs.outOfViewSince);
+}
+
 export async function jobRow(ctx: Context, jobId: string) {
   const [row] = await ctx.db
     .select(JOB_COLUMNS)

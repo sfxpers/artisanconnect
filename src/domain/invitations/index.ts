@@ -13,12 +13,19 @@ import { accountIdOf, type Actor } from "../actor";
 import type { Context } from "../context";
 import { openWrites } from "../conversations/rows";
 import { causedBy } from "../errors";
-import { JOB_AS_ARTISAN_COLUMNS, jobAsArtisanView, jobRow, type JobRow } from "../jobs/rows";
+import {
+  inView,
+  JOB_AS_ARTISAN_COLUMNS,
+  jobAsArtisanView,
+  jobRow,
+  type JobRow,
+} from "../jobs/rows";
 import { browse, type Narrowing } from "../profiles";
 import { belowFive, COUNTED_STATES, jobFull, liveQuoteOf, takesQuotesNow } from "../quotes/rows";
 import { ok, refuse } from "../result";
 import { invitations, jobMatches, jobs, quotes, regions, suburbs } from "../schema";
 import { defineSection } from "../section";
+import { isSuspended, suspendedRefusal } from "../standing";
 import { emailTells, tellWhile } from "../tells";
 
 // Invitations (#123, ADR 0003): a Client asks Artisans of their choosing to
@@ -34,8 +41,10 @@ export const invitationsSection = defineSection({
       const job = await jobRow(ctx, input.jobId);
       if (!job || job.clientId !== accountIdOf(actor)) return noJob();
       if (job.state !== "open") return notOpen();
+      if (job.outOfViewSince) return outOfView();
       if (!(await takesQuotesNow(ctx, job.id))) return jobFull();
-      // Not by or to a Suspended Account, once there are Suspensions (#136).
+      if (await isSuspended(ctx, job.clientId)) return suspendedRefusal("invite an Artisan");
+      // A Suspended Artisan is not listed (#136).
       if ((await invitable(ctx, job, { artisanId: input.artisanId })).length === 0) {
         return notListed();
       }
@@ -189,6 +198,7 @@ export const invitationsSection = defineSection({
             eq(invitations.artisanId, viewer.accountId),
             isNull(invitations.passedAt),
             eq(jobs.state, "open"),
+            inView(),
             notExists(liveQuoteOf(ctx, invitations.jobId, invitations.artisanId)),
           ),
         )
@@ -258,6 +268,13 @@ function noJob() {
 
 function notOpen() {
   return refuse("not-open", "Artisans can be invited only while the Job is Open.");
+}
+
+function outOfView() {
+  return refuse(
+    "out-of-view",
+    "This Job is out of view until you fix it, so nobody can be invited to it.",
+  );
 }
 
 function notListed() {

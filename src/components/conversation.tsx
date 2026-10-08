@@ -18,6 +18,7 @@ import {
   type getConversations,
 } from "@/web/conversations";
 import { shrinkPhoto } from "@/web/shrink-photo";
+import { ReportAction } from "@/components/report";
 
 export type ConversationSummary = NonNullable<Awaited<ReturnType<typeof getConversations>>>[number];
 export type ConversationView = NonNullable<Awaited<ReturnType<typeof getConversation>>>;
@@ -172,6 +173,7 @@ function ItemRow({ item }: { item: Item }) {
           <span className="text-destructive">{t.refused(item.refused.reason)}</span>
         )}
         <span>{formatDate(item.at)}</span>
+        {!item.mine && <ReportAction about={{ kind: "message", id: item.messageId }} />}
       </div>
       <Refusal message={action.refusal} />
     </div>

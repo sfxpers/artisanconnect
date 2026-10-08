@@ -14,6 +14,7 @@ export const copy = {
     artisan: { home: "Home", profile: "Profile", payouts: "Payouts", account: "Account" },
     admin: {
       queues: "Queues",
+      people: "People",
       payouts: "Payouts",
       admins: "Admins",
       audit: "Audit log",
@@ -138,6 +139,8 @@ export const copy = {
       "This edit waits for the Admin. Until then, everyone sees your Profile as it is above.",
     withdraw: "Withdraw",
     refused: (reason: string) => `Your last edit was refused: ${reason}`,
+    outOfView: (reason: string) =>
+      `Your Profile is out of view until you fix it: ${reason} Edit it; it shows again once the Admin accepts the edit.`,
     preview: "As anyone sees it",
   },
   signUp: {
@@ -313,6 +316,8 @@ export const copy = {
     editBeingChecked:
       "Your edit is being checked by the Admin. The Job shows as before until then.",
     editRefused: (reason: string) => `Your last edit was refused: ${reason}`,
+    outOfView: (reason: string) =>
+      `The Admin took this Job out of view until you fix it: ${reason} Edit it; Artisans see it again once the Admin accepts the edit.`,
     details: "Job details",
     none: "None given",
   },
@@ -592,6 +597,8 @@ export const copy = {
         {
           "quote-ended": "the Quote was no longer open, so nobody was Hired",
           "quote-changed": "the Quote was revised, so nobody was Hired",
+          suspended: "an Account on it was suspended, so nobody was Hired",
+          "out-of-view": "the Job was taken out of view, so nobody was Hired",
           "not-verified": "the Artisan stopped being verified for this trade, so nobody was Hired",
           "updated-quote-ended": "the Updated Quote was no longer proposed, so it did not apply",
         }[reason]
@@ -1018,6 +1025,27 @@ export const copy = {
       held: "Your names are being checked.",
     },
   },
+  report: {
+    action: "Report",
+    job: "Report this Job",
+    profile: "Report this Profile",
+    why: "Why are you reporting it?",
+    note: "Anything the Admin should know (optional)",
+    lead: "Only the Admin reads your Report. You are told it was received; nobody is told who reported.",
+    send: "Send to the Admin",
+    cancel: "Cancel",
+    made: "Reported. The Admin has it.",
+  },
+  standing: {
+    suspended: "Your Account is suspended",
+    suspendedLead: (reason: string) =>
+      `${reason} While it is suspended you cannot post a Job, Quote, Hire, invite, or be offered a Job. Your paid Jobs go on.`,
+    contest: "Write to support",
+    since: (when: string) => `Since ${when}`,
+    warnings: "Warnings",
+    warned: (when: string) => `Warned ${when}`,
+    none: "No warnings.",
+  },
   support: {
     title: "Contact support",
     lead: "Write to the Admin about anything on ArtisanConnect. The answer comes to your Email.",
@@ -1121,6 +1149,57 @@ export const copy = {
       hold: "Hold Payouts",
       lift: "Lift the hold",
       history: "Money history",
+    },
+    people: {
+      title: "People",
+      lead: "Find a Client or an Artisan by name or Email, and act on them: warn, suspend, or lift a Suspension; hold or free an Artisan's Payouts. Each is told to the Account and written to the audit log.",
+      search: "Name or Email",
+      find: "Find",
+      empty: "Nobody matches.",
+      suspended: "Suspended",
+      payoutsHeld: "Payouts held",
+      signedUp: (when: string) => `Signed up ${when}`,
+      act: "Act on this Account",
+      suspendedSince: (when: string) => `Suspended since ${when}`,
+      acts: { warn: "Warn", suspend: "Suspend", lift: "Lift the Suspension" },
+      reason: "Reason",
+      liftNote: "Note (optional)",
+      told: {
+        warn: "Told: the Account, with the reason. Warnings stay.",
+        suspend:
+          "Told: the Account, with the reason. Its Open Jobs close and its Sent Quotes are Withdrawn; its paid Jobs go on.",
+        lift: "Told: the Account. Its warnings stay.",
+      },
+      record: "Record",
+      done: {
+        warn: "Warned.",
+        suspend: "Suspended.",
+        lift: "The Suspension is lifted.",
+      },
+      history: "Warnings and Suspensions",
+      noHistory: "No warnings or Suspensions.",
+      warned: (reason: string, leaving: boolean) =>
+        `Warned${leaving ? " for Leaving" : ""}: ${reason}`,
+      suspendedFor: (reason: string, leaving: boolean) =>
+        `Suspended${leaving ? " for Leaving" : ""}: ${reason}`,
+      lifted: "Suspension lifted",
+      payoutsHeldLead: "Their Payouts are held: they wait until the hold is lifted.",
+      payoutsFreeLead: "Their Payouts go in each daily run.",
+      artisanRecord: {
+        title: "Artisan record",
+        byArtisan: "Cancelled by the Artisan",
+        byClients: "Cancelled by Clients before Work started",
+        disputes: "Disputes decided against the Artisan",
+        cancellation: (
+          job: string,
+          by: "client" | "artisan",
+          after: boolean,
+          reason: string | null,
+        ) =>
+          `${job}: cancelled by the ${by === "client" ? "Client" : "Artisan"} ${after ? "after" : "before"} Work started.${reason ? ` “${reason}”` : ""}`,
+        dispute: (job: string, refunded: string, held: string) =>
+          `${job}: Dispute decided, ${refunded} of the ${held} held refunded to the Client.`,
+      },
     },
     history: {
       lead: "Each Release owed to this Artisan, newest first, with every Payout of it. A Payout the bank refused or sent back leaves the Release owed again; the next goes to a new Payout account once you accept one in Verification.",

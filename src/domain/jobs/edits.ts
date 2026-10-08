@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, notExists, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, lte, notExists, or, sql, type SQL } from "drizzle-orm";
 import type { Context, Write } from "../context";
 import { defineHeldKind } from "../content/held";
 import { quotesSentOn } from "../quotes/rows";
@@ -33,7 +33,9 @@ export function applyWrites(
   version: JobVersion,
 ) {
   return [
-    applyWrite(ctx, job.id, version, eq(jobs.revision, job.revision)).returning({ id: jobs.id }),
+    applyWrite(ctx, job.id, version, ctx.now(), eq(jobs.revision, job.revision)).returning({
+      id: jobs.id,
+    }),
     ctx.db.insert(jobEdits).values({
       id: ctx.newId(),
       jobId: job.id,
@@ -67,17 +69,26 @@ export function holdEditWrites(
 
 /**
  * The update that shows a version on the Job, while it may still be edited:
- * a Held edit the Admin releases after the first Quote shows nothing.
+ * a Held edit the Admin releases after the first Quote shows nothing, unless
+ * it fixes a Job out of view (#136): one sent since it was taken out of view,
+ * which brings it back into view.
  */
-function applyWrite(ctx: Context, jobId: string, version: JobVersion, guard?: SQL) {
+function applyWrite(ctx: Context, jobId: string, version: JobVersion, sentAt: Date, guard?: SQL) {
+  const fixes = lte(jobs.outOfViewSince, sentAt);
   return ctx.db
     .update(jobs)
-    .set({ ...version, updatedAt: ctx.now(), revision: sql`${jobs.revision} + 1` })
+    .set({
+      ...version,
+      updatedAt: ctx.now(),
+      revision: sql`${jobs.revision} + 1`,
+      outOfViewSince: sql`case when ${fixes} then null else ${jobs.outOfViewSince} end`,
+      outOfViewFor: sql`case when ${fixes} then null else ${jobs.outOfViewFor} end`,
+    })
     .where(
       and(
         eq(jobs.id, jobId),
         inArray(jobs.state, EDITABLE_STATES),
-        notExists(quotesSentOn(ctx, jobs.id)),
+        or(notExists(quotesSentOn(ctx, jobs.id)), isNotNull(jobs.outOfViewSince)),
         guard,
       ),
     );
@@ -177,7 +188,7 @@ export const heldJobEdit = defineHeldKind("held.job-edit", {
         .update(jobEdits)
         .set({ state: "released" })
         .where(and(eq(jobEdits.id, subjectId), eq(jobEdits.state, "held"))),
-      applyWrite(ctx, edit.jobId, versionOf(edit)),
+      applyWrite(ctx, edit.jobId, versionOf(edit), edit.sentAt),
     ];
   },
   async refuse(ctx, _admin, subjectId) {

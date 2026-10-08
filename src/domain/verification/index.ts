@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, isNull, ne, notExists, sql, type SQLWrapper } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, ne, notExists, type SQLWrapper } from "drizzle-orm";
 import type { Actor, AdminActor } from "../actor";
 import { firstProblem } from "../accounts/inputs";
 import { publicName } from "../accounts/names";
@@ -344,12 +344,13 @@ export const verificationSection = defineSection({
       }
 
       const checkId = ctx.newId();
+      const name = (await artisanRow(ctx, artisanId))?.name ?? "";
       try {
         const read = await readCheck(ctx, {
           kind,
           details,
           files: stored,
-          name: (await artisanRow(ctx, artisanId))?.name ?? "",
+          name,
           identityNumber:
             kind === "identity" ? (details.number ?? null) : identityNumberOf(standing),
         });
@@ -373,7 +374,11 @@ export const verificationSection = defineSection({
             reading: read.value,
             submittedAt: ctx.now(),
           }),
-          raiseUnlessOpen(ctx, artisanId),
+          // One item per Artisan waits at a time, however many checks it holds.
+          verificationItem.raiseUnlessOpen(ctx, {
+            subjectId: artisanId,
+            title: `Verification: ${name}`,
+          }).write,
         ]);
       } catch (error) {
         // Nothing stored stays behind a check that was not written.
@@ -638,43 +643,6 @@ function alreadyWaiting(kind: CheckKind) {
   return refuse(
     "waiting",
     `Your ${CHECKS[kind].name.toLowerCase()} is waiting for the Admin. You can send another once it is decided.`,
-  );
-}
-
-/** The write that raises the Artisan's Verification item, unless one is open. */
-function raiseUnlessOpen(ctx: Context, artisanId: string): Write {
-  return ctx.db.insert(queueItems).select(
-    ctx.db
-      .select({
-        id: sql<string>`${ctx.newId()}`.as("id"),
-        queue: sql<"verification">`'verification'`.as("queue"),
-        kind: sql<string>`${KIND}`.as("kind"),
-        subjectId: accounts.id,
-        title: sql<string>`'Verification: ' || ${accounts.name}`.as("title"),
-        raisedAt: sql<number>`${ctx.now().getTime()}`.as("raised_at"),
-        decision: sql<null>`null`.as("decision"),
-        reason: sql<null>`null`.as("reason"),
-        decidedBy: sql<null>`null`.as("decided_by"),
-        decidedAt: sql<null>`null`.as("decided_at"),
-      })
-      .from(accounts)
-      .where(
-        and(
-          eq(accounts.id, artisanId),
-          notExists(
-            ctx.db
-              .select({ id: queueItems.id })
-              .from(queueItems)
-              .where(
-                and(
-                  eq(queueItems.kind, KIND),
-                  eq(queueItems.subjectId, artisanId),
-                  isNull(queueItems.decidedAt),
-                ),
-              ),
-          ),
-        ),
-      ),
   );
 }
 

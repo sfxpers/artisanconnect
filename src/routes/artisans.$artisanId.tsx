@@ -5,6 +5,7 @@ import { ArtisanProfileView } from "@/components/artisan-profile";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Page } from "@/components/page";
+import { ReportAction } from "@/components/report";
 import { copy } from "@/web/copy";
 import { getProfile } from "@/web/profiles";
 
@@ -75,6 +76,12 @@ function ArtisanProfilePage() {
               </Card>
             )}
             <ShareLink />
+            {me && me.accountId !== profile.artisanId && (
+              <ReportAction
+                about={{ kind: "profile", id: profile.artisanId }}
+                label={copy.report.profile}
+              />
+            )}
           </>
         }
       />

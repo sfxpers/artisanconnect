@@ -47,6 +47,7 @@ function Account() {
               {t.supportLink}
             </Link>
           </SettingsRow>
+          <StandingRows standing={me.standing} />
         </dl>
       </Card>
       <Button
@@ -60,6 +61,39 @@ function Account() {
         {t.signOut}
       </Button>
     </Page>
+  );
+}
+
+/** The Account's Suspension, with the reason, while one stands, and its warnings (#136). */
+function StandingRows({ standing }: { standing: Me["standing"] }) {
+  const s = copy.standing;
+  return (
+    <>
+      {standing.suspended && (
+        <SettingsRow label={s.suspended}>
+          <span className="text-destructive">{standing.suspended.reason}</span>
+          <span className="block text-xs text-muted-foreground">
+            {s.since(formatDate(standing.suspended.since))}
+          </span>
+        </SettingsRow>
+      )}
+      <SettingsRow label={s.warnings}>
+        {standing.warnings.length === 0 ? (
+          s.none
+        ) : (
+          <ul className="space-y-1">
+            {standing.warnings.map((warning, index) => (
+              <li key={index}>
+                {warning.reason}
+                <span className="block text-xs text-muted-foreground">
+                  {s.warned(formatDate(warning.at))}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </SettingsRow>
+    </>
   );
 }
 

@@ -96,7 +96,10 @@ describe("a Client's Dispute", () => {
     const { client, artisan, jobId, engagementId } = await awaitingApproval(given);
     await disputed(domain, client, engagementId, "600");
 
-    clock.advance({ days: 7 });
+    // The reminder fires first: Tells written at one instant sort by id.
+    clock.advance({ days: 6 });
+    await domain.system.runDueClocks();
+    clock.advance({ days: 1 });
     await domain.system.runDueClocks();
 
     expect((await domain.jobs.view(client.actor, { jobId }))?.engagement).toMatchObject({

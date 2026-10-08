@@ -45,9 +45,10 @@ function MyProfile() {
           {t.open}
         </Link>
       ) : (
-        <p className="text-sm">{t.notPublic}</p>
+        !mine.outOfView && <p className="text-sm">{t.notPublic}</p>
       )}
 
+      {mine.outOfView && <Refusal message={t.outOfView(mine.outOfView.reason)} />}
       {mine.refused && (
         <p role="alert" className="text-sm text-destructive">
           {t.refused(mine.refused.reason)}

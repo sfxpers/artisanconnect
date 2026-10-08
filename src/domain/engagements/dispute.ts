@@ -1,11 +1,11 @@
-import { and, asc, eq, exists, isNull, sql, type SQL } from "drizzle-orm";
+import { and, eq, exists, isNull, sql, type SQL } from "drizzle-orm";
 import { system, type Actor, type AdminActor } from "../actor";
 import { firstProblem } from "../accounts/inputs";
 import { checkContent } from "../content/check";
 import type { Context, Write } from "../context";
+import { conversationBlocks } from "../conversations/admin-read";
 import { eventWrite } from "../conversations/rows";
 import { causedBy } from "../errors";
-import { fileLink } from "../file-links";
 import { insertWhile } from "../guarded";
 import { jobBlocks } from "../jobs/held";
 import { jobRow } from "../jobs/rows";
@@ -24,16 +24,7 @@ import { accountSidebar } from "../quotes/held";
 import { refundWrites, sendEngagementRefunds } from "../refunds";
 import { ok, refuse } from "../result";
 import { formatTime } from "../sa-days";
-import {
-  accounts,
-  completions,
-  conversations,
-  disputes,
-  engagements,
-  messages,
-  queueItems,
-  type DISPUTED_BY,
-} from "../schema";
+import { completions, disputes, engagements, queueItems, type DISPUTED_BY } from "../schema";
 import { emailTells, tell, tellWhile } from "../tells";
 import {
   checkFileCount,
@@ -818,78 +809,6 @@ function disputeBlocks(dispute: DisputeRow): Block[] {
       : []),
   ];
 }
-
-/** What a row that is not speech says, for the Admin. */
-const EVENT_NAMES: Record<string, string> = {
-  "quote.sent": "Quote sent",
-  hire: "Hired",
-  "work.started": "Work started",
-  "completion.made": "Marked complete",
-  "fix.requested": "Fix requested",
-  approved: "Approved",
-  refund: "Refund",
-  cancelled: "Cancelled",
-  "dispute.opened": "Dispute opened",
-  "dispute.released": "Released in Dispute",
-  "dispute.settled": "Dispute settled",
-  "dispute.decided": "Dispute decided",
-};
-
-/**
- * The Engagement's Conversation as the Admin reads it on a logged click: every
- * delivered message and event row, oldest first, with each file on a link
- * that works for a while. Messages Held or refused are not in it.
- */
-async function conversationBlocks(ctx: Context, engagement: EngagementRow): Promise<Block[]> {
-  const rows = await ctx.db
-    .select({ message: messages, sender: accounts.name, senderKind: accounts.kind })
-    .from(messages)
-    .innerJoin(conversations, eq(conversations.id, messages.conversationId))
-    .leftJoin(accounts, eq(accounts.id, messages.senderId))
-    .where(
-      and(
-        eq(conversations.jobId, engagement.jobId),
-        eq(conversations.artisanId, engagement.artisanId),
-        eq(messages.state, "delivered"),
-      ),
-    )
-    .orderBy(asc(messages.deliveredAt), asc(sql.raw(`"messages"."rowid"`)));
-  if (rows.length === 0) return [{ kind: "text", text: "Nothing was said." }];
-  const blocks: Block[] = [];
-  for (const { message, sender, senderKind } of rows) {
-    const at = formatTime(message.deliveredAt ?? message.sentAt);
-    if (message.event) {
-      const name = EVENT_NAMES[message.event] ?? message.event;
-      blocks.push({
-        kind: "text",
-        text: `${at} · ${name}${message.text ? `: ${message.text}` : ""}`,
-      });
-      continue;
-    }
-    const who = `${sender ?? ""} (${senderKind === "client" ? "Client" : "Artisan"})`;
-    blocks.push({ kind: "text", text: `${at} · ${who}: ${message.text}` });
-    const files = [...message.photos, ...message.files];
-    if (files.length > 0) {
-      blocks.push({
-        kind: "files",
-        files: await Promise.all(
-          files.map(async (file, index) => ({
-            kind: file.kind,
-            label: `${FILE_NAMES[file.kind]} ${index + 1}`,
-            href: await fileLink(ctx, file.key),
-          })),
-        ),
-      });
-    }
-  }
-  return blocks;
-}
-
-const FILE_NAMES: Record<StoredFile["kind"], string> = {
-  photo: "Photo",
-  pdf: "PDF",
-  "voice-note": "Voice note",
-};
 
 /**
  * The Engagement's Dispute as a party sees it: who opened it and against

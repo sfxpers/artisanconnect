@@ -293,6 +293,7 @@ function Posted({
           label={copy.jobs.nextStep}
           title={sent > 0 ? copy.quotes.title(sent) : copy.jobs.states[job.state]}
         >
+          {job.outOfView && <Refusal message={t.outOfView(job.outOfView.reason)} />}
           {job.state === "held" && <p className="text-sm text-muted-foreground">{t.heldLead}</p>}
           {job.state === "open" && job.expiresAt && (
             <p className="text-sm text-muted-foreground">{t.openLead(formatDate(job.expiresAt))}</p>

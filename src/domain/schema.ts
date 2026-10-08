@@ -3,6 +3,7 @@ import { MATCHINGS, SITE_TYPES } from "./jobs/inputs";
 import { MESSAGE_EVENTS } from "./conversations/inputs";
 import { MATERIALS_BY } from "./quotes/inputs";
 import { QUEUE_NAMES } from "./queue-names";
+import { REPORT_REASONS } from "./reports/reasons";
 import { SUPPORT_TOPICS } from "./support/topics";
 import { SERVICE_CATEGORIES } from "./service-categories";
 import { CHECK_KINDS } from "./verification/checks";
@@ -178,6 +179,13 @@ export const accounts = sqliteTable(
     vatNumber: text("vat_number"),
     /** When the Admin held an Artisan's Payouts, while they are held (#128); they wait meanwhile. */
     payoutsHeldAt: instant("payouts_held_at"),
+    /**
+     * When the Admin took the Artisan's Profile out of view from a Report
+     * (#136), until a Profile edit the Admin releases fixes it; and why, for
+     * the Artisan.
+     */
+    profileOutOfViewSince: instant("profile_out_of_view_since"),
+    profileOutOfViewFor: text("profile_out_of_view_for"),
   },
   (table) => [check("accounts_kind", sql`${table.kind} in ('client', 'artisan')`)],
 );
@@ -381,6 +389,107 @@ export const supportRequests = sqliteTable(
   ],
 );
 
+/** What a Report may be about (#136). A Review's waits for Reviews (#138). */
+export const REPORT_SUBJECTS = ["job", "quote", "message", "profile"] as const;
+
+/**
+ * A signed-in Account's Report of a Job, Quote, message, or Artisan Profile
+ * it can see, at most once per reporter per thing. Repeats fold into the one
+ * queue item open for the thing; once that is decided, the next Report opens
+ * another.
+ */
+export const reports = sqliteTable(
+  "reports",
+  {
+    id: text("id").primaryKey(),
+    reporterId: text("reporter_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    subjectKind: text("subject_kind", { enum: REPORT_SUBJECTS }).notNull(),
+    /** The Job's, Quote's, or message's id, or the Profile's Artisan's. */
+    subjectId: text("subject_id").notNull(),
+    /** The Account reported: whose the thing is. Never shown to it, nor the reporter to it. */
+    reportedId: text("reported_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    reason: text("reason", { enum: REPORT_REASONS }).notNull(),
+    note: text("note"),
+    /** Why the Content check was unsure of the note, for the Admin, who alone reads it. */
+    noteHeldFor: text("note_held_for"),
+    /** The queue item it folded into. */
+    queueItemId: text("queue_item_id")
+      .notNull()
+      .references(() => queueItems.id),
+    reportedAt: instant("reported_at").notNull(),
+  },
+  (table) => [
+    uniqueIndex("reports_once_per_reporter").on(
+      table.reporterId,
+      table.subjectKind,
+      table.subjectId,
+    ),
+    index("reports_item").on(table.queueItemId, table.reportedAt),
+    check(
+      "reports_subject_kind",
+      sql.raw(`subject_kind in (${REPORT_SUBJECTS.map((kind) => `'${kind}'`).join(", ")})`),
+    ),
+    check(
+      "reports_reason",
+      sql.raw(`reason in (${REPORT_REASONS.map((reason) => `'${reason}'`).join(", ")})`),
+    ),
+  ],
+);
+
+/**
+ * Each warning the Admin gives an Account, from a Report or the People page
+ * (#136). It is told the reason. Warnings stay, a Suspension lifted or not;
+ * one for Leaving makes the next Leaving a Suspension.
+ */
+export const warnings = sqliteTable(
+  "warnings",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    reason: text("reason").notNull(),
+    /** Whether it was for Leaving. */
+    leaving: integer("leaving", { mode: "boolean" }).notNull(),
+    warnedBy: text("warned_by")
+      .notNull()
+      .references(() => admins.id),
+    warnedAt: instant("warned_at").notNull(),
+  },
+  (table) => [index("warnings_account").on(table.accountId, table.warnedAt)],
+);
+
+/**
+ * Each Suspension of an Account (#136): it cannot start new work until the
+ * Admin lifts it, and sees the reason meanwhile. One stands at a time.
+ */
+export const suspensions = sqliteTable(
+  "suspensions",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    reason: text("reason").notNull(),
+    /** Whether it was for Leaving. */
+    leaving: integer("leaving", { mode: "boolean" }).notNull(),
+    suspendedBy: text("suspended_by")
+      .notNull()
+      .references(() => admins.id),
+    suspendedAt: instant("suspended_at").notNull(),
+    liftedBy: text("lifted_by").references(() => admins.id),
+    liftedAt: instant("lifted_at"),
+  },
+  (table) => [
+    index("suspensions_account").on(table.accountId, table.suspendedAt),
+    uniqueIndex("suspensions_one_standing").on(table.accountId).where(sql.raw("lifted_at is null")),
+  ],
+);
+
 export const CHECK_STATES = ["submitted", "accepted", "rejected", "removed", "superseded"] as const;
 
 /**
@@ -578,6 +687,12 @@ export const jobs = sqliteTable(
     expiresAt: instant("expires_at"),
     /** When an Open matched Job's next Batch is due; null for an Invite-only one. */
     nextBatchAt: instant("next_batch_at"),
+    /**
+     * When the Admin took it out of view from a Report (#136), until an edit
+     * the Admin releases fixes it; and why, for the Client.
+     */
+    outOfViewSince: instant("out_of_view_since"),
+    outOfViewFor: text("out_of_view_for"),
   },
   (table) => [
     index("jobs_client").on(table.clientId, table.updatedAt),
@@ -870,6 +985,9 @@ export const NOT_HIRED_REASONS = [
   "not-verified",
   /** An Updated Quote's Payment that arrived once it was no longer proposed (#134). */
   "updated-quote-ended",
+  /** Either party was Suspended, or the Job taken out of view, while the Client paid (#136). */
+  "suspended",
+  "out-of-view",
 ] as const;
 
 /**

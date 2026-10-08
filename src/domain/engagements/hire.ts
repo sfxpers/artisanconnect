@@ -19,6 +19,7 @@ import { bankReference } from "../references";
 import { ok, refuse } from "../result";
 import { saDay, formatDay } from "../sa-days";
 import { accounts, authUsers, engagements, jobs, payments, quotes } from "../schema";
+import { isSuspended, suspendedRefusal } from "../standing";
 import { emailAddress, emailTells, tell } from "../tells";
 import {
   notHiredWrites,
@@ -67,7 +68,17 @@ export async function openCheckout(
       "Tick that the Protection Fee is not refunded, to pay for this Quote.",
     );
   }
-  // Not while either is Suspended, too, once there are Suspensions (#136).
+  if (job.outOfViewSince) {
+    return refuse(
+      "out-of-view",
+      "This Job is out of view until you fix it, so its Quotes cannot be Hired.",
+    );
+  }
+  if (await isSuspended(ctx, job.clientId)) return suspendedRefusal("Hire");
+  // A Suspended Artisan's Sent Quotes were Withdrawn; this is for the moment between.
+  if (await isSuspended(ctx, quote.artisanId)) {
+    return refuse("not-sent", "This Artisan cannot be Hired now.");
+  }
   if (!(await verifiedForJob(ctx, quote.artisanId, job))) {
     return refuse(
       "not-verified",
@@ -157,7 +168,12 @@ async function notHiredReason(
     return "quote-ended";
   }
   if (quote.revisedAt?.getTime() !== payment.quoteRevisedAt?.getTime()) return "quote-changed";
-  // Not while either is Suspended, too, once there are Suspensions (#136).
+  // Either party's Suspension, or the Job taken out of view, while the Client
+  // paid (#136). One landing after the Hire leaves it, as a paid Engagement goes on.
+  if (job.outOfViewSince) return "out-of-view";
+  if ((await isSuspended(ctx, job.clientId)) || (await isSuspended(ctx, quote.artisanId))) {
+    return "suspended";
+  }
   if (!(await verifiedForJob(ctx, quote.artisanId, job))) return "not-verified";
   return null;
 }

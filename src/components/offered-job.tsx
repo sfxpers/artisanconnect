@@ -10,6 +10,7 @@ import { Details, Fact } from "@/components/job-details";
 import { NextStepCard, Page, Refusal } from "@/components/page";
 import { useAction } from "@/components/use-action";
 import { QuoteForm } from "@/components/quote-form";
+import { ReportAction } from "@/components/report";
 import { QuoteFacts } from "@/components/quotes";
 import {
   ActivityCard,
@@ -168,6 +169,7 @@ export function OfferedJob({
                       </Fact>
                     )}
                   </dl>
+                  <ReportAction about={{ kind: "job", id: job.jobId }} label={copy.report.job} />
                 </CardContent>
               </Card>
               {engagement && (

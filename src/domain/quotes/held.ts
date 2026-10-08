@@ -51,6 +51,8 @@ export const heldQuote = defineHeldKind("held.quote", {
       if (!quote || !job) return "Your Quote is checked";
       const problem = await sendingProblem(ctx, quote.artisanId, job, quote.startOn);
       if (problem === "start-passed") return "Your Quote is checked, but its start date has passed";
+      if (problem === "suspended") return "Your Quote is checked, but your Account is suspended";
+      if (job.outOfViewSince) return "Your Quote is checked, but the Job is out of view for now";
       if (problem === "not-verified") {
         return `Your Quote is checked, but you are no longer verified for ${job.category ? SERVICE_CATEGORY_NAMES[job.category] : "its trade"}`;
       }

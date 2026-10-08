@@ -46,6 +46,7 @@ import {
   withdrawNames,
 } from "./names-check";
 import { currentRules } from "./rules";
+import { standingOf } from "../standing";
 
 export const accountsSection = defineSection({
   name: "accounts",
@@ -482,6 +483,10 @@ export const accountsSection = defineSection({
           .innerJoin(authUsers, eq(authUsers.id, accounts.id))
           .where(eq(accounts.id, accountId));
         if (!row) return null;
+        const [namesNow, standing] = await Promise.all([
+          namesStanding(ctx, row.id),
+          standingOf(ctx, row.id),
+        ]);
         return {
           accountId: row.id,
           kind: row.kind,
@@ -492,11 +497,13 @@ export const accountsSection = defineSection({
            * Whether others see the names; new names being checked, which
            * only this Account sees; and names the Admin refused, with why.
            */
-          names: { shown: row.namesShown, ...(await namesStanding(ctx, row.id)) },
+          names: { shown: row.namesShown, ...namesNow },
           email: row.email,
           rules: { version: row.rulesVersion, acceptedAt: row.rulesAcceptedAt },
           /** An Artisan's VAT number, if they are VAT-registered. */
           vatNumber: row.vatNumber,
+          /** Its Suspension, with the reason, while one stands, and its warnings (#136). */
+          standing,
           // A Client may post a Job at once; an Artisan is verified first.
           nextStep: row.kind === "client" ? ("post-first-job" as const) : ("verification" as const),
         };

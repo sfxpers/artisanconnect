@@ -16,11 +16,13 @@ import { jobsSection } from "./jobs";
 import { matchesSection } from "./matches";
 import { receivePaymentEvent } from "./payments";
 import { payoutsSection } from "./payouts";
+import { peopleSection } from "./standing/people";
 import { runPayouts } from "./payouts/run";
 import { sendWaitingRefunds } from "./refunds";
 import { createQueues, type QueueItemKind } from "./queues";
 import { profilesSection } from "./profiles";
 import { quotesSection } from "./quotes";
+import { reportsSection } from "./reports";
 import { regionsSection } from "./regions";
 import { availabilitySection } from "./regions/availability";
 import { supportSection } from "./support";
@@ -41,9 +43,11 @@ export const sections = [
   matchesSection,
   noticesSection,
   payoutsSection,
+  peopleSection,
   profilesSection,
   quotesSection,
   regionsSection,
+  reportsSection,
   supportSection,
   verificationSection,
 ] as const satisfies readonly Section[];

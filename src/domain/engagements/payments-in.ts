@@ -22,6 +22,8 @@ const METHODS: PaymentMethod[] = ["card", "pay_by_bank"];
 const NOT_HIRED_TITLES: Record<NotHiredReason, string> = {
   "quote-ended": "Your Payment will be refunded, as no Hire happened",
   "quote-changed": "Your Payment will be refunded, as no Hire happened",
+  suspended: "Your Payment will be refunded, as no Hire happened",
+  "out-of-view": "Your Payment will be refunded, as no Hire happened",
   "not-verified": "Your Payment will be refunded, as no Hire happened",
   "updated-quote-ended":
     "Your Payment will be refunded in full, as the Updated Quote was no longer proposed",

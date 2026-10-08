@@ -190,6 +190,13 @@
       "when": 1791419099857,
       "tag": "0026_disputes",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "6",
+      "when": 1791424847516,
+      "tag": "0027_reports-and-suspensions",
+      "breakpoints": true
     }
   ]
 }

@@ -1,4 +1,4 @@
-import { and, desc, eq, exists, inArray, sql, type SQLWrapper } from "drizzle-orm";
+import { and, desc, eq, exists, inArray, isNull, sql, type SQLWrapper } from "drizzle-orm";
 import type { Context } from "../context";
 import { refuse } from "../result";
 import { accounts, jobs, quotes } from "../schema";
@@ -67,17 +67,22 @@ export function jobFull() {
   return refuse("full", "This Job has five Quotes and takes no more.");
 }
 
-/** The SQL that is true while the Job takes Quotes: Open, with fewer than five. */
+/**
+ * The SQL that is true while the Job takes Quotes: Open, in view, with fewer
+ * than five.
+ */
 export function takesQuotes(ctx: Context, jobId: SQLWrapper | string) {
   return exists(
     ctx.db
       .select({ one: sql`1` })
       .from(jobs)
-      .where(and(eq(jobs.id, jobId), eq(jobs.state, "open"), belowFive())),
+      .where(
+        and(eq(jobs.id, jobId), eq(jobs.state, "open"), isNull(jobs.outOfViewSince), belowFive()),
+      ),
   );
 }
 
-/** Whether the Job takes Quotes now: Open, with fewer than five. */
+/** Whether the Job takes Quotes now: Open, in view, with fewer than five. */
 export async function takesQuotesNow(ctx: Context, jobId: string): Promise<boolean> {
   const [row] = await ctx.db
     .select({ takes: sql<number>`${takesQuotes(ctx, jobId)}` })

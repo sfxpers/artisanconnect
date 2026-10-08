@@ -1,4 +1,4 @@
-import { and, asc, eq, isNull, sql, type SQL } from "drizzle-orm";
+import { and, asc, eq, isNull, notExists, sql, type SQL } from "drizzle-orm";
 import type { Actor, AdminActor } from "./actor";
 import { audit, logRead } from "./audit";
 import { keyOfLink } from "./file-links";
@@ -150,14 +150,15 @@ type QueueItemKindDefinition = {
    * The writes a decision makes (its state change, its Tells), or a refusal.
    * They are committed with the decision, so a refusal records nothing. A
    * command may land between the read and the batch, so each write must carry
-   * the condition it read, as a clock's must.
+   * the condition it read, as a clock's must. With `afterCommit`, what follows once
+   * they are committed, such as discarding files they left nobody's.
    */
   decide(
     ctx: Context,
     admin: AdminActor,
     item: QueueItem,
     choice: { decision: string; reason: string | null; fields: Record<string, string> },
-  ): Promise<Result<Write[]>>;
+  ): Promise<Result<Write[] | { writes: Write[]; afterCommit(): Promise<void> }>>;
   /**
    * The refusal for a batch a trigger aborted, such as one taking money a
    * party's command took first; null for any other error.
@@ -187,6 +188,15 @@ export type QueueItemKind = QueueItemKindDefinition & {
     item: { subjectId: string; title: string },
     condition?: SQL,
   ): { write: Write; itemId: string };
+  /**
+   * The write that puts an item about the subject in its queue unless one of
+   * this kind is open for it already, such as a Report folding into the item
+   * of an earlier one; and, as a subquery, the id of the item open then.
+   */
+  raiseUnlessOpen(
+    ctx: Context,
+    item: { subjectId: string; title: string },
+  ): { write: Write; openItemId: SQL };
 };
 
 /** A kind of queue item, by a name unique across the module. */
@@ -194,27 +204,44 @@ export function defineQueueItemKind(
   kind: string,
   definition: QueueItemKindDefinition,
 ): QueueItemKind {
+  const raise: QueueItemKind["raise"] = (ctx, item, condition) => {
+    const itemId = ctx.newId();
+    const row = {
+      id: itemId,
+      queue: definition.queue,
+      kind,
+      subjectId: item.subjectId,
+      title: item.title,
+      raisedAt: ctx.now(),
+      decision: null,
+      reason: null,
+      decidedBy: null,
+      decidedAt: null,
+    };
+    const write = condition
+      ? insertWhile(ctx, queueItems, row, condition)
+      : ctx.db.insert(queueItems).values(row);
+    return { write, itemId };
+  };
   return {
     ...definition,
     kind,
-    raise(ctx, item, condition) {
-      const itemId = ctx.newId();
-      const row = {
-        id: itemId,
-        queue: definition.queue,
-        kind,
-        subjectId: item.subjectId,
-        title: item.title,
-        raisedAt: ctx.now(),
-        decision: null,
-        reason: null,
-        decidedBy: null,
-        decidedAt: null,
-      };
-      const write = condition
-        ? insertWhile(ctx, queueItems, row, condition)
-        : ctx.db.insert(queueItems).values(row);
-      return { write, itemId };
+    raise,
+    raiseUnlessOpen(ctx, item) {
+      // A fresh query each time, as a builder is changed by limiting it.
+      const open = () =>
+        ctx.db
+          .select({ id: queueItems.id })
+          .from(queueItems)
+          .where(
+            and(
+              eq(queueItems.kind, kind),
+              eq(queueItems.subjectId, item.subjectId),
+              isNull(queueItems.decidedAt),
+            ),
+          );
+      const { write } = raise(ctx, item, notExists(open()));
+      return { write, openItemId: sql`(${open().limit(1)})` };
     },
   };
 }
@@ -394,6 +421,9 @@ export function createQueues(ctx: Context, kinds: Record<string, QueueItemKind>)
 
       const made = await kind.decide(ctx, actor, row, { decision: option.key, reason, fields });
       if (!made.ok) return made;
+      const { writes, afterCommit } = Array.isArray(made.value)
+        ? { writes: made.value, afterCommit: undefined }
+        : made.value;
       try {
         await ctx.commit([
           // Unguarded on purpose: on a decided item a trigger aborts the batch.
@@ -406,7 +436,7 @@ export function createQueues(ctx: Context, kinds: Record<string, QueueItemKind>)
               decidedAt: ctx.now(),
             })
             .where(eq(queueItems.id, row.id)),
-          ...made.value,
+          ...writes,
           audit(ctx, actor, {
             action: "queue.decided",
             summary: `${option.label}: ${row.title}${reason ? `. ${option.reasonLabel ?? "Reason"}: ${reason}` : ""}`,
@@ -419,6 +449,7 @@ export function createQueues(ctx: Context, kinds: Record<string, QueueItemKind>)
         if (refused) return refused;
         throw error;
       }
+      await afterCommit?.();
       await kind.after?.(ctx, row);
       await emailTells(ctx);
       return ok({ itemId: row.id, decision: option.key });

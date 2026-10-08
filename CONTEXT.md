@@ -35,7 +35,7 @@ A code sent to an Email to prove its holder has it, at sign-up, recovery, reopen
 _Avoid_: OTP, Verification code
 
 **Suspended**:
-An Account the Admin has stopped from starting new work. Its paid Jobs continue, and the Admin may also hold its Payouts.
+An Account the Admin has stopped from starting new work: it cannot post, Quote, Hire, invite, or be offered a Job. Its Open Jobs close, its Sent Quotes are Withdrawn, and its Profile leaves Browse. It sees the reason; its paid Jobs continue, and the Admin may also hold its Payouts. Lifting it leaves its warnings.
 _Avoid_: Banned, Blocked, Deactivated
 
 **Closed**:
@@ -241,7 +241,7 @@ A pattern of behaviour that detection sends to the Admin as a queue item, with n
 _Avoid_: Flag, Alert
 
 **Report**:
-A signed-in Account's complaint about a Job, Quote, message, Artisan Profile, or Review, which goes to the Admin.
+A signed-in Account's complaint about a Job, Quote, message, Artisan Profile, or Review it can see, once per thing, which goes to the Admin; repeats fold into one queue item. The Admin dismisses it, takes a Job or Profile out of view until an edit the Admin accepts fixes it, or warns or suspends the Account reported, who never learns who reported.
 _Avoid_: Ticket, Flag
 
 **Support request**:

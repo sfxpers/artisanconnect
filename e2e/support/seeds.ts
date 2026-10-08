@@ -17,11 +17,12 @@ import { textPdf } from "../../test/support/pdfs";
 /** A Client with an Invite-only Job and one Sent Quote on it, from a verified Artisan. */
 export async function hire(env: Env) {
   const { domain, make } = await world(env);
-  const { client, artisan, jobId } = await quoted(domain, make);
+  const { client, artisan, jobId, quoteId } = await quoted(domain, make);
   return {
     email: client.email,
     password: client.password,
     jobId,
+    quoteId,
     artisan: { email: artisan.email, password: artisan.password },
   };
 }
@@ -212,6 +213,17 @@ export async function disputeItem(env: Env, engagementId: string) {
     .bind(engagementId)
     .first<{ id: string }>();
   if (!row) throw new Error(`No Dispute item for Engagement ${engagementId}`);
+  return { itemId: row.id };
+}
+
+/** The open Report item about a Job, Quote, message, or Profile, by its id. */
+export async function reportItem(env: Env, subjectId: string) {
+  const row = await env.DB.prepare(
+    "select id from queue_items where kind like 'report.%' and subject_id = ? and decided_at is null",
+  )
+    .bind(subjectId)
+    .first<{ id: string }>();
+  if (!row) throw new Error(`No open Report item for ${subjectId}`);
   return { itemId: row.id };
 }
 
