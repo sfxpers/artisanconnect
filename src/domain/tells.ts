@@ -48,15 +48,13 @@ export function emailAddress(ctx: Context, address: string, email: Tell & { body
   return ctx.db.insert(notices).values({ id: ctx.newId(), address, toldAt: ctx.now(), ...email });
 }
 
-/** The write that tells every Account (never a sign-up whose Email is unproven). */
+/** The write that tells every Account (never a sign-up whose Email is unproven, nor one erased). */
 export function tellEveryAccount(ctx: Context, told: Tell): Write {
-  return ctx.db
-    .insert(notices)
-    .select(
-      noticesOfAccounts(ctx, told)
-        .innerJoin(authUsers, eq(authUsers.id, accounts.id))
-        .where(eq(authUsers.emailVerified, true)),
-    );
+  return ctx.db.insert(notices).select(
+    noticesOfAccounts(ctx, told)
+      .innerJoin(authUsers, eq(authUsers.id, accounts.id))
+      .where(and(eq(authUsers.emailVerified, true), isNull(accounts.erasedAt))),
+  );
 }
 
 /**
@@ -130,9 +128,11 @@ export async function emailTells(ctx: Context): Promise<void> {
       link: notices.link,
       body: notices.body,
       to: sql<string>`coalesce(${notices.address}, ${authUsers.email})`,
+      erased: sql<boolean>`${accounts.erasedAt} is not null`.mapWith(Boolean),
     })
     .from(notices)
     .leftJoin(authUsers, eq(authUsers.id, notices.accountId))
+    .leftJoin(accounts, eq(accounts.id, notices.accountId))
     .where(isNull(notices.emailedAt))
     .orderBy(asc(notices.toldAt))
     .limit(200);
@@ -142,7 +142,8 @@ export async function emailTells(ctx: Context): Promise<void> {
       .set({ emailedAt: ctx.now() })
       .where(and(eq(notices.id, notice.id), isNull(notices.emailedAt)))
       .returning({ id: notices.id });
-    if (claimed.length === 0) continue;
+    // An erased Account has no Email to send to (#141); the notice is all it gets.
+    if (claimed.length === 0 || notice.erased) continue;
     try {
       await ctx.ports.mailer.send({
         to: notice.to,

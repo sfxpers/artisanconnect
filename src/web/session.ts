@@ -74,3 +74,9 @@ export async function turnstileRefusal(token: string | undefined) {
   if (await passesTurnstile(env, token, requestIp())) return null;
   return refuse("not-a-person", "We could not check that you are a person. Try again.");
 }
+
+/** Ends the request's session, its row gone already or not, clearing its cookies. */
+export async function endSession(domain = requestDomain()) {
+  const ended = await domain.accounts.signOut(visitor, { cookie: requestCookie() });
+  if (ended.ok) sendCookies(ended.value.cookies);
+}

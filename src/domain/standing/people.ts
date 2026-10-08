@@ -51,6 +51,10 @@ export const peopleSection = defineSection({
           name: accounts.name,
           email: authUsers.email,
           suspended: sql<number>`${suspendedNow(ctx, accounts.id)}`,
+          /** Where it stands as its person left it (#141): open, Closed, or erased. */
+          closed: sql<
+            "closed" | "erased" | null
+          >`case when ${accounts.erasedAt} is not null then 'erased' when ${accounts.closedAt} is not null then 'closed' end`,
         })
         .from(accounts)
         .innerJoin(authUsers, eq(authUsers.id, accounts.id))
@@ -87,6 +91,9 @@ export const peopleSection = defineSection({
           email: authUsers.email,
           signedUpAt: accounts.signedUpAt,
           payoutsHeldAt: accounts.payoutsHeldAt,
+          closed: sql<
+            "closed" | "erased" | null
+          >`case when ${accounts.erasedAt} is not null then 'erased' when ${accounts.closedAt} is not null then 'closed' end`,
         })
         .from(accounts)
         .innerJoin(authUsers, eq(authUsers.id, accounts.id))

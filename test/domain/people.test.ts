@@ -21,6 +21,7 @@ describe("finding people", () => {
         name: "Thandi Mokoena",
         email: "thandi@example.com",
         suspended: true,
+        closed: null,
       },
     ]);
     expect(
@@ -58,6 +59,7 @@ describe("one person's page", () => {
       name: "Sipho Dlamini",
       email: artisan.email,
       signedUpAt: expect.any(Date),
+      closed: null,
       suspended: null,
       warnings: [{ reason: "Rude.", leaving: false, at: expect.any(Date) }],
       suspensions: [

@@ -39,7 +39,7 @@ An Account the Admin has stopped from starting new work: it cannot post, Quote, 
 _Avoid_: Banned, Blocked, Deactivated
 
 **Closed**:
-An Account its person has closed while it had no paid Job in progress. It keeps its Reviews and may be reopened with an Email code.
+An Account its person has closed while it had no Engagement in progress. Its Open Jobs close and its Sent Quotes are Withdrawn; it does not sign in, and nobody finds, offers, or invites it. It keeps its Reviews, and a Closed Artisan its Identity Number and Verification. A Suspended Account may close, and is still Suspended when it reopens with its Email and an Email code.
 _Avoid_: Deleted
 
 ### Place and trade
@@ -249,7 +249,7 @@ A signed-in Account's message to the Admin under a fixed topic, which the Admin 
 _Avoid_: Ticket, Contact form
 
 **Data request**:
-An Account's request for a copy of its data, or to have it erased. Erasure anonymises a Closed Account and keeps its money records.
+An Account's request for a copy of its data, which the Admin sends as an export the Account downloads, or to have it erased, which closes it first. Erasure anonymises the Closed Account once no money is still owed to it, keeps its money records and Reviews (shown without the name), and is never undone (ADR `0021`).
 _Avoid_: Deletion, GDPR request
 
 **Leaving**:

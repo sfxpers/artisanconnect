@@ -41,7 +41,8 @@ function setNames(ctx: Context, accountId: string, names: Names, when?: SQL): Wr
     ctx.db
       .update(accounts)
       .set({ name: names.name, tradingName: names.tradingName, namesShown: true })
-      .where(and(eq(accounts.id, accountId), when)),
+      // An erased Account is shown without a name for good (#141).
+      .where(and(eq(accounts.id, accountId), isNull(accounts.erasedAt), when)),
     ctx.db
       .update(authUsers)
       .set({ name: names.name })

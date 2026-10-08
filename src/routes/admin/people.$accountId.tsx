@@ -49,6 +49,7 @@ function Person() {
           <h1 className="text-2xl font-semibold tracking-tight">{person.name}</h1>
           <Badge variant="secondary">{copy.signUp.kind.chosen[person.kind]}</Badge>
           {person.suspended && <Badge variant="destructive">{t.suspended}</Badge>}
+          {person.closed && <Badge variant="outline">{t.closed[person.closed]}</Badge>}
           {person.payoutsHeld && <Badge variant="destructive">{t.payoutsHeld}</Badge>}
         </div>
         <p className="text-sm text-muted-foreground">

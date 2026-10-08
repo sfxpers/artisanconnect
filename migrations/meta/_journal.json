@@ -239,6 +239,13 @@
       "when": 1791479114885,
       "tag": "0033_signals",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "6",
+      "when": 1791481027919,
+      "tag": "0034_account-self-service",
+      "breakpoints": true
     }
   ]
 }

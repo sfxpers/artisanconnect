@@ -279,6 +279,8 @@ function mayBeListed() {
     eq(accounts.namesShown, true),
     // Nor a Profile the Admin took out of view, until an edit fixes it (#136).
     isNull(accounts.profileOutOfViewSince),
+    // Nor a Closed Artisan's, until it reopens (#141).
+    isNull(accounts.closedAt),
   );
 }
 

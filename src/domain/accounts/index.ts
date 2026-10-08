@@ -1,5 +1,5 @@
 import * as z from "zod";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { hashPassword } from "better-auth/crypto";
 import { accountIdOf, visitor, type AccountActor, type Actor } from "../actor";
 import { tryWithin } from "../rate-limits";
@@ -47,6 +47,10 @@ import {
   withdrawNames,
 } from "./names-check";
 import { currentRules } from "./rules";
+import { heldRefusal, isAddressTaken, takeAddress, toldOldAddress } from "./email-change";
+import { emailTells } from "../tells";
+import { verificationSettingsOf } from "../verification";
+import { closeAccount, closedRefusal, closedState } from "./closing";
 import { standingOf } from "../standing";
 
 export const accountsSection = defineSection({
@@ -56,12 +60,26 @@ export const accountsSection = defineSection({
     let auth: Auth | undefined;
     const getAuth = () => (auth ??= createAuth(ctx));
 
+    /** The Account an identity is, while it is open: a Closed one acts for nobody. */
     async function actorFor(identityId: string): Promise<AccountActor | null> {
       const [account] = await ctx.db
         .select({ id: accounts.id, kind: accounts.kind })
         .from(accounts)
-        .where(eq(accounts.id, identityId));
+        .where(and(eq(accounts.id, identityId), isNull(accounts.closedAt)));
       return account ? { kind: account.kind, accountId: account.id } : null;
+    }
+
+    /**
+     * The session the cookie carries, if it is the signed-in Account's, with
+     * the headers that carry it to better-auth and the Account's Email.
+     */
+    async function sessionOf(actor: Actor, cookie: string | null) {
+      const accountId = accountIdOf(actor);
+      if (!accountId || !cookie) return null;
+      const headers = new Headers({ cookie });
+      const session = await getAuth().api.getSession({ headers });
+      if (session?.user.id !== accountId) return null;
+      return { headers, email: session.user.email };
     }
 
     return {
@@ -274,13 +292,23 @@ export const accountsSection = defineSection({
         const notSignedIn = async () =>
           getAuth().api.signOut({ headers: sessionHeaders(signedIn.headers) });
         const [account] = await ctx.db
-          .select({ id: accounts.id, kind: accounts.kind, rulesVersion: accounts.rulesVersion })
+          .select({
+            id: accounts.id,
+            kind: accounts.kind,
+            rulesVersion: accounts.rulesVersion,
+            closedAt: accounts.closedAt,
+          })
           .from(accounts)
           .where(eq(accounts.id, signedIn.response.user.id));
         if (!account) {
           // An Admin's identity: staff do not sign in with a password.
           await notSignedIn();
           return wrongCredentials();
+        }
+        // The password was right, so saying it is Closed tells nobody else anything.
+        if (account.closedAt) {
+          await notSignedIn();
+          return closedRefusal();
         }
 
         const rules = await currentRules(ctx);
@@ -455,6 +483,192 @@ export const accountsSection = defineSection({
       },
 
       /**
+       * Closes the signed-in Account while no Engagement of it is in
+       * progress: its Open Jobs close, their Sent Quotes Declined, and its
+       * Sent Quotes are Withdrawn, each other party told; every session ends.
+       * Its Reviews stay, and money still owed to it is still paid.
+       */
+      async close(actor: Actor) {
+        if (actor.kind !== "client" && actor.kind !== "artisan") {
+          return refuse("sign-in-required", "Sign in to close your Account.");
+        }
+        const closed = await closedState(ctx, actor.accountId);
+        if (!closed) return refuse("sign-in-required", "Sign in to close your Account.");
+        if (closed.closedAt) return closedRefusal();
+        return closeAccount(ctx, actor);
+      },
+
+      /**
+       * Sends an Email code to reopen a Closed Account. The answer is the
+       * same whether or not a Closed Account holds the Email.
+       */
+      async requestReopenCode(actor: Actor, input: { email: string } & From) {
+        if (actor.kind !== "visitor") return refuse("signed-in", "You are already signed in.");
+        const address = email.safeParse(input.email);
+        if (!address.success) return refuse("invalid", firstProblem(address.error));
+        const refused = await mayRequestCode(ctx, address.data, input.ip);
+        if (refused) return refused;
+
+        const identity = await identityByEmail(ctx, address.data);
+        const closed = identity && (await closedState(ctx, identity.id));
+        if (closed?.closedAt && !closed.erasedAt) {
+          await getAuth().api.sendVerificationOTP({
+            body: { email: address.data, type: "sign-in" },
+          });
+        }
+        return ok({ email: address.data });
+      },
+
+      /**
+       * Reopens a Closed Account with its Email code and signs it in, as it
+       * was: a Closed Artisan's Verification stands. Marketplace rules
+       * changed meanwhile are accepted here, or it stays Closed and the code
+       * still works. The device and IP are recorded, as at every sign-in.
+       */
+      async reopen(
+        actor: Actor,
+        input: {
+          email: string;
+          code: string;
+          acceptsRules?: { rulesVersion: number; consentsToDataUse: boolean };
+        } & From &
+          Seen,
+      ) {
+        if (actor.kind !== "visitor") return refuse("signed-in", "You are already signed in.");
+        const address = email.safeParse(input.email);
+        const given = code.safeParse(input.code);
+        if (!address.success) return refuse("invalid", firstProblem(address.error));
+        if (!given.success) return refuse("invalid", firstProblem(given.error));
+        const tooMany = await mayEnterCode(ctx, input.ip);
+        if (tooMany) return tooMany;
+
+        // Checked first and used only once the rules are accepted, so a code
+        // stopped for the rules still works.
+        try {
+          await getAuth().api.checkVerificationOTP({
+            body: { email: address.data, type: "sign-in", otp: given.data },
+          });
+        } catch (error) {
+          return codeRefusal(authErrorCode(error));
+        }
+        const identity = await identityByEmail(ctx, address.data);
+        const [account] = identity
+          ? await ctx.db
+              .select({
+                id: accounts.id,
+                kind: accounts.kind,
+                rulesVersion: accounts.rulesVersion,
+                closedAt: accounts.closedAt,
+                erasedAt: accounts.erasedAt,
+              })
+              .from(accounts)
+              .where(eq(accounts.id, identity.id))
+          : [];
+        // An Admin's sign-in code is not one.
+        if (!account?.closedAt || account.erasedAt) return codeRefusal("INVALID_OTP");
+        const rules = await currentRules(ctx);
+        const rulesChanged = account.rulesVersion !== rules.version;
+        if (rulesChanged) {
+          const accepted = z.object(acceptance).safeParse(input.acceptsRules);
+          if (!accepted.success || accepted.data.rulesVersion !== rules.version) {
+            return rulesChangedAtSignIn();
+          }
+        }
+
+        let signedIn;
+        try {
+          signedIn = await getAuth().api.signInEmailOTP({
+            body: { email: address.data, otp: given.data },
+            returnHeaders: true,
+          });
+        } catch (error) {
+          return codeRefusal(authErrorCode(error));
+        }
+        const now = ctx.now();
+        await ctx.commit([
+          ctx.db
+            .update(accounts)
+            .set({
+              closedAt: null,
+              ...(rulesChanged ? { rulesVersion: rules.version, rulesAcceptedAt: now } : {}),
+            })
+            .where(and(eq(accounts.id, account.id), eq(accounts.closedAt, account.closedAt))),
+        ]);
+        await recordSighting(ctx, account.id, input, "sign-in");
+        const signedInAs: AccountActor = { kind: account.kind, accountId: account.id };
+        return ok({ actor: signedInAs, cookies: signedIn.headers.getSetCookie() });
+      },
+
+      /**
+       * Sends an Email code to the new address the signed-in Account gives.
+       * Its Email stays as it is, and signs in, until the code is entered. An
+       * address any Account or an Admin holds is refused.
+       */
+      async requestEmailChange(
+        actor: Actor,
+        input: { email: string; cookie: string | null } & From,
+      ) {
+        const session = await sessionOf(actor, input.cookie);
+        if (!session) return refuse("sign-in-required", "Sign in to change your Email.");
+        const address = email.safeParse(input.email);
+        if (!address.success) return refuse("invalid", firstProblem(address.error));
+        if (address.data === session.email) {
+          return refuse("same-email", "That is your Email already. Give the new one.");
+        }
+        const taken = await takeAddress(ctx, address.data);
+        if (!taken.ok) return taken;
+        const refused = await mayRequestCode(ctx, address.data, input.ip);
+        if (refused) return refused;
+
+        if (taken.writes.length > 0) await ctx.commit(taken.writes);
+        await getAuth().api.requestEmailChangeEmailOTP({
+          body: { newEmail: address.data },
+          headers: session.headers,
+        });
+        return ok({ email: address.data });
+      },
+
+      /**
+       * Proves the new address with its Email code, which makes it the
+       * Account's Email; the old one no longer signs in and is told by email.
+       * The session goes on, with the cookies that carry it.
+       */
+      async changeEmail(
+        actor: Actor,
+        input: { email: string; code: string; cookie: string | null } & From,
+      ) {
+        const session = await sessionOf(actor, input.cookie);
+        if (!session) return refuse("sign-in-required", "Sign in to change your Email.");
+        const address = email.safeParse(input.email);
+        const given = code.safeParse(input.code);
+        if (!address.success) return refuse("invalid", firstProblem(address.error));
+        if (!given.success) return refuse("invalid", firstProblem(given.error));
+        const tooMany = await mayEnterCode(ctx, input.ip);
+        if (tooMany) return tooMany;
+        // Another Account may have taken it while the code waited.
+        const taken = await takeAddress(ctx, address.data);
+        if (!taken.ok) return taken;
+        if (taken.writes.length > 0) await ctx.commit(taken.writes);
+
+        let changed;
+        try {
+          changed = await getAuth().api.changeEmailEmailOTP({
+            body: { newEmail: address.data, otp: given.data },
+            headers: session.headers,
+            returnHeaders: true,
+          });
+        } catch (error) {
+          if (isAddressTaken(error)) return heldRefusal();
+          return codeRefusal(authErrorCode(error));
+        }
+        await ctx.commit([toldOldAddress(ctx, session.email)]);
+        await emailTells(ctx).catch((error: unknown) => {
+          console.error("Tell emails did not go", error);
+        });
+        return ok({ email: address.data, cookies: changed.headers.getSetCookie() });
+      },
+
+      /**
        * States the Artisan's VAT number, or clears it once they are not
        * VAT-registered. Their Quotes sent or revised from now on carry it.
        */
@@ -491,9 +705,10 @@ export const accountsSection = defineSection({
           .innerJoin(authUsers, eq(authUsers.id, accounts.id))
           .where(eq(accounts.id, accountId));
         if (!row) return null;
-        const [namesNow, standing] = await Promise.all([
+        const [namesNow, standing, verified] = await Promise.all([
           namesStanding(ctx, row.id),
           standingOf(ctx, row.id),
+          row.kind === "artisan" ? verificationSettingsOf(ctx, row.id) : null,
         ]);
         return {
           accountId: row.id,
@@ -512,6 +727,10 @@ export const accountsSection = defineSection({
           vatNumber: row.vatNumber,
           /** Its Suspension, with the reason, while one stands, and its warnings (#136). */
           standing,
+          /** An Artisan's Identity Number, read only, which it keeps while Closed (#141). */
+          identityNumber: verified?.identityNumber ?? null,
+          /** An Artisan's current Payout account: its bank and the end of its number. */
+          payoutAccount: verified?.payoutAccount ?? null,
           // A Client may post a Job at once; an Artisan is verified first.
           nextStep: row.kind === "client" ? ("post-first-job" as const) : ("verification" as const),
         };

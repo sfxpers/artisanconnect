@@ -187,6 +187,16 @@ export const accounts = sqliteTable(
      */
     profileOutOfViewSince: instant("profile_out_of_view_since"),
     profileOutOfViewFor: text("profile_out_of_view_for"),
+    /**
+     * When its person closed it (#141), while it is Closed: it does not sign
+     * in, and nobody finds, offers, or invites it, until it is reopened.
+     */
+    closedAt: instant("closed_at"),
+    /**
+     * When the Admin erased it from a Data request (#141): anonymised, its
+     * names, Email, and password gone, and never reopened.
+     */
+    erasedAt: instant("erased_at"),
   },
   (table) => [check("accounts_kind", sql`${table.kind} in ('client', 'artisan')`)],
 );
@@ -386,6 +396,39 @@ export const supportRequests = sqliteTable(
     check(
       "support_requests_topic",
       sql.raw(`topic in (${SUPPORT_TOPICS.map((topic) => `'${topic}'`).join(", ")})`),
+    ),
+  ],
+);
+
+/** What a Data request asks for: a copy of the Account's data, or its erasure. */
+export const DATA_REQUEST_KINDS = ["copy", "erasure"] as const;
+
+/**
+ * An Account's Data request (#141), decided on its queue item: a copy the
+ * Admin sends as an export the Account downloads, or the erasure of the
+ * Account, which closed it. The export is kept until the Account is erased.
+ */
+export const dataRequests = sqliteTable(
+  "data_requests",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id")
+      .notNull()
+      .references(() => accounts.id),
+    kind: text("kind", { enum: DATA_REQUEST_KINDS }).notNull(),
+    requestedAt: instant("requested_at").notNull(),
+    /** Where the export is stored once the Admin sent it. */
+    exportKey: text("export_key"),
+    queueItemId: text("queue_item_id")
+      .notNull()
+      .references(() => queueItems.id),
+  },
+  (table) => [
+    index("data_requests_account").on(table.accountId, table.requestedAt),
+    uniqueIndex("data_requests_item").on(table.queueItemId),
+    check(
+      "data_requests_kind",
+      sql.raw(`kind in (${DATA_REQUEST_KINDS.map((kind) => `'${kind}'`).join(", ")})`),
     ),
   ],
 );

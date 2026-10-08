@@ -208,6 +208,18 @@ export const copy = {
     done: "Your password is set. Every other session has been signed out.",
     signIn: "Sign in",
   },
+  reopen: {
+    title: "Reopen your Account",
+    lead: "We send a code to your Email if it holds a Closed Account.",
+    email: "Email",
+    send: "Send a code",
+    sent: (email: string) =>
+      `If ${email} holds a Closed Account, a code is on its way. It works once, for ${EMAIL_CODE.minutes} minutes.`,
+    code: "Email code",
+    submit: "Reopen my Account",
+    acceptAndReopen: "Accept and reopen",
+    link: "Closed your Account? Reopen it",
+  },
   rules: {
     title: "Marketplace rules",
     version: (version: number, published: string) => `Version ${version}, published ${published}`,
@@ -1059,6 +1071,54 @@ export const copy = {
       saved: "Saved. Quotes you send or revise from now on carry it.",
       placeholder: "4123456789",
     },
+    emailChange: {
+      change: "Change Email",
+      lead: "We send a code to the new Email. Until you enter it, your Email stays as it is and still signs in.",
+      newEmail: "New Email",
+      send: "Send a code",
+      sent: (email: string) =>
+        `A code is on its way to ${email}. It works once, for ${EMAIL_CODE.minutes} minutes.`,
+      code: "Email code",
+      submit: "Change my Email",
+      cancel: "Cancel",
+      done: "Your Email is changed. We told your old Email.",
+    },
+    payoutAccount: {
+      label: "Payout account",
+      ending: (bank: string, ending: string) => `${bank}, ending ${ending}`,
+      none: "None yet",
+      change: "Change it in Verification",
+    },
+    identityNumber: {
+      label: "Identity Number",
+      none: "None yet",
+      lead: "Read from your identity document. It stays yours if you close your Account.",
+    },
+    data: {
+      label: "Request my data",
+      lead: "Ask for a copy of your data, or for your Account to be erased. The Admin answers by email.",
+      copy: "Ask for a copy",
+      erasure: "Ask for erasure",
+      confirmErasure:
+        "Asking for erasure closes your Account now, as closing does, and signs you out. Once any money still owed to you is paid, the Admin erases your names, Email, and password; your money records stay, and your Reviews stay without your name. Ask for erasure?",
+      kinds: { copy: "A copy of your data", erasure: "Erasure" },
+      states: {
+        waiting: "Waiting for the Admin",
+        sent: "Sent",
+        erased: "Erased",
+        refused: "Refused",
+      },
+      asked: (when: string) => `Asked ${when}`,
+      download: "Download",
+      refused: (reason: string) => `Refused: ${reason}`,
+    },
+    close: {
+      label: "Close Account",
+      lead: "Closing ends your Open Jobs, declining their Quotes, and withdraws your Sent Quotes; everyone affected is told. Your Reviews stay, and money owed to you is still paid. You can reopen it later with your Email and a code.",
+      submit: "Close my Account",
+      confirm:
+        "Close your Account? Your Open Jobs close and your Sent Quotes are withdrawn, and you are signed out.",
+    },
     names: {
       beingChecked: "Being checked",
       beingCheckedLead:
@@ -1240,6 +1300,7 @@ export const copy = {
       find: "Find",
       empty: "Nobody matches.",
       suspended: "Suspended",
+      closed: { closed: "Closed", erased: "Erased" },
       payoutsHeld: "Payouts held",
       signedUp: (when: string) => `Signed up ${when}`,
       act: "Act on this Account",

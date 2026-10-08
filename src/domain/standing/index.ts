@@ -248,10 +248,13 @@ export function liftWrites(
   ];
 }
 
-/** The writes that end the new work the Account had started, and the files they leave nobody's. */
-async function newWorkEnded(
+/**
+ * The writes that end the new work the Account had started, and the files
+ * they leave nobody's: at a Suspension, or as the Account closes itself (#141).
+ */
+export async function newWorkEnded(
   ctx: Context,
-  admin: AdminActor | SystemActor,
+  admin: Actor,
   account: { id: string; kind: "client" | "artisan" },
 ) {
   const writes: Write[] = [];

@@ -201,10 +201,15 @@ export function paymentInRows(
  * Materials too, and how much of the Labour not yet released a Dispute holds.
  */
 export async function engagementMoney(ctx: Context, engagementId: string) {
+  return moneyOf(ctx, eq(ledgerEntries.engagementId, engagementId));
+}
+
+/** `engagementMoney`, summed across every ledger row the condition selects, such as a party's Engagements'. */
+export async function moneyOf(ctx: Context, rowsOf: SQL) {
   const rows = await ctx.db
     .select({ kind: ledgerEntries.kind, cents: sql<number>`sum(${ledgerEntries.amountCents})` })
     .from(ledgerEntries)
-    .where(eq(ledgerEntries.engagementId, engagementId))
+    .where(rowsOf)
     .groupBy(ledgerEntries.kind);
   const sum = (kind: LedgerKind) => rows.find((row) => row.kind === kind)?.cents ?? 0;
   const part = (
@@ -260,4 +265,12 @@ export async function engagementMoney(ctx: Context, engagementId: string) {
       sum(LEDGER_KINDS.disputeRefunded),
     protectionFeeCents: sum(LEDGER_KINDS.protectionFeeIn),
   };
+}
+
+/**
+ * What of the ledger rows summed is owed to an Artisan and not yet paid out:
+ * what was owed, less what was paid, plus what the bank sent back.
+ */
+export function unpaidPayoutCents() {
+  return sql<number>`coalesce(sum(case ${ledgerEntries.kind} when ${LEDGER_KINDS.payoutOwed} then ${ledgerEntries.amountCents} when ${LEDGER_KINDS.payoutPaid} then -${ledgerEntries.amountCents} when ${LEDGER_KINDS.payoutSentBack} then ${ledgerEntries.amountCents} else 0 end), 0)`;
 }

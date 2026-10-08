@@ -6,6 +6,7 @@ import { invitable, invitationWrites } from "../invitations";
 import { ok, refuse } from "../result";
 import { accounts, chargebacks, engagements, jobs } from "../schema";
 import { SERVICE_CATEGORY_NAMES } from "../service-categories";
+import { closedState } from "../accounts/closing";
 import { isSuspended } from "../standing";
 import { jobRow, type JobRow } from "./rows";
 
@@ -82,7 +83,9 @@ export async function hireAgainProblem(ctx: Context, job: JobRow): Promise<strin
   const [listed] = await invitable(ctx, job, { artisanId });
   if (listed) return null;
   const name = (await shownArtisanName(ctx, artisanId)) ?? "The Artisan";
-  if (await isSuspended(ctx, artisanId)) return `${name} cannot be invited to a Job now.`;
+  if ((await isSuspended(ctx, artisanId)) || (await closedState(ctx, artisanId))?.closedAt) {
+    return `${name} cannot be invited to a Job now.`;
+  }
   const category = SERVICE_CATEGORY_NAMES[job.category];
   if (job.gasWork) {
     const [withoutGas] = await invitable(ctx, { ...job, gasWork: false }, { artisanId });

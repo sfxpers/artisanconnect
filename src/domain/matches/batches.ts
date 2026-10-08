@@ -1,4 +1,4 @@
-import { and, asc, eq, exists, not, notExists, sql, type SQL } from "drizzle-orm";
+import { and, asc, eq, exists, isNull, not, notExists, sql, type SQL } from "drizzle-orm";
 import { system } from "../actor";
 import { fireDueClock, startClock, type ClockHandler } from "../clocks";
 import { invitationOf } from "../invitations";
@@ -106,6 +106,8 @@ async function batchFor(ctx: Context, job: JobRow): Promise<string[]> {
           eq(accounts.kind, "artisan"),
           eq(authUsers.emailVerified, true),
           eq(accounts.availableForJobs, true),
+          // A Closed Artisan is offered nothing until it reopens (#141).
+          isNull(accounts.closedAt),
           exists(
             ctx.db
               .select({ one: sql`1` })

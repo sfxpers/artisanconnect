@@ -123,6 +123,11 @@ function SignIn() {
               {t.enterCode}
             </Link>
           )}
+          {refusal?.reason === "closed" && (
+            <Link to="/reopen" search={{ email }} className="text-sm underline">
+              {copy.reopen.submit}
+            </Link>
+          )}
           <Button
             type="submit"
             size="lg"
@@ -134,9 +139,14 @@ function SignIn() {
           </Button>
         </form>
         <div className="flex flex-wrap justify-between gap-2 text-sm text-muted-foreground">
-          <Link to="/recover" className="underline">
-            {t.forgot}
-          </Link>
+          <span className="flex flex-col gap-1">
+            <Link to="/recover" className="underline">
+              {t.forgot}
+            </Link>
+            <Link to="/reopen" search={{ email: undefined }} className="underline">
+              {copy.reopen.link}
+            </Link>
+          </span>
           <span>
             {t.noAccount}{" "}
             <Link to="/sign-up" className="underline">

@@ -64,6 +64,8 @@ export function createAuth(ctx: Context) {
         // A new code replaces the old one, which stops working.
         resendStrategy: "rotate",
         disableSignUp: true,
+        // A new Email is proven by a code sent to it; the old one signs in until then.
+        changeEmail: { enabled: true },
         async sendVerificationOTP({ email, otp, type }) {
           await ctx.ports.mailer.send({
             to: email,

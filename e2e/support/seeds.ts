@@ -258,6 +258,20 @@ export async function reportItem(env: Env, subjectId: string) {
   return { itemId: row.id };
 }
 
+/** The open Data requests item of the Account holding the Email (#141). */
+export async function dataRequestItem(env: Env, email: string) {
+  const row = await env.DB.prepare(
+    `select q.id from data_requests d
+     join queue_items q on q.id = d.queue_item_id
+     join auth_users u on u.id = d.account_id
+     where u.email = ? and q.decided_at is null`,
+  )
+    .bind(email)
+    .first<{ id: string }>();
+  if (!row) throw new Error(`No open Data request for ${email}`);
+  return { itemId: row.id };
+}
+
 /** The open Pre-check item of a Review written on the Engagement (#138), the newest first. */
 export async function reviewItem(env: Env, engagementId: string) {
   const row = await env.DB.prepare(

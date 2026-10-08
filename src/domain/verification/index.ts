@@ -1025,6 +1025,24 @@ export async function currentPayoutAccount(ctx: Context, artisanId: string) {
   return (await standingOf(ctx, artisanId)).current("payout-account");
 }
 
+/**
+ * What an Artisan's settings show of its Verification (#141): its Identity
+ * Number, read only, which it keeps while Closed, and the Payout account
+ * Payouts go to now, with only the end of its number.
+ */
+export async function verificationSettingsOf(ctx: Context, artisanId: string) {
+  const standing = await standingOf(ctx, artisanId);
+  const identity = standing.accepted("identity");
+  const payout = standing.current("payout-account");
+  return {
+    identityNumber: identity ? formatIdentityNumber(identityOf(identity.details)) : null,
+    payoutAccount: payout && {
+      bank: payout.details.bank ?? "",
+      accountEnding: (payout.details.accountNumber ?? "").slice(-4),
+    },
+  };
+}
+
 async function standingOf(ctx: Context, artisanId: string): Promise<Standing> {
   return new Standing(await checksOf(ctx, artisanId), saDay(ctx.now()));
 }

@@ -2,7 +2,7 @@ import { and, asc, desc, eq, exists, inArray, isNotNull, isNull, or, sql } from 
 import type { Actor, AdminActor } from "../actor";
 import { audit } from "../audit";
 import type { Context } from "../context";
-import { LEDGER_KINDS, RELEASED_PARTS, type LedgerKind } from "../ledger";
+import { LEDGER_KINDS, RELEASED_PARTS, unpaidPayoutCents, type LedgerKind } from "../ledger";
 import { adminOnly, ok, refuse } from "../result";
 import {
   accounts,
@@ -64,8 +64,7 @@ export const payoutsSection = defineSection({
      */
     async unpaid(viewer: Actor) {
       if (viewer.kind !== "admin") return null;
-      // What was owed, less what was paid, plus what the bank sent back.
-      const unpaid = sql<number>`coalesce(sum(case ${ledgerEntries.kind} when ${LEDGER_KINDS.payoutOwed} then ${ledgerEntries.amountCents} when ${LEDGER_KINDS.payoutPaid} then -${ledgerEntries.amountCents} when ${LEDGER_KINDS.payoutSentBack} then ${ledgerEntries.amountCents} else 0 end), 0)`;
+      const unpaid = unpaidPayoutCents();
       const rows = await ctx.db
         .select({
           artisanId: accounts.id,

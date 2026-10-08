@@ -18,6 +18,7 @@ import { Route as PayoutsRouteImport } from './routes/payouts'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as RecoverRouteImport } from './routes/recover'
 import { Route as RegionsRouteImport } from './routes/regions'
+import { Route as ReopenRouteImport } from './routes/reopen'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as RulesRouteImport } from './routes/rules'
 import { Route as SignInRouteImport } from './routes/sign-in'
@@ -31,6 +32,7 @@ import { Route as AdminAuditRouteImport } from './routes/admin/audit'
 import { Route as AdminSignInRouteImport } from './routes/admin/sign-in'
 import { Route as ArtisansIndexRouteImport } from './routes/artisans.index'
 import { Route as ArtisansArtisanIdRouteImport } from './routes/artisans.$artisanId'
+import { Route as DataExportsRequestIdRouteImport } from './routes/data-exports.$requestId'
 import { Route as DevMailRouteImport } from './routes/dev/mail'
 import { Route as FakeCheckoutCollectionIdRouteImport } from './routes/fake-checkout.$collectionId'
 import { Route as JobsIndexRouteImport } from './routes/jobs.index'
@@ -92,6 +94,11 @@ const RecoverRoute = RecoverRouteImport.update({
 const RegionsRoute = RegionsRouteImport.update({
   id: '/regions',
   path: '/regions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReopenRoute = ReopenRouteImport.update({
+  id: '/reopen',
+  path: '/reopen',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
@@ -157,6 +164,11 @@ const ArtisansIndexRoute = ArtisansIndexRouteImport.update({
 const ArtisansArtisanIdRoute = ArtisansArtisanIdRouteImport.update({
   id: '/artisans/$artisanId',
   path: '/artisans/$artisanId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DataExportsRequestIdRoute = DataExportsRequestIdRouteImport.update({
+  id: '/data-exports/$requestId',
+  path: '/data-exports/$requestId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DevMailRoute = DevMailRouteImport.update({
@@ -260,6 +272,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRoute
   '/recover': typeof RecoverRoute
   '/regions': typeof RegionsRoute
+  '/reopen': typeof ReopenRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/rules': typeof RulesRoute
   '/sign-in': typeof SignInRoute
@@ -271,6 +284,7 @@ export interface FileRoutesByFullPath {
   '/admin/audit': typeof AdminAuditRoute
   '/admin/sign-in': typeof AdminSignInRoute
   '/artisans/$artisanId': typeof ArtisansArtisanIdRoute
+  '/data-exports/$requestId': typeof DataExportsRequestIdRoute
   '/dev/mail': typeof DevMailRoute
   '/fake-checkout/$collectionId': typeof FakeCheckoutCollectionIdRoute
   '/jobs/$jobId': typeof JobsJobIdRoute
@@ -301,6 +315,7 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/recover': typeof RecoverRoute
   '/regions': typeof RegionsRoute
+  '/reopen': typeof ReopenRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/rules': typeof RulesRoute
   '/sign-in': typeof SignInRoute
@@ -312,6 +327,7 @@ export interface FileRoutesByTo {
   '/admin/audit': typeof AdminAuditRoute
   '/admin/sign-in': typeof AdminSignInRoute
   '/artisans/$artisanId': typeof ArtisansArtisanIdRoute
+  '/data-exports/$requestId': typeof DataExportsRequestIdRoute
   '/dev/mail': typeof DevMailRoute
   '/fake-checkout/$collectionId': typeof FakeCheckoutCollectionIdRoute
   '/jobs/$jobId': typeof JobsJobIdRoute
@@ -343,6 +359,7 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRoute
   '/recover': typeof RecoverRoute
   '/regions': typeof RegionsRoute
+  '/reopen': typeof ReopenRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/rules': typeof RulesRoute
   '/sign-in': typeof SignInRoute
@@ -354,6 +371,7 @@ export interface FileRoutesById {
   '/admin/audit': typeof AdminAuditRoute
   '/admin/sign-in': typeof AdminSignInRoute
   '/artisans/$artisanId': typeof ArtisansArtisanIdRoute
+  '/data-exports/$requestId': typeof DataExportsRequestIdRoute
   '/dev/mail': typeof DevMailRoute
   '/fake-checkout/$collectionId': typeof FakeCheckoutCollectionIdRoute
   '/jobs/$jobId': typeof JobsJobIdRoute
@@ -386,6 +404,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/recover'
     | '/regions'
+    | '/reopen'
     | '/robots.txt'
     | '/rules'
     | '/sign-in'
@@ -397,6 +416,7 @@ export interface FileRouteTypes {
     | '/admin/audit'
     | '/admin/sign-in'
     | '/artisans/$artisanId'
+    | '/data-exports/$requestId'
     | '/dev/mail'
     | '/fake-checkout/$collectionId'
     | '/jobs/$jobId'
@@ -427,6 +447,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/recover'
     | '/regions'
+    | '/reopen'
     | '/robots.txt'
     | '/rules'
     | '/sign-in'
@@ -438,6 +459,7 @@ export interface FileRouteTypes {
     | '/admin/audit'
     | '/admin/sign-in'
     | '/artisans/$artisanId'
+    | '/data-exports/$requestId'
     | '/dev/mail'
     | '/fake-checkout/$collectionId'
     | '/jobs/$jobId'
@@ -468,6 +490,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/recover'
     | '/regions'
+    | '/reopen'
     | '/robots.txt'
     | '/rules'
     | '/sign-in'
@@ -479,6 +502,7 @@ export interface FileRouteTypes {
     | '/admin/audit'
     | '/admin/sign-in'
     | '/artisans/$artisanId'
+    | '/data-exports/$requestId'
     | '/dev/mail'
     | '/fake-checkout/$collectionId'
     | '/jobs/$jobId'
@@ -510,6 +534,7 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRoute
   RecoverRoute: typeof RecoverRoute
   RegionsRoute: typeof RegionsRoute
+  ReopenRoute: typeof ReopenRoute
   RobotsDottxtRoute: typeof RobotsDottxtRoute
   RulesRoute: typeof RulesRoute
   SignInRoute: typeof SignInRoute
@@ -521,6 +546,7 @@ export interface RootRouteChildren {
   AdminAuditRoute: typeof AdminAuditRoute
   AdminSignInRoute: typeof AdminSignInRoute
   ArtisansArtisanIdRoute: typeof ArtisansArtisanIdRoute
+  DataExportsRequestIdRoute: typeof DataExportsRequestIdRoute
   DevMailRoute: typeof DevMailRoute
   FakeCheckoutCollectionIdRoute: typeof FakeCheckoutCollectionIdRoute
   JobsJobIdRoute: typeof JobsJobIdRoute
@@ -605,6 +631,13 @@ declare module '@tanstack/react-router' {
       path: '/regions'
       fullPath: '/regions'
       preLoaderRoute: typeof RegionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reopen': {
+      id: '/reopen'
+      path: '/reopen'
+      fullPath: '/reopen'
+      preLoaderRoute: typeof ReopenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/robots.txt': {
@@ -696,6 +729,13 @@ declare module '@tanstack/react-router' {
       path: '/artisans/$artisanId'
       fullPath: '/artisans/$artisanId'
       preLoaderRoute: typeof ArtisansArtisanIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/data-exports/$requestId': {
+      id: '/data-exports/$requestId'
+      path: '/data-exports/$requestId'
+      fullPath: '/data-exports/$requestId'
+      preLoaderRoute: typeof DataExportsRequestIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dev/mail': {
@@ -830,6 +870,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRoute,
   RecoverRoute: RecoverRoute,
   RegionsRoute: RegionsRoute,
+  ReopenRoute: ReopenRoute,
   RobotsDottxtRoute: RobotsDottxtRoute,
   RulesRoute: RulesRoute,
   SignInRoute: SignInRoute,
@@ -841,6 +882,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminAuditRoute: AdminAuditRoute,
   AdminSignInRoute: AdminSignInRoute,
   ArtisansArtisanIdRoute: ArtisansArtisanIdRoute,
+  DataExportsRequestIdRoute: DataExportsRequestIdRoute,
   DevMailRoute: DevMailRoute,
   FakeCheckoutCollectionIdRoute: FakeCheckoutCollectionIdRoute,
   JobsJobIdRoute: JobsJobIdRoute,

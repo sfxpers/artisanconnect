@@ -9,6 +9,7 @@ import { adminsSection, setUpFirstAdmin } from "./admins";
 import { marketplaceRulesSection } from "./accounts/rules";
 import { createContext } from "./context";
 import { conversationsSection } from "./conversations";
+import { dataRequestsSection } from "./data-requests";
 import { engagementsSection } from "./engagements";
 import { settleDisputesHoldingNothing } from "./engagements/dispute";
 import { invitationsSection } from "./invitations";
@@ -38,6 +39,7 @@ export const sections = [
   adminsSection,
   availabilitySection,
   conversationsSection,
+  dataRequestsSection,
   engagementsSection,
   invitationsSection,
   jobsSection,

@@ -64,6 +64,7 @@ function People() {
                       <span className="truncate font-medium">{person.name}</span>
                       <Badge variant="secondary">{copy.signUp.kind.chosen[person.kind]}</Badge>
                       {person.suspended && <Badge variant="destructive">{t.suspended}</Badge>}
+                      {person.closed && <Badge variant="outline">{t.closed[person.closed]}</Badge>}
                     </div>
                     <div className="truncate text-xs text-muted-foreground">{person.email}</div>
                   </div>

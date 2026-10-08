@@ -6,19 +6,30 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Page, Refusal } from "@/components/page";
-import { changeNames, setVatNumber, signOut, withdrawNames } from "@/web/accounts";
+import { EMAIL_CODE } from "@/domain/accounts/inputs";
+import {
+  changeEmail,
+  changeNames,
+  closeAccount,
+  requestEmailChange,
+  setVatNumber,
+  signOut,
+  withdrawNames,
+} from "@/web/accounts";
 import { copy, formatDate } from "@/web/copy";
+import { getMyDataRequests, requestData } from "@/web/data-requests";
 import { onlyFor } from "@/web/guards";
 import type { Me } from "@/web/me";
 
 export const Route = createFileRoute("/account")({
   beforeLoad: ({ context }) => ({ me: onlyFor("account", context) }),
+  loader: () => getMyDataRequests(),
   component: Account,
 });
 
 const t = copy.account;
 
-/** Settings rows. Changing the others comes with Account self-service (#141). */
+/** Every setting of the Account in one place (#141). */
 function Account() {
   const { me } = Route.useRouteContext();
   const router = useRouter();
@@ -31,23 +42,49 @@ function Account() {
           <SettingsRow label={t.name}>{me.name}</SettingsRow>
           <SettingsRow label={t.tradingName}>{me.tradingName ?? t.none}</SettingsRow>
           <NamesRow me={me} />
-          <SettingsRow label={t.email}>{me.email}</SettingsRow>
+          <SettingsRow label={t.email}>
+            <EmailRow email={me.email} />
+          </SettingsRow>
           {me.kind === "artisan" && (
-            <SettingsRow label={t.vat.label}>
-              <VatNumber vatNumber={me.vatNumber} />
-            </SettingsRow>
+            <>
+              <SettingsRow label={t.vat.label}>
+                <VatNumber vatNumber={me.vatNumber} />
+              </SettingsRow>
+              <SettingsRow label={t.payoutAccount.label}>
+                <div>
+                  {me.payoutAccount
+                    ? t.payoutAccount.ending(me.payoutAccount.bank, me.payoutAccount.accountEnding)
+                    : t.payoutAccount.none}
+                </div>
+                <Link to="/verification" className="underline">
+                  {t.payoutAccount.change}
+                </Link>
+              </SettingsRow>
+            </>
           )}
           <SettingsRow label={t.rules}>
             <Link to="/rules" className="underline">
               {t.accepted(me.rules.version, formatDate(me.rules.acceptedAt))}
             </Link>
           </SettingsRow>
+          {me.kind === "artisan" && (
+            <SettingsRow label={t.identityNumber.label}>
+              <div>{me.identityNumber ?? t.identityNumber.none}</div>
+              <p className="text-xs text-muted-foreground">{t.identityNumber.lead}</p>
+            </SettingsRow>
+          )}
           <SettingsRow label={t.support}>
             <Link to="/support" className="underline">
               {t.supportLink}
             </Link>
           </SettingsRow>
           <StandingRows standing={me.standing} />
+          <SettingsRow label={t.data.label}>
+            <DataRequests />
+          </SettingsRow>
+          <SettingsRow label={t.close.label}>
+            <CloseAccount />
+          </SettingsRow>
         </dl>
       </Card>
       <Button
@@ -201,6 +238,219 @@ function NamesRow({ me }: { me: Me }) {
           <Refusal message={refusal} />
         </>
       )}
+    </div>
+  );
+}
+
+/**
+ * The Email, and a change of it: a code goes to the new one, and until it is
+ * entered the Email stays as it is.
+ */
+function EmailRow({ email }: { email: string }) {
+  const router = useRouter();
+  const e = t.emailChange;
+  const [stage, setStage] = useState<"shown" | "new" | "code">("shown");
+  const [newEmail, setNewEmail] = useState("");
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [refusal, setRefusal] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+
+  async function send() {
+    setBusy(true);
+    setRefusal(null);
+    const result = await requestEmailChange({ data: { email: newEmail } });
+    setBusy(false);
+    if (!result.ok) return setRefusal(result.refusal.message);
+    setNewEmail(result.value.email);
+    setStage("code");
+  }
+
+  async function confirm() {
+    setBusy(true);
+    setRefusal(null);
+    const result = await changeEmail({ data: { email: newEmail, code } });
+    setBusy(false);
+    if (!result.ok) return setRefusal(result.refusal.message);
+    setStage("shown");
+    setCode("");
+    setDone(true);
+    await router.invalidate();
+  }
+
+  function cancel() {
+    setStage("shown");
+    setRefusal(null);
+    setCode("");
+  }
+
+  return (
+    <div className="space-y-2">
+      <div>{email}</div>
+      {done && <p className="text-xs text-muted-foreground">{e.done}</p>}
+      {stage === "shown" && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setDone(false);
+            setNewEmail("");
+            setStage("new");
+          }}
+        >
+          {e.change}
+        </Button>
+      )}
+      {stage === "new" && (
+        <form
+          className="space-y-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void send();
+          }}
+        >
+          <p className="text-xs text-muted-foreground">{e.lead}</p>
+          <Label htmlFor="new-email">{e.newEmail}</Label>
+          <Input
+            id="new-email"
+            type="email"
+            autoComplete="email"
+            value={newEmail}
+            onChange={(event) => setNewEmail(event.target.value)}
+          />
+          <Refusal message={refusal} />
+          <div className="flex gap-2">
+            <Button type="submit" size="sm" disabled={busy}>
+              {e.send}
+            </Button>
+            <Button type="button" size="sm" variant="ghost" onClick={cancel}>
+              {e.cancel}
+            </Button>
+          </div>
+        </form>
+      )}
+      {stage === "code" && (
+        <form
+          className="space-y-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void confirm();
+          }}
+        >
+          <p className="text-xs text-muted-foreground">{e.sent(newEmail)}</p>
+          <Label htmlFor="email-code">{e.code}</Label>
+          <Input
+            id="email-code"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={EMAIL_CODE.length}
+            className="max-w-40"
+            value={code}
+            onChange={(event) => setCode(event.target.value)}
+          />
+          <Refusal message={refusal} />
+          <div className="flex gap-2">
+            <Button type="submit" size="sm" disabled={busy}>
+              {e.submit}
+            </Button>
+            <Button type="button" size="sm" variant="ghost" onClick={cancel}>
+              {e.cancel}
+            </Button>
+          </div>
+        </form>
+      )}
+    </div>
+  );
+}
+
+/**
+ * The Account's Data requests, each with where it stands and a sent copy's
+ * download, and a way to ask for a copy or for erasure, which closes it.
+ */
+function DataRequests() {
+  const requests = Route.useLoaderData();
+  const router = useRouter();
+  const navigate = useNavigate();
+  const d = t.data;
+  const [busy, setBusy] = useState(false);
+  const [refusal, setRefusal] = useState<string | null>(null);
+
+  async function ask(kind: "copy" | "erasure") {
+    if (kind === "erasure" && !window.confirm(d.confirmErasure)) return;
+    setBusy(true);
+    setRefusal(null);
+    const result = await requestData({ data: { kind } });
+    setBusy(false);
+    if (!result.ok) return setRefusal(result.refusal.message);
+    await router.invalidate();
+    if (kind === "erasure") await navigate({ to: "/" });
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-muted-foreground">{d.lead}</p>
+      {requests.length > 0 && (
+        <ul className="space-y-2">
+          {requests.map((request) => (
+            <li key={request.requestId} className="space-y-0.5">
+              <div className="flex flex-wrap items-center gap-2">
+                {d.kinds[request.kind]}
+                <Badge variant={request.state === "refused" ? "destructive" : "secondary"}>
+                  {d.states[request.state]}
+                </Badge>
+                {request.state === "sent" && (
+                  <a href={`/data-exports/${request.requestId}`} className="underline" download>
+                    {d.download}
+                  </a>
+                )}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {d.asked(formatDate(request.requestedAt))}
+              </div>
+              {request.reason && <div className="text-xs">{d.refused(request.reason)}</div>}
+            </li>
+          ))}
+        </ul>
+      )}
+      <Refusal message={refusal} />
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" size="sm" disabled={busy} onClick={() => void ask("copy")}>
+          {d.copy}
+        </Button>
+        <Button variant="outline" size="sm" disabled={busy} onClick={() => void ask("erasure")}>
+          {d.erasure}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/** Closing the Account, refused while an Engagement is in progress. */
+function CloseAccount() {
+  const router = useRouter();
+  const navigate = useNavigate();
+  const c = t.close;
+  const [busy, setBusy] = useState(false);
+  const [refusal, setRefusal] = useState<string | null>(null);
+
+  async function close() {
+    if (!window.confirm(c.confirm)) return;
+    setBusy(true);
+    setRefusal(null);
+    const result = await closeAccount();
+    setBusy(false);
+    if (!result.ok) return setRefusal(result.refusal.message);
+    await router.invalidate();
+    await navigate({ to: "/" });
+  }
+
+  return (
+    <div className="space-y-2">
+      <p className="text-xs text-muted-foreground">{c.lead}</p>
+      <Refusal message={refusal} />
+      <Button variant="destructive" size="sm" disabled={busy} onClick={() => void close()}>
+        {c.submit}
+      </Button>
     </div>
   );
 }
