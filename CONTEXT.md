@@ -263,5 +263,5 @@ The pair of one Client and one Artisan.
 _Avoid_: Lock-in, Repeat customer
 
 **Protected Relationship Period**:
-The 365 days after the first Payment in a Client Relationship, during which all work between them belongs on the platform. It never renews; the Admin sees whether it is running for a pair.
+The 365 days after the first Payment in a Client Relationship that Hired an Engagement between them (one that Hired nobody, refunded whole, does not count), during which all work between them belongs on the platform. It never renews; the Admin sees whether it is running for a pair.
 _Avoid_: Lock-in, Exclusivity
