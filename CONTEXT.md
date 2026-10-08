@@ -137,7 +137,7 @@ The Client's answer to a Completion asking the Artisan to put something right. T
 _Avoid_: Rework order, Rejection
 
 **Updated Quote**:
-The Artisan's proposed new Labour and Materials before Completion, one at a time, which the Artisan may withdraw. Neither line may go down. It applies when the Client pays the difference; rejected or withdrawn, the price stands. The work is not marked complete while one waits. If it ends while the Client is paying, the Payment is refunded in full.
+The Artisan's proposed new Labour and Materials before Completion, one at a time, which the Artisan may withdraw. Neither line may go down. It applies when the Client accepts it by paying the difference; rejected or withdrawn, the price stands. The work is not marked complete while one waits. If it ends while the Client is paying, the Payment is refunded in full.
 _Avoid_: Variation, Change order
 
 **Cancellation**:
