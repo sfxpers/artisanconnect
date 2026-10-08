@@ -5,7 +5,7 @@ import { firstProblem } from "../accounts/inputs";
 import { startClock, type ClockHandler } from "../clocks";
 import type { Context, Write } from "../context";
 import { eventWrite } from "../conversations/rows";
-import { frozenRefusal, isFrozen, isFrozenError } from "../chargebacks";
+import { frozenRefusal, isFrozen, isFrozenError, isPaymentFrozen } from "../chargebacks";
 import { heldRefundRows, settleIfNothingHeld } from "../engagements/dispute";
 import { refundFields, type RefundFields } from "../engagements/inputs";
 import { insertWhile } from "../guarded";
@@ -358,6 +358,9 @@ function waitingRefund(
  * was lost is asked again first.
  */
 export async function sendRefunds(ctx: Context, paymentId: string) {
+  // Not while a Chargeback on it waits for the Admin, whose decision may find the bank sent the
+  // money back already (#137); sent once it is decided.
+  if (await isPaymentFrozen(ctx, paymentId)) return;
   const rows = await ctx.db
     .select({ refund: refunds, notHiredFor: payments.notHiredFor })
     .from(refunds)
@@ -660,5 +663,7 @@ export function shownState(state: (typeof refunds.$inferSelect)["state"]) {
       return "paid" as const;
     case "failed":
       return "owed" as const;
+    case "charged-back":
+      return "charged-back" as const;
   }
 }

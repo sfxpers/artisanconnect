@@ -676,6 +676,51 @@ describe("repeated and out-of-order Chargeback events", () => {
   });
 });
 
+describe("a Refund waiting on a charged-back Payment", () => {
+  test("is not sent while frozen, and the decision marks it sent back by the bank, lowering the loss", async () => {
+    const { domain, given, payments } = await createHarness();
+    const admin = await given.admin();
+    const { client, artisan, jobId, engagementId } = await startedJob(given);
+    // One Refund at a time per Payment: the second waits while the first is with the adapter.
+    for (const labour of ["200", "300"]) {
+      const made = await domain.engagements.refund(artisan.actor, { engagementId, labour });
+      if (!made.ok) throw new Error(made.refusal.message);
+    }
+    const collectionId = (await hiredPayment(engagementId))!;
+    await opened(given, collectionId);
+    const [first] = refundsAsked(payments);
+    await domain.system.receivePaymentEvent(await payments.succeedRefund(first!.id));
+    await domain.system.runDueClocks();
+
+    expect(refundsAsked(payments)).toHaveLength(1);
+
+    await closed(given, collectionId, "lost", 210_000);
+    await decided(domain, admin, {}, "The work was not done.");
+    await domain.system.runDueClocks();
+
+    expect(refundsAsked(payments)).toHaveLength(1);
+    expect((await domain.jobs.view(client.actor, { jobId }))?.engagement?.refunds).toEqual([
+      expect.objectContaining({ amountCents: 20_000, state: "paid" }),
+      expect.objectContaining({ amountCents: 30_000, state: "charged-back" }),
+    ]);
+    // What the bank sent back, less the R1 000 of Labour left with it and the R300 Refund it paid instead.
+    expect(await kindRows(engagementId, "chargeback.loss")).toEqual([
+      { kind: "chargeback.loss", amount_cents: 80_000 },
+    ]);
+    expect(await kindRows(engagementId, "refund.charged-back")).toEqual([
+      { kind: "refund.charged-back", amount_cents: 30_000 },
+    ]);
+    expect(await domain.notices.list(client.actor)).toContainEqual(
+      expect.objectContaining({
+        event: "engagement.chargeback-decided",
+        title: expect.stringContaining(
+          `${formatRands(30_000)} of your Refunds is not sent, as your bank sent it back`,
+        ),
+      }),
+    );
+  });
+});
+
 describe("a Chargeback on other Payments", () => {
   test("on an Updated Quote's Payment freezes its Engagement", async () => {
     const { domain, given } = await createHarness();
@@ -770,6 +815,47 @@ describe("a Chargeback on other Payments", () => {
     expect(results).toEqual([{ kind: "chargeback.loss", amount_cents: 210_000 }]);
   });
 
+  test("on a Payment that Hired nobody whose Refund was not sent yet never sends it, and tells the Client", async () => {
+    const { domain, given, payments } = await createHarness();
+    const admin = await given.admin();
+    const client = await given.client();
+    const artisan = await given.matchableArtisan({ name: "Sipho Dlamini" });
+    const jobId = await given.openJob(client);
+    const quoteId = await given.sentQuote(artisan, jobId, { startOn: "2026-10-05" });
+    const collectionId = await given.checkout(client, quoteId);
+    const withdrawn = await domain.quotes.withdraw(artisan.actor, { jobId });
+    if (!withdrawn.ok) throw new Error(withdrawn.refusal.message);
+    // The provider is down as the Payment arrives, so its whole Refund waits.
+    const refund = payments.refund;
+    payments.refund = () => Promise.reject(new Error("The provider is down"));
+    await expect(given.paid(collectionId)).rejects.toThrow("The provider is down");
+    payments.refund = refund;
+    await opened(given, collectionId);
+    await domain.system.runDueClocks();
+
+    expect(refundsAsked(payments)).toEqual([]);
+
+    await closed(given, collectionId, "lost", 210_000);
+    await decided(domain, admin, {}, "The bank sent it all back.");
+    await domain.system.runDueClocks();
+
+    expect(refundsAsked(payments)).toEqual([]);
+    expect((await domain.jobs.view(client.actor, { jobId }))?.notHired).toEqual([
+      expect.objectContaining({ refund: "charged-back" }),
+    ]);
+    expect(await domain.notices.list(client.actor)).toContainEqual(
+      expect.objectContaining({
+        title: `${formatRands(210_000)} of your Refund is not sent, as your bank sent it back by your Chargeback: Paint the lounge`,
+      }),
+    );
+    const { results } = await env.DB.prepare(
+      "SELECT kind, amount_cents FROM ledger_entries WHERE payment_id = ? AND kind IN ('chargeback.loss', 'refund.charged-back')",
+    )
+      .bind(collectionId)
+      .all();
+    expect(results).toEqual([{ kind: "refund.charged-back", amount_cents: 210_000 }]);
+  });
+
   test("on a Client already Suspended leaves that Suspension standing, and still tells them", async () => {
     const { domain, given } = await createHarness();
     const admin = await given.admin();
@@ -851,6 +937,13 @@ async function hiredPayment(engagementId: string) {
     .bind(engagementId)
     .first<{ payment_id: string }>();
   return row?.payment_id;
+}
+
+/** The Refunds asked of the payment adapter, oldest first. */
+function refundsAsked(payments: Harness["payments"]) {
+  return payments.calls
+    .filter((call) => call.operation === "refund")
+    .map((call) => call.input as { id: string; amountCents: number });
 }
 
 /** The Engagement's Chargeback rows in the ledger, oldest first. */

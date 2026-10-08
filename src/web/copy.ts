@@ -591,7 +591,7 @@ export const copy = {
     notHired: (
       amount: string,
       reason: (typeof NOT_HIRED_REASONS)[number],
-      refund: "on-its-way" | "paid" | "owed",
+      refund: "on-its-way" | "paid" | "owed" | "charged-back",
     ) =>
       `A Payment of ${amount} arrived after ${
         {
@@ -607,6 +607,7 @@ export const copy = {
           "on-its-way": "It is being refunded in full, Protection Fee included.",
           paid: "It was refunded in full, Protection Fee included.",
           owed: "Your bank could not take its Refund, so it is still owed to you in full, and we will pay it by bank transfer.",
+          "charged-back": "Your bank sent it back to you by your Chargeback, so it is not refunded again.",
         }[refund]
       }`,
   },
@@ -783,6 +784,7 @@ export const copy = {
       "on-its-way": "On its way",
       paid: "Refunded",
       owed: "Owed, paid by hand",
+      "charged-back": "Sent back by the bank's Chargeback instead",
     },
     refundLine: (materials: string | null, labour: string | null) =>
       [materials && `Materials ${materials}`, labour && `Labour ${labour}`]

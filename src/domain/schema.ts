@@ -1257,7 +1257,9 @@ export const completions = sqliteTable(
  * A Refund's states: waiting while another Refund of its Payment is with the
  * payment adapter (one at a time per collection), sent once the adapter has
  * it, paused while the float is low, paid, or failed, when it stays owed to
- * the Client until the Admin pays it by hand.
+ * the Client until the Admin pays it by hand; or charged back, a waiting one
+ * the bank sent back to the Client by a Chargeback instead, so it is never
+ * sent (#137).
  */
 export const REFUND_STATES = [
   "waiting",
@@ -1266,6 +1268,7 @@ export const REFUND_STATES = [
   "paid",
   "failed",
   "paid-by-hand",
+  "charged-back",
 ] as const;
 
 /**

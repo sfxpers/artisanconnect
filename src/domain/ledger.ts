@@ -30,6 +30,8 @@ export const LEDGER_KINDS = {
   refundFailed: "refund.failed",
   /** A failed Refund the Admin paid by bank transfer: no longer owed. */
   refundPaidByHand: "refund.paid-by-hand",
+  /** A waiting Refund the bank sent back to the Client by a Chargeback instead: no longer owed (#137). */
+  refundChargedBack: "refund.charged-back",
   /** The Materials released at Work started, before the Artisan Fee (ADR 0006). */
   materialsReleased: "release.materials",
   /** The Labour released at Approval, before the Artisan Fee (ADR 0006, #130). */
