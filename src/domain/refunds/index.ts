@@ -323,7 +323,7 @@ type RefundRecord = typeof refunds.$inferSelect;
 type RefundCause = RefundRecord["cause"];
 
 /** A Refund just made, waiting to be sent: its amount is what it refunds of each part. */
-function waitingRefund(
+export function waitingRefund(
   ctx: Context,
   id: string,
   of: Pick<
@@ -348,6 +348,7 @@ function waitingRefund(
     paidAt: null,
     failedAt: null,
     failedFor: null,
+    chargedBackCents: null,
   };
 }
 
@@ -638,14 +639,26 @@ export async function refundsOf(ctx: Context, engagementId: string) {
     .from(refunds)
     .where(eq(refunds.engagementId, engagementId))
     .orderBy(asc(refunds.madeAt), sql`${refunds}.rowid`);
-  return rows.map((refund) => ({
-    refundId: refund.id,
-    amountCents: refund.amountCents,
-    materialsCents: refund.materialsCents,
-    labourCents: refund.labourCents,
-    madeAt: refund.madeAt,
-    state: shownState(refund.state),
-  }));
+  return rows.map((refund) =>
+    refund.state === "charged-back"
+      ? {
+          // Only what the bank sent back; any rest is the Refund made with the decision (#137).
+          refundId: refund.id,
+          amountCents: refund.chargedBackCents ?? refund.amountCents,
+          materialsCents: 0,
+          labourCents: 0,
+          madeAt: refund.madeAt,
+          state: shownState(refund.state),
+        }
+      : {
+          refundId: refund.id,
+          amountCents: refund.amountCents,
+          materialsCents: refund.materialsCents,
+          labourCents: refund.labourCents,
+          madeAt: refund.madeAt,
+          state: shownState(refund.state),
+        },
+  );
 }
 
 /**

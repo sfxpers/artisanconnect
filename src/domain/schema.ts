@@ -1257,9 +1257,9 @@ export const completions = sqliteTable(
  * A Refund's states: waiting while another Refund of its Payment is with the
  * payment adapter (one at a time per collection), sent once the adapter has
  * it, paused while the float is low, paid, or failed, when it stays owed to
- * the Client until the Admin pays it by hand; or charged back, a waiting one
- * the bank sent back to the Client by a Chargeback instead, so it is never
- * sent (#137).
+ * the Client until the Admin pays it by hand; or charged back, a waiting or
+ * failed one the bank sent back to the Client by a Chargeback instead, so it
+ * is never sent or paid by hand (#137).
  */
 export const REFUND_STATES = [
   "waiting",
@@ -1317,6 +1317,11 @@ export const refunds = sqliteTable(
     failedAt: instant("failed_at"),
     /** Why the bank could not take it. */
     failedFor: text("failed_for"),
+    /**
+     * Once charged back, what of it the bank sent back to the Client by a
+     * Chargeback (#137); any rest is a waiting Refund of its own.
+     */
+    chargedBackCents: integer("charged_back_cents"),
   },
   (table) => [
     index("refunds_payment").on(table.paymentId, table.madeAt),

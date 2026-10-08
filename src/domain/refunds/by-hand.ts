@@ -1,4 +1,5 @@
 import { and, eq } from "drizzle-orm";
+import { frozenRefusal, isPaymentFrozen } from "../chargebacks/frozen";
 import type { Context, Write } from "../context";
 import { LEDGER_KINDS, ledgerWrites } from "../ledger";
 import { formatRands } from "../money";
@@ -11,13 +12,18 @@ import { receiptText, refundIs, refundRow } from "./rows";
 // transfer and records it here, from the system Support request the failure
 // raised. Apart from the Refunds module so the Support request can reach it.
 
-/** Whether the Refund is still owed and waiting for the Admin's bank transfer. */
+/**
+ * Whether the Refund is still owed and waiting for the Admin's bank transfer;
+ * frozen while a Chargeback on its Payment waits for the Admin, whose
+ * decision may find the bank sent it back to the Client already (#137).
+ */
 export async function owedByHand(ctx: Context, refundId: string) {
   const [row] = await ctx.db
-    .select({ state: refunds.state })
+    .select({ state: refunds.state, paymentId: refunds.paymentId })
     .from(refunds)
     .where(eq(refunds.id, refundId));
-  return row?.state === "failed";
+  if (row?.state !== "failed") return null;
+  return (await isPaymentFrozen(ctx, row.paymentId)) ? ("frozen" as const) : ("owed" as const);
 }
 
 /**
@@ -30,6 +36,7 @@ export async function paidByHandWrites(ctx: Context, refundId: string, reference
   if (refund?.state !== "failed") {
     return refuse("not-owed", "That Refund is not waiting to be paid by hand.");
   }
+  if (await isPaymentFrozen(ctx, refund.paymentId)) return frozenRefusal();
   const now = ctx.now();
   const paidNow = refundIs(ctx, refund.id, "paid-by-hand", { column: "paidAt", is: now });
   const writes: Write[] = [

@@ -449,7 +449,10 @@ function moneyView({ labour, materials, ...totals }: Money) {
             of.refundedCents + of.chargedBackCents === of.paidInCents
           ? ("charged-back" as const)
           : of.paidInCents > 0 && of.unreleasedCents === 0
-            ? ("released" as const)
+            ? of.chargedBackCents > 0
+              ? // Some released to the Artisan, the rest back to the Client by it.
+                ("partly-charged-back" as const)
+              : ("released" as const)
             : ("unreleased" as const),
   });
   return {

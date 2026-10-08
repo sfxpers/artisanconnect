@@ -108,9 +108,10 @@ const systemRequest = defineQueueItemKind("support.system", {
   },
   async allowed(ctx, item) {
     const raised = await requestRow(ctx, item.subjectId);
-    return raised?.refundId && (await owedByHand(ctx, raised.refundId))
-      ? ["paid-by-hand"]
-      : ["resolve"];
+    const owed = raised?.refundId ? await owedByHand(ctx, raised.refundId) : null;
+    // Neither while a Chargeback waits: its decision may charge the Refund back (#137).
+    if (owed === "frozen") return [];
+    return owed ? ["paid-by-hand"] : ["resolve"];
   },
   async decide(ctx, _admin, item, choice) {
     if (choice.decision !== "paid-by-hand") return ok([]);

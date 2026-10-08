@@ -93,4 +93,5 @@ test("a Chargeback freezes the Job, and once the bank closes it the Admin decide
   await expect(asClient.getByText("Chargeback decided by the Admin").first()).toBeVisible();
   await expect(asClient.getByText(/R\s400,00 is released to the Artisan/)).toBeVisible();
   await expect(asClient.getByText(/Some of the work was done\./)).toBeVisible();
+  await expect(asClient.getByText("Released, part charged back")).toBeVisible();
 });

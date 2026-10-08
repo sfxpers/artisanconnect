@@ -267,7 +267,15 @@ describe("the Admin's decision", () => {
       state: "cancelled",
       cancellation: null,
       refunds: [],
-      money: { releasedCents: 110_000, unreleasedCents: 0 },
+      money: {
+        releasedCents: 110_000,
+        unreleasedCents: 0,
+        payments: [
+          expect.objectContaining({ part: "materials", state: "released" }),
+          // Some released, the rest back to the Client: neither alone says it.
+          expect.objectContaining({ part: "labour", state: "partly-charged-back" }),
+        ],
+      },
       chargeback: {
         frozen: false,
         decision: {
@@ -718,6 +726,75 @@ describe("a Refund waiting on a charged-back Payment", () => {
         ),
       }),
     );
+  });
+});
+
+describe("a Refund the bank sent back only part of", () => {
+  test("is charged back for that part, and the rest is sent as a Refund of its own", async () => {
+    const { domain, given, payments } = await createHarness();
+    const admin = await given.admin();
+    const { client, artisan, jobId, engagementId } = await startedJob(given);
+    for (const labour of ["200", "300"]) {
+      const made = await domain.engagements.refund(artisan.actor, { engagementId, labour });
+      if (!made.ok) throw new Error(made.refusal.message);
+    }
+    const collectionId = (await hiredPayment(engagementId))!;
+    await opened(given, collectionId);
+    const [first] = refundsAsked(payments);
+    await domain.system.receivePaymentEvent(await payments.succeedRefund(first!.id));
+    await closed(given, collectionId, "partially_accepted", 10_000);
+
+    // All the Labour left goes to the Artisan, so the R100 the bank sent back pays the waiting Refund.
+    await decided(domain, admin, { labourReleasedCents: "100000" }, "The work was done.");
+
+    expect((await domain.jobs.view(client.actor, { jobId }))?.engagement?.refunds).toEqual([
+      expect.objectContaining({ amountCents: 20_000, state: "paid" }),
+      expect.objectContaining({ amountCents: 10_000, state: "charged-back" }),
+      expect.objectContaining({ amountCents: 20_000, state: "on-its-way" }),
+    ]);
+    expect(refundsAsked(payments).at(-1)).toMatchObject({ collectionId, amountCents: 20_000 });
+    expect(await kindRows(engagementId, "refund.charged-back")).toEqual([
+      { kind: "refund.charged-back", amount_cents: 10_000 },
+    ]);
+    expect(await kindRows(engagementId, "chargeback.loss")).toEqual([]);
+  });
+});
+
+describe("a failed Refund on a charged-back Payment", () => {
+  test("cannot be paid by hand while frozen, and the decision charges it back", async () => {
+    const { domain, given, payments } = await createHarness();
+    const admin = await given.admin();
+    const { client, artisan, jobId, engagementId } = await startedJob(given);
+    const made = await domain.engagements.refund(artisan.actor, { engagementId, labour: "300" });
+    if (!made.ok) throw new Error(made.refusal.message);
+    await domain.system.receivePaymentEvent(
+      await payments.failRefund(refundsAsked(payments)[0]!.id),
+    );
+    const collectionId = (await hiredPayment(engagementId))!;
+    await opened(given, collectionId);
+    const [request] = (await domain.queues.home(admin.actor, { queue: "support" }))!.items;
+
+    expect((await domain.queues.item(admin.actor, { itemId: request!.id }))?.decisions).toEqual([]);
+    expect(
+      await domain.queues.decide(admin.actor, {
+        itemId: request!.id,
+        decision: "paid-by-hand",
+        reason: "EFT 4471 from FNB",
+      }),
+    ).toMatchObject({ ok: false });
+
+    await closed(given, collectionId, "lost", 210_000);
+    await decided(domain, admin, {}, "The work was not done.");
+
+    expect((await domain.jobs.view(client.actor, { jobId }))?.engagement?.refunds).toEqual([
+      expect.objectContaining({ amountCents: 30_000, state: "charged-back" }),
+    ]);
+    expect(await kindRows(engagementId, "refund.charged-back")).toEqual([
+      { kind: "refund.charged-back", amount_cents: 30_000 },
+    ]);
+    expect((await domain.queues.item(admin.actor, { itemId: request!.id }))?.decisions).toEqual([
+      expect.objectContaining({ key: "resolve" }),
+    ]);
   });
 });
 

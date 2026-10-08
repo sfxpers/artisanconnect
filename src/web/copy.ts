@@ -607,7 +607,8 @@ export const copy = {
           "on-its-way": "It is being refunded in full, Protection Fee included.",
           paid: "It was refunded in full, Protection Fee included.",
           owed: "Your bank could not take its Refund, so it is still owed to you in full, and we will pay it by bank transfer.",
-          "charged-back": "Your bank sent it back to you by your Chargeback, so it is not refunded again.",
+          "charged-back":
+            "Your bank sent it back to you by your Chargeback, so it is not refunded again.",
         }[refund]
       }`,
   },
@@ -758,6 +759,7 @@ export const copy = {
       released: "Released",
       refunded: "Refunded",
       "charged-back": "Charged back",
+      "partly-charged-back": "Released, part charged back",
     },
     activity: "Activity",
     events: {

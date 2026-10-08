@@ -1230,11 +1230,15 @@ function RefundsList({ engagement }: { engagement: Engagement }) {
             <div className="min-w-0 flex-1">
               <div className="font-medium">{formatRands(each.amountCents)}</div>
               <div className="text-xs text-muted-foreground">
-                {t.refundLine(
-                  each.materialsCents ? formatRands(each.materialsCents) : null,
-                  each.labourCents ? formatRands(each.labourCents) : null,
-                )}{" "}
-                · {formatDate(each.madeAt)}
+                {[
+                  t.refundLine(
+                    each.materialsCents ? formatRands(each.materialsCents) : null,
+                    each.labourCents ? formatRands(each.labourCents) : null,
+                  ),
+                  formatDate(each.madeAt),
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
               </div>
             </div>
             <Badge variant={each.state === "owed" ? "destructive" : "secondary"}>

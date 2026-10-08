@@ -1,16 +1,4 @@
-import {
-  and,
-  asc,
-  eq,
-  exists,
-  inArray,
-  isNull,
-  ne,
-  notExists,
-  sql,
-  type SQL,
-  type SQLWrapper,
-} from "drizzle-orm";
+import { and, asc, eq, exists, inArray, isNull, sql, type SQL } from "drizzle-orm";
 import { system, type AdminActor } from "../actor";
 import type { Context, Write } from "../context";
 import { conversationBlocks } from "../conversations/admin-read";
@@ -31,7 +19,8 @@ import { formatRands } from "../money";
 import type { PaymentEvent } from "../ports";
 import { defineQueueItemKind, type Block, type DecisionField } from "../queues";
 import { accountSidebar } from "../quotes/held";
-import { leftByPayment, refundWrites, sendEngagementRefunds } from "../refunds";
+import { leftByPayment, refundWrites, sendEngagementRefunds, waitingRefund } from "../refunds";
+import { insertWhile } from "../guarded";
 import { ok, refuse } from "../result";
 import { formatTime } from "../sa-days";
 import {
@@ -75,55 +64,8 @@ export type ChargebackRow = typeof chargebacks.$inferSelect;
 const SUSPENSION_REASON =
   "Your card Payment was charged back through your bank. Send a Support request to talk to us about it.";
 
-/**
- * The SQL that is true while no Chargeback on the Engagement, given as a
- * value or a column, waits for the Admin: it is not frozen.
- */
-export function notFrozen(ctx: Context, engagementId: SQLWrapper | string): SQL {
-  return notExists(
-    ctx.db
-      .select({ one: sql`1` })
-      .from(chargebacks)
-      .where(and(eq(chargebacks.engagementId, engagementId), ne(chargebacks.state, "decided"))),
-  );
-}
-
-/** Whether a Chargeback on the Engagement waits for the Admin, which freezes it. */
-export async function isFrozen(ctx: Context, engagementId: string): Promise<boolean> {
-  const [row] = await ctx.db
-    .select({ id: chargebacks.id })
-    .from(chargebacks)
-    .where(and(eq(chargebacks.engagementId, engagementId), ne(chargebacks.state, "decided")))
-    .limit(1);
-  return !!row;
-}
-
-/**
- * Whether a Chargeback on the Payment waits for the Admin: its waiting
- * Refunds wait too, as the decision may find the bank sent their money back
- * to the Client already.
- */
-export async function isPaymentFrozen(ctx: Context, paymentId: string): Promise<boolean> {
-  const [row] = await ctx.db
-    .select({ id: chargebacks.id })
-    .from(chargebacks)
-    .where(and(eq(chargebacks.paymentId, paymentId), ne(chargebacks.state, "decided")))
-    .limit(1);
-  return !!row;
-}
-
-/** The refusal of anything done on an Engagement a Chargeback froze. */
-export function frozenRefusal() {
-  return refuse(
-    "frozen",
-    "A Chargeback on this Job's Payment froze it: the Admin decides its money, and nothing more can be done on it until then.",
-  );
-}
-
-/** Whether a batch aborted as a Chargeback froze its Engagement meanwhile. */
-export function isFrozenError(error: unknown) {
-  return causedBy(error, "frozen by a Chargeback");
-}
+export { frozenRefusal, isFrozen, isFrozenError, isPaymentFrozen, notFrozen } from "./frozen";
+import { isFrozenError } from "./frozen";
 
 /**
  * The bank opened a Chargeback on a card Payment: it is recorded, its
@@ -585,7 +527,7 @@ function chargebackBlocks(
     {
       kind: "text",
       text: engagement
-        ? "Money left to the Client goes back by the Chargeback as far as the bank sent it back, and by a Refund beyond that. A Refund not yet sent of the charged-back Payment is never sent as far as the bank sent its money back too. The decision ends the Engagement: Completed once a Completion was made, otherwise Cancelled."
+        ? "Money left to the Client goes back by the Chargeback as far as the bank sent it back, and by a Refund beyond that. A Refund of the charged-back Payment not yet sent, or owed and paid by hand, is never sent or paid as far as the bank sent its money back too; any rest of it is sent as a Refund of its own. The decision ends the Engagement: Completed once a Completion was made, otherwise Cancelled."
         : "This Payment Hired nobody and was refunded whole, so nothing is unreleased. Its Refund, if not yet sent, is never sent as far as the bank sent the money back; deciding records the rest of what the bank sent back as the platform's loss.",
     },
     ...(others.length > 0
@@ -641,10 +583,23 @@ async function moneyBlocks(ctx: Context, engagement: EngagementRow): Promise<Blo
       .select({ heldAt: accounts.payoutsHeldAt })
       .from(accounts)
       .where(eq(accounts.id, engagement.artisanId)),
+    // Of the charged-back Payments only: the decision may find the bank sent them back already.
     ctx.db
       .select({ cents: sql<number>`coalesce(sum(${refunds.amountCents}), 0)` })
       .from(refunds)
-      .where(and(eq(refunds.engagementId, engagement.id), eq(refunds.state, "waiting"))),
+      .where(
+        and(
+          eq(refunds.engagementId, engagement.id),
+          inArray(refunds.state, ["waiting", "failed"]),
+          inArray(
+            refunds.paymentId,
+            ctx.db
+              .select({ paymentId: chargebacks.paymentId })
+              .from(chargebacks)
+              .where(eq(chargebacks.engagementId, engagement.id)),
+          ),
+        ),
+      ),
   ]);
   return [
     {
@@ -667,7 +622,12 @@ async function moneyBlocks(ctx: Context, engagement: EngagementRow): Promise<Blo
         },
         { label: "Refunded", value: formatRands(money.refundedCents) },
         ...(waiting?.cents
-          ? [{ label: "Of it, Refunds not yet sent", value: formatRands(waiting.cents) }]
+          ? [
+              {
+                label: "Of it, not yet sent of the charged-back Payments",
+                value: formatRands(waiting.cents),
+              },
+            ]
           : []),
         { label: "Left with a Chargeback", value: formatRands(money.chargedBackCents) },
         { label: "Artisan Fee", value: `${engagement.artisanFeePercent}%` },
@@ -720,7 +680,9 @@ async function decisionWrites(
       left,
     ]),
   );
-  const waiting = await ctx.db
+  // The Refunds of the charged-back Payments not with the payment adapter: waiting, or failed and
+  // owed by hand.
+  const unsent = await ctx.db
     .select()
     .from(refunds)
     .where(
@@ -729,7 +691,7 @@ async function decisionWrites(
           refunds.paymentId,
           deciding.map((each) => each.paymentId),
         ),
-        eq(refunds.state, "waiting"),
+        inArray(refunds.state, ["waiting", "failed"]),
       ),
     )
     // In the order they were made, however close together.
@@ -748,17 +710,18 @@ async function decisionWrites(
       toTakeBack[line] -= cents;
       reversed -= cents;
     }
-    // A Refund still waiting that the bank sent back already is never sent: the Client has it.
+    // What of a Refund not yet sent the bank sent back already is never sent: the Client has it.
     const sentBack = [];
-    for (const refund of waiting) {
-      if (refund.paymentId !== each.paymentId || refund.amountCents > reversed) continue;
-      sentBack.push(refund);
-      reversed -= refund.amountCents;
+    for (const refund of unsent) {
+      if (refund.paymentId !== each.paymentId || reversed === 0) continue;
+      const cents = Math.min(refund.amountCents, reversed);
+      sentBack.push({ refund, cents });
+      reversed -= cents;
     }
     return { chargeback: each, taken, sentBack, lossCents: reversed };
   });
   const sentBack = shares.flatMap((share) => share.sentBack);
-  const sentBackCents = sentBack.reduce((sum, refund) => sum + refund.amountCents, 0);
+  const sentBackCents = sentBack.reduce((sum, each) => sum + each.cents, 0);
   const refunded = toTakeBack;
   const releasedCents = released.materials + released.labour;
   const refundedCents = refunded.materials + refunded.labour;
@@ -802,31 +765,37 @@ async function decisionWrites(
       decidedNow,
     ),
   );
-  // The Refunds the bank sent back, no longer owed.
-  for (const refund of sentBack) {
+  // What of each Refund the bank sent back, no longer owed; the rest, a waiting Refund of its own.
+  for (const { refund, cents } of sentBack) {
+    const chargedBackNow = exists(
+      ctx.db
+        .select({ one: sql`1` })
+        .from(refunds)
+        .where(and(eq(refunds.id, refund.id), eq(refunds.state, "charged-back"))),
+    );
     writes.push(
       ctx.db
         .update(refunds)
-        .set({ state: "charged-back" })
-        .where(and(eq(refunds.id, refund.id), eq(refunds.state, "waiting"), decidedNow)),
+        .set({ state: "charged-back", chargedBackCents: cents })
+        .where(and(eq(refunds.id, refund.id), eq(refunds.state, refund.state), decidedNow)),
       ...ledgerWrites(
         ctx,
         [
           {
             kind: LEDGER_KINDS.refundChargedBack,
-            amountCents: refund.amountCents,
+            amountCents: cents,
             paymentId: refund.paymentId,
             engagementId: refund.engagementId,
           },
         ],
-        exists(
-          ctx.db
-            .select({ one: sql`1` })
-            .from(refunds)
-            .where(and(eq(refunds.id, refund.id), eq(refunds.state, "charged-back"))),
-        ),
+        chargedBackNow,
       ),
     );
+    if (cents < refund.amountCents) {
+      writes.push(
+        insertWhile(ctx, refunds, restOf(ctx, refund, refund.amountCents - cents), chargedBackNow),
+      );
+    }
   }
   // The others' items, closed with this one's.
   for (const share of shares) {
@@ -847,9 +816,9 @@ async function decisionWrites(
   }
   // A Payment that Hired nobody has no money left to decide, nor anyone to tell but of its Refund.
   if (!engagement || !money) {
-    const payment = await paymentRow(ctx, chargeback.paymentId);
+    const payment = sentBackCents > 0 ? await paymentRow(ctx, chargeback.paymentId) : null;
     const job = payment && (await jobRow(ctx, payment.jobId));
-    if (sentBackCents > 0 && job) {
+    if (job) {
       writes.push(
         ...tellWhile(
           ctx,
@@ -975,6 +944,33 @@ async function decisionWrites(
     ),
   );
   return writes;
+}
+
+/**
+ * The rest of a Refund the bank sent back only part of, as a waiting Refund
+ * of its own: what the bank sent back is taken off its Protection Fee first,
+ * then its Materials, then its Labour. Its money is in the ledger already,
+ * as the Refund's, so it has no rows of its own until it is sent.
+ */
+function restOf(ctx: Context, refund: typeof refunds.$inferSelect, restCents: number) {
+  let sentBack = refund.amountCents - restCents;
+  const less = (cents: number) => {
+    const taken = Math.min(cents, sentBack);
+    sentBack -= taken;
+    return cents - taken;
+  };
+  const protectionFeeCents = less(refund.protectionFeeCents);
+  const materialsCents = less(refund.materialsCents);
+  const labourCents = less(refund.labourCents);
+  return waitingRefund(ctx, ctx.newId(), {
+    paymentId: refund.paymentId,
+    engagementId: refund.engagementId,
+    clientId: refund.clientId,
+    cause: refund.cause,
+    labourCents,
+    materialsCents,
+    protectionFeeCents,
+  });
 }
 
 /**
