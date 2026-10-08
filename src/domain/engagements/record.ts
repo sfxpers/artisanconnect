@@ -28,8 +28,15 @@ export async function artisanRecord(ctx: Context, artisanId: string) {
     })
     .from(engagements)
     .innerJoin(jobs, eq(jobs.id, engagements.jobId))
-    // Cancelled once, whatever came after, such as a Dispute (#135).
-    .where(and(eq(engagements.artisanId, artisanId), isNotNull(engagements.cancelledAt)))
+    // Cancelled once, whatever came after, such as a Dispute (#135); by a party, not by the
+    // Admin's decision of a Chargeback (#137).
+    .where(
+      and(
+        eq(engagements.artisanId, artisanId),
+        isNotNull(engagements.cancelledAt),
+        isNotNull(engagements.cancelledBy),
+      ),
+    )
     .orderBy(desc(engagements.cancelledAt), desc(sql.raw(`"engagements"."rowid"`)));
   const cancellations = rows.map((row) => ({
     jobId: row.jobId,

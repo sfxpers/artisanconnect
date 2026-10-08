@@ -1,5 +1,6 @@
 import { and, eq, exists, sql } from "drizzle-orm";
 import { system, type Actor } from "../actor";
+import { frozenRefusal, isFrozen, notFrozen } from "../chargebacks";
 import { startClock, type ClockHandler } from "../clocks";
 import type { Context, Write } from "../context";
 import { eventWrite } from "../conversations/rows";
@@ -64,12 +65,13 @@ export async function cancel(
   if (reason && reason.length > CANCELLATION_REASON_MAX) {
     return refuse("invalid", `A reason is at most ${CANCELLATION_REASON_MAX} characters.`);
   }
-  // Not while a Chargeback freezes the Engagement, too, once there are Chargebacks (#137).
   let current: EngagementRow | null = engagement;
   for (let attempt = 0; attempt < 3; attempt += 1) {
     if (!current) break;
     const cancellable = canCancel(current);
     if (!cancellable.ok) return cancellable;
+    // Not while a Chargeback freezes it (#137): the Admin decides its money.
+    if (await isFrozen(ctx, current.id)) return frozenRefusal();
     const now = ctx.now();
     try {
       await ctx.commit(await cancelWrites(ctx, actor, current, { by, reason, now }));
@@ -144,6 +146,7 @@ async function cancelWrites(
           eq(engagements.id, engagement.id),
           eq(engagements.state, engagement.state),
           paidInIs(ctx, engagement.id, materials.paidInCents + labour.paidInCents),
+          notFrozen(ctx, engagement.id),
         ),
       ),
     eventWrite(ctx, engagement, "cancelled", cancelledNow),
@@ -254,7 +257,8 @@ export const cancellationClocks = {
 /**
  * The Engagement whose Cancellation's Labour refund the clock is for, with
  * the Labour unreleased, while it is still Cancelled after Work started by
- * that Cancellation and some Labour is unreleased; null otherwise.
+ * that Cancellation and some Labour is unreleased, and no Chargeback freezes
+ * it (#137), whose decision then decides that Labour; null otherwise.
  */
 async function labourDue(ctx: Context, engagementId: string, dueAt: Date, beforeMs: number) {
   const engagement = await engagementRow(ctx, engagementId);
@@ -281,6 +285,7 @@ async function labourDue(ctx: Context, engagementId: string, dueAt: Date, before
             eq(engagements.id, engagement.id),
             eq(engagements.state, "cancelled"),
             eq(engagements.cancelledAt, engagement.cancelledAt),
+            notFrozen(ctx, engagement.id),
           ),
         ),
     ),

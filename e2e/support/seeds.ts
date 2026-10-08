@@ -216,6 +216,37 @@ export async function disputeItem(env: Env, engagementId: string) {
   return { itemId: row.id };
 }
 
+/** The bank charges back the card Payment that Hired the Engagement (#137). */
+export async function chargedBack(env: Env, engagementId: string) {
+  const { make } = await world(env);
+  await make.chargedBack(await hirePaymentOf(env, engagementId));
+  return { engagementId };
+}
+
+/**
+ * The bank closes the Chargeback on the Engagement's Hire, lost, sending the
+ * whole Payment back to the Client: the Admin may decide it now. Prints its
+ * queue item's id.
+ */
+export async function chargebackClosed(env: Env, engagementId: string) {
+  const { make } = await world(env);
+  const paymentId = await hirePaymentOf(env, engagementId);
+  const payment = await env.DB.prepare("select amount_cents from payments where id = ?")
+    .bind(paymentId)
+    .first<{ amount_cents: number }>();
+  await make.chargebackClosed(paymentId, {
+    outcome: "lost",
+    reversedCents: payment!.amount_cents,
+  });
+  const row = await env.DB.prepare(
+    "select queue_items.id from queue_items join chargebacks on chargebacks.id = queue_items.subject_id where queue_items.kind = 'chargeback' and chargebacks.payment_id = ?",
+  )
+    .bind(paymentId)
+    .first<{ id: string }>();
+  if (!row) throw new Error(`No Chargeback item for Engagement ${engagementId}`);
+  return { itemId: row.id };
+}
+
 /** The open Report item about a Job, Quote, message, or Profile, by its id. */
 export async function reportItem(env: Env, subjectId: string) {
   const row = await env.DB.prepare(
@@ -225,6 +256,15 @@ export async function reportItem(env: Env, subjectId: string) {
     .first<{ id: string }>();
   if (!row) throw new Error(`No open Report item for ${subjectId}`);
   return { itemId: row.id };
+}
+
+/** The Payment that Hired the Engagement: its collection's id. */
+async function hirePaymentOf(env: Env, engagementId: string) {
+  const row = await env.DB.prepare("select payment_id from engagements where id = ?")
+    .bind(engagementId)
+    .first<{ payment_id: string }>();
+  if (!row) throw new Error(`No Engagement ${engagementId}`);
+  return row.payment_id;
 }
 
 /** The module on the local app's D1, and the builders over it. */

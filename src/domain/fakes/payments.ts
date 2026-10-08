@@ -412,7 +412,8 @@ export type FakePaymentsStore = {
 
 /**
  * The fake as the Worker keeps it: the adapter, its checkout page's
- * controls, and the bank paying a Payout or a Refund, for a seed of the local app.
+ * controls, and the bank paying a Payout or a Refund, or opening and closing
+ * a Chargeback, for a seed of the local app.
  */
 export type StoredFakePayments = PaymentAdapter &
   Pick<
@@ -423,6 +424,8 @@ export type StoredFakePayments = PaymentAdapter &
     | "succeedPayout"
     | "sendBackPayout"
     | "succeedRefund"
+    | "openChargeback"
+    | "closeChargeback"
   >;
 
 /**
@@ -466,6 +469,8 @@ export function createStoredFakePayments({
     succeedPayout: (id) => run((fake) => fake.succeedPayout(id)),
     sendBackPayout: (id, reason) => run((fake) => fake.sendBackPayout(id, reason)),
     succeedRefund: (id) => run((fake) => fake.succeedRefund(id)),
+    openChargeback: (id, evidenceDueAt) => run((fake) => fake.openChargeback(id, evidenceDueAt)),
+    closeChargeback: (id, closing) => run((fake) => fake.closeChargeback(id, closing)),
   };
 }
 

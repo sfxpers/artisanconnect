@@ -20,6 +20,8 @@ export const MESSAGE_EVENTS = [
   "dispute.released",
   "dispute.settled",
   "dispute.decided",
+  "chargeback.opened",
+  "chargeback.decided",
 ] as const;
 
 export type MessageEvent = (typeof MESSAGE_EVENTS)[number];

@@ -2,6 +2,7 @@ import { and, eq, exists, inArray, sql, type SQL } from "drizzle-orm";
 import { system, type Actor } from "../actor";
 import { publicName } from "../accounts/names";
 import { firstProblem } from "../accounts/inputs";
+import { frozenRefusal, isFrozen, notFrozen } from "../chargebacks";
 import type { Context, Write } from "../context";
 import { causedBy } from "../errors";
 import { insertWhile } from "../guarded";
@@ -74,6 +75,8 @@ export async function proposeUpdatedQuote(
   if (!isBeforeCompletion(engagement.state) || (await heldCompletionOf(ctx, engagement.id))) {
     return notBeforeCompletion(engagement.state);
   }
+  // Not while a Chargeback freezes it (#137), which ended any that was proposed.
+  if (await isFrozen(ctx, engagement.id)) return frozenRefusal();
   if (await proposedOf(ctx, engagement.id)) return alreadyProposed();
   const now = priceNow(await engagementMoney(ctx, engagement.id));
   const from = { labour: now.labourCents, materials: now.materialsCents };
@@ -121,6 +124,7 @@ export async function proposeUpdatedQuote(
         and(
           engagementIs(ctx, engagement.id, engagement.state),
           sql`not exists (select 1 from ${completions} where ${completions.engagementId} = ${engagement.id} and ${completions.state} = 'held')`,
+          notFrozen(ctx, engagement.id),
         )!,
       ),
       ...tellWhile(
@@ -199,6 +203,7 @@ export async function acceptUpdatedQuote(
   if (updatedQuote.state !== "proposed" || !isBeforeCompletion(engagement.state)) {
     return notProposed();
   }
+  if (await isFrozen(ctx, engagement.id)) return frozenRefusal();
   if (input.feeAcknowledged !== true) {
     return refuse(
       "fee-not-acknowledged",

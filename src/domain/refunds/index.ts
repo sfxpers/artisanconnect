@@ -5,6 +5,7 @@ import { firstProblem } from "../accounts/inputs";
 import { startClock, type ClockHandler } from "../clocks";
 import type { Context, Write } from "../context";
 import { eventWrite } from "../conversations/rows";
+import { frozenRefusal, isFrozen, isFrozenError } from "../chargebacks";
 import { heldRefundRows, settleIfNothingHeld } from "../engagements/dispute";
 import { refundFields, type RefundFields } from "../engagements/inputs";
 import { insertWhile } from "../guarded";
@@ -58,6 +59,7 @@ const ADAPTER_REASONS: Record<RefundCause, (notHiredFor: string | null) => strin
   "not-hired": (notHiredFor) => `No Hire: ${notHiredFor}`,
   cancellation: () => "Cancellation",
   dispute: () => "Dispute decision",
+  chargeback: () => "Chargeback decision",
 };
 
 /**
@@ -76,8 +78,9 @@ export async function refundByArtisan(
   }
   const parsed = refundFields.safeParse({ materials: input.materials, labour: input.labour });
   if (!parsed.success) return refuse("invalid", firstProblem(parsed.error));
-  // Not while a Chargeback freezes the Engagement's money, too, once there are Chargebacks (#137).
   for (let attempt = 0; attempt < 3; attempt += 1) {
+    // Not while a Chargeback freezes the Engagement's money (#137): the Admin decides it.
+    if (await isFrozen(ctx, engagement.id)) return frozenRefusal();
     // An Updated Quote's extra Materials and Labour are more of each line (#134).
     const { materials, labour, heldCents } = await engagementMoney(ctx, engagement.id);
     const unreleased = { materials: materials.unreleasedCents, labour: labour.unreleasedCents };
@@ -108,8 +111,8 @@ export async function refundByArtisan(
       ]);
       refundIds = made.refundIds;
     } catch (error) {
-      // A Release or another Refund took the money meanwhile: read it again.
-      if (isOverdrawn(error)) continue;
+      // A Release or another Refund took the money meanwhile, or a Chargeback froze it: read it again.
+      if (isOverdrawn(error) || isFrozenError(error)) continue;
       throw error;
     }
     await sendEngagementRefunds(ctx, engagement.id);
@@ -129,9 +132,10 @@ export async function refundByArtisan(
  * or a Cancellation, in one batch: a Refund for each Payment it takes money
  * back from, waiting to be sent; what each refunds of each line, and owes the
  * Client, in the ledger; and one row in the Conversation. With a condition,
- * each is written only while it holds when the batch runs. The ledger aborts
- * the batch if a line would go below nothing unreleased. Send them with
- * `sendEngagementRefunds` once committed.
+ * each is written only while it holds when the batch runs; pending are the
+ * ledger rows the batch writes before these, which the split counts. The
+ * ledger aborts the batch if a line would go below nothing unreleased. Send
+ * them with `sendEngagementRefunds` once committed.
  */
 export async function refundWrites(
   ctx: Context,
@@ -139,9 +143,10 @@ export async function refundWrites(
   cause: Exclude<RefundCause, "not-hired">,
   amounts: { materials: number; labour: number },
   condition?: SQL,
+  pending: LedgerRow[] = [],
 ): Promise<{ writes: Write[]; refundIds: string[] }> {
   const amountCents = amounts.materials + amounts.labour;
-  const split = await splitByPayment(ctx, engagement.id, amounts);
+  const split = await splitByPayment(ctx, engagement.id, amounts, pending);
   const refundIds: string[] = [];
   const writes: Write[] = [];
   const rows: LedgerRow[] = [];
@@ -189,19 +194,18 @@ const LINE_OF = {
   [LEDGER_KINDS.labourIn]: { part: "labour", sign: 1 },
   [LEDGER_KINDS.materialsRefunded]: { part: "materials", sign: -1 },
   [LEDGER_KINDS.labourRefunded]: { part: "labour", sign: -1 },
+  // What a Chargeback took back of a Payment, which the adapter will not refund again (#137).
+  [LEDGER_KINDS.materialsChargedBack]: { part: "materials", sign: -1 },
+  [LEDGER_KINDS.labourChargedBack]: { part: "labour", sign: -1 },
 } as const;
 
 /**
- * A Refund's amounts split over the Payments the Engagement's money came in
- * by, the Hire's first, then each Updated Quote's (#134): the adapter refunds
- * a collection at most what it collected, so each takes back at most what it
- * paid in of a line, less what was refunded of it. Fewest Refunds that way.
+ * What each Payment the Engagement's money came in by has left of each line
+ * to take back, the Hire's first, then each Updated Quote's (#134): what it
+ * paid in, less what was refunded of it or left with a Chargeback (#137),
+ * counting the rows the caller's batch writes before these, too.
  */
-async function splitByPayment(
-  ctx: Context,
-  engagementId: string,
-  amounts: { materials: number; labour: number },
-) {
+export async function leftByPayment(ctx: Context, engagementId: string, pending: LedgerRow[] = []) {
   const rows = await ctx.db
     .select({
       paymentId: ledgerEntries.paymentId,
@@ -227,10 +231,32 @@ async function splitByPayment(
     if (sign > 0) left.first = Math.min(left.first, row.first);
     byPayment.set(row.paymentId, left);
   }
-  const owed = { ...amounts };
-  const split = [...byPayment.entries()]
+  for (const row of pending) {
+    const left = byPayment.get(row.paymentId);
+    if (!left || row.engagementId !== engagementId || !(row.kind in LINE_OF)) continue;
+    const { part, sign } = LINE_OF[row.kind as keyof typeof LINE_OF];
+    left[part] += sign * row.amountCents;
+  }
+  return [...byPayment.entries()]
     .sort(([, a], [, b]) => a.first - b.first)
-    .map(([paymentId, left]) => {
+    .map(([paymentId, { materials, labour }]) => ({ paymentId, materials, labour }));
+}
+
+/**
+ * A Refund's amounts split over the Payments the Engagement's money came in
+ * by, in that order: the adapter refunds a collection at most what it
+ * collected, so each takes back at most what it has left of a line. Fewest
+ * Refunds that way.
+ */
+async function splitByPayment(
+  ctx: Context,
+  engagementId: string,
+  amounts: { materials: number; labour: number },
+  pending: LedgerRow[],
+) {
+  const owed = { ...amounts };
+  const split = (await leftByPayment(ctx, engagementId, pending))
+    .map(({ paymentId, ...left }) => {
       const materials = Math.min(owed.materials, left.materials);
       const labour = Math.min(owed.labour, left.labour);
       owed.materials -= materials;
@@ -517,7 +543,9 @@ export async function refundPaused(
 
 /**
  * Tells the Client a Refund paused for 3 days is delayed, not lost, and
- * raises a system Support request, if it is still paused since then.
+ * raises a system Support request, if it is still paused since then. A
+ * Chargeback does not pause it (#137): the clock is the Refund's, which is
+ * with the payment adapter already, not the Engagement's.
  */
 const pausedFor3Days: ClockHandler = async (ctx, clock) => {
   const refund = await refundRow(ctx, clock.subjectId);

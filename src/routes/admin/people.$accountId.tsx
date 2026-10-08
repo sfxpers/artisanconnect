@@ -160,7 +160,7 @@ function History({ person }: { person: Person }) {
       text: t.warned(each.reason, each.leaving),
     })),
     ...person.suspensions.flatMap((each) => [
-      { at: new Date(each.since), text: t.suspendedFor(each.reason, each.leaving) },
+      { at: new Date(each.since), text: t.suspendedFor(each.reason, each.leaving, each.bySystem) },
       ...(each.liftedAt ? [{ at: new Date(each.liftedAt), text: t.lifted }] : []),
     ]),
   ].sort((a, b) => b.at.getTime() - a.at.getTime());

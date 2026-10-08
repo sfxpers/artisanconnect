@@ -59,6 +59,9 @@ export type DecisionField = {
   options?: { value: string; label: string }[];
   /** For a split, the whole amount in cents. */
   totalCents?: number;
+  /** For a split, what the rest is called, if not refunded; and the whole, if not held. */
+  restLabel?: string;
+  wholeLabel?: string;
 };
 
 export type RowDecision = AllowedDecision;

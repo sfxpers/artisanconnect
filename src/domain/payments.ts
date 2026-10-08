@@ -1,3 +1,4 @@
+import { chargebackClosed, chargebackOpened } from "./chargebacks";
 import type { Context } from "./context";
 import { collectionFailed, collectionSucceeded } from "./engagements/hire";
 import { payoutFailed, payoutPaused, payoutSentBack, payoutSucceeded } from "./payouts/events";
@@ -45,8 +46,11 @@ export async function receivePaymentEvent(ctx: Context, webhook: Webhook) {
     case "refund.failed":
       await refundFailed(ctx, event);
       break;
-    // Chargebacks come with their ticket (#137).
-    default:
+    case "chargeback.opened":
+      await chargebackOpened(ctx, event);
+      break;
+    case "chargeback.closed":
+      await chargebackClosed(ctx, event);
       break;
   }
   return ok({});

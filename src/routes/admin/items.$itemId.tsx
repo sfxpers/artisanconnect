@@ -430,7 +430,7 @@ function DecisionFieldInput({
             {label}: {formatRands(released)}
           </Label>
           <span className="text-muted-foreground">
-            {t.splitRefunded}: {formatRands(total - released)}
+            {field.restLabel ?? t.splitRefunded}: {formatRands(total - released)}
           </span>
         </div>
         <input
@@ -443,7 +443,9 @@ function DecisionFieldInput({
           onChange={(event) => onChange(event.target.value)}
           className="w-full accent-primary"
         />
-        <p className="text-xs text-muted-foreground">{t.splitOf(formatRands(total))}</p>
+        <p className="text-xs text-muted-foreground">
+          {t.splitOf(formatRands(total), field.wholeLabel)}
+        </p>
       </div>
     );
   }

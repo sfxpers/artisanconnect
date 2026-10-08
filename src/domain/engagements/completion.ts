@@ -45,6 +45,7 @@ import { CERTIFICATES, certificateNeeded, NOTE_MAX, type CertificateKind } from 
 import { engagementRow, type EngagementRow } from "./rows";
 import { noneProposed, proposedOf, WAITING_FOR_CLIENT } from "./updated-quote-rows";
 import { disputeOf, openDisputeOf } from "./dispute";
+import { frozenRefusal, isFrozen, notFrozen } from "../chargebacks";
 
 // Completion, Approval, and Fix requests (#130, ADR 0006). After Work started
 // the Artisan marks the work complete, with a note, after-work photos, and any
@@ -112,6 +113,7 @@ export async function markComplete(
   }
   const completable = canMarkComplete(engagement);
   if (!completable.ok) return completable;
+  if (await isFrozen(ctx, engagement.id)) return frozenRefusal();
   if (await heldCompletionOf(ctx, engagement.id)) {
     return refuse(
       "being-checked",
@@ -291,6 +293,7 @@ export async function approve(ctx: Context, actor: Actor, input: { engagementId:
         : "There is no Completion to approve.",
     );
   }
+  if (await isFrozen(ctx, engagement.id)) return frozenRefusal();
   await commitFromUnreleased(ctx, () =>
     approvalWrites(ctx, actor, engagement, completion, "approved"),
   );
@@ -334,6 +337,7 @@ export async function requestFix(
           : "There is no Completion to answer.",
     );
   }
+  if (await isFrozen(ctx, engagement.id)) return frozenRefusal();
   const note = input.note.trim();
   if (!note) return refuse("invalid", "Write what needs fixing.");
   if (note.length > NOTE_MAX) {
@@ -472,7 +476,9 @@ export async function completionsOf(ctx: Context, engagementId: string) {
 /**
  * Makes a Completion's silence Approval seven days after it was made, once
  * the Client has not answered it. Not while a Chargeback freezes the
- * Engagement, too, once there are Chargebacks (#137).
+ * Engagement (#137): it does nothing then, as its writes land only while it
+ * is not frozen, and the Admin's decision of the Chargeback ends the
+ * Engagement.
  */
 const approvalBySilence: ClockHandler = async (ctx, clock) => {
   const found = await answerable(ctx, clock.subjectId);
@@ -555,7 +561,9 @@ export const heldCompletion = defineHeldKind("held.completion", {
   told: {
     async released(ctx, subjectId) {
       const found = await withEngagement(ctx, subjectId);
-      return found && canMarkComplete(found.engagement).ok
+      return found &&
+        canMarkComplete(found.engagement).ok &&
+        !(await isFrozen(ctx, found.engagement.id))
         ? "Your Completion is checked, and the Client was told"
         : "Your Completion is checked, but the work can no longer be marked complete";
     },
@@ -1097,14 +1105,21 @@ function completionIn(ctx: Context, completionId: string, state: CompletionRow["
   );
 }
 
-/** The SQL that is true while the Engagement is in one of these states. */
+/**
+ * The SQL that is true while the Engagement is in one of these states, and no
+ * Chargeback freezes it (#137): every step of the work, and its clocks, wait
+ * on the Admin then.
+ */
 function engagementIn(ctx: Context, engagementId: string, states: readonly EngagementState[]): SQL {
-  return exists(
-    ctx.db
-      .select({ one: sql`1` })
-      .from(engagements)
-      .where(and(eq(engagements.id, engagementId), inArray(engagements.state, states))),
-  );
+  return and(
+    exists(
+      ctx.db
+        .select({ one: sql`1` })
+        .from(engagements)
+        .where(and(eq(engagements.id, engagementId), inArray(engagements.state, states))),
+    ),
+    notFrozen(ctx, engagementId),
+  )!;
 }
 
 /** Uploads files to one place, adding each to what is stored so far. */

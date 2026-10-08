@@ -23,6 +23,8 @@ const EVENT_NAMES: Record<string, string> = {
   "dispute.released": "Released in Dispute",
   "dispute.settled": "Dispute settled",
   "dispute.decided": "Dispute decided",
+  "chargeback.opened": "Charged back",
+  "chargeback.decided": "Chargeback decided",
 };
 
 /**

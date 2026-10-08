@@ -225,6 +225,7 @@ describe("when the Payment arrives", () => {
       unreleasedCents: 200_000,
       refundedCents: 0,
       heldCents: 0,
+      chargedBackCents: 0,
       payments: [
         { part: "materials", amountCents: 50_000, unreleasedCents: 50_000, state: "unreleased" },
         { part: "labour", amountCents: 150_000, unreleasedCents: 150_000, state: "unreleased" },

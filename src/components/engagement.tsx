@@ -51,7 +51,8 @@ import { shrinkPhoto } from "@/web/shrink-photo";
 // Completion itself, the Payments card with Materials and Labour as two
 // numbered payments and the bar to Approval by silence, the Refunds and the
 // Artisan's Refund form (#132), the Updated Quote (#134), the Dispute and
-// what each party may do about it (#135), the Activity, and in the sidebar
+// what each party may do about it (#135), a Chargeback's freeze and its
+// decision (#137), the Activity, and in the sidebar
 // the Money and the Hired Quote's dates. The Client never
 // sees the Artisan Fee; the Artisan never sees the Protection Fee.
 
@@ -81,8 +82,26 @@ export function EngagementNextStep({
   );
 }
 
-/** The Next step's title and lead, by the Engagement's state. */
+/** The Next step's title and lead, by the Engagement's state, or its Chargeback's. */
 function nextStep(engagement: Engagement, asClient: boolean): [string, string] {
+  const { chargeback } = engagement;
+  if (chargeback?.frozen) {
+    return [t.chargeback.frozenTitle, t.chargeback.frozenLead(asClient)];
+  }
+  if (chargeback?.decision) {
+    const { releasedCents, chargedBackCents, refundedCents, reason } = chargeback.decision;
+    return [
+      t.chargeback.decidedTitle,
+      t.chargeback.decidedLead({
+        asClient,
+        released: formatRands(releasedCents),
+        chargedBack: chargedBackCents > 0 ? formatRands(chargedBackCents) : null,
+        refunded: refundedCents > 0 ? formatRands(refundedCents) : null,
+        back: formatRands(chargedBackCents + refundedCents),
+        reason,
+      }),
+    ];
+  }
   switch (engagement.state) {
     case "work-started":
       return [t.workStarted, asClient ? t.workStartedClientLead : t.workStartedArtisanLead];
@@ -152,7 +171,7 @@ export function StartActions({
   asClient: boolean;
 }) {
   const action = useAction();
-  if (engagement.state !== "paid") return null;
+  if (engagement.state !== "paid" || engagement.chargeback?.frozen) return null;
   const { engagementId } = engagement;
   const materials = engagement.money.payments.find((each) => each.part === "materials");
   return (
@@ -230,7 +249,8 @@ export function CompletionActions({
         <FixRequestNote fixRequest={engagement.fixRequest} asClient={asClient} />
       )}
       {asClient
-        ? engagement.state === "awaiting-approval" && <ApproveOrFix engagement={engagement} />
+        ? engagement.state === "awaiting-approval" &&
+          !engagement.chargeback?.frozen && <ApproveOrFix engagement={engagement} />
         : "canComplete" in engagement && (
             <>
               {engagement.completionCheck && (
@@ -1337,6 +1357,9 @@ export function MoneyCard({ engagement }: { engagement: Engagement }) {
           <Row label={t.unreleased}>{formatRands(money.unreleasedCents)}</Row>
           {money.heldCents > 0 && <Row label={t.held}>{formatRands(money.heldCents)}</Row>}
           <Row label={t.refunded}>{formatRands(money.refundedCents)}</Row>
+          {money.chargedBackCents > 0 && (
+            <Row label={t.chargedBack}>{formatRands(money.chargedBackCents)}</Row>
+          )}
           {"protectionFeeCents" in money && (
             <Row label={t.protectionFee}>{formatRands(money.protectionFeeCents)}</Row>
           )}

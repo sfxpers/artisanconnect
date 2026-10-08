@@ -1,6 +1,7 @@
 import { and, eq, exists, isNull, sql, type SQL } from "drizzle-orm";
 import { system, type Actor, type AdminActor } from "../actor";
 import { firstProblem } from "../accounts/inputs";
+import { frozenRefusal, isFrozen, isFrozenError } from "../chargebacks";
 import { checkContent } from "../content/check";
 import type { Context, Write } from "../context";
 import { conversationBlocks } from "../conversations/admin-read";
@@ -78,7 +79,8 @@ export async function openDispute(
   const engagement = await engagementRow(ctx, input.engagementId);
   const by = engagement && partyOf(actor, engagement);
   if (!engagement || !by) return notFound();
-  // Not while a Chargeback freezes the Engagement, too, once there are Chargebacks (#137).
+  // Not while a Chargeback freezes it (#137); the ledger refuses holding its Labour then, too.
+  if (await isFrozen(ctx, engagement.id)) return frozenRefusal();
   const grounds = await groundsOf(ctx, engagement, by);
   if (!grounds.ok) return grounds;
   const { labour } = await engagementMoney(ctx, engagement.id);
@@ -213,6 +215,8 @@ export async function openDispute(
     if (causedBy(error, "UNIQUE constraint failed: disputes.engagement_id")) {
       return alreadyDisputed();
     }
+    // A Chargeback froze it between the read and the batch (#137).
+    if (isFrozenError(error)) return frozenRefusal();
     throw error;
   }
 }
@@ -325,9 +329,10 @@ export async function releaseHeld(
   const parsed = labourAmount.safeParse(input.amount);
   if (!parsed.success) return refuse("invalid", firstProblem(parsed.error));
   const amountCents = parsed.data;
-  // Not while a Chargeback freezes the Engagement's money, too, once there are Chargebacks (#137).
+  // Not while a Chargeback freezes the Engagement's money (#137); the ledger refuses it then, too.
+  if (await isFrozen(ctx, engagement.id)) return frozenRefusal();
   let refused: ReturnType<typeof refuse> | null = null;
-  await commitFromUnreleased(ctx, async () => {
+  const committed = commitFromUnreleased(ctx, async () => {
     refused = null;
     const dispute = await openDisputeOf(ctx, engagement.id);
     const { heldCents } = await engagementMoney(ctx, engagement.id);
@@ -361,6 +366,13 @@ export async function releaseHeld(
       }),
     ];
   });
+  try {
+    await committed;
+  } catch (error) {
+    // A Chargeback froze it between the read and the batch.
+    if (isFrozenError(error)) return frozenRefusal();
+    throw error;
+  }
   if (refused) return refused;
   await settleIfNothingHeld(ctx, engagement.id);
   await emailTells(ctx).catch((error: unknown) => {
@@ -466,7 +478,7 @@ export async function settleDisputesHoldingNothing(ctx: Context) {
  * on the Client Relationship's later work (ADR 0009); otherwise Completed, as
  * a Client's Dispute and one against a Fix request follow a Completion.
  */
-function endsAs(dispute: DisputeRow) {
+export function endsAs(dispute: DisputeRow) {
   return dispute.against === "cancellation" ? ("cancelled" as const) : ("completed" as const);
 }
 
@@ -509,6 +521,9 @@ function endWrites(
 /** The decision recorded on a Dispute's item when the parties settle it; never offered to the Admin. */
 const SETTLED = "settled";
 
+/** The decision recorded on a Dispute's item when a Chargeback's decision closes it (#137). */
+export const CHARGEBACK_DECIDED = "chargeback";
+
 /**
  * A Dispute in the Admin's Disputes queue: the Job, the Completion, and the
  * Conversation on a logged click as evidence, the parties, the money, and
@@ -526,11 +541,18 @@ export const disputeItem = defineQueueItemKind("dispute", {
     },
     // Recorded when the parties settle it, never offered to the Admin.
     [SETTLED]: { label: "Settled by the parties", told: "Both parties", reason: "none" },
+    // Recorded when the Admin's decision of a Chargeback decides what it held (#137), never offered.
+    [CHARGEBACK_DECIDED]: {
+      label: "Decided with the Chargeback",
+      told: "Both parties",
+      reason: "none",
+    },
   },
-  // Not while a Chargeback freezes the Engagement, too, once there are Chargebacks (#137).
   async allowed(ctx, item) {
     const dispute = await disputeRow(ctx, item.subjectId);
     if (dispute?.state !== "open") return [];
+    // A Chargeback's decision decides what it holds, too (#137).
+    if (await isFrozen(ctx, dispute.engagementId)) return [];
     const { heldCents } = await engagementMoney(ctx, dispute.engagementId);
     return heldCents > 0 ? ["split"] : [];
   },
@@ -576,9 +598,11 @@ export const disputeItem = defineQueueItemKind("dispute", {
     );
   },
   refusalOf(error) {
-    return isOverdrawn(error)
-      ? refuse("changed", "What the Dispute holds changed meanwhile. Look again.")
-      : null;
+    if (isOverdrawn(error)) {
+      return refuse("changed", "What the Dispute holds changed meanwhile. Look again.");
+    }
+    // A Chargeback froze it meanwhile: its decision decides what is held (#137).
+    return isFrozenError(error) ? frozenRefusal() : null;
   },
   async after(ctx, item) {
     const dispute = await disputeRow(ctx, item.subjectId);

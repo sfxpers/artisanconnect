@@ -12,6 +12,7 @@ import {
 } from "./completion";
 import { refundByArtisan, refundClocks } from "../refunds";
 import { cancel, cancellationClocks } from "./cancellation";
+import { chargebackItem } from "../chargebacks";
 import { disputeFile, disputeItem, openDispute, releaseHeld } from "./dispute";
 import { artisanRecord } from "./record";
 import type { RefundFields, UpdatedQuoteFields } from "./inputs";
@@ -30,7 +31,7 @@ import { answerNotStarted, claimStarted, markWorkStarted, workStartedClocks } fr
 export const engagementsSection = defineSection({
   name: "engagements",
   clocks: { ...workStartedClocks, ...completionClocks, ...refundClocks, ...cancellationClocks },
-  queueItems: [heldCompletion, heldFixNote, disputeItem],
+  queueItems: [heldCompletion, heldFixNote, disputeItem, chargebackItem],
   api: (ctx) => ({
     /**
      * Opens a checkout for the Client to Hire a Sent Quote on their Job, by

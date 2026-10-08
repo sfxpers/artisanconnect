@@ -64,6 +64,7 @@ describe("one person's page", () => {
         {
           reason: "Abuse.",
           leaving: false,
+          bySystem: false,
           since: expect.any(Date),
           liftedAt: expect.any(Date),
         },

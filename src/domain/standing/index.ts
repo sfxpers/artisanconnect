@@ -1,6 +1,6 @@
 import { and, desc, eq, exists, inArray, isNull, sql, type SQLWrapper } from "drizzle-orm";
-import type { AdminActor } from "../actor";
-import { audit } from "../audit";
+import type { Actor, AdminActor } from "../actor";
+import { audit, systemAudit } from "../audit";
 import type { Context, Write } from "../context";
 import { addedBy, editsStanding, withdrawEdit } from "../jobs/edits";
 import { withdrawHeldJob } from "../jobs/held";
@@ -62,12 +62,16 @@ export async function warningsOf(ctx: Context, accountId: string) {
     .orderBy(desc(warnings.warnedAt), desc(sql.raw(`"warnings"."rowid"`)));
 }
 
-/** Every Suspension the Account has had, newest first, lifted or standing. */
+/**
+ * Every Suspension the Account has had, newest first, lifted or standing,
+ * and whether the system made it, at a Chargeback (#137).
+ */
 export async function suspensionsOf(ctx: Context, accountId: string) {
   return ctx.db
     .select({
       reason: suspensions.reason,
       leaving: suspensions.leaving,
+      bySystem: sql<boolean>`${suspensions.suspendedBy} is null`.mapWith(Boolean),
       since: suspensions.suspendedAt,
       liftedAt: suspensions.liftedAt,
     })
@@ -94,6 +98,9 @@ export async function foundLeavingBefore(ctx: Context, accountId: string): Promi
     .limit(1);
   return !!suspended;
 }
+
+/** The system, which suspends a Client at a Chargeback (#137). */
+type SystemActor = Extract<Actor, { kind: "system" }>;
 
 /** What a warning or Suspension is given for: the reason the Account is told, and whether it is Leaving. */
 export type Finding = { reason: string; leaving: boolean };
@@ -143,7 +150,8 @@ export function suspendedRefusal(what: string) {
  * line, and the new work it had started ended: a Client's Open Jobs closed,
  * their Sent Quotes Declined, and a Job being checked made a Draft again; an
  * Artisan's Sent Quotes Withdrawn, each Client told, and those being checked
- * withdrawn. Its paid Engagements go on.
+ * withdrawn. Its paid Engagements go on. The Admin suspends, or the system
+ * does, at a Chargeback (#137), with no Admin on it.
  * One already standing aborts the batch with an error `isAlreadySuspended`
  * recognises, as does a decision the Admin recorded meanwhile on something
  * it withdraws. The files of edits it withdraws are nobody's once it is
@@ -151,32 +159,33 @@ export function suspendedRefusal(what: string) {
  */
 export async function suspendWrites(
   ctx: Context,
-  admin: AdminActor,
+  by: AdminActor | SystemActor,
   account: Found & { kind: "client" | "artisan" },
   finding: Finding,
 ): Promise<{ writes: Write[]; discard: StoredFile[] }> {
-  const ended = await newWorkEnded(ctx, admin, account);
+  const ended = await newWorkEnded(ctx, by, account);
+  const logged = {
+    action: "account.suspended",
+    summary: `Suspended ${account.name}${finding.leaving ? " for Leaving" : ""}: ${finding.reason}`,
+    subjectId: account.id,
+  };
   const writes: Write[] = [
     ctx.db.insert(suspensions).values({
       id: ctx.newId(),
       accountId: account.id,
       reason: finding.reason,
       leaving: finding.leaving,
-      suspendedBy: admin.adminId,
+      suspendedBy: by.kind === "admin" ? by.adminId : null,
       suspendedAt: ctx.now(),
       liftedBy: null,
       liftedAt: null,
     }),
-    ...tell(ctx, admin, [account.id], {
+    ...tell(ctx, by, [account.id], {
       event: "account.suspended",
       title: "Your Account is suspended",
       link: "/account",
     }),
-    audit(ctx, admin, {
-      action: "account.suspended",
-      summary: `Suspended ${account.name}${finding.leaving ? " for Leaving" : ""}: ${finding.reason}`,
-      subjectId: account.id,
-    }),
+    by.kind === "admin" ? audit(ctx, by, logged) : systemAudit(ctx, logged, sql`1`),
     ...ended.writes,
   ];
   return { writes, discard: ended.discard };
@@ -228,7 +237,7 @@ export function liftWrites(
 /** The writes that end the new work the Account had started, and the files they leave nobody's. */
 async function newWorkEnded(
   ctx: Context,
-  admin: AdminActor,
+  admin: AdminActor | SystemActor,
   account: { id: string; kind: "client" | "artisan" },
 ) {
   const writes: Write[] = [];

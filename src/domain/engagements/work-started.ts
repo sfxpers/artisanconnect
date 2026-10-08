@@ -1,5 +1,6 @@
 import { and, eq, exists, isNull, sql } from "drizzle-orm";
 import { system, type Actor } from "../actor";
+import { frozenRefusal, isFrozen, notFrozen } from "../chargebacks";
 import { startClock, type ClockHandler } from "../clocks";
 import type { Context, Write } from "../context";
 import { eventWrite } from "../conversations/rows";
@@ -47,7 +48,7 @@ export async function markWorkStarted(ctx: Context, actor: Actor, input: { engag
     return refuse("not-found", "That Engagement does not exist.");
   }
   if (engagement.state !== "paid") return notPaid(engagement);
-  // Not while a Chargeback freezes the Engagement, too, once there are Chargebacks (#137).
+  if (await isFrozen(ctx, engagement.id)) return frozenRefusal();
   await commitFromUnreleased(ctx, () => startWrites(ctx, actor, engagement, "client"));
   await emailTells(ctx).catch((error: unknown) => {
     console.error("Tell emails did not go", error);
@@ -65,6 +66,7 @@ export async function claimStarted(ctx: Context, actor: Actor, input: { engageme
     return refuse("not-found", "That Engagement does not exist.");
   }
   if (engagement.state !== "paid") return notPaid(engagement);
+  if (await isFrozen(ctx, engagement.id)) return frozenRefusal();
   // The 24 hours of silence stand only once work could be on site; the Client may still mark it sooner.
   if (!startDayCome(ctx, engagement.startOn)) {
     return refuse(
@@ -89,6 +91,7 @@ export async function claimStarted(ctx: Context, actor: Actor, input: { engageme
           eq(engagements.id, engagement.id),
           eq(engagements.state, "paid"),
           isNull(engagements.startClaimedAt),
+          notFrozen(ctx, engagement.id),
         ),
       ),
     // A clock whose claim did not land, or was answered, does nothing when it fires.
@@ -125,6 +128,7 @@ export async function answerNotStarted(
     return refuse("not-found", "That Engagement does not exist.");
   }
   if (engagement.state !== "paid") return notPaid(engagement);
+  if (await isFrozen(ctx, engagement.id)) return frozenRefusal();
   if (!engagement.startClaimedAt) {
     return refuse(
       "no-claim",
@@ -165,8 +169,9 @@ export async function answerNotStarted(
 
 /**
  * Makes the Artisan's claim Work started once the Client has not answered in
- * 24 hours. Not while a Chargeback freezes the Engagement, too, once there
- * are Chargebacks (#137): the clock pauses and nothing is released.
+ * 24 hours. Not while a Chargeback freezes the Engagement (#137): it does
+ * nothing then, as `startWrites` lands only while it is not frozen, and the
+ * Admin's decision of the Chargeback ends the Engagement.
  */
 const startClaim: ClockHandler = async (ctx, clock) => {
   const engagement = await engagementRow(ctx, clock.subjectId);
@@ -190,7 +195,8 @@ export const workStartedClocks = { [START_CLAIM_CLOCK]: startClaim } satisfies R
  * Release of the Materials not yet released, with the Artisan Fee, in the
  * ledger (nothing if there are none); the row in the Conversation; and the
  * Tells. Everything after the first is written only if the first landed, so
- * a Client's tap and the clock never both release.
+ * a Client's tap and the clock never both release, and the first only while
+ * no Chargeback freezes the Engagement (#137).
  */
 async function startWrites(
   ctx: Context,
@@ -227,6 +233,7 @@ async function startWrites(
           eq(engagements.state, "paid"),
           // The clock's claim must still be the one it was started for.
           by === "artisan" ? eq(engagements.startClaimedAt, engagement.startClaimedAt!) : undefined,
+          notFrozen(ctx, engagement.id),
         ),
       ),
     ...ledgerWrites(

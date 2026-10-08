@@ -9,6 +9,7 @@ import { SERVICE_CATEGORIES } from "./service-categories";
 import { CHECK_KINDS } from "./verification/checks";
 import type { CheckDetails, CheckFile, Reading } from "./verification/stored";
 import type { StoredFile } from "./uploads";
+import type { ChargebackOutcome } from "./ports";
 import {
   check,
   index,
@@ -465,7 +466,8 @@ export const warnings = sqliteTable(
 
 /**
  * Each Suspension of an Account (#136): it cannot start new work until the
- * Admin lifts it, and sees the reason meanwhile. One stands at a time.
+ * Admin lifts it, and sees the reason meanwhile. One stands at a time. The
+ * system suspends a Client whose card Payment is charged back (#137).
  */
 export const suspensions = sqliteTable(
   "suspensions",
@@ -477,9 +479,8 @@ export const suspensions = sqliteTable(
     reason: text("reason").notNull(),
     /** Whether it was for Leaving. */
     leaving: integer("leaving", { mode: "boolean" }).notNull(),
-    suspendedBy: text("suspended_by")
-      .notNull()
-      .references(() => admins.id),
+    /** Null when the system suspended it, at a Chargeback (#137). */
+    suspendedBy: text("suspended_by").references(() => admins.id),
     suspendedAt: instant("suspended_at").notNull(),
     liftedBy: text("lifted_by").references(() => admins.id),
     liftedAt: instant("lifted_at"),
@@ -1269,9 +1270,16 @@ export const REFUND_STATES = [
 
 /**
  * Why a Refund was made: the Artisan's choice, a Payment that Hired nobody, a
- * Cancellation (#133), or the Admin's decision of a Dispute (#135).
+ * Cancellation (#133), the Admin's decision of a Dispute (#135), or of a
+ * Chargeback, for what the bank did not send back (#137).
  */
-export const REFUND_CAUSES = ["artisan", "not-hired", "cancellation", "dispute"] as const;
+export const REFUND_CAUSES = [
+  "artisan",
+  "not-hired",
+  "cancellation",
+  "dispute",
+  "chargeback",
+] as const;
 
 /**
  * Each Refund of a Payment to its Client (#132): unreleased money, never the
@@ -1388,6 +1396,75 @@ export const disputes = sqliteTable(
       sql.raw(`state in (${DISPUTE_STATES.map((state) => `'${state}'`).join(", ")})`),
     ),
     check("disputes_held", sql.raw("typeof(held_cents) = 'integer' and held_cents > 0")),
+  ],
+);
+
+/**
+ * A Chargeback's states: open, while the bank looks into it; closed, by the
+ * bank, with what it sent back to the Client; and decided, by the Admin.
+ */
+export const CHARGEBACK_STATES = ["open", "closed", "decided"] as const;
+
+/** How the bank closed a Chargeback, as the payment adapter says. */
+export const CHARGEBACK_OUTCOMES = [
+  "won",
+  "lost",
+  "accepted",
+  "partially_accepted",
+] as const satisfies readonly ChargebackOutcome[];
+
+/**
+ * A card Payment reversed by the bank (#137), one per Payment. Until the
+ * Admin decides it, it freezes the Payment's Engagement: no clock does
+ * anything and nothing more is released or refunded. Once the bank closes
+ * it, the Admin decides the Engagement's unreleased money: released to the
+ * Artisan, or left with the Chargeback, the Client's, refunded only for what
+ * the bank did not send back. Of what the bank sent back, what the platform
+ * no longer held is its loss. A trigger in the migration refuses any other
+ * change.
+ */
+export const chargebacks = sqliteTable(
+  "chargebacks",
+  {
+    id: text("id").primaryKey(),
+    paymentId: text("payment_id")
+      .notNull()
+      .unique()
+      .references(() => payments.id),
+    /** The Engagement it freezes; null for a Payment that Hired nobody. */
+    engagementId: text("engagement_id").references(() => engagements.id),
+    clientId: text("client_id")
+      .notNull()
+      .references(() => accounts.id),
+    /** What the bank disputes, as it opened it. */
+    amountCents: integer("amount_cents").notNull(),
+    state: text("state", { enum: CHARGEBACK_STATES }).notNull(),
+    openedAt: instant("opened_at").notNull(),
+    closedAt: instant("closed_at"),
+    outcome: text("outcome", { enum: CHARGEBACK_OUTCOMES }),
+    /** What the bank sent back to the Client, as it closed it. */
+    reversedCents: integer("reversed_cents"),
+    decidedAt: instant("decided_at"),
+    /** What the Admin's decision released to the Artisan, before the Artisan Fee. */
+    releasedCents: integer("released_cents"),
+    /** What it left with the Chargeback, of what the bank sent back. */
+    chargedBackCents: integer("charged_back_cents"),
+    /** What it left to the Client beyond what the bank sent back, refunded. */
+    refundedCents: integer("refunded_cents"),
+    /** Of what the bank sent back, what the platform no longer held: its loss. */
+    lossCents: integer("loss_cents"),
+  },
+  (table) => [
+    index("chargebacks_engagement").on(table.engagementId),
+    check(
+      "chargebacks_state",
+      sql.raw(`state in (${CHARGEBACK_STATES.map((state) => `'${state}'`).join(", ")})`),
+    ),
+    check(
+      "chargebacks_outcome",
+      sql.raw(`outcome in (${CHARGEBACK_OUTCOMES.map((outcome) => `'${outcome}'`).join(", ")})`),
+    ),
+    check("chargebacks_amount", sql.raw("typeof(amount_cents) = 'integer' and amount_cents > 0")),
   ],
 );
 

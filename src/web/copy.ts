@@ -752,7 +752,12 @@ export const copy = {
       materials: { title: "Materials", released: "Released at Work started" },
       labour: { title: "Labour", released: "Released at Approval" },
     },
-    partStates: { unreleased: "Paid in", released: "Released", refunded: "Refunded" },
+    partStates: {
+      unreleased: "Paid in",
+      released: "Released",
+      refunded: "Refunded",
+      "charged-back": "Charged back",
+    },
     activity: "Activity",
     events: {
       "quote.sent": "Quote sent",
@@ -770,6 +775,8 @@ export const copy = {
       "dispute.opened": "Disputed",
       "dispute.settled": "Dispute settled",
       "dispute.decided": "Dispute decided by the Admin",
+      "chargeback.opened": "Card Payment charged back",
+      "chargeback.decided": "Chargeback decided by the Admin",
     },
     refunds: "Refunds",
     refundStates: {
@@ -797,11 +804,37 @@ export const copy = {
     unreleased: "Not yet released",
     held: "Held in Dispute",
     refunded: "Refunded",
+    chargedBack: "Back to the Client by the Chargeback",
     protectionFee: "Protection Fee (not refunded)",
     artisanFee: "Artisan Fee",
     artisanFeeShown: (percent: number) => `${percent}% of each Release`,
     hiredQuote: "Hired Quote",
     address: "Address",
+    chargeback: {
+      frozenTitle: "Frozen by a Chargeback",
+      frozenLead: (asClient: boolean) =>
+        asClient
+          ? "Your card Payment was charged back through your bank, so this Job is frozen and your Account is suspended. Nothing more is released, and nothing can be done on the Job until the Admin decides the money not yet released. Send a Support request to talk to us about it."
+          : "The Client charged back their card Payment through their bank, so this Job is frozen. Money already released to you stays yours. Nothing more is released, and nothing can be done on the Job until the Admin decides the money not yet released.",
+      decidedTitle: "Chargeback decided by the Admin",
+      decidedLead: (of: {
+        asClient: boolean;
+        released: string;
+        chargedBack: string | null;
+        refunded: string | null;
+        back: string;
+        reason: string;
+      }) =>
+        of.asClient
+          ? `The Admin decided the money your Chargeback froze: ${[
+              `${of.released} is released to the Artisan`,
+              of.chargedBack && `${of.chargedBack} stays with your bank's Chargeback`,
+              of.refunded && `${of.refunded} is refunded to you`,
+            ]
+              .filter(Boolean)
+              .join(", ")}. The Admin's reason: ${of.reason}`
+          : `The Admin decided the money the Client's Chargeback froze: ${of.released} is released to you, and ${of.back} goes back to the Client. The Admin's reason: ${of.reason}`,
+    },
     dispute: {
       title: "Disputed: the Admin decides",
       lead: (of: { own: boolean; asClient: boolean; held: string }) =>
@@ -951,6 +984,8 @@ export const copy = {
       "dispute.released": "Released in Dispute",
       "dispute.settled": "Dispute settled",
       "dispute.decided": "Dispute decided by the Admin",
+      "chargeback.opened": "Card Payment charged back",
+      "chargeback.decided": "Chargeback decided by the Admin",
     } satisfies Record<MessageEvent, string>,
     photo: (index: number) => `Photo ${index}`,
     message: "Message",
@@ -1119,7 +1154,7 @@ export const copy = {
       rowsNow: "Each row as it stands now",
       noRows: "Nothing on this item is left to decide.",
       splitRefunded: "Refunded to the Client",
-      splitOf: (total: string) => `Of ${total} held`,
+      splitOf: (total: string, whole = "held") => `Of ${total} ${whole}`,
     },
     admins: {
       title: "Admins",
@@ -1180,8 +1215,8 @@ export const copy = {
       noHistory: "No warnings or Suspensions.",
       warned: (reason: string, leaving: boolean) =>
         `Warned${leaving ? " for Leaving" : ""}: ${reason}`,
-      suspendedFor: (reason: string, leaving: boolean) =>
-        `Suspended${leaving ? " for Leaving" : ""}: ${reason}`,
+      suspendedFor: (reason: string, leaving: boolean, bySystem: boolean) =>
+        `Suspended${leaving ? " for Leaving" : ""}${bySystem ? " by the system (Chargeback)" : ""}: ${reason}`,
       lifted: "Suspension lifted",
       payoutsHeldLead: "Their Payouts are held: they wait until the hold is lifted.",
       payoutsFreeLead: "Their Payouts go in each daily run.",
