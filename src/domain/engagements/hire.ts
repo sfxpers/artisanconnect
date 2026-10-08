@@ -1,4 +1,4 @@
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, notExists, sql } from "drizzle-orm";
 import { system, type Actor } from "../actor";
 import { publicName } from "../accounts/names";
 import { isAlreadyDecided } from "../content/held";
@@ -18,7 +18,7 @@ import { isLive, quoteRow, type QuoteRow } from "../quotes/rows";
 import { bankReference } from "../references";
 import { ok, refuse } from "../result";
 import { saDay, formatDay } from "../sa-days";
-import { accounts, authUsers, engagements, jobs, payments, quotes } from "../schema";
+import { accounts, authUsers, chargebacks, engagements, jobs, payments, quotes } from "../schema";
 import { isSuspended, suspendedRefusal } from "../standing";
 import { emailAddress, emailTells, tell } from "../tells";
 import {
@@ -257,7 +257,9 @@ async function hireWrites(
 
 /**
  * The Artisan Fee a Hire fixes: 10%, or 5% if the Client Relationship
- * already has a Completed Engagement (ADR 0009).
+ * already has a Completed Engagement (ADR 0009). One with a Chargeback does
+ * not count (#137): the Client took the money back, and the Admin's decision
+ * made it Completed.
  */
 async function artisanFeePercentOf(ctx: Context, clientId: string, artisanId: string) {
   const [completed] = await ctx.db
@@ -268,6 +270,12 @@ async function artisanFeePercentOf(ctx: Context, clientId: string, artisanId: st
         eq(engagements.clientId, clientId),
         eq(engagements.artisanId, artisanId),
         eq(engagements.state, "completed"),
+        notExists(
+          ctx.db
+            .select({ one: sql`1` })
+            .from(chargebacks)
+            .where(eq(chargebacks.engagementId, engagements.id)),
+        ),
       ),
     )
     .limit(1);

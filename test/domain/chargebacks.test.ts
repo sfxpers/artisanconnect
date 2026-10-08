@@ -359,6 +359,31 @@ describe("the Admin's decision", () => {
     ]);
   });
 
+  test("a Completion it made does not lower the Artisan Fee on the Client Relationship's later work", async () => {
+    const { domain, given } = await createHarness();
+    const admin = await given.admin();
+    const { client, artisan, engagementId } = await awaitingApproval(given);
+    const collectionId = (await hiredPayment(engagementId))!;
+    await opened(given, collectionId);
+    await closed(given, collectionId, "lost", 210_000);
+    await decided(domain, admin, {}, "The work was not done.");
+    await domain.people.lift(admin.actor, { accountId: client.actor.accountId });
+
+    const second = await given.openJob(client, {
+      matching: "invite-only",
+      title: "Paint the stoep",
+    });
+    await domain.invitations.invite(client.actor, {
+      jobId: second,
+      artisanId: artisan.actor.accountId,
+    });
+    await given.hired(client, await given.sentQuote(artisan, second));
+
+    expect(
+      (await domain.jobs.viewAsArtisan(artisan.actor, { jobId: second }))?.engagement?.money,
+    ).toMatchObject({ artisanFeePercent: 10 });
+  });
+
   test("decides what a Dispute holds too, closing it and its item", async () => {
     const { domain, given } = await createHarness();
     const admin = await given.admin();
