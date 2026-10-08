@@ -22,6 +22,7 @@ import { isSuspended, suspendedNow, suspendedRefusal } from "../standing";
 import { emailTells } from "../tells";
 import { engagementAsArtisan, engagementAsClient, notHiredPayments } from "../engagements/views";
 import { expiryClocks } from "./expiry";
+import { hireAgainDraft, hireAgainProblem, hireAgainView, hireAgainWrites } from "./hire-again";
 import { heldJob, holdWrites, refusalOf, stillDraft, withdrawHeldJob } from "./held";
 import {
   EDITABLE_STATES,
@@ -96,7 +97,8 @@ export const jobsSection = defineSection({
         // Only Plumbing asks about gas.
         gasWork: fields.category === "plumbing" ? (fields.gasWork ?? null) : null,
         preferredStart: fields.preferredStart,
-        matching: fields.matching ?? null,
+        // A Job opened by Hire Again stays Invite-only (#139).
+        matching: draft?.hireAgainOf ? "invite-only" : (fields.matching ?? null),
         updatedAt: now,
       };
       let jobId: string;
@@ -143,6 +145,8 @@ export const jobsSection = defineSection({
       if (await isSuspended(ctx, job.clientId)) return suspendedRefusal("post a Job");
       const problem = postingProblem(job, job.photos.length, saDay(ctx.now()));
       if (problem) return refuse("incomplete", problem);
+      const notInvitable = await hireAgainProblem(ctx, job);
+      if (notInvitable) return refuse("not-invitable", notInvitable);
 
       const checked = await checkContent(ctx, {
         text: jobText(job),
@@ -156,10 +160,12 @@ export const jobsSection = defineSection({
       const [moved] =
         verdict.verdict === "held"
           ? await ctx.db.batch(holdWrites(ctx, job, verdict.reason))
-          : await ctx.db.batch(
+          : await ctx.db.batch([
               // Not if a Suspension landed since it was asked above.
-              openWrites(ctx, job, and(stillDraft(job), not(suspendedNow(ctx, job.clientId)))!),
-            );
+              ...openWrites(ctx, job, and(stillDraft(job), not(suspendedNow(ctx, job.clientId)))!),
+              // Only once it opened: the Invitation is guarded on its being Open.
+              ...(await hireAgainWrites(ctx, job)),
+            ]);
       if (moved.length === 0) {
         if (await isSuspended(ctx, job.clientId)) return suspendedRefusal("post a Job");
         return changed();
@@ -330,6 +336,15 @@ export const jobsSection = defineSection({
       return ok({});
     },
 
+    /**
+     * Hire Again (#139): the Client's Draft of an Invite-only Job, prefilled
+     * from their Completed Engagement and inviting only its Artisan once it
+     * opens.
+     */
+    async hireAgain(actor: Actor, input: { engagementId: string }) {
+      return hireAgainDraft(ctx, actor, input.engagementId);
+    },
+
     /** Discards the Client's Draft and its photos. */
     async discard(actor: Actor, input: { jobId: string }) {
       const draft = await jobRow(ctx, input.jobId);
@@ -395,13 +410,14 @@ export const jobsSection = defineSection({
     async view(viewer: Actor, input: { jobId: string }) {
       const job = await jobRow(ctx, input.jobId);
       if (!job || job.clientId !== accountIdOf(viewer)) return null;
-      const [refusal, edits, quoted, takesQuotes, engagement, notHired] = await Promise.all([
+      const [refusal, edits, quoted, takesQuotes, engagement, notHired, again] = await Promise.all([
         refusalOf(ctx, job),
         editsStanding(ctx, job.id),
         hasHadQuote(ctx, job.id),
         takesQuotesNow(ctx, job.id),
         engagementAsClient(ctx, job),
         notHiredPayments(ctx, job.id),
+        hireAgainView(ctx, job),
       ]);
       return {
         jobId: job.id,
@@ -417,6 +433,8 @@ export const jobsSection = defineSection({
         gasWork: job.gasWork,
         preferredStart: job.preferredStart,
         matching: job.matching,
+        /** The only Artisan it invites, if it was opened by Hire Again (#139). */
+        hireAgain: again,
         openedAt: job.openedAt,
         expiresAt: job.expiresAt,
         /**

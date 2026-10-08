@@ -1,4 +1,5 @@
-import { and, desc, eq, isNull, type SQL } from "drizzle-orm";
+import { and, desc, eq, isNull, sql, type SQL } from "drizzle-orm";
+import { alias } from "drizzle-orm/sqlite-core";
 import { startClock } from "../clocks";
 import type { Context } from "../context";
 import { engagements, jobs, regions, suburbs } from "../schema";
@@ -7,6 +8,9 @@ import type { StoredFile } from "../uploads";
 import { OPEN_DAYS } from "./inputs";
 
 // Reading a Job, and what more than one part of the Jobs section says of one.
+
+/** The Engagement a Job was opened from by Hire Again (#139). */
+const againOf = alias(engagements, "hire_again_engagement");
 
 export type JobPhoto = Extract<StoredFile, { kind: "photo" }>;
 
@@ -35,6 +39,11 @@ const JOB_COLUMNS = {
   nextBatchAt: jobs.nextBatchAt,
   outOfViewSince: jobs.outOfViewSince,
   outOfViewFor: jobs.outOfViewFor,
+  hireAgainOf: jobs.hireAgainOf,
+  /** The only Artisan a Job opened by Hire Again invites (#139); null for any other Job. */
+  hireAgainArtisanId: sql<
+    string | null
+  >`(select ${againOf.artisanId} from ${engagements} ${againOf} where ${againOf.id} = ${jobs.hireAgainOf})`,
 };
 
 /** A Job, with its suburb's name and Region. */

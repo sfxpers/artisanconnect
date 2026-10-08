@@ -287,6 +287,9 @@ export const copy = {
       matched: "We offer the Job to verified Artisans in its Region, ten at a time.",
       "invite-only": "Nobody sees the Job unless you invite them.",
     },
+    hireAgain: "Hire Again",
+    hireAgainDraftLead: (name: string) =>
+      `Filled in from your last Job with ${name}. Change anything, and add photos of this work. Once it is posted, only ${name} is invited to Quote.`,
     locked: "Locked at posting. A different trade or site is a new Job.",
     saveDraft: "Save Draft",
     saved: "Draft saved.",
@@ -332,6 +335,9 @@ export const copy = {
     invite: "Invite",
     invited: "Invited",
     quoted: "Quoted",
+    titleHireAgain: "Hire Again",
+    leadHireAgain: (name: string) => `Only ${name} is invited to this Job. Nobody else sees it.`,
+    emptyHireAgain: (name: string) => `${name} cannot be invited to this Job now.`,
   },
   verification: {
     title: "Verification",
@@ -704,6 +710,9 @@ export const copy = {
     cancelConfirm: (lead: string) => `Cancel this Job? ${lead} This cannot be undone.`,
     keepJob: "Keep the Job",
     completedTitle: "Completed",
+    hireAgain: "Hire Again",
+    hireAgainLead:
+      "Start a new Job for this Artisan, filled in from this one. Only they are invited to Quote.",
     completedClientLead: "The work is approved, and the Labour was released to the Artisan.",
     completedArtisanLead:
       "The work is approved, and the Labour was released to you, less the Artisan Fee.",
@@ -1259,6 +1268,14 @@ export const copy = {
       lifted: "Suspension lifted",
       payoutsHeldLead: "Their Payouts are held: they wait until the hold is lifted.",
       payoutsFreeLead: "Their Payouts go in each daily run.",
+      relationships: {
+        title: "Client Relationships",
+        lead: "Protected Relationship Period: 365 days from the pair's first Payment. It never renews.",
+        none: "No Payment with anyone yet.",
+        running: "Running",
+        ended: "Ended",
+        period: (from: string, until: string) => `First Payment ${from} · protected until ${until}`,
+      },
       artisanRecord: {
         title: "Artisan record",
         byArtisan: "Cancelled by the Artisan",

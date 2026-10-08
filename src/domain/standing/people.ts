@@ -7,6 +7,7 @@ import { isAlreadyDecided } from "../content/held";
 import { causedBy } from "../errors";
 import { adminOnly, ok, refuse } from "../result";
 import { artisanRecord } from "../engagements/record";
+import { clientRelationshipsOf } from "../engagements/relationships";
 import { accounts, authUsers } from "../schema";
 import { defineSection } from "../section";
 import { emailTells } from "../tells";
@@ -72,7 +73,9 @@ export const peopleSection = defineSection({
     /**
      * One Account's page: who it is, its Suspension while one stands, every
      * warning and Suspension it has had, newest first, whether its Payouts
-     * are held, and an Artisan's record. Null for anyone but an Admin.
+     * are held, an Artisan's record, and its Client Relationships, each with
+     * whether its Protected Relationship Period is running (#139). Null for
+     * anyone but an Admin.
      */
     async view(viewer: Actor, input: { accountId: string }) {
       if (viewer.kind !== "admin") return null;
@@ -90,11 +93,12 @@ export const peopleSection = defineSection({
         .where(and(eq(accounts.id, input.accountId), eq(authUsers.emailVerified, true)));
       if (!row) return null;
       const { payoutsHeldAt, ...account } = row;
-      const [suspension, warned, suspended, record] = await Promise.all([
+      const [suspension, warned, suspended, record, relationships] = await Promise.all([
         suspensionOf(ctx, row.accountId),
         warningsOf(ctx, row.accountId),
         suspensionsOf(ctx, row.accountId),
         row.kind === "artisan" ? artisanRecord(ctx, row.accountId) : null,
+        clientRelationshipsOf(ctx, row),
       ]);
       return {
         ...account,
@@ -103,6 +107,7 @@ export const peopleSection = defineSection({
         suspensions: suspended,
         payoutsHeld: payoutsHeldAt !== null,
         artisanRecord: record,
+        clientRelationships: relationships,
       };
     },
 

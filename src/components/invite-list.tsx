@@ -23,14 +23,17 @@ const t = copy.invite;
  * The invite list (#123): Browse narrowed to the Job's trade, and to
  * gas-registered Artisans on a gas Job, optionally in one Region, each marked
  * once invited or Quoted. Nothing on it says who holds or passed a Job Match.
+ * On a Job opened by Hire Again (#139), only the Artisan hired again, by name.
  */
 export function InviteList({
   jobId,
   inviteOnly,
+  hireAgain,
   list,
 }: {
   jobId: string;
   inviteOnly: boolean;
+  hireAgain: string | null;
   list: InviteListView;
 }) {
   const router = useRouter();
@@ -50,36 +53,43 @@ export function InviteList({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t.title}</CardTitle>
-        <p className="text-sm text-muted-foreground">{inviteOnly ? t.leadInviteOnly : t.lead}</p>
+        <CardTitle>{hireAgain ? t.titleHireAgain : t.title}</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          {hireAgain ? t.leadHireAgain(hireAgain) : inviteOnly ? t.leadInviteOnly : t.lead}
+        </p>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-1.5">
-          <Label htmlFor="invite-region">{t.region}</Label>
-          <select
-            id="invite-region"
-            className="h-8 rounded-lg border border-input bg-background px-2 text-sm"
-            value={list.region ?? ""}
-            onChange={(event) =>
-              void navigate({
-                to: "/jobs/$jobId",
-                params: { jobId },
-                search: { region: event.target.value || undefined },
-                replace: true,
-              })
-            }
-          >
-            <option value="">{t.allRegions}</option>
-            {list.regions.map((each) => (
-              <option key={each.id} value={each.id}>
-                {each.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        {/* One Artisan is listed on a Job opened by Hire Again, wherever they work. */}
+        {!hireAgain && (
+          <div className="space-y-1.5">
+            <Label htmlFor="invite-region">{t.region}</Label>
+            <select
+              id="invite-region"
+              className="h-8 rounded-lg border border-input bg-background px-2 text-sm"
+              value={list.region ?? ""}
+              onChange={(event) =>
+                void navigate({
+                  to: "/jobs/$jobId",
+                  params: { jobId },
+                  search: { region: event.target.value || undefined },
+                  replace: true,
+                })
+              }
+            >
+              <option value="">{t.allRegions}</option>
+              {list.regions.map((each) => (
+                <option key={each.id} value={each.id}>
+                  {each.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <Refusal message={refusal} />
         {list.artisans.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t.empty}</p>
+          <p className="text-sm text-muted-foreground">
+            {hireAgain ? t.emptyHireAgain(hireAgain) : t.empty}
+          </p>
         ) : (
           <ul className="divide-y rounded-lg border">
             {list.artisans.map((artisan) => (

@@ -149,7 +149,7 @@ A request that the Admin decide how much of a held amount of Labour is released 
 _Avoid_: Appeal, Complaint, Claim
 
 **Hire Again**:
-The Client's act of opening an Invite-only Job for an Artisan they have a Completed Engagement with, prefilled from it.
+The Client's act of opening an Invite-only Job for an Artisan they have a Completed Engagement with, prefilled from it and inviting only that Artisan. It is not offered on an Engagement the Client charged back.
 _Avoid_: Rehire, Repeat booking
 
 ### Money
@@ -263,5 +263,5 @@ The pair of one Client and one Artisan.
 _Avoid_: Lock-in, Repeat customer
 
 **Protected Relationship Period**:
-The 365 days after the first Payment in a Client Relationship, during which all work between them belongs on the platform.
+The 365 days after the first Payment in a Client Relationship, during which all work between them belongs on the platform. It never renews; the Admin sees whether it is running for a pair.
 _Avoid_: Lock-in, Exclusivity

@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,7 +43,7 @@ import {
   withdrawCompletion,
   withdrawUpdatedQuote,
 } from "@/web/engagements";
-import type { getJob } from "@/web/jobs";
+import { hireAgain, type getJob } from "@/web/jobs";
 import { shrinkPhoto } from "@/web/shrink-photo";
 
 // The Job page once a Quote is Hired (#107, #126): the next step, with what
@@ -331,6 +332,37 @@ export function CancelAction({
         </Button>
       </div>
     </form>
+  );
+}
+
+/**
+ * Hire Again (#139, ADR 0013): the Client opens a Draft of an Invite-only
+ * Job, filled in from this Completed Engagement, inviting only its Artisan.
+ */
+export function HireAgainAction({ engagement }: { engagement: ClientEngagement }) {
+  const action = useAction();
+  const navigate = useNavigate();
+  if (!engagement.hireAgain) return null;
+  const { engagementId } = engagement;
+  return (
+    <div className="space-y-2">
+      <p className="text-sm text-muted-foreground">{t.hireAgainLead}</p>
+      <Refusal message={action.refusal} />
+      <Button
+        disabled={action.busy}
+        onClick={() =>
+          void action.run(async () => {
+            const again = await hireAgain({ data: { engagementId } });
+            if (again.ok) {
+              await navigate({ to: "/jobs/$jobId", params: { jobId: again.value.jobId } });
+            }
+            return again;
+          })
+        }
+      >
+        {t.hireAgain}
+      </Button>
+    </div>
   );
 }
 

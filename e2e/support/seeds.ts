@@ -269,6 +269,20 @@ export async function reviewItem(env: Env, engagementId: string) {
   return { itemId: row.id };
 }
 
+/**
+ * The open Pre-check item of a Job Held at posting (#139): in dev the Content
+ * check cannot run, so a Job posted through the UI waits for the Admin.
+ */
+export async function heldJobItem(env: Env, jobId: string) {
+  const row = await env.DB.prepare(
+    "select id from queue_items where kind = 'held.job' and subject_id = ? and decided_at is null",
+  )
+    .bind(jobId)
+    .first<{ id: string }>();
+  if (!row) throw new Error(`No Held Job ${jobId}`);
+  return { itemId: row.id };
+}
+
 /** The Payment that Hired the Engagement: its collection's id. */
 async function hirePaymentOf(env: Env, engagementId: string) {
   const row = await env.DB.prepare("select payment_id from engagements where id = ?")

@@ -5,6 +5,7 @@ import type { Block } from "../queues";
 import { formatDay } from "../sa-days";
 import { accounts, authUsers, jobs, queueItems } from "../schema";
 import { SERVICE_CATEGORY_NAMES } from "../service-categories";
+import { hireAgainView, hireAgainWrites } from "./hire-again";
 import { jobPhotoPath, jobRow, jobText, openWrites, type JobRow } from "./rows";
 
 // A Job the Content check is unsure about, or cannot read, is Held at posting
@@ -18,8 +19,9 @@ export const heldJob = defineHeldKind("held.job", {
   async release(ctx, _admin, subjectId) {
     const job = await jobRow(ctx, subjectId);
     if (!job) return [];
-    // Its first Batch goes within the minute, when the clocks next run.
-    return [...openWrites(ctx, job, eq(jobs.state, "held"))];
+    // Its first Batch goes within the minute, when the clocks next run, and
+    // one opened by Hire Again invites its Artisan now (#139).
+    return [...openWrites(ctx, job, eq(jobs.state, "held")), ...(await hireAgainWrites(ctx, job))];
   },
   async refuse(ctx, _admin, subjectId) {
     return [backToDraft(ctx, subjectId)];
@@ -41,10 +43,27 @@ export const heldJob = defineHeldKind("held.job", {
           blocks: [{ kind: "text", text: job.heldFor ?? "The Content check could not run." }],
         },
       ],
-      sidebar: await clientSidebar(ctx, job.clientId),
+      sidebar: [...(await clientSidebar(ctx, job.clientId)), ...(await hireAgainSidebar(ctx, job))],
     };
   },
 });
+
+/** The one Artisan a Job opened by Hire Again invites once released (#139), for the Admin. */
+async function hireAgainSidebar(ctx: Context, job: JobRow) {
+  const again = await hireAgainView(ctx, job);
+  if (!again) return [];
+  return [
+    {
+      title: "Hire Again",
+      blocks: [
+        {
+          kind: "text" as const,
+          text: `Invites only ${again.publicName ?? "the Artisan of the Client's Completed Engagement"} once released.`,
+        },
+      ],
+    },
+  ];
+}
 
 /** Who posted the Job, for the Admin. */
 export async function clientSidebar(ctx: Context, clientId: string) {

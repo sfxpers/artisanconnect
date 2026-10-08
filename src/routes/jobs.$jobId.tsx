@@ -15,6 +15,7 @@ import { ClientQuotes } from "@/components/quotes";
 import {
   ActivityCard,
   CancelAction,
+  HireAgainAction,
   CompletionActions,
   CompletionCard,
   DisputeActions,
@@ -362,7 +363,12 @@ function Posted({
         </NextStepCard>
 
         {invite && (
-          <InviteList jobId={job.jobId} inviteOnly={job.matching === "invite-only"} list={invite} />
+          <InviteList
+            jobId={job.jobId}
+            inviteOnly={job.matching === "invite-only"}
+            hireAgain={job.hireAgain && (job.hireAgain.publicName ?? copy.quotes.noName)}
+            list={invite}
+          />
         )}
 
         {beingChecked && (
@@ -496,6 +502,7 @@ function Hired({
             reviews={engagement.reviews}
             asClient
           />
+          <HireAgainAction engagement={engagement} />
         </EngagementNextStep>
         <EngagementReviewsCard reviews={engagement.reviews} asClient />
         <UpdatedQuoteCard engagement={engagement} asClient />

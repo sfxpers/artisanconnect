@@ -392,6 +392,26 @@ describe("the Admin's decision", () => {
     ).toMatchObject({ artisanFeePercent: 10 });
   });
 
+  test("a Completion it made offers no Hire Again (#139), which would be at the repeat Artisan Fee", async () => {
+    const { domain, given } = await createHarness();
+    const admin = await given.admin();
+    const { client, jobId, engagementId } = await awaitingApproval(given);
+    const collectionId = (await hiredPayment(engagementId))!;
+    await opened(given, collectionId);
+    await closed(given, collectionId, "lost", 210_000);
+    await decided(domain, admin, {}, "The work was not done.");
+    await domain.people.lift(admin.actor, { accountId: client.actor.accountId });
+
+    expect((await domain.jobs.view(client.actor, { jobId }))?.engagement).toMatchObject({
+      state: "completed",
+      hireAgain: false,
+    });
+    expect(await domain.jobs.hireAgain(client.actor, { engagementId })).toMatchObject({
+      ok: false,
+      refusal: { reason: "not-completed" },
+    });
+  });
+
   test("decides what a Dispute holds too, closing it and its item", async () => {
     const { domain, given } = await createHarness();
     const admin = await given.admin();

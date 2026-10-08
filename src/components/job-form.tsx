@@ -111,6 +111,14 @@ export function DraftForm({
         void formData().then(onPost);
       }}
     >
+      {job?.hireAgain && (
+        <div className="space-y-1 rounded-lg border bg-muted/40 p-3 text-sm">
+          <p className="font-medium">{t.hireAgain}</p>
+          <p className="text-muted-foreground">
+            {t.hireAgainDraftLead(job.hireAgain.publicName ?? copy.quotes.noName)}
+          </p>
+        </div>
+      )}
       <div className="space-y-1.5">
         <Label htmlFor="category">{t.category}</Label>
         <select
@@ -171,17 +179,20 @@ export function DraftForm({
         onChange={(value) => set("preferredStart", value)}
       />
 
-      <Choice
-        legend={t.matching}
-        name="matching"
-        value={draft.matching}
-        options={MATCHINGS.map((matching) => ({
-          value: matching,
-          label: t.matchings[matching],
-          hint: t.matchingHints[matching],
-        }))}
-        onChange={(value) => set("matching", value as Matching)}
-      />
+      {/* A Job opened by Hire Again is Invite-only, inviting only that Artisan (#139). */}
+      {!job?.hireAgain && (
+        <Choice
+          legend={t.matching}
+          name="matching"
+          value={draft.matching}
+          options={MATCHINGS.map((matching) => ({
+            value: matching,
+            label: t.matchings[matching],
+            hint: t.matchingHints[matching],
+          }))}
+          onChange={(value) => set("matching", value as Matching)}
+        />
+      )}
 
       <Refusal message={refusal} />
       {notice && <p className="text-sm text-muted-foreground">{notice}</p>}

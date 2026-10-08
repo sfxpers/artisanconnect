@@ -71,6 +71,7 @@ describe("one person's page", () => {
       ],
       payoutsHeld: true,
       artisanRecord: expect.objectContaining({ cancelledByArtisan: 0, cancellations: [] }),
+      clientRelationships: [],
     });
   });
 

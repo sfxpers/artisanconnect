@@ -117,6 +117,14 @@ export const withdrawJob = createServerFn({ method: "POST" })
     return domain.jobs.withdraw(await requestActor(domain), data);
   });
 
+/** Hire Again: the Client's Draft of an Invite-only Job, prefilled from their Completed Engagement. */
+export const hireAgain = createServerFn({ method: "POST" })
+  .validator((input: { engagementId: string }) => input)
+  .handler(async ({ data }) => {
+    const domain = requestDomain();
+    return domain.jobs.hireAgain(await requestActor(domain), data);
+  });
+
 /** Discards the Client's Draft. */
 export const discardJob = createServerFn({ method: "POST" })
   .validator(byJob)

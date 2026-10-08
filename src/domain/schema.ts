@@ -694,9 +694,15 @@ export const jobs = sqliteTable(
      */
     outOfViewSince: instant("out_of_view_since"),
     outOfViewFor: text("out_of_view_for"),
+    /**
+     * The Completed Engagement it was opened from by Hire Again (#139): an
+     * Invite-only Job inviting only that Engagement's Artisan. Never changes.
+     */
+    hireAgainOf: text("hire_again_of").references((): AnySQLiteColumn => engagements.id),
   },
   (table) => [
     index("jobs_client").on(table.clientId, table.updatedAt),
+    index("jobs_hire_again").on(table.hireAgainOf),
     check("jobs_state", sql.raw(`state in (${JOB_STATES.map((s) => `'${s}'`).join(", ")})`)),
   ],
 );

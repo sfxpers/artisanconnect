@@ -92,6 +92,11 @@ export async function engagementAsClient(
     quote: { quoteId: quote.id, ...fieldsView(quote) },
     /** Once it is Completed, the Client's Review and the Artisan's, as the Client may see them (#138). */
     reviews: await engagementReviews(ctx, engagement, engagement.clientId),
+    /**
+     * Whether the Client may Hire Again (#139): once it is Completed, unless
+     * the Client charged it back, which leaves the Artisan Fee at 10% (#137).
+     */
+    hireAgain: engagement.state === "completed" && chargeback === null,
   };
 }
 

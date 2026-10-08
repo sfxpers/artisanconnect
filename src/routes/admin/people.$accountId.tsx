@@ -29,8 +29,9 @@ type Act = "warn" | "suspend" | "lift";
 /**
  * One Account (#136): where it stands, every warning and Suspension it has
  * had, and the Admin's powers over it: warn, suspend, or lift a Suspension;
- * hold or free an Artisan's Payouts; and an Artisan's record. Each is a Tell
- * to the Account, and written to the audit log.
+ * hold or free an Artisan's Payouts; an Artisan's record; and its Client
+ * Relationships, each with whether its Protected Relationship Period is
+ * running (#139). Each act is a Tell to the Account, and written to the audit log.
  */
 function Person() {
   const person = Route.useLoaderData();
@@ -69,6 +70,7 @@ function Person() {
         <div className="space-y-6">
           {person.kind === "artisan" && <PayoutsCard person={person} />}
           {person.artisanRecord && <ArtisanRecord record={person.artisanRecord} />}
+          <RelationshipsCard person={person} />
         </div>
       </div>
     </Page>
@@ -212,6 +214,46 @@ function PayoutsCard({ person }: { person: Person }) {
           </Link>
         </div>
         <Refusal message={refusal} />
+      </CardContent>
+    </Card>
+  );
+}
+
+/** The other party of each Client Relationship, and whether its Protected Relationship Period runs. */
+function RelationshipsCard({ person }: { person: Person }) {
+  const r = t.relationships;
+  return (
+    <Card size="sm">
+      <CardHeader>
+        <CardTitle>{r.title}</CardTitle>
+        <p className="text-xs text-muted-foreground">{r.lead}</p>
+      </CardHeader>
+      <CardContent className="text-sm">
+        {person.clientRelationships.length === 0 ? (
+          <p className="text-muted-foreground">{r.none}</p>
+        ) : (
+          <ul className="space-y-2">
+            {person.clientRelationships.map((each) => (
+              <li key={each.accountId}>
+                <div className="flex items-center justify-between gap-2">
+                  <Link
+                    to="/admin/people/$accountId"
+                    params={{ accountId: each.accountId }}
+                    className="font-medium hover:underline"
+                  >
+                    {each.name}
+                  </Link>
+                  <Badge variant={each.protectedNow ? "default" : "secondary"}>
+                    {each.protectedNow ? r.running : r.ended}
+                  </Badge>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {r.period(formatDate(each.firstPaymentAt), formatDate(each.protectedUntil))}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </CardContent>
     </Card>
   );
