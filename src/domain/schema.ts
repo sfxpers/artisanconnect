@@ -864,16 +864,23 @@ export const messages = sqliteTable(
 export const PAYMENT_STATES = ["open", "failed", "paid", "not-hired"] as const;
 
 /** Why a Payment that arrived Hired nobody, and so is refunded whole. */
-export const NOT_HIRED_REASONS = ["quote-ended", "quote-changed", "not-verified"] as const;
+export const NOT_HIRED_REASONS = [
+  "quote-ended",
+  "quote-changed",
+  "not-verified",
+  /** An Updated Quote's Payment that arrived once it was no longer proposed (#134). */
+  "updated-quote-ended",
+] as const;
 
 /**
  * Each checkout a Client opens to Hire a Sent Quote: the Quote as it stood
- * then, and the Payment it asks for, the Quote plus the Protection Fee. Our
+ * then, and the Payment it asks for, the Quote plus the Protection Fee; or to
+ * accept an Updated Quote (#134): its difference plus the Protection Fee. Our
  * id is the collection's id at the payment adapter and its reference. It is
  * open until the collection's event arrives: failed, which changes nothing
- * else, or succeeded, which Hires the Quote (paid) or, if the Hire can no
- * longer happen, refunds the whole Payment (not-hired). A trigger in the
- * migration refuses any other change of state.
+ * else, or succeeded, which Hires the Quote or applies the Updated Quote
+ * (paid) or, if that can no longer happen, refunds the whole Payment
+ * (not-hired). A trigger in the migration refuses any other change of state.
  */
 export const payments = sqliteTable(
   "payments",
@@ -885,12 +892,17 @@ export const payments = sqliteTable(
     jobId: text("job_id")
       .notNull()
       .references(() => jobs.id),
+    /** The Quote it Hires, or whose Engagement's Updated Quote it pays for. */
     quoteId: text("quote_id")
       .notNull()
       .references(() => quotes.id),
+    /** The Updated Quote it pays the difference of; null for a Hire's (#134). */
+    updatedQuoteId: text("updated_quote_id").references((): AnySQLiteColumn => updatedQuotes.id),
     /** When the Quote was last revised as the Client saw it; the Hire is of that version only. */
     quoteRevisedAt: instant("quote_revised_at"),
+    /** The Labour it pays in: the Quote's, or what an Updated Quote adds to it. */
     labourCents: integer("labour_cents").notNull(),
+    /** The Materials it pays in: the Quote's, or what an Updated Quote adds to them. */
     materialsCents: integer("materials_cents").notNull(),
     protectionFeeCents: integer("protection_fee_cents").notNull(),
     /** What the Client pays: Labour, Materials, and the Protection Fee. */
@@ -907,6 +919,7 @@ export const payments = sqliteTable(
   },
   (table) => [
     index("payments_job").on(table.jobId, table.openedAt),
+    index("payments_updated_quote").on(table.updatedQuoteId),
     check(
       "payments_state",
       sql.raw(`state in (${PAYMENT_STATES.map((state) => `'${state}'`).join(", ")})`),
@@ -988,6 +1001,61 @@ export const engagements = sqliteTable(
       sql.raw(`state in (${ENGAGEMENT_STATES.map((state) => `'${state}'`).join(", ")})`),
     ),
     check("engagements_artisan_fee", sql.raw("artisan_fee_percent in (5, 10)")),
+  ],
+);
+
+/**
+ * An Updated Quote's states: proposed, until the Artisan withdraws it, the
+ * Client rejects it, the Client's Payment of its difference accepts it, or
+ * the Engagement is Cancelled while it is proposed (ended).
+ */
+export const UPDATED_QUOTE_STATES = [
+  "proposed",
+  "withdrawn",
+  "rejected",
+  "accepted",
+  "ended",
+] as const;
+
+/**
+ * Each Updated Quote the Artisan proposes on an Engagement before Completion
+ * (#134, ADR 0019): the Labour and Materials it stood at then, and the new
+ * ones, neither lower. One is proposed at a time. What it proposes never
+ * changes, and its state moves forward only (a trigger in the migration
+ * refuses anything else).
+ */
+export const updatedQuotes = sqliteTable(
+  "updated_quotes",
+  {
+    id: text("id").primaryKey(),
+    engagementId: text("engagement_id")
+      .notNull()
+      .references(() => engagements.id),
+    /** The Engagement's Labour when it was proposed: paid in, less any refunded. */
+    fromLabourCents: integer("from_labour_cents").notNull(),
+    fromMaterialsCents: integer("from_materials_cents").notNull(),
+    labourCents: integer("labour_cents").notNull(),
+    materialsCents: integer("materials_cents").notNull(),
+    state: text("state", { enum: UPDATED_QUOTE_STATES }).notNull(),
+    proposedAt: instant("proposed_at").notNull(),
+    /** When it was withdrawn, rejected, accepted, or ended. */
+    answeredAt: instant("answered_at"),
+  },
+  (table) => [
+    index("updated_quotes_engagement").on(table.engagementId, table.proposedAt),
+    uniqueIndex("updated_quotes_one_proposed")
+      .on(table.engagementId)
+      .where(sql.raw("state = 'proposed'")),
+    check(
+      "updated_quotes_state",
+      sql.raw(`state in (${UPDATED_QUOTE_STATES.map((state) => `'${state}'`).join(", ")})`),
+    ),
+    check(
+      "updated_quotes_amounts",
+      sql.raw(
+        "typeof(labour_cents) = 'integer' and typeof(materials_cents) = 'integer' and labour_cents >= from_labour_cents and materials_cents >= from_materials_cents and labour_cents + materials_cents > from_labour_cents + from_materials_cents",
+      ),
+    ),
   ],
 );
 

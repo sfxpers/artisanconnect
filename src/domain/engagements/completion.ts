@@ -42,6 +42,7 @@ import type { CheckKind } from "../verification/checks";
 import { found } from "../verification/reading";
 import { CERTIFICATES, certificateNeeded, NOTE_MAX, type CertificateKind } from "./inputs";
 import { engagementRow, type EngagementRow } from "./rows";
+import { noneProposed, proposedOf, WAITING_FOR_CLIENT } from "./updated-quote-rows";
 
 // Completion, Approval, and Fix requests (#130, ADR 0006). After Work started
 // the Artisan marks the work complete, with a note, after-work photos, and any
@@ -114,6 +115,10 @@ export async function markComplete(
       "being-checked",
       "Your Completion is being checked. Withdraw it to send another.",
     );
+  }
+  // Only before Completion may an Updated Quote apply (#134), so it is answered or withdrawn first.
+  if (await proposedOf(ctx, engagement.id)) {
+    return refuse("updated-quote-proposed", WAITING_FOR_CLIENT);
   }
   const note = input.note.trim();
   if (!note) return refuse("invalid", "Write a note on what was done.");
@@ -191,7 +196,10 @@ export async function markComplete(
       fixNoteState: null,
       fixNoteHeldFor: null,
     };
-    const stillCompletable = engagementIn(ctx, engagement.id, COMPLETABLE);
+    const stillCompletable = and(
+      engagementIn(ctx, engagement.id, COMPLETABLE),
+      noneProposed(ctx, engagement.id),
+    )!;
     const held = reasons.length > 0;
     const [inserted] = await ctx.db.batch([
       insertWhile(
@@ -210,9 +218,12 @@ export async function markComplete(
           ]
         : madeWrites(ctx, actor, engagement, completion.id, now)),
     ]);
-    // The Engagement moved on between the read and the batch.
+    // The Engagement moved on between the read and the batch, or an Updated Quote was proposed.
     if (inserted.length === 0) {
       await discardFiles(ctx, stored);
+      if (await proposedOf(ctx, engagement.id)) {
+        return refuse("updated-quote-proposed", WAITING_FOR_CLIENT);
+      }
       const standing = canMarkComplete((await engagementRow(ctx, engagement.id))!);
       return standing.ok
         ? refuse("not-open", "This Engagement can no longer be marked complete.")
@@ -733,7 +744,7 @@ async function approvalWrites(
 ): Promise<Write[]> {
   const now = ctx.now();
   const { labour } = await engagementMoney(ctx, engagement.id);
-  // Extra Labour an Updated Quote pays in is released here too, once there is some (#134).
+  // An Updated Quote's extra Labour is among it (#134); none is paid in once the work is marked complete.
   const labourCents = labour.unreleasedCents;
   const completedNow = exists(
     ctx.db
@@ -926,7 +937,7 @@ function canMarkComplete(engagement: { state: EngagementState }): Result<null> {
 }
 
 /** The Engagement's Completion being checked, if there is one. */
-async function heldCompletionOf(ctx: Context, engagementId: string) {
+export async function heldCompletionOf(ctx: Context, engagementId: string) {
   const [row] = await ctx.db
     .select()
     .from(completions)

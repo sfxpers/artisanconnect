@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Fact } from "@/components/job-details";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,20 +17,25 @@ import {
   COMPLETION_PHOTOS_MAX,
   NOTE_MAX,
   refundFields,
+  updatedQuoteFields,
 } from "@/domain/engagements/inputs";
-import { formatRands } from "@/domain/money";
+import { formatRands, PROTECTION_FEE_PERCENT } from "@/domain/money";
 import { formatDay } from "@/domain/sa-days";
 import { copy, formatDate } from "@/web/copy";
 import {
+  acceptUpdatedQuote,
   answerNotStarted,
   approveCompletion,
   cancelEngagement,
   claimStarted,
   markComplete,
   markWorkStarted,
+  proposeUpdatedQuote,
   refund,
+  rejectUpdatedQuote,
   requestFix,
   withdrawCompletion,
+  withdrawUpdatedQuote,
 } from "@/web/engagements";
 import type { getJob } from "@/web/jobs";
 import { shrinkPhoto } from "@/web/shrink-photo";
@@ -39,8 +45,8 @@ import { shrinkPhoto } from "@/web/shrink-photo";
 // and Fix requests (#130), and either party's Cancellation (#133), the
 // Completion itself, the Payments card with Materials and Labour as two
 // numbered payments and the bar to Approval by silence, the Refunds and the
-// Artisan's Refund form (#132), the Activity, and in the sidebar the Money
-// and the Hired Quote's dates. The Client never
+// Artisan's Refund form (#132), the Updated Quote (#134), the Activity, and
+// in the sidebar the Money and the Hired Quote's dates. The Client never
 // sees the Artisan Fee; the Artisan never sees the Protection Fee.
 
 type JobView = Awaited<ReturnType<typeof getJob>>;
@@ -284,6 +290,262 @@ export function CancelAction({
         </Button>
         <Button type="button" variant="ghost" disabled={action.busy} onClick={() => setOpen(false)}>
           {t.keepJob}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+const u = t.updatedQuote;
+
+/**
+ * The Updated Quote: the Client pays its difference or rejects it; the
+ * Artisan sees theirs waiting, which they may withdraw, or proposes one
+ * before Completion (ADR 0019).
+ */
+export function UpdatedQuoteCard({
+  engagement,
+  asClient,
+}: {
+  engagement: Engagement;
+  asClient: boolean;
+}) {
+  const proposed = engagement.updatedQuote;
+  const canPropose = "proposeFrom" in engagement && engagement.proposeFrom;
+  if (!proposed && !canPropose) return null;
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{u.title}</CardTitle>
+        {proposed && (
+          <CardDescription>
+            {asClient
+              ? u.proposedClient(formatDate(proposed.proposedAt))
+              : u.proposedArtisan(formatDate(proposed.proposedAt))}
+          </CardDescription>
+        )}
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {proposed ? (
+          <>
+            <ProposedLines proposed={proposed} />
+            {"payCents" in proposed ? (
+              <PayOrReject proposed={proposed} />
+            ) : (
+              <Withdraw updatedQuoteId={proposed.updatedQuoteId} />
+            )}
+          </>
+        ) : (
+          "proposeFrom" in engagement &&
+          engagement.proposeFrom && (
+            <ProposeForm engagementId={engagement.engagementId} now={engagement.proposeFrom} />
+          )
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+type Proposed = NonNullable<Engagement["updatedQuote"]>;
+
+/** Each line now and as updated, and the difference. */
+function ProposedLines({ proposed }: { proposed: Proposed }) {
+  const lines = [
+    { label: u.labour, from: proposed.fromLabourCents, to: proposed.labourCents },
+    { label: u.materials, from: proposed.fromMaterialsCents, to: proposed.materialsCents },
+    {
+      label: u.total,
+      from: proposed.fromLabourCents + proposed.fromMaterialsCents,
+      to: proposed.labourCents + proposed.materialsCents,
+    },
+  ];
+  return (
+    <table className="w-full text-sm">
+      <thead className="text-xs text-muted-foreground">
+        <tr>
+          <th />
+          <th className="text-right font-normal">{u.from}</th>
+          <th className="text-right font-normal">{u.to}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {lines.map((line) => (
+          <tr key={line.label}>
+            <td className="py-1 text-muted-foreground">{line.label}</td>
+            <td className="py-1 text-right">{formatRands(line.from)}</td>
+            <td className="py-1 text-right font-medium">{formatRands(line.to)}</td>
+          </tr>
+        ))}
+        <tr className="border-t">
+          <td className="pt-2 font-medium">{u.difference}</td>
+          <td />
+          <td className="pt-2 text-right font-medium">{formatRands(proposed.addsCents)}</td>
+        </tr>
+      </tbody>
+    </table>
+  );
+}
+
+/** The Client pays the difference plus its Protection Fee through checkout, or rejects it. */
+function PayOrReject({ proposed }: { proposed: Extract<Proposed, { payCents: number }> }) {
+  const action = useAction();
+  const [acknowledged, setAcknowledged] = useState(false);
+  const { updatedQuoteId } = proposed;
+  const fee = formatRands(proposed.protectionFeeCents);
+
+  function pay() {
+    let checkoutUrl: string | null = null;
+    void action.run(
+      async () => {
+        const opened = await acceptUpdatedQuote({
+          data: { updatedQuoteId, feeAcknowledged: acknowledged },
+        });
+        if (opened.ok) checkoutUrl = opened.value.checkoutUrl;
+        return opened;
+      },
+      () => {
+        // The new price applies when the money arrives, never on the way back.
+        if (checkoutUrl) window.location.assign(checkoutUrl);
+      },
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <dl className="space-y-1 rounded-lg bg-muted/60 p-3 text-sm">
+        <div className="flex justify-between gap-3">
+          <dt className="text-muted-foreground">{u.fee(PROTECTION_FEE_PERCENT)}</dt>
+          <dd>{fee}</dd>
+        </div>
+        <div className="flex justify-between gap-3 font-semibold">
+          <dt>{u.youPay}</dt>
+          <dd>{formatRands(proposed.payCents)}</dd>
+        </div>
+      </dl>
+      <Label className="items-start gap-2 leading-snug font-normal">
+        <Checkbox checked={acknowledged} onCheckedChange={(checked) => setAcknowledged(checked)} />
+        {u.acknowledge(fee)}
+      </Label>
+      <p className="text-xs text-muted-foreground">{u.payLead}</p>
+      <Refusal message={action.refusal} />
+      <div className="flex flex-wrap gap-2">
+        <Button disabled={action.busy || !acknowledged} onClick={pay}>
+          {u.pay(formatRands(proposed.payCents))}
+        </Button>
+        <Button
+          variant="outline"
+          disabled={action.busy}
+          onClick={() => {
+            if (!window.confirm(u.rejectConfirm)) return;
+            void action.run(() => rejectUpdatedQuote({ data: { updatedQuoteId } }));
+          }}
+        >
+          {u.reject}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/** The Artisan's Updated Quote waiting for the Client, which they may withdraw. */
+function Withdraw({ updatedQuoteId }: { updatedQuoteId: string }) {
+  const action = useAction();
+  return (
+    <div className="space-y-2">
+      <p className="text-xs text-muted-foreground">{u.waiting}</p>
+      <Refusal message={action.refusal} />
+      <Button
+        variant="outline"
+        disabled={action.busy}
+        onClick={() => {
+          if (!window.confirm(u.withdrawConfirm)) return;
+          void action.run(() => withdrawUpdatedQuote({ data: { updatedQuoteId } }));
+        }}
+      >
+        {u.withdraw}
+      </Button>
+    </div>
+  );
+}
+
+/** The Artisan names the new Labour and Materials, starting from the price now. */
+function ProposeForm({
+  engagementId,
+  now,
+}: {
+  engagementId: string;
+  now: NonNullable<ArtisanEngagement["proposeFrom"]>;
+}) {
+  const action = useAction();
+  const [open, setOpen] = useState(false);
+  const typedNow = {
+    labour: (now.labourCents / 100).toFixed(2),
+    materials: (now.materialsCents / 100).toFixed(2),
+  };
+  const [amounts, setAmounts] = useState(typedNow);
+  if (!open) {
+    return (
+      <div className="space-y-2">
+        <p className="text-sm text-muted-foreground">{u.proposeLead}</p>
+        <Button variant="outline" onClick={() => setOpen(true)}>
+          {u.propose}
+        </Button>
+      </div>
+    );
+  }
+  // Read as the server reads it, so the button and the confirm agree with it.
+  const typed = updatedQuoteFields.safeParse(amounts);
+  const addsCents = typed.success
+    ? typed.data.labour + typed.data.materials - now.labourCents - now.materialsCents
+    : 0;
+  const clientSupplies = now.materialsBy === "client";
+  return (
+    <form
+      className="space-y-3"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (!window.confirm(u.sendConfirm(formatRands(addsCents)))) return;
+        void action.run(
+          () => proposeUpdatedQuote({ data: { engagementId, ...amounts } }),
+          () => setOpen(false),
+        );
+      }}
+    >
+      <p className="text-sm text-muted-foreground">{u.proposeLead}</p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {(["labour", "materials"] as const).map((part) => (
+          <div key={part} className="space-y-1.5">
+            <Label htmlFor={`updated-${part}`}>{u[part]}</Label>
+            <Input
+              id={`updated-${part}`}
+              inputMode="decimal"
+              value={amounts[part]}
+              disabled={part === "materials" && clientSupplies}
+              onChange={(event) => setAmounts({ ...amounts, [part]: event.target.value })}
+            />
+            <p className="text-xs text-muted-foreground">
+              {part === "materials" && clientSupplies
+                ? u.clientSupplies
+                : u.atLeast(formatRands(now[`${part}Cents`]))}
+            </p>
+          </div>
+        ))}
+      </div>
+      <Refusal message={action.refusal} />
+      <div className="flex flex-wrap gap-2">
+        <Button type="submit" disabled={action.busy || addsCents <= 0}>
+          {u.send}
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          disabled={action.busy}
+          onClick={() => {
+            setOpen(false);
+            setAmounts(typedNow);
+          }}
+        >
+          {u.cancel}
         </Button>
       </div>
     </form>

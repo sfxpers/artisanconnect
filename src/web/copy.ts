@@ -1,6 +1,6 @@
 import { EMAIL_CODE } from "@/domain/accounts/inputs";
 import type { MessageEvent } from "@/domain/conversations/inputs";
-import type { ENGAGEMENT_STATES } from "@/domain/schema";
+import type { ENGAGEMENT_STATES, NOT_HIRED_REASONS } from "@/domain/schema";
 import { formatTime } from "@/domain/sa-days";
 
 // Every word the web app shows, in one place for later translation. Copy is a
@@ -585,16 +585,17 @@ export const copy = {
       "By card or Instant EFT. The Artisan is Hired once your Payment arrives, and your other Quotes are then declined.",
     notHired: (
       amount: string,
-      reason: "quote-ended" | "quote-changed" | "not-verified",
+      reason: (typeof NOT_HIRED_REASONS)[number],
       refund: "on-its-way" | "paid" | "owed",
     ) =>
       `A Payment of ${amount} arrived after ${
         {
-          "quote-ended": "the Quote was no longer open",
-          "quote-changed": "the Quote was revised",
-          "not-verified": "the Artisan stopped being verified for this trade",
+          "quote-ended": "the Quote was no longer open, so nobody was Hired",
+          "quote-changed": "the Quote was revised, so nobody was Hired",
+          "not-verified": "the Artisan stopped being verified for this trade, so nobody was Hired",
+          "updated-quote-ended": "the Updated Quote was no longer proposed, so it did not apply",
         }[reason]
-      }, so nobody was Hired. ${
+      }. ${
         {
           "on-its-way": "It is being refunded in full, Protection Fee included.",
           paid: "It was refunded in full, Protection Fee included.",
@@ -754,6 +755,10 @@ export const copy = {
       approved: "Approved",
       cancelled: "Cancelled",
       refunded: "Refunded",
+      "updated-quote.proposed": "Updated Quote proposed",
+      "updated-quote.withdrawn": "Updated Quote withdrawn",
+      "updated-quote.rejected": "Updated Quote rejected",
+      "updated-quote.accepted": "Updated Quote accepted and paid",
     },
     refunds: "Refunds",
     refundStates: {
@@ -785,6 +790,39 @@ export const copy = {
     artisanFeeShown: (percent: number) => `${percent}% of each Release`,
     hiredQuote: "Hired Quote",
     address: "Address",
+    updatedQuote: {
+      title: "Updated Quote",
+      proposedClient: (at: string) => `The Artisan proposed it ${at}.`,
+      proposedArtisan: (at: string) => `You proposed it ${at}. It is waiting for the Client.`,
+      from: "Now",
+      to: "Updated",
+      total: "Total",
+      difference: "Difference",
+      fee: (percent: number) => `Protection Fee (${percent}%)`,
+      youPay: "You pay",
+      acknowledge: (fee: string) =>
+        `I understand the Protection Fee of ${fee} is not refunded, whatever happens next.`,
+      pay: (amount: string) => `Pay ${amount}`,
+      payLead:
+        "By card or Instant EFT. The new price applies once your Payment arrives. Reject it, and the price stays as it is.",
+      reject: "Reject",
+      rejectConfirm: "Reject this Updated Quote? The price stays as it is.",
+      withdraw: "Withdraw",
+      withdrawConfirm: "Withdraw your Updated Quote? The Client is told.",
+      waiting:
+        "You cannot mark the work complete while it waits. Once the Client pays the difference it applies; if they reject it, the price stays as it is.",
+      propose: "Propose an Updated Quote",
+      proposeLead:
+        "Does the site differ from the Job? Before you mark the work complete, propose new Labour and Materials. Neither may go down; to lower the price, refund instead. It applies only once the Client pays the difference.",
+      labour: "Labour",
+      materials: "Materials",
+      atLeast: (amount: string) => `At least ${amount}, the price now.`,
+      clientSupplies: "The Client supplies the materials, so they stay at zero.",
+      send: "Propose",
+      sendConfirm: (adds: string) =>
+        `Propose this Updated Quote? The Client is asked to pay the difference, ${adds}.`,
+      cancel: "Cancel",
+    },
   },
   fakeCheckout: {
     title: "Fake checkout",

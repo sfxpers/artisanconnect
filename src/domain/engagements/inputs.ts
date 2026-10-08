@@ -2,7 +2,8 @@ import * as z from "zod";
 import { rands } from "../quotes/inputs";
 import type { ServiceCategory } from "../service-categories";
 
-// What a Completion, a Fix request, a Refund, and a Cancellation take, shared with the web app's forms.
+// What a Completion, a Fix request, a Refund, a Cancellation, and an Updated
+// Quote take, shared with the web app's forms.
 // Nothing here may import what only runs on the server.
 
 /** The most characters a Completion's note or a Fix request's note may have. */
@@ -69,3 +70,11 @@ function line(label: string) {
     rands(label).optional(),
   );
 }
+
+/** An Updated Quote as the Artisan names it: the new Labour and Materials, in rands. */
+export const updatedQuoteFields = z.object({
+  labour: rands("Labour"),
+  materials: rands("Materials"),
+});
+
+export type UpdatedQuoteFields = z.input<typeof updatedQuoteFields>;

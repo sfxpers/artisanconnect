@@ -10,9 +10,9 @@ import { ledgerEntries } from "./schema";
 
 /** What a ledger row records. Each later ticket adds the kinds it writes. */
 export const LEDGER_KINDS = {
-  /** The Hired Quote's Labour, paid in. */
+  /** The Hired Quote's Labour, or what an Updated Quote adds to it, paid in (#134). */
   labourIn: "payment.labour",
-  /** The Hired Quote's Materials, paid in. */
+  /** The Hired Quote's Materials, or what an Updated Quote adds to them, paid in (#134). */
   materialsIn: "payment.materials",
   /** The Protection Fee on a Payment, kept whatever happens next (ADR 0008). */
   protectionFeeIn: "payment.protection-fee",
@@ -97,9 +97,23 @@ export async function commitFromUnreleased(ctx: Context, writes: () => Promise<W
   throw new Error("The money unreleased kept changing while it was released or refunded");
 }
 
-/** Whether a batch aborted as it would take more of a line than is unreleased. */
+/**
+ * Whether a batch aborted as the money unreleased changed since it was read:
+ * it would take more of a line than is unreleased, or a Release of Materials
+ * would leave some unreleased, as when an Updated Quote's Payment paid more
+ * in meanwhile (#134).
+ */
 export function isOverdrawn(error: unknown) {
-  return causedBy(error, "more than is unreleased");
+  return causedBy(error, "more than is unreleased") || causedBy(error, "Materials left unreleased");
+}
+
+/**
+ * The SQL that is true while the Labour and Materials paid in to the
+ * Engagement are these: no Updated Quote's Payment arrived since they were
+ * read (#134).
+ */
+export function paidInIs(ctx: Context, engagementId: string, cents: number) {
+  return sql`(select coalesce(sum(${ledgerEntries.amountCents}), 0) from ${ledgerEntries} where ${ledgerEntries.engagementId} = ${engagementId} and ${ledgerEntries.kind} in (${LEDGER_KINDS.labourIn}, ${LEDGER_KINDS.materialsIn})) = ${cents}`;
 }
 
 /**
@@ -151,7 +165,7 @@ export function paymentInRows(
 
 /**
  * An Engagement's money, from its ledger rows: what was paid in for the
- * Hired Quote (the Protection Fee apart), released, refunded, and not yet
+ * Hired Quote and any Updated Quotes (the Protection Fee apart), released, refunded, and not yet
  * released, each of Labour and Materials too.
  */
 export async function engagementMoney(ctx: Context, engagementId: string) {

@@ -13,8 +13,14 @@ import {
 import { refundByArtisan, refundClocks } from "../refunds";
 import { cancel, cancellationClocks } from "./cancellation";
 import { artisanRecord } from "./record";
-import type { RefundFields } from "./inputs";
+import type { RefundFields, UpdatedQuoteFields } from "./inputs";
 import { openCheckout } from "./hire";
+import {
+  acceptUpdatedQuote,
+  proposeUpdatedQuote,
+  rejectUpdatedQuote,
+  withdrawUpdatedQuote,
+} from "./updated-quote";
 import { answerNotStarted, claimStarted, markWorkStarted, workStartedClocks } from "./work-started";
 
 // Engagements (#126 on): a Hired Quote's work and money. Hire is the
@@ -71,6 +77,27 @@ export const engagementsSection = defineSection({
      */
     cancel: (actor: Actor, input: { engagementId: string; reason?: string }) =>
       cancel(ctx, actor, input),
+    /**
+     * The Artisan proposes new Labour and Materials before Completion, in
+     * rands, neither lower (ADR 0019). The Client is told.
+     */
+    proposeUpdatedQuote: (actor: Actor, input: { engagementId: string } & UpdatedQuoteFields) =>
+      proposeUpdatedQuote(ctx, actor, input),
+    /** The Artisan withdraws their proposed Updated Quote. */
+    withdrawUpdatedQuote: (actor: Actor, input: { updatedQuoteId: string }) =>
+      withdrawUpdatedQuote(ctx, actor, input),
+    /** The Client rejects the proposed Updated Quote, and the price stands. */
+    rejectUpdatedQuote: (actor: Actor, input: { updatedQuoteId: string }) =>
+      rejectUpdatedQuote(ctx, actor, input),
+    /**
+     * Opens a checkout for the Client to accept the proposed Updated Quote by
+     * paying the difference plus its Protection Fee, once they acknowledge
+     * the fee is not refunded. It applies when the money arrives.
+     */
+    acceptUpdatedQuote: (
+      actor: Actor,
+      input: { updatedQuoteId: string; feeAcknowledged: boolean },
+    ) => acceptUpdatedQuote(ctx, actor, input),
     /** An Artisan's record of Cancellations, for the Admin only; null to anyone else. */
     artisanRecord: async (viewer: Actor, input: { artisanId: string }) =>
       viewer.kind === "admin" ? artisanRecord(ctx, input.artisanId) : null,

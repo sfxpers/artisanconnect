@@ -17,7 +17,7 @@ describe("the Artisan refunds", () => {
     const { client, artisan, jobId, engagementId, collectionId } = await hiredJob(given);
 
     expect(await domain.engagements.refund(artisan.actor, { engagementId, labour: "400" })).toEqual(
-      { ok: true, value: { refundId: expect.any(String) } },
+      { ok: true, value: { refundIds: [expect.any(String)] } },
     );
 
     expect((await domain.jobs.view(client.actor, { jobId }))?.engagement?.money).toMatchObject({
@@ -511,7 +511,7 @@ async function refunded(
 ) {
   const made = await domain.engagements.refund(artisan.actor, { engagementId, ...amounts });
   if (!made.ok) throw new Error(made.refusal.message);
-  return made.value.refundId;
+  return made.value.refundIds[0]!;
 }
 
 async function receive(domain: Harness["domain"], webhook: Webhook) {

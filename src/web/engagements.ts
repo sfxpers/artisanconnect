@@ -2,8 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { requestActor, requestDomain } from "./session";
 
 // Engagements: thin adapters onto the domain module, which decides who may
-// set Work started, mark the work complete, approve it, refund, and cancel,
-// and when (ADR 0006, ADR 0007).
+// set Work started, mark the work complete, approve it, refund, cancel, and
+// propose or answer an Updated Quote, and when (ADR 0006, ADR 0007, ADR 0019).
 
 const byEngagement = (input: { engagementId: string }) => input;
 
@@ -94,4 +94,41 @@ export const cancelEngagement = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const domain = requestDomain();
     return domain.engagements.cancel(await requestActor(domain), data);
+  });
+
+/** The Artisan proposes new Labour and Materials, in rands, neither lower. */
+export const proposeUpdatedQuote = createServerFn({ method: "POST" })
+  .validator((input: { engagementId: string; labour: string; materials: string }) => input)
+  .handler(async ({ data }) => {
+    const domain = requestDomain();
+    return domain.engagements.proposeUpdatedQuote(await requestActor(domain), data);
+  });
+
+const byUpdatedQuote = (input: { updatedQuoteId: string }) => input;
+
+/** The Artisan withdraws their proposed Updated Quote. */
+export const withdrawUpdatedQuote = createServerFn({ method: "POST" })
+  .validator(byUpdatedQuote)
+  .handler(async ({ data }) => {
+    const domain = requestDomain();
+    return domain.engagements.withdrawUpdatedQuote(await requestActor(domain), data);
+  });
+
+/** The Client rejects the proposed Updated Quote; the price stands. */
+export const rejectUpdatedQuote = createServerFn({ method: "POST" })
+  .validator(byUpdatedQuote)
+  .handler(async ({ data }) => {
+    const domain = requestDomain();
+    return domain.engagements.rejectUpdatedQuote(await requestActor(domain), data);
+  });
+
+/**
+ * The Client opens a checkout to accept the proposed Updated Quote by paying
+ * the difference plus the Protection Fee; it applies when the money arrives.
+ */
+export const acceptUpdatedQuote = createServerFn({ method: "POST" })
+  .validator((input: { updatedQuoteId: string; feeAcknowledged: boolean }) => input)
+  .handler(async ({ data }) => {
+    const domain = requestDomain();
+    return domain.engagements.acceptUpdatedQuote(await requestActor(domain), data);
   });

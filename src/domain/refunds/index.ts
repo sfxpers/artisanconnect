@@ -19,7 +19,7 @@ import { formatRands } from "../money";
 import type { PaymentEvent } from "../ports";
 import { ok, refuse } from "../result";
 import { formatDay, saDay } from "../sa-days";
-import { payments, refunds } from "../schema";
+import { ledgerEntries, payments, refunds } from "../schema";
 import { raiseSupportRequest } from "../support";
 import { emailTells, tellWhile, tellWithEmailWhile } from "../tells";
 import {
@@ -33,13 +33,16 @@ import {
 
 // Refunds (#132, ADR 0008): unreleased money sent back to the Client, never
 // the Protection Fee, by the Artisan's choice at any time or a Cancellation
-// (#133); and a Payment that Hired nobody, sent back whole (#126). The payment adapter takes one Refund
-// at a time per collection, so a Refund waits while another of its Payment
-// is with it. On the bank paying it, the Client is told with a Receipt. One
-// the bank cannot take stays owed to the Client and raises a system Support
-// request; the Admin pays it by hand. Nothing is retried. One paused while
-// the float is low tells nobody until, after 3 days, the Client is told it is
-// delayed, not lost, and a system Support request is raised.
+// (#133); and a Payment that Hired nobody, or arrived for an Updated Quote no
+// longer proposed, sent back whole (#126, #134). An Engagement's money may
+// have come in by its Hire's Payment and each Updated Quote's, so a Refund of
+// it is one per Payment it takes money back from. The payment adapter takes
+// one Refund at a time per collection, so a Refund waits while another of
+// its Payment is with it. On the bank paying it, the Client is told with a
+// Receipt. One the bank cannot take stays owed to the Client and raises a
+// system Support request; the Admin pays it by hand. Nothing is retried. One
+// paused while the float is low tells nobody until, after 3 days, the Client
+// is told it is delayed, not lost, and a system Support request is raised.
 
 /** The clock that tells the Client a Refund paused for 3 days is delayed, not lost. */
 export const PAUSED_CLOCK = "refund.paused";
@@ -73,8 +76,8 @@ export async function refundByArtisan(
   if (!parsed.success) return refuse("invalid", firstProblem(parsed.error));
   // Not while a Chargeback freezes the Engagement's money, too, once there are Chargebacks (#137).
   for (let attempt = 0; attempt < 3; attempt += 1) {
+    // An Updated Quote's extra Materials and Labour are more of each line (#134).
     const { materials, labour } = await engagementMoney(ctx, engagement.id);
-    // Extra Materials an Updated Quote pays in are a line of their own, once there are some (#134).
     const unreleased = { materials: materials.unreleasedCents, labour: labour.unreleasedCents };
     if (unreleased.materials + unreleased.labour === 0) {
       return refuse(
@@ -92,69 +95,160 @@ export async function refundByArtisan(
         );
       }
     }
-    const refundId = ctx.newId();
+    let refundIds: string[];
     try {
-      await ctx.commit(refundWrites(ctx, engagement, refundId, "artisan", parsed.data));
+      const made = await refundWrites(ctx, engagement, "artisan", parsed.data);
+      await ctx.commit(made.writes);
+      refundIds = made.refundIds;
     } catch (error) {
       // A Release or another Refund took the money meanwhile: read it again.
       if (isOverdrawn(error)) continue;
       throw error;
     }
-    await sendRefunds(ctx, engagement.paymentId).catch((error: unknown) => {
-      console.error(`Refund ${refundId} was not sent; the every-minute run sends it`, error);
-    });
-    return ok({ refundId });
+    await sendEngagementRefunds(ctx, engagement.id);
+    return ok({ refundIds });
   }
   throw new Error(`Engagement ${engagement.id}'s money kept changing while it was refunded`);
 }
 
 /**
  * The writes of a Refund of an Engagement's unreleased money, by the Artisan
- * or a Cancellation, in one batch: the Refund, waiting to be sent; what it
- * refunds of each line, and owes the Client, in the ledger; and its row in
- * the Conversation. With a condition, each is written only while it holds
- * when the batch runs. The ledger aborts the batch if a line would go below
- * nothing unreleased. Send it with `sendRefunds` once committed.
+ * or a Cancellation, in one batch: a Refund for each Payment it takes money
+ * back from, waiting to be sent; what each refunds of each line, and owes the
+ * Client, in the ledger; and one row in the Conversation. With a condition,
+ * each is written only while it holds when the batch runs. The ledger aborts
+ * the batch if a line would go below nothing unreleased. Send them with
+ * `sendEngagementRefunds` once committed.
  */
-export function refundWrites(
+export async function refundWrites(
   ctx: Context,
-  engagement: Pick<EngagementRow, "id" | "paymentId" | "clientId" | "jobId" | "artisanId">,
-  refundId: string,
+  engagement: Pick<EngagementRow, "id" | "clientId" | "jobId" | "artisanId">,
   cause: Exclude<RefundCause, "not-hired">,
   amounts: { materials: number; labour: number },
   condition?: SQL,
-): Write[] {
+): Promise<{ writes: Write[]; refundIds: string[] }> {
   const amountCents = amounts.materials + amounts.labour;
-  const of = (kind: LedgerRow["kind"], amountCents: number): LedgerRow => ({
-    kind,
-    amountCents,
-    paymentId: engagement.paymentId,
-    engagementId: engagement.id,
-  });
-  const refund = waitingRefund(ctx, refundId, {
-    paymentId: engagement.paymentId,
-    engagementId: engagement.id,
-    clientId: engagement.clientId,
-    cause,
-    labourCents: amounts.labour,
-    materialsCents: amounts.materials,
-    protectionFeeCents: 0,
-  });
-  return [
-    condition
-      ? insertWhile(ctx, refunds, refund, condition)
-      : ctx.db.insert(refunds).values(refund),
-    ...ledgerWrites(
-      ctx,
-      [
-        of(LEDGER_KINDS.materialsRefunded, amounts.materials),
-        of(LEDGER_KINDS.labourRefunded, amounts.labour),
-        of(LEDGER_KINDS.refundOwed, amountCents),
-      ],
-      condition,
-    ),
-    eventWrite(ctx, engagement, "refund", condition ?? sql`1`, formatRands(amountCents)),
-  ];
+  const split = await splitByPayment(ctx, engagement.id, amounts);
+  const refundIds: string[] = [];
+  const writes: Write[] = [];
+  const rows: LedgerRow[] = [];
+  for (const { paymentId, materials, labour } of split) {
+    const of = (kind: LedgerRow["kind"], amountCents: number): LedgerRow => ({
+      kind,
+      amountCents,
+      paymentId,
+      engagementId: engagement.id,
+    });
+    const refund = waitingRefund(ctx, ctx.newId(), {
+      paymentId,
+      engagementId: engagement.id,
+      clientId: engagement.clientId,
+      cause,
+      labourCents: labour,
+      materialsCents: materials,
+      protectionFeeCents: 0,
+    });
+    refundIds.push(refund.id);
+    writes.push(
+      condition
+        ? insertWhile(ctx, refunds, refund, condition)
+        : ctx.db.insert(refunds).values(refund),
+    );
+    rows.push(
+      of(LEDGER_KINDS.materialsRefunded, materials),
+      of(LEDGER_KINDS.labourRefunded, labour),
+      of(LEDGER_KINDS.refundOwed, materials + labour),
+    );
+  }
+  return {
+    writes: [
+      ...writes,
+      ...ledgerWrites(ctx, rows, condition),
+      eventWrite(ctx, engagement, "refund", condition ?? sql`1`, formatRands(amountCents)),
+    ],
+    refundIds,
+  };
+}
+
+/** Which line each kind a Refund's split reads is of, and whether it adds to what is left of it. */
+const LINE_OF = {
+  [LEDGER_KINDS.materialsIn]: { part: "materials", sign: 1 },
+  [LEDGER_KINDS.labourIn]: { part: "labour", sign: 1 },
+  [LEDGER_KINDS.materialsRefunded]: { part: "materials", sign: -1 },
+  [LEDGER_KINDS.labourRefunded]: { part: "labour", sign: -1 },
+} as const;
+
+/**
+ * A Refund's amounts split over the Payments the Engagement's money came in
+ * by, the Hire's first, then each Updated Quote's (#134): the adapter refunds
+ * a collection at most what it collected, so each takes back at most what it
+ * paid in of a line, less what was refunded of it. Fewest Refunds that way.
+ */
+async function splitByPayment(
+  ctx: Context,
+  engagementId: string,
+  amounts: { materials: number; labour: number },
+) {
+  const rows = await ctx.db
+    .select({
+      paymentId: ledgerEntries.paymentId,
+      kind: ledgerEntries.kind,
+      cents: sql<number>`sum(${ledgerEntries.amountCents})`,
+      // In the order the money came in, however close together.
+      first: sql<number>`min(${ledgerEntries}.rowid)`,
+    })
+    .from(ledgerEntries)
+    .where(
+      and(
+        eq(ledgerEntries.engagementId, engagementId),
+        inArray(ledgerEntries.kind, Object.keys(LINE_OF)),
+      ),
+    )
+    .groupBy(ledgerEntries.paymentId, ledgerEntries.kind);
+  const byPayment = new Map<string, { first: number; materials: number; labour: number }>();
+  for (const row of rows) {
+    if (!row.paymentId) continue;
+    const left = byPayment.get(row.paymentId) ?? { first: Infinity, materials: 0, labour: 0 };
+    const { part, sign } = LINE_OF[row.kind as keyof typeof LINE_OF];
+    left[part] += sign * row.cents;
+    if (sign > 0) left.first = Math.min(left.first, row.first);
+    byPayment.set(row.paymentId, left);
+  }
+  const owed = { ...amounts };
+  const split = [...byPayment.entries()]
+    .sort(([, a], [, b]) => a.first - b.first)
+    .map(([paymentId, left]) => {
+      const materials = Math.min(owed.materials, left.materials);
+      const labour = Math.min(owed.labour, left.labour);
+      owed.materials -= materials;
+      owed.labour -= labour;
+      return { paymentId, materials, labour };
+    })
+    .filter((each) => each.materials + each.labour > 0);
+  // Another Refund took the money between the caller's read and this one.
+  if (owed.materials + owed.labour > 0) throw new Error("A Refund of more than is unreleased");
+  return split;
+}
+
+/**
+ * Sends each waiting Refund of the Engagement, one Payment at a time; one
+ * not sent now is sent by the every-minute run.
+ */
+export async function sendEngagementRefunds(ctx: Context, engagementId: string) {
+  const waiting = await ctx.db
+    .select({ paymentId: refunds.paymentId })
+    .from(refunds)
+    .where(and(eq(refunds.engagementId, engagementId), eq(refunds.state, "waiting")))
+    .groupBy(refunds.paymentId)
+    .orderBy(sql`min(${refunds}.rowid)`);
+  for (const { paymentId } of waiting) {
+    await sendRefunds(ctx, paymentId).catch((error: unknown) => {
+      console.error(
+        `Refunds of Payment ${paymentId} were not sent; the every-minute run sends them`,
+        error,
+      );
+    });
+  }
 }
 
 /**
@@ -274,9 +368,12 @@ export async function sendRefunds(ctx: Context, paymentId: string) {
  */
 export async function sendWaitingRefunds(ctx: Context) {
   const waiting = await ctx.db
-    .selectDistinct({ paymentId: refunds.paymentId })
+    .select({ paymentId: refunds.paymentId })
     .from(refunds)
-    .where(eq(refunds.state, "waiting"));
+    .where(eq(refunds.state, "waiting"))
+    .groupBy(refunds.paymentId)
+    // In the order they were made, however close together.
+    .orderBy(sql`min(${refunds}.rowid)`);
   const failures: unknown[] = [];
   for (const { paymentId } of waiting) {
     await sendRefunds(ctx, paymentId).catch((error: unknown) => failures.push(error));

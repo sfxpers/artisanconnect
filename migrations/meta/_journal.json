@@ -176,6 +176,13 @@
       "when": 1791415016139,
       "tag": "0024_cancellation",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "6",
+      "when": 1791416857776,
+      "tag": "0025_updated-quotes",
+      "breakpoints": true
     }
   ]
 }

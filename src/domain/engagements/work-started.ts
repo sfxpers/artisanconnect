@@ -199,8 +199,9 @@ async function startWrites(
   by: StartedBy,
 ): Promise<Write[]> {
   const now = ctx.now();
+  // An Updated Quote's extra Materials paid in so far are among them (#134). The ledger aborts the
+  // batch if one paid more in after this read, as the Release would leave some unreleased.
   const { materials } = await engagementMoney(ctx, engagement.id);
-  // Extra Materials an Updated Quote pays in are released here too, once there are some (#134).
   const materialsCents = materials.unreleasedCents;
   const startedNow = exists(
     ctx.db

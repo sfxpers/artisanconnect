@@ -21,6 +21,7 @@ import {
   MoneyCard,
   PaymentsCard,
   StartActions,
+  UpdatedQuoteCard,
 } from "@/components/engagement";
 import { formatRands } from "@/domain/money";
 import {
@@ -486,6 +487,7 @@ function Hired({
           <CompletionActions engagement={engagement} asClient />
           <CancelAction engagement={engagement} asClient />
         </EngagementNextStep>
+        <UpdatedQuoteCard engagement={engagement} asClient />
         <CompletionCard engagement={engagement} />
         <PaymentsCard engagement={engagement} />
         <ActivityCard engagement={engagement} />

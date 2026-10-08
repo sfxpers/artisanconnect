@@ -105,12 +105,12 @@ export async function fireDueClock(
  */
 async function fireClock(ctx: Context, clock: DueClock, handler: ClockHandler): Promise<boolean> {
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    const writes = await handler(ctx, clock);
-    const markFired = ctx.db
-      .update(dueClocks)
-      .set({ firedAt: ctx.now() })
-      .where(eq(dueClocks.id, clock.id));
     try {
+      const writes = await handler(ctx, clock);
+      const markFired = ctx.db
+        .update(dueClocks)
+        .set({ firedAt: ctx.now() })
+        .where(eq(dueClocks.id, clock.id));
       await ctx.commit([markFired, ...writes]);
       return true;
     } catch (error) {

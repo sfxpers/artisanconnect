@@ -21,6 +21,7 @@ import {
   MoneyCard,
   PaymentsCard,
   StartActions,
+  UpdatedQuoteCard,
 } from "@/components/engagement";
 import {
   Messages,
@@ -110,6 +111,7 @@ export function OfferedJob({
                     <CompletionActions engagement={engagement} asClient={false} />
                     <CancelAction engagement={engagement} asClient={false} />
                   </EngagementNextStep>
+                  <UpdatedQuoteCard engagement={engagement} asClient={false} />
                   <CompletionCard engagement={engagement} />
                   <PaymentsCard engagement={engagement} />
                   <ActivityCard engagement={engagement} />

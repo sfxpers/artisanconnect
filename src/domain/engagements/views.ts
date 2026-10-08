@@ -5,6 +5,7 @@ import { engagementMoney } from "../ledger";
 import { fieldsView } from "../quotes/views";
 import { refundsOf, shownState } from "../refunds";
 import { accounts, engagements, jobs, payments, quotes, refunds } from "../schema";
+import { protectionFeeCents as protectionFeeOn } from "../money";
 import type { ServiceCategory } from "../service-categories";
 import { refusedFor } from "../content/held";
 import { badgesOf } from "../verification";
@@ -18,6 +19,8 @@ import {
 } from "./completion";
 import { certificateNeeded } from "./inputs";
 import { canCancel, labourRefundAt } from "./cancellation";
+import { addsOf, updatedQuotesOf } from "./updated-quote";
+import { isBeforeCompletion, priceNow } from "./updated-quote-rows";
 import { answerBy, startDayCome } from "./work-started";
 
 // An Engagement as each party sees it on the Job page (#107): the Client
@@ -31,7 +34,7 @@ export async function engagementAsClient(
   const found = await engagementOf(ctx, job.id);
   if (!found) return null;
   const { engagement, quote } = found;
-  const [money, [artisan], badges, completions, refunded] = await Promise.all([
+  const [money, [artisan], badges, completions, refunded, updated] = await Promise.all([
     engagementMoney(ctx, engagement.id),
     ctx.db
       .select({
@@ -44,10 +47,18 @@ export async function engagementAsClient(
     badgesOf(ctx, engagement.artisanId),
     completionsOf(ctx, engagement.id),
     refundsOf(ctx, engagement.id),
+    updatedQuotesOf(ctx, engagement.id),
   ]);
   const { protectionFeeCents, ...shared } = money;
+  const proposed = proposedView(updated, shared);
   return {
-    ...common(ctx, found, completions, refunded, money),
+    ...common(ctx, found, completions, refunded, money, updated),
+    /** The Updated Quote waiting for the Client, with what paying the difference costs them. */
+    updatedQuote: proposed && {
+      ...proposed,
+      protectionFeeCents: protectionFeeOn(proposed.addsCents),
+      payCents: proposed.addsCents + protectionFeeOn(proposed.addsCents),
+    },
     fixRequest: await fixRequestView(ctx, found, completions, "client"),
     artisan: {
       artisanId: engagement.artisanId,
@@ -64,22 +75,34 @@ export async function engagementAsClient(
 export async function engagementAsArtisan(ctx: Context, jobId: string, artisanId: string) {
   const found = await engagementOf(ctx, jobId);
   if (!found || found.engagement.artisanId !== artisanId) return null;
-  const [{ protectionFeeCents: _, ...money }, completions, refunded] = await Promise.all([
+  const [{ protectionFeeCents: _, ...money }, completions, refunded, updated] = await Promise.all([
     engagementMoney(ctx, found.engagement.id),
     completionsOf(ctx, found.engagement.id),
     refundsOf(ctx, found.engagement.id),
+    updatedQuotesOf(ctx, found.engagement.id),
   ]);
   const { state } = found.engagement;
   const newest = completions.at(-1);
   const held = newest?.state === "held";
+  const proposed = proposedView(updated, money);
   return {
-    ...common(ctx, found, completions, refunded, money),
+    ...common(ctx, found, completions, refunded, money, updated),
+    /** The Artisan's Updated Quote waiting for the Client. */
+    updatedQuote: proposed,
+    /**
+     * Whether the Artisan may propose an Updated Quote now: before
+     * Completion, with none waiting, and from the price now, neither line
+     * lower (#134).
+     */
+    proposeFrom:
+      isBeforeCompletion(state) && !held && !proposed
+        ? { ...priceNow(money), materialsBy: found.quote.materialsBy }
+        : null,
     fixRequest: await fixRequestView(ctx, found, completions, "artisan"),
     money: { ...moneyView(money), artisanFeePercent: found.engagement.artisanFeePercent },
     /**
      * What the Artisan may refund now, of each line: what is unreleased of
-     * it. Extra Materials an Updated Quote pays in are a line of their own,
-     * once there are some (#134).
+     * it, an Updated Quote's extra included (#134).
      */
     refundable: {
       materialsCents: money.materials.unreleasedCents,
@@ -90,8 +113,8 @@ export async function engagementAsArtisan(ctx: Context, jobId: string, artisanId
       state === "paid" &&
       !found.engagement.startClaimedAt &&
       startDayCome(ctx, found.quote.startOn),
-    /** Whether the Artisan may mark the work complete now. */
-    canComplete: (state === "work-started" || state === "fix-requested") && !held,
+    /** Whether the Artisan may mark the work complete now: not while an Updated Quote waits. */
+    canComplete: (state === "work-started" || state === "fix-requested") && !held && !proposed,
     /** The certificate the Completion needs, if the Job needs one. */
     certificateNeeded: certificateNeeded(found.job),
     /** The Artisan's newest Completion while it is being checked, or after the Admin refused it. */
@@ -144,6 +167,35 @@ async function engagementOf(ctx: Context, jobId: string) {
 type Found = NonNullable<Awaited<ReturnType<typeof engagementOf>>>;
 type Refunded = Awaited<ReturnType<typeof refundsOf>>;
 type Money = Omit<Awaited<ReturnType<typeof engagementMoney>>, "protectionFeeCents">;
+type UpdatedQuotes = Awaited<ReturnType<typeof updatedQuotesOf>>;
+
+/**
+ * The proposed Updated Quote, as both parties see it: the price it raises
+ * from, to, and by. The price is the one now, so a Refund made while it
+ * waits lowers both.
+ */
+function proposedView(updated: UpdatedQuotes, money: Money) {
+  const proposed = updated.find((each) => each.state === "proposed");
+  if (!proposed) return null;
+  const from = priceNow(money);
+  const adds = addsOf(proposed);
+  return {
+    updatedQuoteId: proposed.id,
+    proposedAt: proposed.proposedAt,
+    fromLabourCents: from.labourCents,
+    fromMaterialsCents: from.materialsCents,
+    labourCents: from.labourCents + adds.labourCents,
+    materialsCents: from.materialsCents + adds.materialsCents,
+    addsCents: adds.totalCents,
+  };
+}
+
+/** What happened to each Updated Quote; one ended by a Cancellation shows as the Cancellation. */
+const UPDATED_QUOTE_EVENTS = {
+  withdrawn: "updated-quote.withdrawn",
+  rejected: "updated-quote.rejected",
+  accepted: "updated-quote.accepted",
+} as const;
 
 /**
  * What both parties see alike: its state, the Hired Quote's dates, the
@@ -158,6 +210,7 @@ function common(
   completions: CompletionRow[],
   refunded: Refunded,
   money: Money,
+  updated: UpdatedQuotes,
 ) {
   const { startClaimedAt, workStartedAt, completedAt, cancelledAt } = engagement;
   const made = completions.filter((completion) => completion.state === "made");
@@ -206,6 +259,12 @@ function common(
       ]),
       ...(cancelledAt ? [{ event: "cancelled" as const, at: cancelledAt }] : []),
       ...refunded.map((refund) => ({ event: "refunded" as const, at: refund.madeAt })),
+      ...updated.flatMap((each) => [
+        { event: "updated-quote.proposed" as const, at: each.proposedAt },
+        ...(each.answeredAt && each.state !== "proposed" && each.state !== "ended"
+          ? [{ event: UPDATED_QUOTE_EVENTS[each.state], at: each.answeredAt }]
+          : []),
+      ]),
     ].sort((a, b) => a.at.getTime() - b.at.getTime()),
   };
 }
