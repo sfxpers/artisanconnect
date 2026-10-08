@@ -321,6 +321,12 @@ export function given({
     if (marked.value.state !== "made") throw new Error("Expected the Completion to be made");
   }
 
+  /** The Client approves the Completion, making the Engagement Completed. */
+  async function approved(client: { actor: Actor }, engagementId: string) {
+    const approval = await domain.engagements.approve(client.actor, { engagementId });
+    if (!approval.ok) throw new Error(approval.refusal.message);
+  }
+
   return {
     codeSentTo,
     admin,
@@ -343,6 +349,7 @@ export function given({
     engagementOf,
     workStarted,
     markedComplete,
+    approved,
   };
 }
 

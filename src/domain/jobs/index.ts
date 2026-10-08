@@ -45,6 +45,7 @@ import {
   type JobPhoto,
   type JobRow,
 } from "./rows";
+import { completedCounts, reviewsShown } from "../reviews/rows";
 
 type JobState = (typeof JOB_STATES)[number];
 type EngagementState = (typeof ENGAGEMENT_STATES)[number];
@@ -502,9 +503,9 @@ export const jobsSection = defineSection({
         client: {
           // Names the Content check has not passed are nobody else's to see.
           shownName: client?.namesShown ? clientShownName(publicName(client)) : null,
-          // Reviews and Completed Engagements come with their tickets (#138, #130).
-          reviews: { average: null, count: 0 },
-          completed: 0,
+          /** Reviews of the Client, which only an Artisan offered, invited, or Quoting reads (#138). */
+          reviews: await reviewsShown(ctx, job.clientId),
+          completed: (await completedCounts(ctx, "clientId", [job.clientId])).get(job.clientId),
         },
       };
     },

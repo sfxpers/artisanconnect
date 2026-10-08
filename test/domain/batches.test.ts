@@ -290,7 +290,11 @@ describe("a Job Match", () => {
       invitedAt: null,
       quote: null,
       takesQuotes: true,
-      client: { shownName: "Thandi M.", reviews: { average: null, count: 0 }, completed: 0 },
+      client: {
+        shownName: "Thandi M.",
+        reviews: { average: null, count: 0, items: [], more: false },
+        completed: 0,
+      },
     });
     const [photo] = job!.photos;
     expect(await domain.jobs.photo(artisan.actor, { jobId, photoId: photo!.id })).toMatchObject({

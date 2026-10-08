@@ -52,6 +52,7 @@ function ArtisanProfilePage() {
       </Link>
       <ArtisanProfileView
         profile={profile}
+        canReport={!!me}
         aside={
           <>
             {visitor && (

@@ -1,3 +1,4 @@
+import { eq } from "drizzle-orm";
 import { accountIdOf, type Actor } from "../actor";
 import { publicName } from "../accounts/names";
 import type { Context } from "../context";
@@ -8,7 +9,9 @@ import { jobRow } from "../jobs/rows";
 import { openableArtisan } from "../profiles";
 import { COUNTED_STATES } from "../quotes/rows";
 import { quoteRow } from "../quotes/rows";
-import type { REPORT_SUBJECTS } from "../schema";
+import { readsReview } from "../reviews/readers";
+import { reviewRow, shownName } from "../reviews/rows";
+import { accounts, type REPORT_SUBJECTS } from "../schema";
 
 // What a Report may be about, and who may make one: only an Account that
 // can see the thing, and never of its own.
@@ -82,6 +85,23 @@ export async function reportable(
         jobId: conversation.jobId,
       };
     }
+    case "review": {
+      const review = await reviewRow(ctx, about.id);
+      if (!review || !(await readsReview(ctx, actor, review))) return null;
+      const party = accountId === review.clientId || accountId === review.artisanId;
+      return {
+        reportedId: review.authorId,
+        // Its Job's title only to its parties: anyone else read it without the Job.
+        name: party ? review.jobTitle : await reviewedName(ctx, review.reviewedId),
+        // Where the reporter read it: on the Job, on the Profile, or beside a Job Match.
+        link: party
+          ? `/jobs/${review.jobId}`
+          : review.reviewedId === review.artisanId
+            ? `/artisans/${review.artisanId}`
+            : "/home",
+        jobId: review.jobId,
+      };
+    }
     case "profile": {
       const artisan = await openableArtisan(ctx, about.id);
       if (!artisan) return null;
@@ -93,4 +113,18 @@ export async function reportable(
       };
     }
   }
+}
+
+/** How the Account a Review is of appears to those who read it. */
+async function reviewedName(ctx: Context, accountId: string) {
+  const [row] = await ctx.db
+    .select({
+      name: accounts.name,
+      tradingName: accounts.tradingName,
+      namesShown: accounts.namesShown,
+      kind: accounts.kind,
+    })
+    .from(accounts)
+    .where(eq(accounts.id, accountId));
+  return row?.namesShown ? shownName(row.kind, row) : "an Account";
 }

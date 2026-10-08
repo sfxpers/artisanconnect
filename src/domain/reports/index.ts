@@ -15,9 +15,9 @@ import { REPORT_NOTE_MAX, REPORT_REASONS } from "./reasons";
 import { reportable, type About } from "./subjects";
 
 // Reports (#136, ADR 0020): the third wall. Any signed-in Account Reports a
-// Job, Quote, message, or Artisan Profile it can see, once, with one fixed
-// reason and an optional note. Each folds into the one queue item open for
-// the thing. The reporter is told it was received, never the outcome; the
+// Job, Quote, message, Artisan Profile, or Review (#138) it can see, once,
+// with one fixed reason and an optional note. Each folds into the one queue
+// item open for the thing. The reporter is told it was received, never the outcome; the
 // Account reported is told nothing unless the Admin acts on it.
 
 const reportInput = z.object({

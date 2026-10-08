@@ -46,6 +46,7 @@ import {
   type QuoteRow,
 } from "./rows";
 import { isSuspended, suspendedNow } from "../standing";
+import { completedCounts, summariesOf } from "../reviews/rows";
 
 // Quotes (#124, ADR 0002, ADR 0004): an Artisan holding a Job Match or an
 // Invitation sends one fixed-price Quote on an Open Job. The Content check
@@ -321,11 +322,14 @@ export const quotesSection = defineSection({
         .innerJoin(accounts, eq(accounts.id, quotes.artisanId))
         .where(and(eq(quotes.jobId, job.id), inArray(quotes.state, COUNTED_STATES)))
         .orderBy(asc(quotes.sentAt), asc(sql.raw(`"quotes"."rowid"`)));
+      const artisanIds = [...new Set(rows.map((row) => row.quote.artisanId))];
+      const [reviewed, completed] = await Promise.all([
+        summariesOf(ctx, artisanIds),
+        completedCounts(ctx, "artisanId", artisanIds),
+      ]);
       const badges = new Map(
         await Promise.all(
-          [...new Set(rows.map((row) => row.quote.artisanId))].map(
-            async (artisanId) => [artisanId, await badgesOf(ctx, artisanId)] as const,
-          ),
+          artisanIds.map(async (artisanId) => [artisanId, await badgesOf(ctx, artisanId)] as const),
         ),
       );
       return rows.map(({ quote, namesShown, ...names }) => {
@@ -339,9 +343,8 @@ export const quotesSection = defineSection({
             artisanId: quote.artisanId,
             // Names the Content check has not passed are nobody else's to see.
             publicName: namesShown ? publicName(names) : null,
-            // Reviews and Completed Engagements come with their tickets (#138, #130).
-            reviews: { average: null, count: 0 },
-            completed: 0,
+            reviews: reviewed.get(quote.artisanId),
+            completed: completed.get(quote.artisanId),
             badges: (badges.get(quote.artisanId) ?? []).filter(
               (badge) => badge.category === null || badge.category === job.category,
             ),

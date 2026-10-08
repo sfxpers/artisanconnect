@@ -11,6 +11,7 @@ import { NextStepCard, Page, Refusal } from "@/components/page";
 import { useAction } from "@/components/use-action";
 import { QuoteForm } from "@/components/quote-form";
 import { ReportAction } from "@/components/report";
+import { EngagementReviewsCard, ReviewList, WriteReview } from "@/components/reviews";
 import { QuoteFacts } from "@/components/quotes";
 import {
   ActivityCard,
@@ -38,6 +39,7 @@ import type { getJob } from "@/web/jobs";
 import { passInvitation } from "@/web/invitations";
 import { passMatch } from "@/web/matches";
 import { reviseQuote, sendQuote, withdrawQuoteBeingChecked, withdrawQuote } from "@/web/quotes";
+import { getClientReviews } from "@/web/reviews";
 
 /** A Job as an Artisan offered it sees it. */
 export type OfferedJobView = Extract<Awaited<ReturnType<typeof getJob>>, { as: "artisan" }>;
@@ -52,7 +54,8 @@ const tq = copy.quote;
  * or an Invitation, and their Quote once they have sent one. Either may be
  * passed before a Quote, telling nobody. Messages holds their Conversation
  * with the Client, once an Invitation or their Quote opened it. Once Hired,
- * it is the Engagement, with the address (#126).
+ * it is the Engagement, with the address (#126). Reviews of the Client show
+ * beside it (#138).
  */
 export function OfferedJob({
   job,
@@ -114,7 +117,13 @@ export function OfferedJob({
                     <CompletionActions engagement={engagement} asClient={false} />
                     <DisputeActions engagement={engagement} asClient={false} />
                     <CancelAction engagement={engagement} asClient={false} />
+                    <WriteReview
+                      engagementId={engagement.engagementId}
+                      reviews={engagement.reviews}
+                      asClient={false}
+                    />
                   </EngagementNextStep>
+                  <EngagementReviewsCard reviews={engagement.reviews} asClient={false} />
                   <UpdatedQuoteCard engagement={engagement} asClient={false} />
                   <DisputeCard engagement={engagement} asClient={false} />
                   <CompletionCard engagement={engagement} />
@@ -153,6 +162,19 @@ export function OfferedJob({
                       </div>
                     </div>
                   </div>
+                </CardContent>
+              </Card>
+              <Card size="sm">
+                <CardHeader>
+                  <CardTitle>{copy.review.ofClient}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ReviewList
+                    first={job.client.reviews}
+                    load={(page) => getClientReviews({ data: { jobId: job.jobId, page } })}
+                    canReport
+                    empty={copy.review.noClientReviews}
+                  />
                 </CardContent>
               </Card>
               <Card size="sm">

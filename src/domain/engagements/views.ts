@@ -10,6 +10,7 @@ import { protectionFeeCents as protectionFeeOn } from "../money";
 import type { ServiceCategory } from "../service-categories";
 import { refusedFor } from "../content/held";
 import { badgesOf } from "../verification";
+import { engagementReviews } from "../reviews/views";
 import {
   approvalAt,
   completionFilePath,
@@ -89,6 +90,8 @@ export async function engagementAsClient(
     },
     money: { ...moneyView(shared), protectionFeeCents },
     quote: { quoteId: quote.id, ...fieldsView(quote) },
+    /** Once it is Completed, the Client's Review and the Artisan's, as the Client may see them (#138). */
+    reviews: await engagementReviews(ctx, engagement, engagement.clientId),
   };
 }
 
@@ -169,6 +172,8 @@ export async function engagementAsArtisan(ctx: Context, jobId: string, artisanId
             reason: (await refusedFor(ctx, heldCompletion.kind, newest.id)) ?? "",
           }
         : null,
+    /** Once it is Completed, the Artisan's Review and the Client's, as the Artisan may see them (#138). */
+    reviews: await engagementReviews(ctx, found.engagement, artisanId),
   };
 }
 

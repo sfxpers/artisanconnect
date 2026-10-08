@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Domain } from "@/domain";
 import { formatDay } from "@/domain/sa-days";
 import { copy } from "@/web/copy";
+import { getArtisanReviews } from "@/web/reviews";
+import { ReviewList } from "@/components/reviews";
 
 export type ArtisanProfile = NonNullable<Awaited<ReturnType<Domain["profiles"]["view"]>>>;
 
@@ -20,9 +22,12 @@ const t = copy.profile;
 export function ArtisanProfileView({
   profile,
   aside,
+  canReport = false,
 }: {
   profile: ArtisanProfile;
   aside?: ReactNode;
+  /** Whether the viewer is signed in, so may Report a Review. */
+  canReport?: boolean;
 }) {
   const { reviews } = profile;
   return (
@@ -68,8 +73,12 @@ export function ArtisanProfileView({
 
         <section className="space-y-3">
           <h2 className="font-medium">{t.reviews}</h2>
-          {/* Reviews come with their ticket (#138). */}
-          <p className="text-sm text-muted-foreground">{t.noReviews}</p>
+          <ReviewList
+            first={reviews}
+            load={(page) => getArtisanReviews({ data: { artisanId: profile.artisanId, page } })}
+            canReport={canReport}
+            empty={t.noReviews}
+          />
         </section>
       </div>
 

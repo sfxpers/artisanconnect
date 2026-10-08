@@ -1148,12 +1148,16 @@ async function rows(domain: Harness["domain"], party: Party, jobId: string) {
   }))!.items;
 }
 
-/** What the Account was told of the Job since the work was marked complete, oldest first. */
+/**
+ * What the Account was told of the Job since the work was marked complete,
+ * oldest first, but of its Reviews (#138), which their own tests cover.
+ */
 async function toldOf(domain: Harness["domain"], account: Party, jobId: string) {
   const notices = await domain.notices.list(account.actor);
   return notices.filter(
     (notice) =>
       notice.link === `/jobs/${jobId}` &&
+      !notice.event.startsWith("review.") &&
       ![
         "job.matched",
         "job.invited",

@@ -1,5 +1,5 @@
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
-import { MapPin } from "lucide-react";
+import { MapPin, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -119,6 +119,12 @@ function Browse() {
                       {artisan.availableForJobs ? t.available : t.notAvailable}
                     </Badge>
                   </div>
+                  <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                    <Star className="size-4" />
+                    {artisan.reviews.average === null
+                      ? copy.profile.noRating
+                      : copy.profile.rating(artisan.reviews.average, artisan.reviews.count)}
+                  </p>
                   <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
                     <MapPin className="size-4" />
                     {artisan.regions.map((each) => each.name).join(", ") || t.noRegions}

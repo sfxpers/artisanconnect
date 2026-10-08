@@ -42,6 +42,7 @@ import { CHARGEBACK_DECIDED, disputeItem, endsAs, openDisputeOf } from "../engag
 import { paymentRow, type PaymentRow } from "../engagements/payments-in";
 import { engagementRow, type EngagementRow } from "../engagements/rows";
 import { endProposedWrite } from "../engagements/updated-quote";
+import { windowOpensWrites } from "../reviews/window";
 
 // Chargebacks (#137): a card Payment the bank reverses. It freezes the
 // Payment's Engagement: every clock on it does nothing, nothing more is
@@ -990,19 +991,23 @@ function endWrites(
     eq(engagements.state, engagement.state),
     decidedNow,
   );
+  // Completed by the decision, it opens Reviews as any Completion does (#138):
+  // the Artisan's Review is how others learn the Client charged it back.
+  const completedWrites = () => [
+    ctx.db.update(engagements).set({ state: "completed", completedAt: now }).where(from),
+    ...windowOpensWrites(ctx, engagement, now),
+  ];
   switch (engagement.state) {
     case "completed":
     case "cancelled":
       return [];
     case "disputed":
-      return [
-        disputeEnds === "cancelled"
-          ? ctx.db.update(engagements).set({ state: "cancelled" }).where(from)
-          : ctx.db.update(engagements).set({ state: "completed", completedAt: now }).where(from),
-      ];
+      return disputeEnds === "cancelled"
+        ? [ctx.db.update(engagements).set({ state: "cancelled" }).where(from)]
+        : completedWrites();
     case "awaiting-approval":
     case "fix-requested":
-      return [ctx.db.update(engagements).set({ state: "completed", completedAt: now }).where(from)];
+      return completedWrites();
     case "paid":
     case "work-started":
       return [

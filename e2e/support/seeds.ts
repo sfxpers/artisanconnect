@@ -258,6 +258,17 @@ export async function reportItem(env: Env, subjectId: string) {
   return { itemId: row.id };
 }
 
+/** The open Pre-check item of a Review written on the Engagement (#138), the newest first. */
+export async function reviewItem(env: Env, engagementId: string) {
+  const row = await env.DB.prepare(
+    "select queue_items.id from queue_items join reviews on reviews.id = queue_items.subject_id where queue_items.kind = 'held.review' and reviews.engagement_id = ? and queue_items.decided_at is null order by queue_items.raised_at desc limit 1",
+  )
+    .bind(engagementId)
+    .first<{ id: string }>();
+  if (!row) throw new Error(`No Review waiting on Engagement ${engagementId}`);
+  return { itemId: row.id };
+}
+
 /** The Payment that Hired the Engagement: its collection's id. */
 async function hirePaymentOf(env: Env, engagementId: string) {
   const row = await env.DB.prepare("select payment_id from engagements where id = ?")

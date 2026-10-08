@@ -10,6 +10,7 @@ import { useAction } from "@/components/use-action";
 import { Details, Fact } from "@/components/job-details";
 import { InviteList, type InviteListView } from "@/components/invite-list";
 import { OfferedJob } from "@/components/offered-job";
+import { EngagementReviewsCard, WriteReview } from "@/components/reviews";
 import { ClientQuotes } from "@/components/quotes";
 import {
   ActivityCard,
@@ -490,7 +491,13 @@ function Hired({
           <CompletionActions engagement={engagement} asClient />
           <DisputeActions engagement={engagement} asClient />
           <CancelAction engagement={engagement} asClient />
+          <WriteReview
+            engagementId={engagement.engagementId}
+            reviews={engagement.reviews}
+            asClient
+          />
         </EngagementNextStep>
+        <EngagementReviewsCard reviews={engagement.reviews} asClient />
         <UpdatedQuoteCard engagement={engagement} asClient />
         <DisputeCard engagement={engagement} asClient />
         <CompletionCard engagement={engagement} />

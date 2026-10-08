@@ -24,6 +24,7 @@ import { profilesSection } from "./profiles";
 import { quotesSection } from "./quotes";
 import { reportsSection } from "./reports";
 import { regionsSection } from "./regions";
+import { reviewsSection } from "./reviews";
 import { availabilitySection } from "./regions/availability";
 import { supportSection } from "./support";
 import { emailTells, noticesSection } from "./tells";
@@ -48,6 +49,7 @@ export const sections = [
   quotesSection,
   regionsSection,
   reportsSection,
+  reviewsSection,
   supportSection,
   verificationSection,
 ] as const satisfies readonly Section[];

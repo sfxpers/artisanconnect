@@ -31,6 +31,8 @@ import {
 import { alreadySuspended, isAlreadySuspended } from "../standing/people";
 import { tellWhile } from "../tells";
 import { discardFiles } from "../uploads";
+import { endWrites, groundDecisions, groundOf, reviewBlocks } from "../reviews/precheck";
+import { reviewRow } from "../reviews/rows";
 import { REPORT_REASON_NAMES } from "./reasons";
 import type { ReportSubject } from "./subjects";
 
@@ -38,7 +40,8 @@ import type { ReportSubject } from "./subjects";
 // every Report folded into it counted. The Admin dismisses it, or acts on the
 // Account reported: a warning, a Suspension, or Leaving's ladder (a warning
 // the first time, a Suspension the second, or at once for openly dodging the
-// fees). The reporters are never told which.
+// fees). For a Job or a Profile it may take the thing out of view until it is
+// fixed, and for a Review remove it. The reporters are never told which.
 
 /** How the queue names each kind of thing reported. */
 const SUBJECT_NAMES: Record<ReportSubject, string> = {
@@ -46,6 +49,7 @@ const SUBJECT_NAMES: Record<ReportSubject, string> = {
   quote: "a Quote",
   message: "a message",
   profile: "a Profile",
+  review: "a Review",
 };
 
 /** The title of the item about a thing reported. */
@@ -80,19 +84,29 @@ const FINDINGS: Record<Exclude<Decision, "dismiss">, { leaving: boolean; suspend
   "dodging-fees": { leaving: true, suspends: true },
 };
 
+/**
+ * A decision on the thing reported itself, beside those on the Account
+ * reported: taking a Job or Profile out of view until it is fixed, or
+ * removing a Review. Whether it may be made now, and the writes that make
+ * it, telling the thing's owner.
+ */
+type Outcome = {
+  option: DecisionOption;
+  possible(ctx: Context, subjectId: string): Promise<boolean>;
+  writes(
+    ctx: Context,
+    admin: AdminActor,
+    subjectId: string,
+    reason: string | null,
+  ): Promise<Write[]>;
+};
+
 /** What one kind of thing reported shows the Admin, and the Conversations a Report of it opens. */
 type SubjectDefinition = {
   /** The tab that shows the thing, as it stands now. */
   tab(ctx: Context, subjectId: string): Promise<{ label: string; blocks: Block[] }>;
-  /**
-   * Taking it out of view until it is fixed, for a Job or a Profile: who is
-   * told, whether it may be now, and the writes that do it, telling its owner.
-   */
-  outOfView?: {
-    told: string;
-    possible(ctx: Context, subjectId: string): Promise<boolean>;
-    writes(ctx: Context, admin: AdminActor, subjectId: string, reason: string): Promise<Write[]>;
-  };
+  /** The decisions on the thing itself, by key, offered after Dismiss. */
+  outcomes?: Record<string, Outcome>;
   /** The Conversations, by Job and Artisan, the Admin may read from it; none for a Profile. */
   conversations?(
     ctx: Context,
@@ -101,29 +115,26 @@ type SubjectDefinition = {
 };
 
 function defineReportKind(subject: ReportSubject, definition: SubjectDefinition) {
+  const outcomes = definition.outcomes ?? {};
   return defineQueueItemKind(`report.${subject}`, {
     queue: "reports",
     decisions: {
       ...DECISIONS,
-      ...(definition.outOfView && {
-        [OUT_OF_VIEW]: {
-          label: "Take it out of view until it is fixed",
-          told: definition.outOfView.told,
-          reason: "required",
-          reasonLabel: "What to fix",
-        },
-      }),
+      ...Object.fromEntries(Object.entries(outcomes).map(([key, { option }]) => [key, option])),
     },
     async allowed(ctx, item) {
       const reportedId = await reportedOf(ctx, item);
       if (!reportedId) return ["dismiss"];
-      const [suspended, leftBefore, hideable] = await Promise.all([
+      const [suspended, leftBefore, possible] = await Promise.all([
         isSuspended(ctx, reportedId),
         foundLeavingBefore(ctx, reportedId),
-        definition.outOfView?.possible(ctx, item.subjectId) ?? false,
+        Promise.all(
+          Object.entries(outcomes).map(async ([key, outcome]) =>
+            (await outcome.possible(ctx, item.subjectId)) ? [key] : [],
+          ),
+        ),
       ]);
-      const keys: string[] = ["dismiss"];
-      if (hideable) keys.push(OUT_OF_VIEW);
+      const keys: string[] = ["dismiss", ...possible.flat()];
       keys.push("warn");
       if (!suspended) keys.push("suspend");
       // A Suspended Account found Leaving again is warned: it cannot be suspended twice.
@@ -134,11 +145,8 @@ function defineReportKind(subject: ReportSubject, definition: SubjectDefinition)
     },
     async decide(ctx, admin, item, choice) {
       if (choice.decision === "dismiss") return ok([]);
-      if (choice.decision === OUT_OF_VIEW && definition.outOfView) {
-        return ok(
-          await definition.outOfView.writes(ctx, admin, item.subjectId, choice.reason ?? ""),
-        );
-      }
+      const outcome = outcomes[choice.decision];
+      if (outcome) return ok(await outcome.writes(ctx, admin, item.subjectId, choice.reason));
       const finding = FINDINGS[choice.decision as Exclude<Decision, "dismiss">];
       const reportedId = await reportedOf(ctx, item);
       const account = reportedId && (await accountRow(ctx, reportedId));
@@ -187,7 +195,27 @@ function defineReportKind(subject: ReportSubject, definition: SubjectDefinition)
   });
 }
 
-const OUT_OF_VIEW = "out-of-view";
+/** Taking a Job or Profile out of view until it is fixed, telling its owner what to fix. */
+function outOfView(
+  told: string,
+  outcome: Pick<Outcome, "possible"> & {
+    writes(ctx: Context, admin: AdminActor, subjectId: string, reason: string): Promise<Write[]>;
+  },
+): Record<string, Outcome> {
+  return {
+    "out-of-view": {
+      option: {
+        label: "Take it out of view until it is fixed",
+        told,
+        reason: "required",
+        reasonLabel: "What to fix",
+      },
+      possible: outcome.possible,
+      writes: (ctx, admin, subjectId, reason) =>
+        outcome.writes(ctx, admin, subjectId, reason ?? ""),
+    },
+  };
+}
 
 const CONVERSATION_TAB = { key: "conversation", label: "The Conversation", read: "conversation" };
 
@@ -209,10 +237,11 @@ async function findingWrites(
   });
 }
 
+const REMOVE = "remove";
+
 export const REPORT_KINDS = {
   job: defineReportKind("job", {
-    outOfView: {
-      told: "The Client, with what to fix",
+    outcomes: outOfView("The Client, with what to fix", {
       // A Job Artisans may see now: never a Hired one, which only its parties see.
       async possible(ctx, jobId) {
         const job = await jobRow(ctx, jobId);
@@ -252,7 +281,7 @@ export const REPORT_KINDS = {
           ),
         ];
       },
-    },
+    }),
     async tab(ctx, jobId) {
       const job = await jobRow(ctx, jobId);
       return { label: "The Job", blocks: job ? jobBlocks(job) : [] };
@@ -303,8 +332,7 @@ export const REPORT_KINDS = {
     },
   }),
   profile: defineReportKind("profile", {
-    outOfView: {
-      told: "The Artisan, with what to fix",
+    outcomes: outOfView("The Artisan, with what to fix", {
       async possible(ctx, artisanId) {
         const [row] = await ctx.db
           .select({ since: accounts.profileOutOfViewSince })
@@ -338,7 +366,7 @@ export const REPORT_KINDS = {
           ),
         ];
       },
-    },
+    }),
     async tab(ctx, artisanId) {
       const [shown, account] = await Promise.all([
         shownVersion(ctx, artisanId),
@@ -351,6 +379,49 @@ export const REPORT_KINDS = {
           ...versionBlocks(artisanId, shown),
         ],
       };
+    },
+  }),
+  review: defineReportKind("review", {
+    // Removed only for fraud, abuse, or personal data (#138), never for a low rating.
+    outcomes: Object.fromEntries(
+      Object.entries(groundDecisions(REMOVE, "Remove")).map(([key, option]) => [
+        key,
+        {
+          option,
+          async possible(ctx, reviewId) {
+            return (await reviewRow(ctx, reviewId))?.state === "published";
+          },
+          async writes(ctx, admin, reviewId, reason) {
+            const ground = groundOf(REMOVE, key)!;
+            return endWrites(
+              ctx,
+              admin,
+              reviewId,
+              { from: "published", to: "removed" },
+              ground,
+              reason,
+            );
+          },
+        } satisfies Outcome,
+      ]),
+    ),
+    async tab(ctx, reviewId) {
+      const review = await reviewRow(ctx, reviewId);
+      const reviewed = review && (await accountRow(ctx, review.reviewedId));
+      return {
+        label: "The Review",
+        blocks: review
+          ? [
+              { kind: "text", text: `Of ${reviewed ? reviewed.name : "an Account"}` },
+              ...reviewBlocks(review),
+            ]
+          : [],
+      };
+    },
+    // The Conversation of the Job it is on, between its two parties.
+    async conversations(ctx, item) {
+      const review = await reviewRow(ctx, item.subjectId);
+      return review ? [{ jobId: review.jobId, artisanId: review.artisanId, with: "" }] : [];
     },
   }),
 } satisfies Record<ReportSubject, unknown>;

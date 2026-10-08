@@ -1292,12 +1292,16 @@ async function labourRows(engagementId: string) {
   return rows.filter((row) => row.event_id === event && event);
 }
 
-/** What the Account was told of the Job since it was Hired, newest first. */
+/**
+ * What the Account was told of the Job since it was Hired, newest first,
+ * but of its Reviews (#138), which their own tests cover.
+ */
 async function toldOf(domain: Harness["domain"], account: { actor: Actor }, jobId: string) {
   const notices = await domain.notices.list(account.actor);
   return notices.filter(
     (notice) =>
       notice.link === `/jobs/${jobId}` &&
+      !notice.event.startsWith("review.") &&
       !["job.matched", "job.invited", "quote.sent", "engagement.hired"].includes(notice.event),
   );
 }

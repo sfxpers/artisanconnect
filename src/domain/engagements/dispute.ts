@@ -39,6 +39,7 @@ import { completionFilePath, completionsOf, unansweredOf } from "./completion";
 import { DISPUTE_REASON_MAX, labourAmount } from "./inputs";
 import { engagementRow, type EngagementRow } from "./rows";
 import { endProposedWrite } from "./updated-quote";
+import { windowOpensWrites } from "../reviews/window";
 
 // Disputes (#135): a request that the Admin decide how much of a held amount
 // of Labour is released and how much refunded. The Client opens one at
@@ -510,6 +511,7 @@ function endWrites(
       .update(engagements)
       .set({ state: "completed", completedAt: now })
       .where(and(eq(engagements.id, engagement.id), eq(engagements.state, "disputed"), closedNow)),
+    ...windowOpensWrites(ctx, engagement, now),
     ...ledgerWrites(
       ctx,
       releaseRows(engagement, LEDGER_KINDS.labourReleased, restCents),

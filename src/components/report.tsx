@@ -12,9 +12,9 @@ import { getReportMade, sendReport } from "@/web/reports";
 const t = copy.report;
 
 /**
- * The one Report action on a Job, Quote, message, or Profile (#136): one
- * fixed reason and an optional note, to the Admin. Nobody reported is told
- * who reported, and the reporter is never told the outcome.
+ * The one Report action on a Job, Quote, message, Profile (#136), or Review
+ * (#138): one fixed reason and an optional note, to the Admin. Nobody
+ * reported is told who reported, and the reporter is never told the outcome.
  */
 export function ReportAction({ about, label = t.action }: { about: About; label?: string }) {
   const [open, setOpen] = useState(false);

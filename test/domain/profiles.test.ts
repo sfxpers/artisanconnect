@@ -116,6 +116,7 @@ describe("Browse", () => {
         availableForJobs: true,
         gasWork: false,
         regions: [],
+        reviews: { average: null, count: 0 },
       },
     ]);
     expect(await domain.profiles.browse(client.actor, { category: "plumbing" })).toEqual(asVisitor);
@@ -160,7 +161,7 @@ describe("an Artisan Profile", () => {
       ],
       availableForJobs: true,
       completed: 0,
-      reviews: { average: null, count: 0, items: [] },
+      reviews: { average: null, count: 0, items: [], more: false },
     });
     expect(JSON.stringify(profile)).not.toContain("@example.com");
   });

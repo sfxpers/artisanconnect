@@ -42,6 +42,7 @@ import {
   withdrawEdit,
 } from "./edits";
 import { aboutText } from "./inputs";
+import { completedCounts, reviewsShown, summariesOf } from "../reviews/rows";
 
 // Browse and the Artisan Profile (#120, ADR 0016): anyone, signed in or not,
 // lists the Artisans verified for one Service Category, optionally in one
@@ -341,24 +342,33 @@ async function publicProfile(ctx: Context, artisanId: string) {
     badges,
     regions: worksIn.get(row.id) ?? [],
     availableForJobs: row.availableForJobs,
-    // Engagements and Reviews come with their tickets (#130, #138).
-    completed: 0,
-    reviews: { average: null, count: 0, items: [] },
+    completed: (await completedCounts(ctx, "artisanId", [row.id])).get(row.id),
+    /** The Reviews shown of the Artisan, one average and count, and the newest 20 (#138). */
+    reviews: await reviewsShown(ctx, row.id),
   };
 }
 
 /**
  * Browse: the Artisans verified now for the category, in the Region or only
- * the Artisan if one is given, Available for Jobs first, then by public name
- * A to Z.
+ * the Artisan if one is given, Available for Jobs first, then by higher
+ * Review average (none last), then more Reviews, then by public name A to Z,
+ * so the order is predictable and cannot be bought.
  */
 export async function browse(ctx: Context, category: ServiceCategory, narrow: Narrowing = {}) {
   const listed = await listedArtisans(ctx, category, narrow);
-  return listed.sort(
-    (a, b) =>
-      Number(b.availableForJobs) - Number(a.availableForJobs) ||
-      a.publicName.localeCompare(b.publicName, "en-ZA", { sensitivity: "base" }),
+  const reviewed = await summariesOf(
+    ctx,
+    listed.map((artisan) => artisan.artisanId),
   );
+  return listed
+    .map((artisan) => ({ ...artisan, reviews: reviewed.get(artisan.artisanId) }))
+    .sort(
+      (a, b) =>
+        Number(b.availableForJobs) - Number(a.availableForJobs) ||
+        (b.reviews.average ?? 0) - (a.reviews.average ?? 0) ||
+        b.reviews.count - a.reviews.count ||
+        a.publicName.localeCompare(b.publicName, "en-ZA", { sensitivity: "base" }),
+    );
 }
 
 export type Narrowing = { regionId?: string; artisanId?: string };

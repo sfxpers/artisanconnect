@@ -23,6 +23,7 @@ import { accountSidebar } from "../quotes/held";
 import { formatRands } from "../money";
 import { ok, refuse, type Result } from "../result";
 import { formatTime } from "../sa-days";
+import { windowOpensWrites } from "../reviews/window";
 import {
   completions,
   engagements,
@@ -820,6 +821,7 @@ async function approvalWrites(
       completedNow,
     ),
     eventWrite(ctx, engagement, "approved", completedNow),
+    ...windowOpensWrites(ctx, engagement, now),
     ...tellWhile(
       ctx,
       actor,

@@ -390,14 +390,14 @@ export const supportRequests = sqliteTable(
   ],
 );
 
-/** What a Report may be about (#136). A Review's waits for Reviews (#138). */
-export const REPORT_SUBJECTS = ["job", "quote", "message", "profile"] as const;
+/** What a Report may be about (#136, #138). */
+export const REPORT_SUBJECTS = ["job", "quote", "message", "profile", "review"] as const;
 
 /**
- * A signed-in Account's Report of a Job, Quote, message, or Artisan Profile
- * it can see, at most once per reporter per thing. Repeats fold into the one
- * queue item open for the thing; once that is decided, the next Report opens
- * another.
+ * A signed-in Account's Report of a Job, Quote, message, Artisan Profile, or
+ * Review it can see, at most once per reporter per thing. Repeats fold into
+ * the one queue item open for the thing; once that is decided, the next
+ * Report opens another.
  */
 export const reports = sqliteTable(
   "reports",
@@ -407,7 +407,7 @@ export const reports = sqliteTable(
       .notNull()
       .references(() => accounts.id, { onDelete: "cascade" }),
     subjectKind: text("subject_kind", { enum: REPORT_SUBJECTS }).notNull(),
-    /** The Job's, Quote's, or message's id, or the Profile's Artisan's. */
+    /** The Job's, Quote's, message's, or Review's id, or the Profile's Artisan's. */
     subjectId: text("subject_id").notNull(),
     /** The Account reported: whose the thing is. Never shown to it, nor the reporter to it. */
     reportedId: text("reported_id")
@@ -1473,6 +1473,64 @@ export const chargebacks = sqliteTable(
       sql.raw(`outcome in (${CHARGEBACK_OUTCOMES.map((outcome) => `'${outcome}'`).join(", ")})`),
     ),
     check("chargebacks_amount", sql.raw("typeof(amount_cents) = 'integer' and amount_cents > 0")),
+  ],
+);
+
+/**
+ * A Review's states: held, waiting for the Admin's Pre-check, which every
+ * Review does; published, or refused; and a published one removed, from a
+ * Report (#138).
+ */
+export const REVIEW_STATES = ["held", "published", "refused", "removed"] as const;
+
+/** The only grounds on which the Admin refuses or removes a Review (#138). */
+export const REVIEW_GROUNDS = ["fraud", "abuse", "personal-data"] as const;
+
+/**
+ * One party's Review of the other on a Completed Engagement (#138, ADR 0012):
+ * a rating from 1 to 5 and an optional comment, one per party, never edited
+ * or withdrawn. A trigger in the migration refuses changing what it says and
+ * any move of its state but held to published or refused, and published to
+ * removed.
+ */
+export const reviews = sqliteTable(
+  "reviews",
+  {
+    id: text("id").primaryKey(),
+    engagementId: text("engagement_id")
+      .notNull()
+      .references(() => engagements.id),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => accounts.id),
+    /** The other party, whom it is of. */
+    reviewedId: text("reviewed_id")
+      .notNull()
+      .references(() => accounts.id),
+    rating: integer("rating").notNull(),
+    comment: text("comment"),
+    /** Why the Content check was unsure of the comment, for the Admin. */
+    commentHeldFor: text("comment_held_for"),
+    state: text("state", { enum: REVIEW_STATES }).notNull(),
+    writtenAt: instant("written_at").notNull(),
+    /** When the Admin published, refused, or removed it. */
+    decidedAt: instant("decided_at"),
+    /** Why the Admin refused or removed it, and the note the author was given with it. */
+    ground: text("ground", { enum: REVIEW_GROUNDS }),
+    groundNote: text("ground_note"),
+  },
+  (table) => [
+    uniqueIndex("reviews_once_per_party").on(table.engagementId, table.authorId),
+    index("reviews_of").on(table.reviewedId, table.state, table.writtenAt),
+    check(
+      "reviews_state",
+      sql.raw(`state in (${REVIEW_STATES.map((state) => `'${state}'`).join(", ")})`),
+    ),
+    check(
+      "reviews_ground",
+      sql.raw(`ground in (${REVIEW_GROUNDS.map((ground) => `'${ground}'`).join(", ")})`),
+    ),
+    check("reviews_rating", sql.raw("typeof(rating) = 'integer' and rating between 1 and 5")),
   ],
 );
 
