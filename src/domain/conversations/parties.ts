@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { clientShownName, publicName } from "../accounts/names";
+import { publicName, shownName } from "../accounts/names";
 import type { Withheld } from "../content/patterns";
 import type { Context } from "../context";
 import { accounts } from "../schema";
@@ -30,7 +30,7 @@ export async function namesOf(ctx: Context, conversation: ConversationRow) {
     namesRow(ctx, conversation.artisanId),
   ]);
   return {
-    client: client?.namesShown ? clientShownName(publicName(client)) : null,
+    client: client?.namesShown ? shownName("client", client) : null,
     artisan: artisan?.namesShown ? publicName(artisan) : null,
     rows: { client, artisan },
   };
@@ -43,7 +43,7 @@ export async function namesOf(ctx: Context, conversation: ConversationRow) {
 export async function withheldOf(ctx: Context, conversation: ConversationRow): Promise<Withheld> {
   const { rows } = await namesOf(ctx, conversation);
   const surnames = [
-    rows.client && unshownSurname(rows.client.name, clientShownName(publicName(rows.client))),
+    rows.client && unshownSurname(rows.client.name, shownName("client", rows.client)),
     rows.artisan && unshownSurname(rows.artisan.name, publicName(rows.artisan)),
   ].filter((surname): surname is string => !!surname);
   return {

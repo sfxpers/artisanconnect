@@ -217,7 +217,7 @@ The email the platform sends for each Payment and Refund to the Client, and for 
 _Avoid_: Invoice, Tax invoice
 
 **Review**:
-A 1 to 5 rating with an optional comment, one from each party once an Engagement is Completed, published only once the Admin approves it. Neither can read the other's until both submit or seven days pass.
+A 1 to 5 rating with an optional comment, one from each party once an Engagement is Completed, published only once the Admin approves it. Every Review waits for the Admin's Pre-check, as Held, but its author can never withdraw or change it. Neither can read the other's until both submit or seven days pass.
 _Avoid_: Feedback, Score, Reputation
 
 **Artisan record**:

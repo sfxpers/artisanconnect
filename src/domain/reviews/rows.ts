@@ -1,6 +1,6 @@
 import { and, desc, eq, exists, inArray, lte, ne, or, sql, type SQLWrapper } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
-import { clientShownName, publicName } from "../accounts/names";
+import { shownName } from "../accounts/names";
 import type { Context } from "../context";
 import { accounts, engagements, jobs, reviews, REVIEW_GROUNDS } from "../schema";
 import { SERVICE_CATEGORY_NAMES } from "../service-categories";
@@ -143,29 +143,6 @@ async function pageAt(ctx: Context, reviewedId: string, page: number, now: Date)
     .orderBy(desc(reviews.writtenAt), desc(sql.raw(`"reviews"."rowid"`)))
     .limit(REVIEWS_PAGE + 1)
     .offset((Number.isInteger(page) && page > 0 ? page : 0) * REVIEWS_PAGE);
-}
-
-/** How an Account appears to others: a Client by first name and initial, an Artisan by public name. */
-export function shownName(
-  kind: "client" | "artisan",
-  names: { name: string; tradingName: string | null },
-) {
-  return kind === "client" ? clientShownName(publicName(names)) : publicName(names);
-}
-
-/** How many Engagements each of these Accounts has Completed, as Client or Artisan, by id. */
-export async function completedCounts(
-  ctx: Context,
-  side: "clientId" | "artisanId",
-  accountIds: string[] | SQLWrapper,
-): Promise<{ get(id: string): number }> {
-  const rows = await ctx.db
-    .select({ accountId: engagements[side], count: sql<number>`count(*)` })
-    .from(engagements)
-    .where(and(inArray(engagements[side], accountIds), eq(engagements.state, "completed")))
-    .groupBy(engagements[side]);
-  const byId = new Map(rows.map((row) => [row.accountId, row.count]));
-  return { get: (id) => byId.get(id) ?? 0 };
 }
 
 /** Whether the Review is shown now, to the other party and anyone else who may read it. */

@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, inArray, sql, type SQLWrapper } from "drizzle-orm";
 import type { Context } from "../context";
 import { engagements, jobs, quotes } from "../schema";
 
@@ -26,4 +26,19 @@ export async function engagementRow(ctx: Context, engagementId: string) {
   if (!row) return null;
   const { engagement, ...rest } = row;
   return { ...engagement, ...rest };
+}
+
+/** How many Engagements each of these Accounts has Completed, as Client or Artisan, by id. */
+export async function completedCounts(
+  ctx: Context,
+  side: "clientId" | "artisanId",
+  accountIds: string[] | SQLWrapper,
+): Promise<{ get(id: string): number }> {
+  const rows = await ctx.db
+    .select({ accountId: engagements[side], count: sql<number>`count(*)` })
+    .from(engagements)
+    .where(and(inArray(engagements[side], accountIds), eq(engagements.state, "completed")))
+    .groupBy(engagements[side]);
+  const byId = new Map(rows.map((row) => [row.accountId, row.count]));
+  return { get: (id) => byId.get(id) ?? 0 };
 }

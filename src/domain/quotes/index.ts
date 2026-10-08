@@ -46,7 +46,8 @@ import {
   type QuoteRow,
 } from "./rows";
 import { isSuspended, suspendedNow } from "../standing";
-import { completedCounts, summariesOf } from "../reviews/rows";
+import { completedCounts } from "../engagements/rows";
+import { summariesOf } from "../reviews/rows";
 
 // Quotes (#124, ADR 0002, ADR 0004): an Artisan holding a Job Match or an
 // Invitation sends one fixed-price Quote on an Open Job. The Content check

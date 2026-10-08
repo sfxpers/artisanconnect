@@ -33,7 +33,7 @@ import {
   vatNumber,
   type SignUpDetails,
 } from "./inputs";
-import { clientShownName, publicName } from "./names";
+import { publicName, shownName } from "./names";
 import {
   checkNames,
   heldNames,
@@ -389,7 +389,7 @@ export const accountsSection = defineSection({
         // Names the Content check has not passed are nobody else's to see.
         if (!account.namesShown) return null;
         if (account.kind === "artisan") return publicName(account);
-        if (viewer.kind === "artisan") return clientShownName(publicName(account));
+        if (viewer.kind === "artisan") return shownName("client", account);
         return null;
       },
 

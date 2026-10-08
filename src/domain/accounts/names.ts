@@ -3,8 +3,19 @@ export function publicName(account: { name: string; tradingName: string | null }
   return account.tradingName ?? account.name;
 }
 
+/**
+ * How an Account appears to other Accounts: an Artisan by its public name, a
+ * Client by the first word and last initial of its own.
+ */
+export function shownName(
+  kind: "client" | "artisan",
+  names: { name: string; tradingName: string | null },
+): string {
+  return kind === "client" ? clientShownName(publicName(names)) : publicName(names);
+}
+
 /** How a Client appears to Artisans: the first word and last initial ("Thandi M."). */
-export function clientShownName(name: string): string {
+function clientShownName(name: string): string {
   const words = name.trim().split(/\s+/);
   const first = words[0] ?? "";
   if (words.length < 2) return first;

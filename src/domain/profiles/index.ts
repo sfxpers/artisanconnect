@@ -42,7 +42,8 @@ import {
   withdrawEdit,
 } from "./edits";
 import { aboutText } from "./inputs";
-import { completedCounts, reviewsShown, summariesOf } from "../reviews/rows";
+import { completedCounts } from "../engagements/rows";
+import { reviewsShown, summariesOf } from "../reviews/rows";
 
 // Browse and the Artisan Profile (#120, ADR 0016): anyone, signed in or not,
 // lists the Artisans verified for one Service Category, optionally in one

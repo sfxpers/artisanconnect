@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { accountIdOf, type Actor } from "../actor";
-import { publicName } from "../accounts/names";
+import { publicName, shownName } from "../accounts/names";
 import type { Context } from "../context";
 import { viewerOf } from "../conversations/parties";
 import { conversationRow, messageRow } from "../conversations/rows";
@@ -10,7 +10,7 @@ import { openableArtisan } from "../profiles";
 import { COUNTED_STATES } from "../quotes/rows";
 import { quoteRow } from "../quotes/rows";
 import { readsReview } from "../reviews/readers";
-import { reviewRow, shownName } from "../reviews/rows";
+import { reviewRow } from "../reviews/rows";
 import { accounts, type REPORT_SUBJECTS } from "../schema";
 
 // What a Report may be about, and who may make one: only an Account that

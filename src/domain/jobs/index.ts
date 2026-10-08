@@ -7,7 +7,7 @@ import type { Context } from "../context";
 import { causedBy } from "../errors";
 import { ok, refuse } from "../result";
 import { saDay } from "../sa-days";
-import { clientShownName, publicName } from "../accounts/names";
+import { shownName } from "../accounts/names";
 import { accounts, jobs, suburbs, type ENGAGEMENT_STATES, type JOB_STATES } from "../schema";
 import { defineSection } from "../section";
 import { SERVICE_CATEGORY_NAMES } from "../service-categories";
@@ -45,7 +45,8 @@ import {
   type JobPhoto,
   type JobRow,
 } from "./rows";
-import { completedCounts, reviewsShown } from "../reviews/rows";
+import { completedCounts } from "../engagements/rows";
+import { reviewsShown } from "../reviews/rows";
 
 type JobState = (typeof JOB_STATES)[number];
 type EngagementState = (typeof ENGAGEMENT_STATES)[number];
@@ -502,7 +503,7 @@ export const jobsSection = defineSection({
         takesQuotes: await takesQuotesNow(ctx, job.id),
         client: {
           // Names the Content check has not passed are nobody else's to see.
-          shownName: client?.namesShown ? clientShownName(publicName(client)) : null,
+          shownName: client?.namesShown ? shownName("client", client) : null,
           /** Reviews of the Client, which only an Artisan offered, invited, or Quoting reads (#138). */
           reviews: await reviewsShown(ctx, job.clientId),
           completed: (await completedCounts(ctx, "clientId", [job.clientId])).get(job.clientId),
