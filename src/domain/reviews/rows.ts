@@ -81,16 +81,23 @@ export async function summariesOf(
   reviewedIds: string[] | SQLWrapper,
   now = ctx.now(),
 ): Promise<{ get(id: string): ReviewSummary }> {
-  const rows = await ctx.db
-    .select({
-      reviewedId: reviews.reviewedId,
-      average: sql<number>`avg(${reviews.rating})`,
-      count: sql<number>`count(*)`,
-    })
-    .from(reviews)
-    .innerJoin(engagements, eq(engagements.id, reviews.engagementId))
-    .where(and(inArray(reviews.reviewedId, reviewedIds), shownAt(ctx, now)))
-    .groupBy(reviews.reviewedId);
+  const of = (ids: string[] | SQLWrapper) =>
+    ctx.db
+      .select({
+        reviewedId: reviews.reviewedId,
+        average: sql<number>`avg(${reviews.rating})`,
+        count: sql<number>`count(*)`,
+      })
+      .from(reviews)
+      .innerJoin(engagements, eq(engagements.id, reviews.engagementId))
+      .where(and(inArray(reviews.reviewedId, ids), shownAt(ctx, now)))
+      .groupBy(reviews.reviewedId);
+  // D1 binds at most 100 values a query, so a long list, such as Browse's, is read in parts.
+  const parts: (string[] | SQLWrapper)[] = [];
+  if (!Array.isArray(reviewedIds)) parts.push(reviewedIds);
+  else
+    for (let at = 0; at < reviewedIds.length; at += 90) parts.push(reviewedIds.slice(at, at + 90));
+  const rows = (await Promise.all(parts.map(of))).flat();
   const byId = new Map(rows.map(({ reviewedId, ...summary }) => [reviewedId, summary]));
   return { get: (id) => byId.get(id) ?? NONE };
 }
