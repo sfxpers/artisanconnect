@@ -63,6 +63,7 @@ test("a Client changes its Email, gets a copy of its data, closes its Account, a
     await expect(asClient.getByLabel("New Email")).toBeVisible({ timeout: 2000 });
   }).toPass();
   await asClient.getByLabel("New Email").fill(moved);
+  await asClient.getByLabel("Your password").fill(password);
   await asClient.getByRole("button", { name: "Send a code" }).click();
   await asClient.getByLabel("Email code").fill(await codeSentTo(asClient, moved));
   await asClient.getByRole("button", { name: "Change my Email" }).click();

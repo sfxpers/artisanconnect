@@ -372,21 +372,26 @@ describe("erasing an Account", () => {
     expect(settled.decisions.map((decision) => decision.key)).toEqual(["erase", "refuse"]);
   });
 
-  test("is not offered once the Account reopened; the request may be refused", async () => {
+  test("is withdrawn when the Account reopens, and it may ask again", async () => {
     const { domain, given, clock } = await createHarness();
     const admin = await given.admin();
     const client = await given.client();
     await domain.dataRequests.request(client.actor, { kind: "erasure" });
     clock.advance({ minutes: 1 });
     await domain.accounts.requestReopenCode(visitor, { email: client.email, ip: IP });
+
     await domain.accounts.reopen(visitor, {
       email: client.email,
       code: given.codeSentTo(client.email),
       ip: IP,
     });
 
-    expect((await dataItem(domain, admin)).decisions.map((decision) => decision.key)).toEqual([
-      "refuse",
+    expect((await domain.queues.home(admin.actor))?.counts["data-requests"]).toBe(0);
+    expect(await domain.dataRequests.mine(client.actor)).toEqual([
+      expect.objectContaining({ kind: "erasure", state: "withdrawn" }),
     ]);
+    expect(await domain.dataRequests.request(client.actor, { kind: "erasure" })).toMatchObject({
+      ok: true,
+    });
   });
 });

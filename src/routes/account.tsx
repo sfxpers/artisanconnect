@@ -251,6 +251,7 @@ function EmailRow({ email }: { email: string }) {
   const e = t.emailChange;
   const [stage, setStage] = useState<"shown" | "new" | "code">("shown");
   const [newEmail, setNewEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);
@@ -259,9 +260,10 @@ function EmailRow({ email }: { email: string }) {
   async function send() {
     setBusy(true);
     setRefusal(null);
-    const result = await requestEmailChange({ data: { email: newEmail } });
+    const result = await requestEmailChange({ data: { email: newEmail, password } });
     setBusy(false);
     if (!result.ok) return setRefusal(result.refusal.message);
+    setPassword("");
     setNewEmail(result.value.email);
     setStage("code");
   }
@@ -281,6 +283,7 @@ function EmailRow({ email }: { email: string }) {
   function cancel() {
     setStage("shown");
     setRefusal(null);
+    setPassword("");
     setCode("");
   }
 
@@ -317,6 +320,14 @@ function EmailRow({ email }: { email: string }) {
             autoComplete="email"
             value={newEmail}
             onChange={(event) => setNewEmail(event.target.value)}
+          />
+          <Label htmlFor="current-password">{e.password}</Label>
+          <Input
+            id="current-password"
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
           />
           <Refusal message={refusal} />
           <div className="flex gap-2">

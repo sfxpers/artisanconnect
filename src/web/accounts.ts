@@ -120,13 +120,13 @@ export const setVatNumber = createServerFn({ method: "POST" })
     return domain.accounts.setVatNumber(await requestActor(domain), data);
   });
 
-/** Sends an Email code to the new Email the signed-in Account gives. */
+/** Sends an Email code to the new Email the signed-in Account gives, with its password. */
 export const requestEmailChange = createServerFn({ method: "POST" })
-  .validator((input: { email: string }) => input)
+  .validator((input: { email: string; password: string }) => input)
   .handler(async ({ data }) => {
     const domain = requestDomain();
     return domain.accounts.requestEmailChange(await requestActor(domain), {
-      email: data.email,
+      ...data,
       cookie: requestCookie(),
       ip: requestIp(),
     });

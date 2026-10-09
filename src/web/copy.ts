@@ -1073,8 +1073,9 @@ export const copy = {
     },
     emailChange: {
       change: "Change Email",
-      lead: "We send a code to the new Email. Until you enter it, your Email stays as it is and still signs in.",
+      lead: "Give your password, and we send a code to the new Email. Until you enter it, your Email stays as it is and still signs in.",
       newEmail: "New Email",
+      password: "Your password",
       send: "Send a code",
       sent: (email: string) =>
         `A code is on its way to ${email}. It works once, for ${EMAIL_CODE.minutes} minutes.`,
@@ -1107,6 +1108,7 @@ export const copy = {
         sent: "Sent",
         erased: "Erased",
         refused: "Refused",
+        withdrawn: "Withdrawn as you reopened",
       },
       asked: (when: string) => `Asked ${when}`,
       download: "Download",

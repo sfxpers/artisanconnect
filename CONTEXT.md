@@ -249,7 +249,7 @@ A signed-in Account's message to the Admin under a fixed topic, which the Admin 
 _Avoid_: Ticket, Contact form
 
 **Data request**:
-An Account's request for a copy of its data, which the Admin sends as an export the Account downloads, or to have it erased, which closes it first. Erasure anonymises the Closed Account once no money is still owed to it, keeps its money records and Reviews (shown without the name), and is never undone (ADR `0021`).
+An Account's request for a copy of its data, which the Admin sends as an export the Account downloads, or to have it erased, which closes it first. Reopening the Account withdraws a waiting erasure. Erasure anonymises the Closed Account once no money is still owed to it, keeps its money records and Reviews (shown without the name), and is never undone (ADR `0021`).
 _Avoid_: Deletion, GDPR request
 
 **Leaving**:

@@ -2,8 +2,8 @@ import { describe, expect, test } from "vitest";
 import { visitor } from "@/domain/actor";
 import { createHarness, type Harness } from "../support/harness";
 
-// An Account changes its Email by proving the new one with an Email code
-// (#141). The old one signs in until then and is told of the change, so a
+// An Account changes its Email by giving its password and proving the new one
+// with an Email code (#141). The old one signs in until then and is told of the change, so a
 // stolen session cannot silently take the Account. An Email held by any
 // Account or an Admin is refused.
 
@@ -25,6 +25,7 @@ describe("changing the Email", () => {
 
     const asked = await domain.accounts.requestEmailChange(client.actor, {
       email: "thandi.m@example.com",
+      password: client.password,
       cookie: cookieOf(client.cookies),
       ip: IP,
     });
@@ -48,6 +49,7 @@ describe("changing the Email", () => {
     const cookie = cookieOf(client.cookies);
     await domain.accounts.requestEmailChange(client.actor, {
       email: "thandi.m@example.com",
+      password: client.password,
       cookie,
       ip: IP,
     });
@@ -79,6 +81,7 @@ describe("changing the Email", () => {
     const cookie = cookieOf(client.cookies);
     await domain.accounts.requestEmailChange(client.actor, {
       email: "thandi.m@example.com",
+      password: client.password,
       cookie,
       ip: IP,
     });
@@ -112,6 +115,7 @@ describe("changing the Email", () => {
 
     await domain.accounts.requestEmailChange(client.actor, {
       email: "taken@example.com",
+      password: client.password,
       cookie,
       ip: IP,
     });
@@ -136,6 +140,7 @@ describe("changing the Email, refused", () => {
 
     const asked = await domain.accounts.requestEmailChange(client.actor, {
       email: "Sipho@Example.com",
+      password: client.password,
       cookie: cookieOf(client.cookies),
       ip: IP,
     });
@@ -152,6 +157,7 @@ describe("changing the Email, refused", () => {
     expect(
       await domain.accounts.requestEmailChange(client.actor, {
         email: "staff@example.com",
+        password: client.password,
         cookie: cookieOf(client.cookies),
         ip: IP,
       }),
@@ -164,6 +170,7 @@ describe("changing the Email, refused", () => {
     const cookie = cookieOf(client.cookies);
     await domain.accounts.requestEmailChange(client.actor, {
       email: "new@example.com",
+      password: client.password,
       cookie,
       ip: IP,
     });
@@ -182,6 +189,21 @@ describe("changing the Email, refused", () => {
     expect((await domain.accounts.me(client.actor))?.email).toBe(client.email);
   });
 
+  test("without the Account's password, so a session taken from it cannot change it", async () => {
+    const { domain, given, mailer } = await createHarness();
+    const client = await given.client();
+
+    const asked = await domain.accounts.requestEmailChange(client.actor, {
+      email: "thief@example.com",
+      password: "not the password",
+      cookie: cookieOf(client.cookies),
+      ip: IP,
+    });
+
+    expect(asked).toMatchObject({ ok: false, refusal: { reason: "wrong-password" } });
+    expect(mailer.sentTo("thief@example.com")).toEqual([]);
+  });
+
   test("for the address it has already", async () => {
     const { domain, given } = await createHarness();
     const client = await given.client();
@@ -189,6 +211,7 @@ describe("changing the Email, refused", () => {
     expect(
       await domain.accounts.requestEmailChange(client.actor, {
         email: client.email,
+        password: client.password,
         cookie: cookieOf(client.cookies),
         ip: IP,
       }),
@@ -201,6 +224,7 @@ describe("changing the Email, refused", () => {
     const cookie = cookieOf(client.cookies);
     await domain.accounts.requestEmailChange(client.actor, {
       email: "new@example.com",
+      password: client.password,
       cookie,
       ip: IP,
     });
@@ -226,6 +250,7 @@ describe("changing the Email, refused", () => {
     expect(
       await domain.accounts.requestEmailChange(visitor, {
         email: "new@example.com",
+        password: client.password,
         cookie: cookieOf(client.cookies),
         ip: IP,
       }),
@@ -233,6 +258,7 @@ describe("changing the Email, refused", () => {
     expect(
       await domain.accounts.requestEmailChange(artisan.actor, {
         email: "new@example.com",
+        password: artisan.password,
         cookie: cookieOf(client.cookies),
         ip: IP,
       }),

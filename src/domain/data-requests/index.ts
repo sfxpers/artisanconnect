@@ -1,9 +1,10 @@
 import * as z from "zod";
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import { accountIdOf, type Actor } from "../actor";
 import { firstProblem } from "../accounts/inputs";
 import { closeAccount, closedRefusal, closedState } from "../accounts/closing";
-import type { Context } from "../context";
+import type { Context, Write } from "../context";
+import { WITHDRAWN } from "../content/held";
 import { formatRands } from "../money";
 import { defineQueueItemKind, type ItemView } from "../queues";
 import { peoplePage } from "../quotes/held";
@@ -44,6 +45,8 @@ const dataRequest = defineQueueItemKind("data.request", {
     "send-export": { label: "Send the export", told: "The Account, by email", reason: "none" },
     erase: { label: "Erase the Account", told: "The Account, by email", reason: "none" },
     refuse: { label: "Refuse", told: "The Account, by email", reason: "required" },
+    // Recorded as the Account reopens, never offered to the Admin.
+    [WITHDRAWN]: { label: "Withdrawn as the Account reopened", told: "Nobody", reason: "none" },
   },
   async allowed(ctx, item) {
     const request = await requestRow(ctx, item.subjectId);
@@ -155,6 +158,28 @@ const dataRequest = defineQueueItemKind("data.request", {
   },
 });
 
+/**
+ * The write that withdraws the Account's erasure request waiting for the
+ * Admin, if one is: reopening changes its mind.
+ */
+export function withdrawErasureWrite(ctx: Context, accountId: string): Write {
+  return ctx.db
+    .update(queueItems)
+    .set({ decision: WITHDRAWN, decidedAt: ctx.now() })
+    .where(
+      and(
+        inArray(
+          queueItems.id,
+          ctx.db
+            .select({ id: dataRequests.queueItemId })
+            .from(dataRequests)
+            .where(and(eq(dataRequests.accountId, accountId), eq(dataRequests.kind, "erasure"))),
+        ),
+        isNull(queueItems.decidedAt),
+      ),
+    );
+}
+
 export const dataRequestsSection = defineSection({
   name: "dataRequests",
   queueItems: [dataRequest],
@@ -238,7 +263,9 @@ export const dataRequestsSection = defineSection({
             ? ("refused" as const)
             : decision === "erase"
               ? ("erased" as const)
-              : ("sent" as const),
+              : decision === WITHDRAWN
+                ? ("withdrawn" as const)
+                : ("sent" as const),
         /** Why the Admin refused it. */
         reason: decision === "refuse" ? reason : null,
       }));

@@ -51,6 +51,7 @@ import { heldRefusal, isAddressTaken, takeAddress, toldOldAddress } from "./emai
 import { emailTells } from "../tells";
 import { verificationSettingsOf } from "../verification";
 import { closeAccount, closedRefusal, closedState } from "./closing";
+import { withdrawErasureWrite } from "../data-requests";
 import { standingOf } from "../standing";
 
 export const accountsSection = defineSection({
@@ -521,7 +522,8 @@ export const accountsSection = defineSection({
 
       /**
        * Reopens a Closed Account with its Email code and signs it in, as it
-       * was: a Closed Artisan's Verification stands. Marketplace rules
+       * was: a Closed Artisan's Verification stands, and an erasure it asked
+       * for is withdrawn. Marketplace rules
        * changed meanwhile are accepted here, or it stays Closed and the code
        * still works. The device and IP are recorded, as at every sign-in.
        */
@@ -593,6 +595,8 @@ export const accountsSection = defineSection({
               ...(rulesChanged ? { rulesVersion: rules.version, rulesAcceptedAt: now } : {}),
             })
             .where(and(eq(accounts.id, account.id), eq(accounts.closedAt, account.closedAt))),
+          // Reopening changes its mind about erasure.
+          withdrawErasureWrite(ctx, account.id),
         ]);
         await recordSighting(ctx, account.id, input, "sign-in");
         const signedInAs: AccountActor = { kind: account.kind, accountId: account.id };
@@ -600,16 +604,32 @@ export const accountsSection = defineSection({
       },
 
       /**
-       * Sends an Email code to the new address the signed-in Account gives.
-       * Its Email stays as it is, and signs in, until the code is entered. An
-       * address any Account or an Admin holds is refused.
+       * Sends an Email code to the new address the signed-in Account gives,
+       * with its password, so a session taken from it cannot change the
+       * Email. Its Email stays as it is, and signs in, until the code is
+       * entered. An address any Account or an Admin holds is refused.
        */
       async requestEmailChange(
         actor: Actor,
-        input: { email: string; cookie: string | null } & From,
+        input: { email: string; password: string; cookie: string | null } & From,
       ) {
         const session = await sessionOf(actor, input.cookie);
         if (!session) return refuse("sign-in-required", "Sign in to change your Email.");
+        // Counted as a sign-in with the Email, so the password cannot be guessed here instead.
+        const tried = await tryWithin(ctx, [
+          { key: `sign-in:${input.ip}`, ...LIMITS.signInPerIp },
+          { key: `sign-in:${session.email}`, ...LIMITS.signInPerEmail },
+        ]);
+        if (!tried.ok) return slowDown(tried.waitSeconds);
+        try {
+          await getAuth().api.verifyPassword({
+            body: { password: input.password ?? "" },
+            headers: session.headers,
+          });
+        } catch (error) {
+          authErrorCode(error);
+          return refuse("wrong-password", "That is not your password.");
+        }
         const address = email.safeParse(input.email);
         if (!address.success) return refuse("invalid", firstProblem(address.error));
         if (address.data === session.email) {
