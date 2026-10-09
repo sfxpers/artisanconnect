@@ -1,15 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
-
-/** The newest Email code the local app sent to an address. */
-async function codeSentTo(page: Page, email: string): Promise<string> {
-  const mailbox = await page.context().newPage();
-  await mailbox.goto("/dev/mail");
-  const text = await mailbox.getByTestId("email").filter({ hasText: email }).first().innerText();
-  await mailbox.close();
-  const code = text.match(/\b\d{6}\b/)?.[0];
-  if (!code) throw new Error(`No Email code was sent to ${email}`);
-  return code;
-}
+import { expect, test } from "@playwright/test";
+import { codeSentTo } from "./support/helpers";
 
 test("a Visitor signs up as a Client and lands ready to post a Job", async ({ page }) => {
   const email = `client-${Date.now()}@example.com`;

@@ -1,24 +1,13 @@
-import { execFileSync } from "node:child_process";
 import { expect, test } from "@playwright/test";
-
-/** What the seed made in the local app's D1: a Client, and their Job with one Sent Quote. */
-function seedHire(): { email: string; password: string; jobId: string } {
-  const output = execFileSync(process.execPath, ["e2e/support/seed.mjs", "hire"], {
-    encoding: "utf8",
-  });
-  return JSON.parse(output.trim().split("\n").at(-1)!);
-}
+import { seed, signIn } from "./support/helpers";
 
 test("a Client Hires a Sent Quote through the fake checkout", async ({ page }) => {
-  const { email, password, jobId } = seedHire();
+  // A Client, and their Job with one Sent Quote.
+  const { email, password, jobId } = seed<{ email: string; password: string; jobId: string }>(
+    "hire",
+  );
 
-  await page.goto("/sign-in");
-  const signIn = page.getByRole("button", { name: "Sign in" });
-  // Enabled once the page has hydrated and Turnstile has passed; filled sooner, it is emptied.
-  await expect(signIn).toBeEnabled({ timeout: 30_000 });
-  await page.getByLabel("Email", { exact: true }).fill(email);
-  await page.getByLabel("Password", { exact: true }).fill(password);
-  await signIn.click();
+  await signIn(page, { email, password });
   await expect(page).toHaveURL(/\/jobs$/);
 
   await page.goto(`/jobs/${jobId}`);

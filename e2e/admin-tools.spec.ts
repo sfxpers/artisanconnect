@@ -1,36 +1,8 @@
-import { execFileSync } from "node:child_process";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
+import { seed, signInAdmin } from "./support/helpers";
 
 // Read-only: a suburb added or a rules version published can never be taken
 // back, so this stops short of both, which the domain tests cover.
-
-/** Runs a seed against the local app's D1, and gives what it printed. */
-function seed<T>(...args: string[]): T {
-  const output = execFileSync(process.execPath, ["e2e/support/seed.mjs", ...args], {
-    encoding: "utf8",
-  });
-  return JSON.parse(output.trim().split("\n").at(-1)!);
-}
-
-/** Signs the Admin in with an Email code, read from the local app's mail. */
-async function signInAdmin(page: Page, email: string) {
-  await page.goto("/admin/sign-in");
-  await expect(async () => {
-    // A cold dev server may take a while to ask for the code once it is sent.
-    if (await page.getByLabel("Email code").isVisible()) return;
-    // Filled before hydration it is emptied, so fill it until the code is asked for.
-    await page.getByLabel("Email", { exact: true }).fill(email, { timeout: 2000 });
-    await page.getByRole("button", { name: "Send my sign-in code" }).click({ timeout: 2000 });
-    await expect(page.getByLabel("Email code")).toBeVisible({ timeout: 2000 });
-  }).toPass({ timeout: 30_000 });
-  const mail = await page.context().newPage();
-  await mail.goto("/dev/mail");
-  const text = await mail.getByTestId("email").filter({ hasText: email }).first().innerText();
-  await mail.close();
-  await page.getByLabel("Email code").fill(text.match(/\b\d{6}\b/)![0]);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page).toHaveURL(/\/admin$/);
-}
 
 test("the Admin reads the figures, is asked again for a suburb that reads alike, and stops short of publishing rules", async ({
   page,

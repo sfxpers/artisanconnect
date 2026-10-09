@@ -1,24 +1,5 @@
-import { execFileSync } from "node:child_process";
-import { expect, test, type Page } from "@playwright/test";
-
-/** Runs a seed against the local app's D1, and gives what it printed. */
-function seed<T>(...args: string[]): T {
-  const output = execFileSync(process.execPath, ["e2e/support/seed.mjs", ...args], {
-    encoding: "utf8",
-  });
-  return JSON.parse(output.trim().split("\n").at(-1)!);
-}
-
-async function signIn(page: Page, account: { email: string; password: string }) {
-  await page.goto("/sign-in");
-  const button = page.getByRole("button", { name: "Sign in" });
-  // Enabled once the page has hydrated and Turnstile has passed; filled sooner, it is emptied.
-  await expect(button).toBeEnabled({ timeout: 30_000 });
-  await page.getByLabel("Email", { exact: true }).fill(account.email);
-  await page.getByLabel("Password", { exact: true }).fill(account.password);
-  await button.click();
-  await expect(page).not.toHaveURL(/\/sign-in/);
-}
+import { expect, test } from "@playwright/test";
+import { seed, signIn } from "./support/helpers";
 
 test("the Artisan proposes an Updated Quote, and the Client pays the difference through the fake checkout", async ({
   browser,

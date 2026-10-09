@@ -1,13 +1,5 @@
-import { execFileSync } from "node:child_process";
 import { expect, test } from "@playwright/test";
-
-/** Runs a seed against the local app's D1, and gives what it printed. */
-function seed<T>(...args: string[]): T {
-  const output = execFileSync(process.execPath, ["e2e/support/seed.mjs", ...args], {
-    encoding: "utf8",
-  });
-  return JSON.parse(output.trim().split("\n").at(-1)!);
-}
+import { seed, signIn } from "./support/helpers";
 
 test("a Client marks Work started, and approves the Artisan's Completion", async ({ page }) => {
   const { email, password, jobId, engagementId } = seed<{
@@ -19,13 +11,7 @@ test("a Client marks Work started, and approves the Artisan's Completion", async
   // Work started and Approve each ask to confirm.
   page.on("dialog", (dialog) => void dialog.accept());
 
-  await page.goto("/sign-in");
-  const signIn = page.getByRole("button", { name: "Sign in" });
-  // Enabled once the page has hydrated and Turnstile has passed; filled sooner, it is emptied.
-  await expect(signIn).toBeEnabled({ timeout: 30_000 });
-  await page.getByLabel("Email", { exact: true }).fill(email);
-  await page.getByLabel("Password", { exact: true }).fill(password);
-  await signIn.click();
+  await signIn(page, { email, password });
   await expect(page).toHaveURL(/\/jobs$/);
 
   // The seed's start date is 30 days out, so only the Client can mark Work started now.

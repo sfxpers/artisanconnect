@@ -1,13 +1,5 @@
-import { execFileSync } from "node:child_process";
 import { expect, test } from "@playwright/test";
-
-/** Runs a seed against the local app's D1, and gives what it printed. */
-function seed<T>(...args: string[]): T {
-  const output = execFileSync(process.execPath, ["e2e/support/seed.mjs", ...args], {
-    encoding: "utf8",
-  });
-  return JSON.parse(output.trim().split("\n").at(-1)!);
-}
+import { seed, signIn } from "./support/helpers";
 
 test("the Engagement's Conversation shows the Hire, voice notes, and PDFs, and takes a phone number", async ({
   page,
@@ -20,13 +12,7 @@ test("the Engagement's Conversation shows the Hire, voice notes, and PDFs, and t
   }>("hired");
   const { conversationId } = seed<{ conversationId: string }>("engagementMessage", engagementId);
 
-  await page.goto("/sign-in");
-  const signIn = page.getByRole("button", { name: "Sign in" });
-  // Enabled once the page has hydrated and Turnstile has passed; filled sooner, it is emptied.
-  await expect(signIn).toBeEnabled({ timeout: 30_000 });
-  await page.getByLabel("Email", { exact: true }).fill(email);
-  await page.getByLabel("Password", { exact: true }).fill(password);
-  await signIn.click();
+  await signIn(page, { email, password });
   await expect(page).toHaveURL(/\/jobs$/);
 
   await page.goto(`/jobs/${jobId}?tab=messages&conversation=${conversationId}`);

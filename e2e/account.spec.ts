@@ -1,46 +1,5 @@
-import { execFileSync } from "node:child_process";
-import { expect, test, type Page } from "@playwright/test";
-
-/** Runs a seed against the local app's D1, and gives what it printed. */
-function seed<T>(...args: string[]): T {
-  const output = execFileSync(process.execPath, ["e2e/support/seed.mjs", ...args], {
-    encoding: "utf8",
-  });
-  return JSON.parse(output.trim().split("\n").at(-1)!);
-}
-
-async function signIn(page: Page, account: { email: string; password: string }) {
-  await page.goto("/sign-in");
-  const button = page.getByRole("button", { name: "Sign in" });
-  // Enabled once the page has hydrated and Turnstile has passed; filled sooner, it is emptied.
-  await expect(button).toBeEnabled({ timeout: 30_000 });
-  await page.getByLabel("Email", { exact: true }).fill(account.email);
-  await page.getByLabel("Password", { exact: true }).fill(account.password);
-  await button.click();
-}
-
-/** The newest Email code the local app sent to the address. */
-async function codeSentTo(page: Page, email: string) {
-  const mail = await page.context().newPage();
-  await mail.goto("/dev/mail");
-  const text = await mail.getByTestId("email").filter({ hasText: email }).first().innerText();
-  await mail.close();
-  return text.match(/\b\d{6}\b/)![0];
-}
-
-/** Signs the Admin in with an Email code, read from the local app's mail. */
-async function signInAdmin(page: Page, email: string) {
-  await page.goto("/admin/sign-in");
-  await expect(async () => {
-    // Filled before hydration it is emptied, so fill it until the code is asked for.
-    await page.getByLabel("Email", { exact: true }).fill(email, { timeout: 2000 });
-    await page.getByRole("button", { name: "Send my sign-in code" }).click({ timeout: 2000 });
-    await expect(page.getByLabel("Email code")).toBeVisible({ timeout: 2000 });
-  }).toPass({ timeout: 30_000 });
-  await page.getByLabel("Email code").fill(await codeSentTo(page, email));
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page).toHaveURL(/\/admin$/);
-}
+import { expect, test } from "@playwright/test";
+import { codeSentTo, seed, signIn, signInAdmin, submitSignIn } from "./support/helpers";
 
 test("a Client changes its Email, gets a copy of its data, closes its Account, and reopens it", async ({
   browser,
@@ -54,7 +13,6 @@ test("a Client changes its Email, gets a copy of its data, closes its Account, a
   const asClient = await (await browser.newContext()).newPage();
   asClient.on("dialog", (dialog) => void dialog.accept());
   await signIn(asClient, { email, password });
-  await expect(asClient).not.toHaveURL(/\/sign-in/);
 
   // The Email changes once the code sent to the new one is entered.
   await asClient.goto("/account");
@@ -98,7 +56,8 @@ test("a Client changes its Email, gets a copy of its data, closes its Account, a
   // Closing closes the Open Job and signs the Client out.
   await asClient.getByRole("button", { name: "Close my Account" }).click();
   await expect(asClient).toHaveURL(/\/$/);
-  await signIn(asClient, { email: moved, password });
+  // A Closed Account is refused at sign-in.
+  await submitSignIn(asClient, { email: moved, password });
   await expect(
     asClient.getByText("This Account is closed. Reopen it with an Email code."),
   ).toBeVisible();
