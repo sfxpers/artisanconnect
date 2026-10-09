@@ -15,6 +15,9 @@ function navFor(me: Me | null, admin: AdminMe | null): NavItem[] {
       { to: "/admin", label: t.queues },
       { to: "/admin/people", label: t.people },
       { to: "/admin/payouts", label: t.payouts },
+      { to: "/admin/figures", label: t.figures },
+      { to: "/admin/suburbs", label: t.suburbs },
+      { to: "/admin/rules", label: t.rules },
       { to: "/admin/admins", label: t.admins },
       { to: "/admin/audit", label: t.audit },
     ];

@@ -29,7 +29,10 @@ import { Route as VerificationRouteImport } from './routes/verification'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminAdminsRouteImport } from './routes/admin/admins'
 import { Route as AdminAuditRouteImport } from './routes/admin/audit'
+import { Route as AdminFiguresRouteImport } from './routes/admin/figures'
+import { Route as AdminRulesRouteImport } from './routes/admin/rules'
 import { Route as AdminSignInRouteImport } from './routes/admin/sign-in'
+import { Route as AdminSuburbsRouteImport } from './routes/admin/suburbs'
 import { Route as ArtisansIndexRouteImport } from './routes/artisans.index'
 import { Route as ArtisansArtisanIdRouteImport } from './routes/artisans.$artisanId'
 import { Route as DataExportsRequestIdRouteImport } from './routes/data-exports.$requestId'
@@ -151,9 +154,24 @@ const AdminAuditRoute = AdminAuditRouteImport.update({
   path: '/admin/audit',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminFiguresRoute = AdminFiguresRouteImport.update({
+  id: '/admin/figures',
+  path: '/admin/figures',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRulesRoute = AdminRulesRouteImport.update({
+  id: '/admin/rules',
+  path: '/admin/rules',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminSignInRoute = AdminSignInRouteImport.update({
   id: '/admin/sign-in',
   path: '/admin/sign-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminSuburbsRoute = AdminSuburbsRouteImport.update({
+  id: '/admin/suburbs',
+  path: '/admin/suburbs',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ArtisansIndexRoute = ArtisansIndexRouteImport.update({
@@ -282,7 +300,10 @@ export interface FileRoutesByFullPath {
   '/verification': typeof VerificationRoute
   '/admin/admins': typeof AdminAdminsRoute
   '/admin/audit': typeof AdminAuditRoute
+  '/admin/figures': typeof AdminFiguresRoute
+  '/admin/rules': typeof AdminRulesRoute
   '/admin/sign-in': typeof AdminSignInRoute
+  '/admin/suburbs': typeof AdminSuburbsRoute
   '/artisans/$artisanId': typeof ArtisansArtisanIdRoute
   '/data-exports/$requestId': typeof DataExportsRequestIdRoute
   '/dev/mail': typeof DevMailRoute
@@ -325,7 +346,10 @@ export interface FileRoutesByTo {
   '/verification': typeof VerificationRoute
   '/admin/admins': typeof AdminAdminsRoute
   '/admin/audit': typeof AdminAuditRoute
+  '/admin/figures': typeof AdminFiguresRoute
+  '/admin/rules': typeof AdminRulesRoute
   '/admin/sign-in': typeof AdminSignInRoute
+  '/admin/suburbs': typeof AdminSuburbsRoute
   '/artisans/$artisanId': typeof ArtisansArtisanIdRoute
   '/data-exports/$requestId': typeof DataExportsRequestIdRoute
   '/dev/mail': typeof DevMailRoute
@@ -369,7 +393,10 @@ export interface FileRoutesById {
   '/verification': typeof VerificationRoute
   '/admin/admins': typeof AdminAdminsRoute
   '/admin/audit': typeof AdminAuditRoute
+  '/admin/figures': typeof AdminFiguresRoute
+  '/admin/rules': typeof AdminRulesRoute
   '/admin/sign-in': typeof AdminSignInRoute
+  '/admin/suburbs': typeof AdminSuburbsRoute
   '/artisans/$artisanId': typeof ArtisansArtisanIdRoute
   '/data-exports/$requestId': typeof DataExportsRequestIdRoute
   '/dev/mail': typeof DevMailRoute
@@ -414,7 +441,10 @@ export interface FileRouteTypes {
     | '/verification'
     | '/admin/admins'
     | '/admin/audit'
+    | '/admin/figures'
+    | '/admin/rules'
     | '/admin/sign-in'
+    | '/admin/suburbs'
     | '/artisans/$artisanId'
     | '/data-exports/$requestId'
     | '/dev/mail'
@@ -457,7 +487,10 @@ export interface FileRouteTypes {
     | '/verification'
     | '/admin/admins'
     | '/admin/audit'
+    | '/admin/figures'
+    | '/admin/rules'
     | '/admin/sign-in'
+    | '/admin/suburbs'
     | '/artisans/$artisanId'
     | '/data-exports/$requestId'
     | '/dev/mail'
@@ -500,7 +533,10 @@ export interface FileRouteTypes {
     | '/verification'
     | '/admin/admins'
     | '/admin/audit'
+    | '/admin/figures'
+    | '/admin/rules'
     | '/admin/sign-in'
+    | '/admin/suburbs'
     | '/artisans/$artisanId'
     | '/data-exports/$requestId'
     | '/dev/mail'
@@ -544,7 +580,10 @@ export interface RootRouteChildren {
   VerificationRoute: typeof VerificationRoute
   AdminAdminsRoute: typeof AdminAdminsRoute
   AdminAuditRoute: typeof AdminAuditRoute
+  AdminFiguresRoute: typeof AdminFiguresRoute
+  AdminRulesRoute: typeof AdminRulesRoute
   AdminSignInRoute: typeof AdminSignInRoute
+  AdminSuburbsRoute: typeof AdminSuburbsRoute
   ArtisansArtisanIdRoute: typeof ArtisansArtisanIdRoute
   DataExportsRequestIdRoute: typeof DataExportsRequestIdRoute
   DevMailRoute: typeof DevMailRoute
@@ -710,11 +749,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAuditRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/figures': {
+      id: '/admin/figures'
+      path: '/admin/figures'
+      fullPath: '/admin/figures'
+      preLoaderRoute: typeof AdminFiguresRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/rules': {
+      id: '/admin/rules'
+      path: '/admin/rules'
+      fullPath: '/admin/rules'
+      preLoaderRoute: typeof AdminRulesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/sign-in': {
       id: '/admin/sign-in'
       path: '/admin/sign-in'
       fullPath: '/admin/sign-in'
       preLoaderRoute: typeof AdminSignInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/suburbs': {
+      id: '/admin/suburbs'
+      path: '/admin/suburbs'
+      fullPath: '/admin/suburbs'
+      preLoaderRoute: typeof AdminSuburbsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/artisans/': {
@@ -880,7 +940,10 @@ const rootRouteChildren: RootRouteChildren = {
   VerificationRoute: VerificationRoute,
   AdminAdminsRoute: AdminAdminsRoute,
   AdminAuditRoute: AdminAuditRoute,
+  AdminFiguresRoute: AdminFiguresRoute,
+  AdminRulesRoute: AdminRulesRoute,
   AdminSignInRoute: AdminSignInRoute,
+  AdminSuburbsRoute: AdminSuburbsRoute,
   ArtisansArtisanIdRoute: ArtisansArtisanIdRoute,
   DataExportsRequestIdRoute: DataExportsRequestIdRoute,
   DevMailRoute: DevMailRoute,

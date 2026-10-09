@@ -16,6 +16,9 @@ export const copy = {
       queues: "Queues",
       people: "People",
       payouts: "Payouts",
+      figures: "Figures",
+      suburbs: "Suburbs",
+      rules: "Rules",
       admins: "Admins",
       audit: "Audit log",
       signOut: "Sign out",
@@ -1372,6 +1375,99 @@ export const copy = {
       empty: "Nothing has been logged yet.",
       system: "ArtisanConnect",
       older: "Older",
+    },
+    figures: {
+      title: "Figures",
+      lead: "How the marketplace is doing, with no targets. Jobs and Hires count by when they were posted and Hired, with what has become of them since; money, Leaving, and refused sends by when they happened.",
+      periods: {
+        "7d": "7 days",
+        "30d": "30 days",
+        "90d": "90 days",
+        "365d": "365 days",
+        all: "All time",
+      },
+      since: (date: string) => `Since ${date}`,
+      allTime: "Since the start",
+      jobs: "Jobs",
+      hires: "Hires",
+      money: "Money",
+      trust: "Leaving and the Content check",
+      jobsPosted: "Jobs posted",
+      jobsPostedNote:
+        "First opened in the period, at posting or the Admin's release. A Renew is not a new Job.",
+      jobsWithQuote: "Jobs with a Quote",
+      jobsWithQuoteNote: (count: number, of: number) =>
+        `${count} of the ${of} Jobs posted had a Quote Sent.`,
+      hiresCount: "Hires",
+      hiresNote: (inProgress: number) =>
+        inProgress === 1
+          ? "1 is not yet Completed or Cancelled."
+          : `${inProgress} are not yet Completed or Cancelled.`,
+      repeat: "Repeat Hire rate",
+      repeatNote: (count: number, of: number) =>
+        `${count} of ${of} Hires were in a Client Relationship that had a Completed Engagement, at the lower Artisan Fee.`,
+      completed: "Completed rate",
+      completedNote: (count: number, of: number) => `${count} of ${of} Hires are Completed.`,
+      cancellation: "Cancellation rate",
+      cancellationNote: (byClient: number, byArtisan: number, of: number) =>
+        `Of ${of} Hires, ${byClient} cancelled by the Client and ${byArtisan} by the Artisan. One a Chargeback decision ended is neither.`,
+      dispute: "Dispute rate",
+      disputeNote: (count: number, of: number) => `${count} of ${of} Hires had a Dispute.`,
+      paymentValue: "Payment value",
+      paymentValueNote: (refunded: string, chargedBack: string) =>
+        `Paid in for Hires and Updated Quotes, Protection Fees included. In the same days ${refunded} was refunded, and the bank sent back ${chargedBack} by Chargebacks.`,
+      protectionFees: "Protection Fees",
+      protectionFeesNote: "5% of each Payment, never refunded.",
+      artisanFees: "Artisan Fees",
+      artisanFeesNote: "Kept from each Release, Materials and Labour alike, never refunded.",
+      leavingWarnings: "Leaving warnings",
+      leavingWarningsNote: (suspensions: number) =>
+        suspensions === 1
+          ? "And 1 Suspension for Leaving."
+          : `And ${suspensions} Suspensions for Leaving.`,
+      refusedSends: "Refused sends",
+      refusedSendsNote:
+        "Sends on a Job the Content check refused as a sure hit, a discarded Draft's included. Names, Profile edits, and Report notes are not counted.",
+    },
+    suburbs: {
+      title: "Suburbs",
+      lead: "The City's official suburbs, each in one Region, which a Client picks to place a Job. Add one the City creates. A suburb is never moved, renamed, or removed, so check its name and Region first.",
+      add: "Add a suburb",
+      addLead: "Name it as the City publishes it. Nobody is told; Clients can pick it at once.",
+      name: "Name",
+      namePlaceholder: "NEW HORIZONS",
+      region: "Region",
+      chooseRegion: "Choose a Region",
+      submit: "Add the suburb",
+      anyway: "Add it anyway",
+      added: (name: string, region: string) => `${name} is added to ${region}.`,
+      count: (count: number) => (count === 1 ? "1 suburb" : `${count} suburbs`),
+      total: (count: number) => `${count} suburbs in all.`,
+      open: (region: string) => `Show the suburbs of ${region}`,
+      close: (region: string) => `Hide the suburbs of ${region}`,
+    },
+    rules: {
+      title: "Marketplace rules",
+      lead: "Every Account accepts the current version at sign-up, and again at its next sign-in after a change, with the version and time recorded.",
+      publish: (version: number) => `Publish version ${version}`,
+      publishLead:
+        "Say what changed. Every Account is told, and must accept the new version at its next sign-in.",
+      summary: "What changed",
+      confirmLead: (version: number) =>
+        `Publish version ${version}? Every Account is told at once, and nobody signs in again without accepting it. A version is never withdrawn.`,
+      confirm: "Publish",
+      cancel: "Cancel",
+      published: (version: number) => `Version ${version} is published.`,
+      versions: "Versions",
+      version: (version: number, published: string) => `Version ${version}, published ${published}`,
+      current: "Current",
+      acceptedCurrent: (count: number, of: number) =>
+        `${count} of ${of} Accounts have accepted it.`,
+      acceptedOlder: (count: number) =>
+        count === 1
+          ? "1 Account accepted this one last, and accepts the current version at its next sign-in."
+          : `${count} Accounts accepted this one last, and accept the current version at their next sign-in.`,
+      read: "Read the rules as Accounts see them",
     },
   },
   notBuilt: "This page is not built yet.",

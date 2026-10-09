@@ -538,6 +538,52 @@ describe("the Marketplace rules", () => {
       rules: { version: 2, acceptedAt: clock.now() },
     });
   });
+
+  test("are listed for the Admin newest first, with the Accounts that accepted each last", async () => {
+    const { domain, given, clock } = await createHarness();
+    const admin = await given.admin();
+    const stays = await given.client();
+    const accepts = await given.artisan();
+    // A sign-up that never proved its Email is no Account yet.
+    const rules = await domain.marketplaceRules.current(visitor);
+    await domain.accounts.signUp(visitor, {
+      kind: "client",
+      name: "Lindiwe Dube",
+      email: "unproven@example.com",
+      password: "correct horse battery",
+      rulesVersion: rules.version,
+      consentsToDataUse: true,
+      ip: IP,
+    });
+    clock.advance({ days: 1 });
+    await domain.marketplaceRules.publish(admin.actor, { summary: "Fees are now shown in bold." });
+    const published = clock.now();
+    await domain.accounts.signIn(visitor, {
+      email: accepts.email,
+      password: accepts.password,
+      ip: IP,
+      acceptsRules: { rulesVersion: 2, consentsToDataUse: true },
+    });
+
+    expect(await domain.marketplaceRules.versions(admin.actor)).toEqual({
+      accounts: 2,
+      versions: [
+        {
+          version: 2,
+          summary: "Fees are now shown in bold.",
+          publishedAt: published,
+          acceptedLastBy: 1,
+        },
+        {
+          version: 1,
+          summary: expect.any(String),
+          publishedAt: expect.any(Date),
+          acceptedLastBy: 1,
+        },
+      ],
+    });
+    expect(await domain.marketplaceRules.versions(stays.actor)).toBeNull();
+  });
 });
 
 describe("a shown name", () => {

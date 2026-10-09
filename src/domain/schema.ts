@@ -565,7 +565,7 @@ export const sightings = sqliteTable(
 /**
  * Each send on a Job the Content check refused as a sure hit (#140): it
  * counts toward nothing but the Signal of one Account refused again and
- * again on one Job.
+ * again on one Job, and the Admin's figures (#142).
  */
 export const refusedSends = sqliteTable(
   "refused_sends",
@@ -574,10 +574,8 @@ export const refusedSends = sqliteTable(
     accountId: text("account_id")
       .notNull()
       .references(() => accounts.id, { onDelete: "cascade" }),
-    /** A Draft discarded takes its refusals with it. */
-    jobId: text("job_id")
-      .notNull()
-      .references(() => jobs.id, { onDelete: "cascade" }),
+    /** Null once its Draft is discarded: the refusal still counts in the figures (#142). */
+    jobId: text("job_id").references(() => jobs.id, { onDelete: "set null" }),
     /** What was sent, for the Admin: "a Quote", "a message", … */
     what: text("what").notNull(),
     /** The reason the sender was shown. */
@@ -842,6 +840,8 @@ export const jobs = sqliteTable(
     revision: integer("revision").notNull().default(0),
     /** When it last became Open, at posting, release, or Renew. Quotes count from here. */
     openedAt: instant("opened_at"),
+    /** When it first became Open, at posting or release (#142). Never changes. */
+    postedAt: instant("posted_at"),
     /** When it Expires without a Hire: 14 days after it opened. */
     expiresAt: instant("expires_at"),
     /** When an Open matched Job's next Batch is due; null for an Invite-only one. */
@@ -861,6 +861,7 @@ export const jobs = sqliteTable(
   (table) => [
     index("jobs_client").on(table.clientId, table.updatedAt),
     index("jobs_hire_again").on(table.hireAgainOf),
+    index("jobs_posted").on(table.postedAt),
     check("jobs_state", sql.raw(`state in (${JOB_STATES.map((s) => `'${s}'`).join(", ")})`)),
   ],
 );

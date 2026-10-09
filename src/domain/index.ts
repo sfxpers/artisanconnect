@@ -11,6 +11,7 @@ import { createContext } from "./context";
 import { conversationsSection } from "./conversations";
 import { dataRequestsSection } from "./data-requests";
 import { engagementsSection } from "./engagements";
+import { figuresSection } from "./figures";
 import { settleDisputesHoldingNothing } from "./engagements/dispute";
 import { invitationsSection } from "./invitations";
 import { jobsSection } from "./jobs";
@@ -41,6 +42,7 @@ export const sections = [
   conversationsSection,
   dataRequestsSection,
   engagementsSection,
+  figuresSection,
   invitationsSection,
   jobsSection,
   marketplaceRulesSection,

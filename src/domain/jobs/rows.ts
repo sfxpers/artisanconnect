@@ -120,6 +120,8 @@ export function openWrites(
       .set({
         state: "open",
         openedAt: now,
+        // Set at posting or release, kept through Renew (#142).
+        postedAt: sql`coalesce(${jobs.postedAt}, ${now.getTime()})`,
         expiresAt,
         nextBatchAt: matched ? now : null,
         updatedAt: now,

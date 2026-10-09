@@ -171,6 +171,124 @@ describe("searching suburbs", () => {
   });
 });
 
+describe("adding a suburb", () => {
+  test("puts the City's new suburb in a Region, found and posted in like any other", async () => {
+    const { domain, given } = await createHarness();
+    const admin = await given.admin();
+
+    const added = await domain.regions.addSuburb(admin.actor, {
+      name: "  NEW   HORIZONS ",
+      regionId: "southern",
+    });
+
+    expect(added).toEqual({ ok: true, value: { suburbId: expect.any(String) } });
+    const suburbId = added.ok ? added.value.suburbId : "";
+    const southern = (await domain.regions.all(visitor)).find((region) => region.id === "southern");
+    expect(southern?.suburbs).toContainEqual({ id: suburbId, name: "NEW HORIZONS" });
+    expect(await domain.regions.searchSuburbs(visitor, { query: "new horizons" })).toEqual([
+      { id: suburbId, name: "NEW HORIZONS", region: { id: "southern", name: "Southern" } },
+    ]);
+    const client = await given.client();
+    const jobId = await given.openJob(client, { suburbId });
+    expect(await domain.jobs.view(client.actor, { jobId })).toMatchObject({
+      suburb: { id: suburbId, name: "NEW HORIZONS" },
+    });
+  });
+
+  test("is logged with the Admin who added it", async () => {
+    const { domain, given } = await createHarness();
+    const admin = await given.admin();
+
+    const added = await domain.regions.addSuburb(admin.actor, {
+      name: "NEW HORIZONS",
+      regionId: "southern",
+    });
+
+    expect((await domain.admins.auditLog(admin.actor))!.rows).toMatchObject([
+      {
+        admin: "admin@example.com",
+        action: "suburb.added",
+        summary: "Added the suburb NEW HORIZONS to Southern",
+        subjectId: added.ok ? added.value.suburbId : "",
+      },
+    ]);
+  });
+
+  test("is the Admin's only", async () => {
+    const { domain, given } = await createHarness();
+    const client = await given.client();
+
+    expect(
+      await domain.regions.addSuburb(client.actor, { name: "NEW HORIZONS", regionId: "southern" }),
+    ).toEqual({ ok: false, refusal: { reason: "admin-only", message: expect.any(String) } });
+    expect(await domain.regions.searchSuburbs(visitor, { query: "new horizons" })).toEqual([]);
+  });
+
+  test.each([
+    ["no name", { name: "   ", regionId: "southern" }, /Name the suburb/],
+    ["a name of punctuation only", { name: "'-/", regionId: "southern" }, /Name the suburb/],
+    ["a name too long", { name: "A".repeat(81), regionId: "southern" }, /80/],
+    ["no such Region", { name: "NEW HORIZONS", regionId: "atlantis" }, /not a Region/],
+  ])("refuses %s", async (_, input, message) => {
+    const { domain, given } = await createHarness();
+    const admin = await given.admin();
+
+    expect(await domain.regions.addSuburb(admin.actor, input)).toEqual({
+      ok: false,
+      refusal: { reason: "invalid", message: expect.stringMatching(message) },
+    });
+  });
+
+  test("refuses a name a suburb already has, whatever its case, saying where it is", async () => {
+    const { domain, given } = await createHarness();
+    const admin = await given.admin();
+
+    expect(
+      await domain.regions.addSuburb(admin.actor, { name: "Sea Point", regionId: "southern" }),
+    ).toEqual({
+      ok: false,
+      refusal: {
+        reason: "already-a-suburb",
+        message: "SEA POINT is already a suburb, in Table Bay. A suburb is never moved or renamed.",
+      },
+    });
+  });
+
+  test("refuses a name a suburb already has even when asked again", async () => {
+    const { domain, given } = await createHarness();
+    const admin = await given.admin();
+
+    expect(
+      await domain.regions.addSuburb(admin.actor, {
+        name: "nature's valley",
+        regionId: "southern",
+        despiteAlike: true,
+      }),
+    ).toMatchObject({ ok: false, refusal: { reason: "already-a-suburb" } });
+  });
+
+  test("asks again before adding a name that reads like another's, then adds it", async () => {
+    const { domain, given } = await createHarness();
+    const admin = await given.admin();
+    const input = { name: "BO KAAP", regionId: "table-bay" };
+
+    const asked = await domain.regions.addSuburb(admin.actor, input);
+    const added = await domain.regions.addSuburb(admin.actor, { ...input, despiteAlike: true });
+
+    expect(asked).toEqual({
+      ok: false,
+      refusal: {
+        reason: "reads-alike",
+        message: "BO KAAP reads like BO-KAAP (Table Bay). Add it only if the City names both.",
+      },
+    });
+    expect(added).toMatchObject({ ok: true });
+    expect(
+      (await domain.regions.searchSuburbs(visitor, { query: "bokaap" })).map((each) => each.name),
+    ).toEqual(["BO KAAP", "BO-KAAP"]);
+  });
+});
+
 describe("an Artisan's Regions", () => {
   test("are none until the Artisan chooses", async () => {
     const { domain, given } = await createHarness();
