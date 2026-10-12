@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, UserSearch } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Page } from "@/components/page";
+import { EmptyState, Page } from "@/components/page";
 import { copy } from "@/web/copy";
 import { onlyForAdmins } from "@/web/guards";
 import { findPeople } from "@/web/people";
@@ -30,8 +30,7 @@ function People() {
   const navigate = useNavigate();
   const [query, setQuery] = useState(q ?? "");
   return (
-    <Page title={t.title}>
-      <p className="max-w-2xl text-sm text-muted-foreground">{t.lead}</p>
+    <Page title={t.title} lead={t.lead}>
       <form
         className="flex max-w-md gap-2"
         onSubmit={(event) => {
@@ -48,7 +47,7 @@ function People() {
         <Button type="submit">{t.find}</Button>
       </form>
       {people.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t.empty}</p>
+        <EmptyState icon={<UserSearch />}>{t.empty}</EmptyState>
       ) : (
         <Card className="py-0">
           <ul className="divide-y">

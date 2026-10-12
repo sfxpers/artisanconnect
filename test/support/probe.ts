@@ -1,12 +1,12 @@
 import { env } from "cloudflare:test";
-import { and, eq, sum } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { assembleDomain, sections, type Actor } from "@/domain";
 import { defineSection } from "@/domain/section";
 import { startClock } from "@/domain/clocks";
 import { ok, refuse } from "@/domain/result";
 import { defineQueueItemKind } from "@/domain/queues";
-import { accounts, ledgerEntries } from "@/domain/schema";
+import { accounts } from "@/domain/schema";
 import { emailTells, tell } from "@/domain/tells";
 import { createHarness, TEST_CONFIG } from "./harness";
 
@@ -155,33 +155,6 @@ const probe = defineSection({
         : null;
     },
 
-    async saveNote(actor: Actor, input: { text: string }) {
-      const accountId = partyId(actor);
-      if (!accountId) return refuse("sign-in-required", "Sign in to save a note.");
-      const noteId = ctx.newId();
-      await ctx.ports.files.put(`probe/${accountId}/${noteId}`, input.text);
-      return ok({ noteId });
-    },
-
-    async note(viewer: Actor, input: { noteId: string }) {
-      const file = await ctx.ports.files.get(`probe/${partyId(viewer)}/${input.noteId}`);
-      return file ? file.text() : null;
-    },
-
-    /** One domain event writing one ledger row per amount. */
-    async recordMoney(_actor: Actor, input: { amountsCents: number[] }) {
-      const eventId = ctx.newId();
-      const recordedAt = ctx.now();
-      await ctx.commit(
-        input.amountsCents.map((amountCents) =>
-          ctx.db
-            .insert(ledgerEntries)
-            .values({ id: ctx.newId(), eventId, kind: "probe", amountCents, recordedAt }),
-        ),
-      );
-      return ok({ eventId });
-    },
-
     /** Tells an Account that the actor poked it. */
     async poke(actor: Actor, input: { accountId: string }) {
       await ctx.commit(
@@ -210,13 +183,6 @@ const probe = defineSection({
       const raised = probeDispute.raise(ctx, { subjectId: ctx.newId(), title: input.title });
       await ctx.commit([raised.write]);
       return ok({ itemId: raised.itemId });
-    },
-
-    async ledgerTotalCents(_viewer: Actor) {
-      const [row] = await ctx.db
-        .select({ total: sum(ledgerEntries.amountCents) })
-        .from(ledgerEntries);
-      return Number(row?.total ?? 0);
     },
   }),
 });

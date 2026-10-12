@@ -26,7 +26,7 @@ export const CHECK_KINDS = [
 
 export type CheckKind = (typeof CHECK_KINDS)[number];
 
-export type CheckGroup = "once" | "category" | "optional";
+type CheckGroup = "once" | "category" | "optional";
 
 /** One part of what a check's files are, such as the document or the selfie. */
 export type FilePart = {
@@ -245,7 +245,7 @@ const registrationNumber = text("Give the registration number.").pipe(
 );
 
 /** A two-letter country code a passport may be issued by. */
-export const passportCountry = z
+const passportCountry = z
   .string()
   .trim()
   .toUpperCase()

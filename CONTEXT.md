@@ -163,7 +163,7 @@ The Client's 5% charge on each Payment, which the Client acknowledges as non-ref
 _Avoid_: Service fee, Platform fee, Commission
 
 **Artisan Fee**:
-The platform's share of each Release, set at Hire: 10% if the Client Relationship has no Completed Engagement yet, 5% if it has one. It is never refunded.
+The platform's share of each Release, set at Hire: 10% if the Client Relationship has no Completed Engagement yet, 5% if it has one the Client did not charge back. It is never refunded.
 _Avoid_: Commission, Service fee
 
 **VAT number**:
@@ -193,7 +193,7 @@ _Avoid_: Reversal
 ### Trust
 
 **Verification**:
-The Admin's acceptance of an Artisan's documents. Once: an identity document with a selfie holding it, a work permit if it is a foreign passport, and a Payout account. Per Service Category: three photos of their own work and any Credential that category needs. Documents may be photos or PDFs, at any time, because only the Admin sees them; a selfie and work photos are photos only.
+The Admin's acceptance of an Artisan's documents. Once: an identity document with a selfie holding it, a work permit if it is a foreign passport (with its expiry date, unless it never expires, as permanent residence does), and a Payout account. Per Service Category: three photos of their own work and any Credential that category needs. Documents may be photos or PDFs, at any time, because only the Admin sees them; a selfie and work photos are photos only.
 _Avoid_: Vetting, KYC
 
 **Credential**:

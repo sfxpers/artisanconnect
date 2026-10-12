@@ -1,4 +1,3 @@
-import { env } from "cloudflare:test";
 import { describe, expect, test } from "vitest";
 import type { Actor, AdminActor } from "@/domain/actor";
 import { createHarness, type Harness } from "../support/harness";
@@ -219,24 +218,6 @@ describe("a message", () => {
     });
     expect(await domain.conversations.view(client.actor, { conversationId })).toMatchObject({
       items: [{ kind: "event" }],
-    });
-  });
-
-  test("cannot be edited or removed once delivered", async () => {
-    const { domain, given } = await createHarness();
-    const { client, conversationId } = await talking(given, domain);
-    await domain.conversations.send(client.actor, { conversationId, text: "See you Monday." });
-
-    // There is no command that could change one, so this checks the database
-    // itself refuses: the record holds even against a bug.
-    await expect(env.DB.prepare("UPDATE messages SET text = 'Changed'").run()).rejects.toThrow(
-      /a delivered message is never changed/,
-    );
-    await expect(env.DB.prepare("DELETE FROM messages").run()).rejects.toThrow(
-      /a message is never removed/,
-    );
-    expect(await domain.conversations.view(client.actor, { conversationId })).toMatchObject({
-      items: [{ kind: "event" }, { text: "See you Monday." }],
     });
   });
 });

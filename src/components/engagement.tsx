@@ -628,7 +628,7 @@ export function DisputeCard({
                 <img
                   src={photo.thumbnailHref}
                   alt={d.photo(index + 1)}
-                  className="aspect-[4/3] w-full rounded-lg object-cover"
+                  className="aspect-4/3 w-full rounded-lg object-cover"
                 />
               </a>
             ))}
@@ -958,7 +958,7 @@ function CompletionCheck({
   return (
     <div className="space-y-2 rounded-lg bg-muted/60 p-3 text-sm">
       <div className="flex flex-wrap items-center gap-2">
-        <Badge variant="secondary">{t.completionBeingChecked}</Badge>
+        <Badge variant="warning">{t.completionBeingChecked}</Badge>
         <Button
           size="xs"
           variant="ghost"
@@ -1165,7 +1165,7 @@ export function CompletionCard({ engagement }: { engagement: Engagement }) {
               <img
                 src={photo.thumbnailHref}
                 alt={t.photo(index + 1)}
-                className="aspect-[4/3] w-full rounded-lg object-cover"
+                className="aspect-4/3 w-full rounded-lg object-cover"
               />
             </a>
           ))}
@@ -1207,7 +1207,7 @@ export function PaymentsCard({ engagement }: { engagement: Engagement }) {
         <CardTitle>{t.payments}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <ol className="divide-y rounded-lg border">
+        <ol className="divide-y rounded-xl border bg-card">
           {engagement.money.payments.map((payment, index) => (
             <li key={payment.part} className="flex flex-wrap items-center gap-3 p-3 text-sm">
               <span className="flex size-6 items-center justify-center rounded-full bg-muted text-xs font-medium">
@@ -1256,7 +1256,7 @@ function RefundsList({ engagement }: { engagement: Engagement }) {
   return (
     <div className="space-y-2">
       <h3 className="text-sm font-medium">{t.refunds}</h3>
-      <ul className="divide-y rounded-lg border">
+      <ul className="divide-y rounded-xl border bg-card">
         {engagement.refunds.map((each) => (
           <li key={each.refundId} className="flex flex-wrap items-center gap-3 p-3 text-sm">
             <div className="min-w-0 flex-1">
@@ -1408,7 +1408,7 @@ export function MoneyCard({ engagement }: { engagement: Engagement }) {
   );
 }
 
-/** The Hired Quote's start, duration, and Warranty. */
+/** The Hired Quote's start, duration, and Warranty, and the pair's Protected Relationship Period. */
 export function HiredQuoteCard({ engagement }: { engagement: Engagement }) {
   return (
     <Card size="sm">
@@ -1421,6 +1421,10 @@ export function HiredQuoteCard({ engagement }: { engagement: Engagement }) {
           <Fact label={copy.quote.duration}>{copy.quote.days(engagement.durationDays)}</Fact>
           <Fact label={copy.quote.warrantyShort}>
             {engagement.warranty ?? copy.quote.noWarranty}
+          </Fact>
+          <Fact label={t.protectedUntil}>
+            {formatDate(engagement.protectedUntil)}
+            <p className="text-xs font-normal text-muted-foreground">{t.protectedLead}</p>
           </Fact>
         </dl>
       </CardContent>

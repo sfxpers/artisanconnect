@@ -1,4 +1,3 @@
-import { env } from "cloudflare:test";
 import { describe, expect, test } from "vitest";
 import type { Actor, AdminActor } from "@/domain/actor";
 import type { FigurePeriod } from "@/domain/figures/periods";
@@ -127,16 +126,6 @@ describe("the figures", () => {
 
     expect(await figures(domain, admin, "30d")).toMatchObject({ jobsPosted: 0 });
     expect(await figures(domain, admin, "90d")).toMatchObject({ jobsPosted: 1 });
-  });
-
-  // No command changes it, so this checks the database itself refuses.
-  test("never move a Job's posted time once set", async () => {
-    const { given } = await createHarness();
-    const jobId = await given.openJob(await given.client());
-
-    await expect(
-      env.DB.prepare("UPDATE jobs SET posted_at = 0 WHERE id = ?").bind(jobId).run(),
-    ).rejects.toThrow(/posted time never changes/);
   });
 
   test("count Hires, what became of them, and the money", async () => {

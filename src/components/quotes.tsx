@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Link, useRouter } from "@tanstack/react-router";
-import { ShieldCheck } from "lucide-react";
+import { FileText, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Fact } from "@/components/job-details";
-import { Refusal } from "@/components/page";
+import { EmptyState, Refusal } from "@/components/page";
 import { formatRands, PROTECTION_FEE_PERCENT } from "@/domain/money";
 import type { MaterialsBy } from "@/domain/quotes/inputs";
 import { formatDay } from "@/domain/sa-days";
@@ -81,7 +81,7 @@ export function ClientQuotes({
   const open = quotes.filter((quote) => quote.state === "sent");
   const ended = quotes.filter((quote) => quote.state !== "sent");
   const shown = byTotal ? [...open].sort((a, b) => a.totalCents - b.totalCents) : open;
-  if (quotes.length === 0) return <p className="text-sm text-muted-foreground">{q.none}</p>;
+  if (quotes.length === 0) return <EmptyState icon={<FileText />}>{q.none}</EmptyState>;
   return (
     <div className="space-y-3">
       {open.length > 0 && (
@@ -107,7 +107,7 @@ export function ClientQuotes({
               </div>
             )}
           </div>
-          <ul className="divide-y rounded-lg border">
+          <ul className="divide-y rounded-xl border bg-card">
             {shown.map((quote) => (
               <QuoteRow
                 key={quote.quoteId}
@@ -122,7 +122,7 @@ export function ClientQuotes({
       {ended.length > 0 && (
         <div className="space-y-2">
           <p className="text-xs font-medium text-muted-foreground">{q.ended}</p>
-          <ul className="divide-y rounded-lg border">
+          <ul className="divide-y rounded-xl border bg-card">
             {ended.map((quote) => (
               <li key={quote.quoteId} className="flex flex-wrap items-center gap-3 p-3 text-sm">
                 <span className="font-medium">{quote.artisan.publicName ?? q.noName}</span>

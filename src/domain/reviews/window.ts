@@ -1,4 +1,4 @@
-import { and, eq, exists, notExists, sql } from "drizzle-orm";
+import { and, eq, exists, notExists, sql, type SQL } from "drizzle-orm";
 import { system } from "../actor";
 import type { ClockHandler } from "../clocks";
 import type { Context, Write } from "../context";
@@ -12,7 +12,9 @@ import { notFrozen } from "../chargebacks/frozen";
 // The Review window (#138, ADR 0012): seven days from the moment an
 // Engagement is Completed, by Approval or as its Dispute or Chargeback ends,
 // in which each party may write one Review of the other. It is worked out
-// from `completed_at`, which never changes once set.
+// from `completed_at`, which never changes once set. A Chargeback's freeze
+// pauses it like every clock on the Engagement: once the Admin decides, it
+// closes later by the time it was frozen (`review_window_closes_at`).
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -25,9 +27,14 @@ const REMINDER_BEFORE_MS = 2 * DAY_MS;
 const REMINDER_CLOCK = "review.reminder";
 const CLOSED_CLOCK = "review.window-closed";
 
-/** When the window of an Engagement Completed then closes. */
-export function windowClosesAt(completedAt: Date): Date {
-  return new Date(completedAt.getTime() + REVIEW_WINDOW_MS);
+/** When the window of a Completed Engagement closes, unless a Chargeback freezes it now. */
+export function windowClosesAt(engagement: {
+  completedAt: Date;
+  reviewWindowClosesAt: Date | null;
+}): Date {
+  return (
+    engagement.reviewWindowClosesAt ?? new Date(engagement.completedAt.getTime() + REVIEW_WINDOW_MS)
+  );
 }
 
 /** An Engagement as the window reads it. */
@@ -57,20 +64,11 @@ export function windowOpensWrites(ctx: Context, engagement: Completing, now: Dat
         ),
       ),
   );
-  const closesAt = windowClosesAt(now);
+  const closesAt = windowClosesAt({ completedAt: now, reviewWindowClosesAt: null });
   const by = formatTime(closesAt);
   const link = `/jobs/${engagement.jobId}`;
-  // Each fires on the Engagement, and does nothing if it was not Completed then.
-  const clock = (kind: string, dueAt: Date) =>
-    insertWhile(
-      ctx,
-      dueClocks,
-      { id: ctx.newId(), kind, subjectId: engagement.id, dueAt, firedAt: null },
-      completedNow,
-    );
   return [
-    clock(REMINDER_CLOCK, new Date(closesAt.getTime() - REMINDER_BEFORE_MS)),
-    clock(CLOSED_CLOCK, closesAt),
+    ...clocksWrites(ctx, engagement.id, closesAt, true, completedNow),
     // Each party is asked to write, the one whose act Completed it too.
     ...tellWhile(
       ctx,
@@ -98,13 +96,71 @@ export function windowOpensWrites(ctx: Context, engagement: Completing, now: Dat
 }
 
 /**
+ * The window's clocks for a close: the reminder, if `remind`, and the close,
+ * each written only while the condition holds. Each fires on the Engagement,
+ * and does nothing if the close has moved since.
+ */
+function clocksWrites(
+  ctx: Context,
+  engagementId: string,
+  closesAt: Date,
+  remind: boolean,
+  condition: SQL,
+): Write[] {
+  const clock = (kind: string, dueAt: Date) =>
+    insertWhile(
+      ctx,
+      dueClocks,
+      { id: ctx.newId(), kind, subjectId: engagementId, dueAt, firedAt: null },
+      condition,
+    );
+  return [
+    ...(remind ? [clock(REMINDER_CLOCK, new Date(closesAt.getTime() - REMINDER_BEFORE_MS))] : []),
+    clock(CLOSED_CLOCK, closesAt),
+  ];
+}
+
+/**
+ * The writes that resume the window of a Completed Engagement once the Admin
+ * decides the Chargebacks that froze it since `frozenSince`: it closes later
+ * by the time it was frozen, with its clocks set again, the reminder only if
+ * it had not come due when the freeze began. Nothing if the window had closed
+ * before, or the Engagement was not Completed. Written only while the
+ * condition holds.
+ */
+export function windowResumesWrites(
+  ctx: Context,
+  engagement: {
+    id: string;
+    state: string;
+    completedAt: Date | null;
+    reviewWindowClosesAt: Date | null;
+  },
+  frozenSince: Date,
+  condition: SQL,
+): Write[] {
+  if (engagement.state !== "completed" || !engagement.completedAt) return [];
+  const closesAt = windowClosesAt({ ...engagement, completedAt: engagement.completedAt });
+  if (frozenSince.getTime() >= closesAt.getTime()) return [];
+  const resumed = new Date(closesAt.getTime() + ctx.now().getTime() - frozenSince.getTime());
+  const reminded = frozenSince.getTime() >= closesAt.getTime() - REMINDER_BEFORE_MS;
+  return [
+    ctx.db
+      .update(engagements)
+      .set({ reviewWindowClosesAt: resumed })
+      .where(and(eq(engagements.id, engagement.id), condition)),
+    ...clocksWrites(ctx, engagement.id, resumed, !reminded, condition),
+  ];
+}
+
+/**
  * The Engagement the clock fired on, with its window's close, if the clock
  * is the one its Completion set, due that long before the close.
  */
 async function windowOf(ctx: Context, engagementId: string, dueAt: Date, beforeCloseMs: number) {
   const engagement = await engagementRow(ctx, engagementId);
   if (engagement?.state !== "completed" || !engagement.completedAt) return null;
-  const closesAt = windowClosesAt(engagement.completedAt);
+  const closesAt = windowClosesAt({ ...engagement, completedAt: engagement.completedAt });
   return closesAt.getTime() - beforeCloseMs === dueAt.getTime() ? { engagement, closesAt } : null;
 }
 

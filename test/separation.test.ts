@@ -113,11 +113,13 @@ describe("the Worker", () => {
         "PAYOUT_RUN_TIME",
         "TURNSTILE_SITE_KEY",
       ]);
-      // Sentry, better-auth's session signing, and Turnstile (ADR 0017).
+      // Sentry, better-auth's session signing, Turnstile (ADR 0017), and the
+      // payment adapter's webhook signing.
       expect((environment.secrets as { required: string[] }).required).toEqual([
         "SENTRY_DSN",
         "BETTER_AUTH_SECRET",
         "TURNSTILE_SECRET_KEY",
+        "PAYMENTS_WEBHOOK_SECRET",
       ]);
     },
   );

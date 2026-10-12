@@ -25,7 +25,7 @@ export function Details({
   return (
     <div className="space-y-4">
       <div className="space-y-1">
-        <h3 className="font-medium">{job.title}</h3>
+        <h3 className="font-semibold">{job.title}</h3>
         <p className="text-sm whitespace-pre-line">{job.description}</p>
       </div>
       <dl className="flex flex-wrap gap-6 text-sm">
@@ -44,7 +44,7 @@ export function Details({
                 width={photo.width}
                 height={photo.height}
                 loading="lazy"
-                className="aspect-[4/3] w-full rounded-lg border object-cover"
+                className="aspect-4/3 w-full rounded-lg border object-cover"
               />
             </a>
           </li>

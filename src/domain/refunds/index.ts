@@ -9,7 +9,7 @@ import { frozenRefusal, isFrozen, isFrozenError, isPaymentFrozen } from "../char
 import { heldRefundRows, settleIfNothingHeld } from "../engagements/dispute";
 import { refundFields, type RefundFields } from "../engagements/inputs";
 import { insertWhile } from "../guarded";
-import { engagementRow, type EngagementRow } from "../engagements/rows";
+import { engagementRow, type EngagementRow, engagementNotFound } from "../engagements/rows";
 import {
   engagementMoney,
   isOverdrawn,
@@ -74,7 +74,7 @@ export async function refundByArtisan(
 ) {
   const engagement = await engagementRow(ctx, input.engagementId);
   if (actor.kind !== "artisan" || !engagement || engagement.artisanId !== actor.accountId) {
-    return refuse("not-found", "That Engagement does not exist.");
+    return engagementNotFound();
   }
   const parsed = refundFields.safeParse({ materials: input.materials, labour: input.labour });
   if (!parsed.success) return refuse("invalid", firstProblem(parsed.error));

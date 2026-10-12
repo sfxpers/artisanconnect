@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { Link, useNavigate, useRouter } from "@tanstack/react-router";
-import { MapPin } from "lucide-react";
+import { MapPin, UserSearch } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Refusal } from "@/components/page";
+import { EmptyState, Refusal } from "@/components/page";
 import { copy } from "@/web/copy";
 import { getInviteList, inviteArtisan } from "@/web/invitations";
+import { NativeSelect } from "@/components/ui/native-select";
 
 /** Whom the Client may invite, as the Job page loads it. */
 export type InviteListView = {
@@ -63,9 +64,8 @@ export function InviteList({
         {!hireAgain && (
           <div className="space-y-1.5">
             <Label htmlFor="invite-region">{t.region}</Label>
-            <select
+            <NativeSelect
               id="invite-region"
-              className="h-8 rounded-lg border border-input bg-background px-2 text-sm"
               value={list.region ?? ""}
               onChange={(event) =>
                 void navigate({
@@ -82,16 +82,16 @@ export function InviteList({
                   {each.name}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </div>
         )}
         <Refusal message={refusal} />
         {list.artisans.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
+          <EmptyState icon={<UserSearch />}>
             {hireAgain ? t.emptyHireAgain(hireAgain) : t.empty}
-          </p>
+          </EmptyState>
         ) : (
-          <ul className="divide-y rounded-lg border">
+          <ul className="divide-y rounded-xl border bg-card">
             {list.artisans.map((artisan) => (
               <li
                 key={artisan.artisanId}

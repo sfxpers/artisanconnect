@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Blocks, QueueCounts } from "@/components/admin";
-import { Page, Refusal } from "@/components/page";
+import { Page, Refusal, withSidebar } from "@/components/page";
 import { formatRands } from "@/domain/money";
 import { splitOf, type Block, type DecisionField, type ItemRow } from "@/domain/queues";
 import { cn } from "@/lib/utils";
@@ -57,11 +57,11 @@ function QueueItemPage() {
         </div>
         <QueueCounts counts={item.counts} current={item.queue} />
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight">{item.title}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{item.title}</h1>
           {item.decided ? <Badge variant="secondary">{t.decided}</Badge> : <Badge>{t.open}</Badge>}
         </div>
       </div>
-      <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
+      <div className={withSidebar}>
         <div className="min-w-0 space-y-6">
           {item.decided ? (
             <DecidedCard decided={item.decided} />
@@ -168,7 +168,7 @@ function DecisionCard({ item }: { item: Item }) {
   }
 
   return (
-    <Card className="ring-2 ring-primary/80">
+    <Card className="ring-2 ring-primary">
       <CardHeader>
         <CardDescription>{t.decision}</CardDescription>
         <CardTitle className="text-lg">{option?.label ?? t.choose}</CardTitle>
@@ -241,7 +241,7 @@ function DecisionCard({ item }: { item: Item }) {
 
 function DecidedCard({ decided }: { decided: NonNullable<Item["decided"]> }) {
   return (
-    <Card className="ring-2 ring-primary/80">
+    <Card className="ring-2 ring-primary">
       <CardHeader>
         <CardDescription>{t.decision}</CardDescription>
         <CardTitle className="text-lg">{t.recorded(decided.label)}</CardTitle>
@@ -277,7 +277,7 @@ function RowsCard({
   highlighted: boolean;
 }) {
   return (
-    <Card className={cn(highlighted && "ring-2 ring-primary/80")}>
+    <Card className={cn(highlighted && "ring-2 ring-primary")}>
       <CardHeader>
         <CardDescription>{t.decision}</CardDescription>
         <CardTitle className="text-lg">{highlighted ? t.eachRow : t.rowsNow}</CardTitle>
@@ -332,7 +332,7 @@ function RowDecision({ itemId, row }: { itemId: string; row: ItemRow }) {
   return (
     <div className="space-y-3 py-4 first:pt-0 last:pb-0">
       <div className="flex flex-wrap items-center gap-2">
-        <h3 className="font-medium">{row.title}</h3>
+        <h3 className="font-semibold">{row.title}</h3>
         <Badge variant={row.state === "Waiting" ? "default" : "secondary"}>{row.state}</Badge>
       </div>
       <div className="grid gap-4 md:grid-cols-2">

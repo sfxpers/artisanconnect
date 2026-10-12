@@ -1,9 +1,10 @@
+import { Banknote } from "lucide-react";
 import { useState } from "react";
 import { Link, createFileRoute, useRouter } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Page, Refusal } from "@/components/page";
+import { EmptyState, Page, Refusal } from "@/components/page";
 import { formatRands } from "@/domain/money";
 import { copy } from "@/web/copy";
 import { onlyForAdmins } from "@/web/guards";
@@ -25,10 +26,9 @@ type Row = Awaited<ReturnType<typeof getUnpaidTotals>>[number];
 function AdminPayouts() {
   const rows = Route.useLoaderData();
   return (
-    <Page title={t.title}>
-      <p className="max-w-2xl text-sm text-muted-foreground">{t.lead}</p>
+    <Page title={t.title} lead={t.lead}>
       {rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t.empty}</p>
+        <EmptyState icon={<Banknote />}>{t.empty}</EmptyState>
       ) : (
         <Card className="py-0">
           <ul className="divide-y">

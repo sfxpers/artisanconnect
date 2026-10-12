@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DraftForm, EditForm, type JobView } from "@/components/job-form";
-import { NextStepCard, Page, Refusal } from "@/components/page";
+import { NextStepCard, Page, Refusal, withSidebar } from "@/components/page";
 import { useAction } from "@/components/use-action";
 import { Details, Fact } from "@/components/job-details";
 import { InviteList, type InviteListView } from "@/components/invite-list";
@@ -172,7 +172,7 @@ function ClientJob({
       </div>
       <div className="space-y-1">
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             {job.title || copy.jobs.untitled}
           </h1>
           <Badge variant={job.state === "open" ? "default" : "secondary"}>
@@ -289,7 +289,7 @@ function Posted({
   const sent = quotes.filter((quote) => quote.state === "sent").length;
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
+    <div className={withSidebar}>
       <div className="min-w-0 space-y-6">
         <NextStepCard
           label={copy.jobs.nextStep}
@@ -374,7 +374,7 @@ function Posted({
         {beingChecked && (
           <Card>
             <CardHeader>
-              <Badge variant="secondary">{t.beingChecked}</Badge>
+              <Badge variant="warning">{t.beingChecked}</Badge>
               <p className="text-sm text-muted-foreground">{t.editBeingChecked}</p>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -489,7 +489,7 @@ function Hired({
 }) {
   const { artisan } = engagement;
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
+    <div className={withSidebar}>
       <div className="min-w-0 space-y-6">
         <EngagementNextStep engagement={engagement} asClient>
           <NotHired job={job} />

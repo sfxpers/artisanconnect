@@ -44,7 +44,7 @@ import {
 import type { CheckKind } from "../verification/checks";
 import { found } from "../verification/reading";
 import { CERTIFICATES, certificateNeeded, NOTE_MAX, type CertificateKind } from "./inputs";
-import { engagementRow, type EngagementRow } from "./rows";
+import { engagementRow, type EngagementRow, engagementNotFound } from "./rows";
 import { noneProposed, proposedOf, WAITING_FOR_CLIENT } from "./updated-quote-rows";
 import { disputeOf, openDisputeOf } from "./dispute";
 import { frozenRefusal, isFrozen, notFrozen } from "../chargebacks";
@@ -63,9 +63,9 @@ import { frozenRefusal, isFrozen, notFrozen } from "../chargebacks";
 // the seven days start only once it is released.
 
 /** The clock that makes a Completion's silence Approval. Its subject is the Completion. */
-export const APPROVAL_CLOCK = "engagement.approval";
+const APPROVAL_CLOCK = "engagement.approval";
 /** The clock that reminds the Client 24 hours before Approval by silence. */
-export const APPROVAL_REMINDER_CLOCK = "engagement.approval-reminder";
+const APPROVAL_REMINDER_CLOCK = "engagement.approval-reminder";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 /** How long the Client has to answer a Completion before its silence is Approval. */
@@ -111,7 +111,7 @@ export async function markComplete(
 ) {
   const engagement = await engagementRow(ctx, input.engagementId);
   if (actor.kind !== "artisan" || !engagement || engagement.artisanId !== actor.accountId) {
-    return notFound();
+    return engagementNotFound();
   }
   const completable = canMarkComplete(engagement);
   if (!completable.ok) return completable;
@@ -259,7 +259,7 @@ export async function withdrawCompletion(
 ) {
   const engagement = await engagementRow(ctx, input.engagementId);
   if (actor.kind !== "artisan" || !engagement || engagement.artisanId !== actor.accountId) {
-    return notFound();
+    return engagementNotFound();
   }
   const held = await heldCompletionOf(ctx, engagement.id);
   if (!held) return refuse("nothing-held", "No Completion of yours is being checked.");
@@ -285,7 +285,7 @@ export async function withdrawCompletion(
 export async function approve(ctx: Context, actor: Actor, input: { engagementId: string }) {
   const engagement = await engagementRow(ctx, input.engagementId);
   if (actor.kind !== "client" || !engagement || engagement.clientId !== actor.accountId) {
-    return notFound();
+    return engagementNotFound();
   }
   const completion = await unansweredOf(ctx, engagement);
   if (!completion) {
@@ -323,7 +323,7 @@ export async function requestFix(
 ) {
   const engagement = await engagementRow(ctx, input.engagementId);
   if (actor.kind !== "client" || !engagement || engagement.clientId !== actor.accountId) {
-    return notFound();
+    return engagementNotFound();
   }
   // Not while Disputed: Approval of what the Dispute does not hold is the Client's only answer then.
   if (engagement.state === "disputed") {
@@ -1153,8 +1153,4 @@ function documentOf(file: StoredFile, certificate: boolean): CompletionDocument 
 
 function capitalised(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
-}
-
-function notFound() {
-  return refuse("not-found", "That Engagement does not exist.");
 }

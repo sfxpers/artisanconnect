@@ -1,5 +1,12 @@
-import { expect, test } from "@playwright/test";
-import { codeSentTo, seed, signIn, signInAdmin, submitSignIn } from "./support/helpers";
+import {
+  codeSentTo,
+  expect,
+  seed,
+  signIn,
+  signInAdmin,
+  submitSignIn,
+  test,
+} from "./support/helpers";
 
 test("a Client changes its Email, gets a copy of its data, closes its Account, and reopens it", async ({
   browser,

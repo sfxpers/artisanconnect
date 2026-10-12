@@ -3,7 +3,7 @@ import type { Context } from "./context";
 import { rateLimitHits } from "./schema";
 
 /** At most `max` tries per `seconds` for one key, such as an IP or an Email. */
-export type Limit = { key: string; max: number; seconds: number };
+type Limit = { key: string; max: number; seconds: number };
 
 /**
  * Counts one try against every limit, unless one is already used up. Returns

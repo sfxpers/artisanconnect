@@ -1,5 +1,4 @@
-import { expect, test } from "@playwright/test";
-import { seed, signIn, signInAdmin } from "./support/helpers";
+import { expect, seed, signIn, signInAdmin, test } from "./support/helpers";
 
 test("the Client disputes part of the Labour, and the Admin splits it after reading the Conversation", async ({
   browser,

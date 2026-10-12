@@ -97,8 +97,9 @@ function SignUp() {
                           key={kind}
                           type="button"
                           className={cn(
-                            "rounded-lg border p-4 text-left hover:border-primary",
-                            field.state.value === kind && "border-primary ring-1 ring-primary",
+                            "rounded-xl border p-4 text-left transition-colors hover:border-primary hover:bg-secondary/50",
+                            field.state.value === kind &&
+                              "border-primary bg-secondary/50 ring-1 ring-primary",
                           )}
                           onClick={() => {
                             field.handleChange(kind);
@@ -228,7 +229,11 @@ function SignUp() {
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
                   {rules.summary}{" "}
-                  <Link to="/rules" target="_blank" className="underline">
+                  <Link
+                    to="/rules"
+                    target="_blank"
+                    className="font-medium text-primary underline underline-offset-4"
+                  >
                     {t.rules.read}
                   </Link>
                 </p>
@@ -281,7 +286,7 @@ function SignUp() {
       </form>
       <p className="text-sm text-muted-foreground">
         {t.haveAccount}{" "}
-        <Link to="/sign-in" className="underline">
+        <Link to="/sign-in" className="font-medium text-primary underline underline-offset-4">
           {copy.signIn.title}
         </Link>
       </p>
@@ -306,18 +311,19 @@ function Row({
   const done = index < at;
   const open = index === at;
   return (
-    <Card className={cn(open && "ring-2 ring-primary/80", index > at && "opacity-60")}>
+    <Card className={cn(open && "ring-2 ring-primary", index > at && "bg-muted shadow-none")}>
       <CardContent className="space-y-3">
         <div className="flex items-center gap-3">
           <span
             className={cn(
-              "grid size-6 shrink-0 place-items-center rounded-full border text-xs",
+              "grid size-7 shrink-0 place-items-center rounded-full border border-input text-xs font-semibold tabular-nums",
               done && "border-primary bg-primary text-primary-foreground",
+              open && "border-primary text-primary",
             )}
           >
             {done ? <Check className="size-3.5" /> : index + 1}
           </span>
-          <span className="font-medium">{title}</span>
+          <span className="font-semibold">{title}</span>
           {done && (
             <>
               <span className="min-w-0 truncate text-sm text-muted-foreground">

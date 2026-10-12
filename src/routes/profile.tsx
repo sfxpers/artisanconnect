@@ -34,8 +34,7 @@ function MyProfile() {
   const [done, setDone] = useState<string | null>(null);
   if (!mine) return null;
   return (
-    <Page title={t.title}>
-      <p className="max-w-2xl text-sm text-muted-foreground">{t.lead}</p>
+    <Page title={t.title} lead={t.lead}>
       {mine.profile ? (
         <Link
           to="/artisans/$artisanId"
@@ -62,7 +61,7 @@ function MyProfile() {
       )}
 
       <section className="space-y-3">
-        <h2 className="font-medium">{t.preview}</h2>
+        <h2 className="text-lg font-semibold tracking-tight">{t.preview}</h2>
         {mine.profile ? (
           <ArtisanProfileView profile={mine.profile} />
         ) : (
@@ -106,7 +105,7 @@ function BeingChecked({
     <Card>
       <CardHeader>
         <div className="flex items-center gap-2">
-          <Badge variant="secondary">{t.beingChecked}</Badge>
+          <Badge variant="warning">{t.beingChecked}</Badge>
         </div>
         <p className="text-sm text-muted-foreground">{t.beingCheckedLead}</p>
       </CardHeader>
@@ -212,7 +211,7 @@ function Editor({ mine, onSent }: { mine: Mine; onSent: () => void }) {
                         src={photo.thumbnailHref}
                         alt={copy.profile.photo(index + 1)}
                         className={cn(
-                          "aspect-[4/3] w-full rounded-lg border object-cover",
+                          "aspect-4/3 w-full rounded-lg border object-cover",
                           gone && "opacity-30",
                         )}
                       />

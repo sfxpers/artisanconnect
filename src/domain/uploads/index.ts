@@ -19,10 +19,10 @@ import { hasActiveContent, isPdf } from "./pdf";
 import { drawPhoto, MAX_PHOTO_PIXELS, photoFormat, readPhotoHeader } from "./photos";
 
 /** The most bytes any file may have: 10 MB (MiB, so a file a phone shows as "10 MB" fits). */
-export const MAX_FILE_BYTES = 10 * 1024 * 1024;
+const MAX_FILE_BYTES = 10 * 1024 * 1024;
 export const MAX_VOICE_NOTE_SECONDS = 5 * 60;
 
-export type FileKind = "photo" | "pdf" | "voice-note";
+type FileKind = "photo" | "pdf" | "voice-note";
 
 /** Which kinds of file the place the file is going takes; the caller knows. */
 export type UploadContext = { takes: readonly FileKind[] };
@@ -55,7 +55,7 @@ export type StoredFile =
   | { kind: "pdf"; id: string; key: string }
   | { kind: "voice-note"; id: string; key: string; seconds: number };
 
-export type UploadRefusal =
+type UploadRefusal =
   | "too-large"
   | "too-long"
   | "video"
@@ -234,7 +234,7 @@ function isMarkup(bytes: Uint8Array): boolean {
 // How many files one thing may hold
 
 /** The caller counts what the thing holds, plus what it is adding, and checks before uploading. */
-export const FILE_COUNT_LIMITS = {
+const FILE_COUNT_LIMITS = {
   jobPhotos: { max: 10, message: "A Job has at most 10 photos." },
   completionPhotos: {
     max: COMPLETION_PHOTOS_MAX,

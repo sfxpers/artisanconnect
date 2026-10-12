@@ -11,7 +11,7 @@ import { jobRow, photoView, type JobPhoto } from "./rows";
 // it is unsure about waits for the Admin's Pre-check (ADR 0020), and the Job
 // shows as it was meanwhile, as an Artisan Profile does.
 
-export type JobVersion = {
+type JobVersion = {
   title: string;
   description: string;
   photos: JobPhoto[];

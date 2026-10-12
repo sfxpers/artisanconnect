@@ -4,7 +4,7 @@ import { causedBy } from "./errors";
 import { isOverdrawn } from "./ledger";
 import { dueClocks } from "./schema";
 
-export type DueClock = {
+type DueClock = {
   id: string;
   kind: string;
   subjectId: string;

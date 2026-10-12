@@ -21,7 +21,7 @@ import {
 // one Account refused again and again on one Job (#140). An unsure result, or
 // a check that cannot run, Holds the item.
 
-export type ContentToCheck = {
+type ContentToCheck = {
   /** The item's own text: a message, a description, an Account's names. */
   text: string;
   /** The files sent with it, as the upload path stored them. */

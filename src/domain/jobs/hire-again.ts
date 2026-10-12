@@ -1,4 +1,5 @@
 import { and, desc, eq } from "drizzle-orm";
+import { engagementNotFound } from "../engagements/rows";
 import type { Actor } from "../actor";
 import { publicName } from "../accounts/names";
 import type { Context } from "../context";
@@ -21,7 +22,7 @@ import { jobRow, type JobRow } from "./rows";
  * no photos, for the Client to add. One already a Draft is opened again.
  */
 export async function hireAgainDraft(ctx: Context, actor: Actor, engagementId: string) {
-  if (actor.kind !== "client") return noEngagement();
+  if (actor.kind !== "client") return engagementNotFound();
   const [[engagement], [chargeback]] = await Promise.all([
     ctx.db
       .select({
@@ -37,7 +38,7 @@ export async function hireAgainDraft(ctx: Context, actor: Actor, engagementId: s
       .where(eq(chargebacks.engagementId, engagementId))
       .limit(1),
   ]);
-  if (!engagement || engagement.clientId !== actor.accountId) return noEngagement();
+  if (!engagement || engagement.clientId !== actor.accountId) return engagementNotFound();
   // One with a Chargeback would leave the Artisan Fee at 10% (#137).
   if (engagement.state !== "completed" || chargeback) {
     return refuse("not-completed", "Hire Again is offered once the Engagement is Completed.");
@@ -131,8 +132,4 @@ async function shownArtisanName(ctx: Context, artisanId: string) {
     .from(accounts)
     .where(eq(accounts.id, artisanId));
   return artisan?.namesShown ? publicName(artisan) : null;
-}
-
-function noEngagement() {
-  return refuse("not-found", "That Engagement does not exist.");
 }

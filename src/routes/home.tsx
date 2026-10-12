@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { initials } from "@/components/app-header";
 import { NoticeList } from "@/components/notice-list";
-import { NextStepCard, Page, Refusal } from "@/components/page";
+import { EmptyState, NextStepCard, Page, Refusal, withSidebar } from "@/components/page";
 import { REGIONS_MAX } from "@/domain/regions/places";
 import { formatRands } from "@/domain/money";
 import { getNotices } from "@/web/accounts";
@@ -53,7 +53,7 @@ function Home() {
   const [tab, setTab] = useState<Tab>("matches");
   return (
     <Page>
-      <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
+      <div className={withSidebar}>
         <div className="min-w-0 space-y-6">
           <Waiting work={work} onSee={setTab} />
           <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)}>
@@ -153,7 +153,7 @@ function Waiting({ work, onSee }: { work: Work; onSee: (tab: Tab) => void }) {
 
 function Matches({ matches, available }: { matches: Match[]; available: boolean }) {
   if (matches.length === 0) {
-    return <Empty>{available ? t.noMatches : t.noMatchesUnavailable}</Empty>;
+    return <EmptyState>{available ? t.noMatches : t.noMatchesUnavailable}</EmptyState>;
   }
   return (
     <Card className="py-0">
@@ -172,7 +172,7 @@ function Matches({ matches, available }: { matches: Match[]; available: boolean 
 }
 
 function Invitations({ invitations }: { invitations: Invitation[] }) {
-  if (invitations.length === 0) return <Empty>{t.noInvitations}</Empty>;
+  if (invitations.length === 0) return <EmptyState>{t.noInvitations}</EmptyState>;
   return (
     <Card className="py-0">
       <ul className="divide-y">
@@ -194,7 +194,7 @@ function Invitations({ invitations }: { invitations: Invitation[] }) {
  * newest first; a Hired one shows where its Engagement stands.
  */
 function Active({ quotes }: { quotes: Quoted[] }) {
-  if (quotes.length === 0) return <Empty>{t.noActive}</Empty>;
+  if (quotes.length === 0) return <EmptyState>{t.noActive}</EmptyState>;
   return (
     <Card className="py-0">
       <ul className="divide-y">
@@ -270,7 +270,7 @@ function JobListRow({
           width={job.photo.width}
           height={job.photo.height}
           loading="lazy"
-          className="hidden aspect-[4/3] w-28 shrink-0 rounded-lg border object-cover sm:block"
+          className="hidden aspect-4/3 w-28 shrink-0 rounded-lg border object-cover sm:block"
         />
       )}
       <div className="min-w-0 flex-1 space-y-2">
@@ -304,16 +304,6 @@ function JobListRow({
         </div>
       </div>
     </li>
-  );
-}
-
-function Empty({ children }: { children: React.ReactNode }) {
-  return (
-    <Card>
-      <CardContent>
-        <p className="text-sm text-muted-foreground">{children}</p>
-      </CardContent>
-    </Card>
   );
 }
 

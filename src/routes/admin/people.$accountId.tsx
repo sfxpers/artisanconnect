@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Page, Refusal } from "@/components/page";
+import { Page, Refusal, withSidebar } from "@/components/page";
 import { formatRands } from "@/domain/money";
 import { copy, formatDate } from "@/web/copy";
 import { onlyForAdmins } from "@/web/guards";
@@ -46,7 +46,7 @@ function Person() {
       </nav>
       <div className="space-y-1">
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight">{person.name}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{person.name}</h1>
           <Badge variant="secondary">{copy.signUp.kind.chosen[person.kind]}</Badge>
           {person.suspended && <Badge variant="destructive">{t.suspended}</Badge>}
           {person.closed && <Badge variant="outline">{t.closed[person.closed]}</Badge>}
@@ -56,7 +56,7 @@ function Person() {
           {person.email} · {t.signedUp(formatDate(person.signedUpAt))}
         </p>
       </div>
-      <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
+      <div className={withSidebar}>
         <div className="min-w-0 space-y-6">
           <Actions person={person} />
           <Card>
@@ -107,7 +107,7 @@ function Actions({ person }: { person: Person }) {
   }
 
   return (
-    <Card className="ring-2 ring-primary/80">
+    <Card className="ring-2 ring-primary">
       <CardHeader>
         <CardTitle>
           {person.suspended ? t.suspendedSince(formatDate(person.suspended.since)) : t.act}
@@ -209,7 +209,7 @@ function PayoutsCard({ person }: { person: Person }) {
           <Link
             to="/admin/payouts/$artisanId"
             params={{ artisanId: person.accountId }}
-            className="text-sm underline"
+            className="text-sm font-medium text-primary underline underline-offset-4"
           >
             {copy.admin.payouts.history}
           </Link>

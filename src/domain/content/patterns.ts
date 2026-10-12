@@ -87,7 +87,7 @@ export type Withheld = {
   surnames?: readonly string[];
 };
 
-export type WithheldHit = "street" | "suburb" | "surname";
+type WithheldHit = "street" | "suburb" | "surname";
 
 const WITHHELD_MESSAGES: Record<WithheldHit, string> = {
   street: "Take out the street address. The address is shared only after Payment.",

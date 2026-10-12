@@ -218,6 +218,7 @@ async function hireWrites(
         workStartedAt: null,
         workStartedBy: null,
         completedAt: null,
+        reviewWindowClosesAt: null,
         cancelledAt: null,
         cancelledBy: null,
         cancellationReason: null,

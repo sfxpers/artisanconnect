@@ -1,8 +1,8 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { ChevronRight } from "lucide-react";
+import { CheckCheck, ChevronRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { QueueBadge, QueueCounts } from "@/components/admin";
-import { Page } from "@/components/page";
+import { EmptyState, Page } from "@/components/page";
 import { QUEUE_NAMES, type QueueName } from "@/domain/queue-names";
 import { formatRands } from "@/domain/money";
 import { getAdminHome } from "@/web/admin";
@@ -37,7 +37,7 @@ function AdminHome() {
   return (
     <Page>
       <div className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight">{t.title}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t.title}</h1>
         <p className="text-sm text-muted-foreground">{t.lead}</p>
       </div>
       {float.short && (
@@ -70,7 +70,7 @@ function AdminHome() {
         <QueueCounts counts={counts} current={queue} />
       </div>
       {items.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{queue ? t.emptyQueue : t.empty}</p>
+        <EmptyState icon={<CheckCheck />}>{queue ? t.emptyQueue : t.empty}</EmptyState>
       ) : (
         <Card className="py-0">
           <ul className="divide-y">

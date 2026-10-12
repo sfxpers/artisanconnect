@@ -8,6 +8,7 @@ import { formatTime } from "@/domain/sa-days";
 
 export const copy = {
   appName: "ArtisanConnect",
+  wordmark: ["Artisan", "Connect"],
   header: {
     visitor: { findArtisans: "Find Artisans", signUp: "Sign up", signIn: "Sign in" },
     client: { jobs: "Jobs", findArtisans: "Find Artisans", account: "Account" },
@@ -25,12 +26,28 @@ export const copy = {
     },
     notices: "Notices",
   },
+  footer: {
+    tagline: "Verified Artisans in Cape Town, paid through the platform.",
+    nav: "More",
+    findArtisans: "Find Artisans",
+    rules: "Marketplace rules",
+    support: "Support",
+  },
+  loading: "Loading",
+  skipToContent: "Skip to content",
+  error: {
+    title: "This page did not load",
+    lead: "Something went wrong on our side, or the connection dropped. Nothing you did was lost; try again.",
+    retry: "Try again",
+    home: "Go to ArtisanConnect",
+  },
   notFound: {
     title: "No such page",
     lead: "Nothing is at this address on ArtisanConnect. The link may be mistyped or out of date.",
     home: "Go to ArtisanConnect",
   },
   landing: {
+    eyebrow: "Cape Town",
     title: "Hire a verified Artisan in Cape Town",
     lead: "Post a Job, compare fixed-price Quotes, and pay through the platform. The money waits with the platform until the work is done.",
     postJob: "Post a Job",
@@ -187,6 +204,7 @@ export const copy = {
     resent: "A new code is on its way. The old one no longer works.",
   },
   signIn: {
+    label: "Welcome back",
     title: "Sign in",
     email: "Email",
     password: "Password",
@@ -837,6 +855,9 @@ export const copy = {
     artisanFee: "Artisan Fee",
     artisanFeeShown: (percent: number) => `${percent}% of each Release`,
     hiredQuote: "Hired Quote",
+    protectedUntil: "Protected Relationship Period ends",
+    protectedLead:
+      "Until then, all work between you two belongs on ArtisanConnect: arranging any off it is Leaving. It counts from your first Payment together and never renews.",
     address: "Address",
     chargeback: {
       frozenTitle: "Frozen by a Chargeback",
@@ -1477,7 +1498,7 @@ export const copy = {
 
 /** A date as South Africans read it. */
 /** A length of time as minutes and seconds: "4:05". */
-export function formatSeconds(seconds: number): string {
+function formatSeconds(seconds: number): string {
   const whole = Math.round(seconds);
   return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, "0")}`;
 }

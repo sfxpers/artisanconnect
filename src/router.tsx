@@ -1,4 +1,5 @@
 import { createRouter } from "@tanstack/react-router";
+import { PageError, PageSkeleton } from "@/components/page";
 import { routeTree } from "./routeTree.gen";
 
 export function getRouter() {
@@ -6,6 +7,9 @@ export function getRouter() {
     routeTree,
     scrollRestoration: true,
     defaultPreload: "intent",
+    // Every page shows a skeleton while it loads, and a way on if it fails.
+    defaultPendingComponent: PageSkeleton,
+    defaultErrorComponent: PageError,
   });
 
   return router;

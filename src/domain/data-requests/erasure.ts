@@ -32,10 +32,10 @@ import type { StoredFile } from "../uploads";
 // and the audit log) as written.
 
 /** What an erased Account is called, to the Admin and itself, where a name is needed. */
-export const ERASED_NAME = "Erased Account";
+const ERASED_NAME = "Erased Account";
 
 /** The address an erased Account's sign-in identity holds instead of its Email, which it frees. */
-export function erasedAddress(accountId: string) {
+function erasedAddress(accountId: string) {
   return `erased-${accountId}@erased.invalid`;
 }
 

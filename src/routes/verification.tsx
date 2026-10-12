@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils";
 import { copy } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
 import { getMyVerification, submitCheck } from "@/web/verification";
+import { NativeSelect } from "@/components/ui/native-select";
 
 export const Route = createFileRoute("/verification")({
   beforeLoad: ({ context }) => {
@@ -77,7 +78,7 @@ function Verification() {
                 <div className="flex items-center justify-between gap-2">
                   <CardTitle>{group.name}</CardTitle>
                   {group.verified ? (
-                    <Badge>
+                    <Badge variant="success">
                       {t.verified}
                       {group.gasWork && `, ${t.gasWork}`}
                     </Badge>
@@ -121,7 +122,7 @@ function Group({
   return (
     <section className="space-y-3">
       <div>
-        <h2 className="font-medium">{title}</h2>
+        <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
         <p className="text-sm text-muted-foreground">{lead}</p>
       </div>
       {children}
@@ -131,8 +132,8 @@ function Group({
 
 const STATE_VARIANTS = {
   missing: "outline",
-  waiting: "secondary",
-  accepted: "default",
+  waiting: "warning",
+  accepted: "success",
   expired: "destructive",
   stopped: "destructive",
   rejected: "destructive",
@@ -298,9 +299,9 @@ function CheckForm({
       )}
       {shown.includes("country") && (
         <Field id={`${kind}-country`} label={t.fields.country}>
-          <select
+          <NativeSelect
             id={`${kind}-country`}
-            className="h-8 w-full rounded-lg border border-input bg-transparent px-2 text-sm"
+            className="w-full"
             value={values.country ?? ""}
             onChange={set("country")}
           >
@@ -310,7 +311,7 @@ function CheckForm({
                 {name}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </Field>
       )}
       {(["accountHolder", "bank", "branchCode", "accountNumber", "registrationNumber"] as const)

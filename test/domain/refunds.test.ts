@@ -1,9 +1,9 @@
-import { env } from "cloudflare:test";
 import { describe, expect, test } from "vitest";
 import type { Actor } from "@/domain/actor";
 import { formatRands } from "@/domain/money";
 import type { CreateRefund, Webhook } from "@/domain/ports";
 import type { FakePayments } from "@/domain/fakes/payments";
+import { releasesTo } from "../support/money";
 import { createHarness, type Harness } from "../support/harness";
 
 // Refunds by the Artisan (#132, ADR 0008): the Artisan may refund any
@@ -115,7 +115,6 @@ describe("a Refund by the Artisan", () => {
 
     await given.workStarted(client, engagementId);
 
-    expect(await moneyRows(engagementId, "release.")).toEqual([]);
     expect((await domain.jobs.view(client.actor, { jobId }))?.engagement?.money).toMatchObject({
       releasedCents: 0,
       refundedCents: 50_000,
@@ -144,7 +143,7 @@ describe("a Refund by the Artisan", () => {
 
   test("never has an Artisan Fee taken: only what is released does", async () => {
     const { domain, given } = await createHarness();
-    const { client, artisan, engagementId } = await hiredJob(given);
+    const { client, artisan, jobId, engagementId } = await hiredJob(given);
     await given.workStarted(client, engagementId);
     await refunded(domain, artisan, engagementId, { labour: "400" });
     await given.markedComplete(artisan, engagementId);
@@ -152,15 +151,16 @@ describe("a Refund by the Artisan", () => {
     await domain.engagements.approve(client.actor, { engagementId });
 
     // R1 100 of Labour released at 10%, and R400 refunded with no fee.
-    expect(await moneyRows(engagementId, "release.labour")).toEqual([
-      { kind: "release.labour", amount_cents: 110_000 },
-    ]);
-    expect(await moneyRows(engagementId, "release.artisan-fee")).toEqual([
-      { kind: "release.artisan-fee", amount_cents: 5_000 },
-      { kind: "release.artisan-fee", amount_cents: 11_000 },
-    ]);
-    expect(await moneyRows(engagementId, "refund.labour")).toEqual([
-      { kind: "refund.labour", amount_cents: 40_000 },
+    // Made at the same moment, the two Releases come in no fixed order.
+    expect(await releasesTo(domain, artisan)).toEqual(
+      expect.arrayContaining([
+        { part: "materials", releasedCents: 50_000, artisanFeeCents: 5_000, amountCents: 45_000 },
+        { part: "labour", releasedCents: 110_000, artisanFeeCents: 11_000, amountCents: 99_000 },
+      ]),
+    );
+    expect(await releasesTo(domain, artisan)).toHaveLength(2);
+    expect(await refundsOn(domain, client, jobId)).toEqual([
+      { amountCents: 40_000, materialsCents: 0, labourCents: 40_000, state: "on-its-way" },
     ]);
   });
 
@@ -273,7 +273,7 @@ describe("a Refund paid by the bank", () => {
 
   test("is paid once, however often its event comes", async () => {
     const { domain, given, payments } = await createHarness();
-    const { client, artisan, engagementId } = await hiredJob(given);
+    const { client, artisan, jobId, engagementId } = await hiredJob(given);
     await refunded(domain, artisan, engagementId, { labour: "300" });
     const webhook = await payments.succeedRefund(refundsAsked(payments)[0]!.id);
 
@@ -281,14 +281,14 @@ describe("a Refund paid by the bank", () => {
     await receive(domain, webhook);
 
     expect(await refundNotices(domain, client.actor)).toHaveLength(1);
-    expect(await moneyRows(engagementId, "refund.paid")).toEqual([
-      { kind: "refund.paid", amount_cents: 30_000 },
+    expect(await refundsOn(domain, client, jobId)).toMatchObject([
+      { amountCents: 30_000, state: "paid" },
     ]);
   });
 
   test("whose sending the adapter took though its answer was lost is recorded sent and paid", async () => {
     const { domain, given, payments } = await createHarness();
-    const { artisan, engagementId } = await hiredJob(given);
+    const { client, artisan, jobId, engagementId } = await hiredJob(given);
     const refund = payments.refund;
     payments.refund = async (input) => {
       await refund(input);
@@ -299,11 +299,8 @@ describe("a Refund paid by the bank", () => {
 
     await receive(domain, await payments.succeedRefund(refundsAsked(payments)[0]!.id));
 
-    expect(await moneyRows(engagementId, "refund.")).toEqual([
-      { kind: "refund.labour", amount_cents: 30_000 },
-      { kind: "refund.owed", amount_cents: 30_000 },
-      { kind: "refund.sent", amount_cents: 30_000 },
-      { kind: "refund.paid", amount_cents: 30_000 },
+    expect(await refundsOn(domain, client, jobId)).toEqual([
+      { amountCents: 30_000, materialsCents: 0, labourCents: 30_000, state: "paid" },
     ]);
   });
 
@@ -355,7 +352,9 @@ describe("a Refund the bank cannot take", () => {
       money: { refundedCents: 30_000 },
       refunds: [{ amountCents: 30_000, state: "owed" }],
     });
-    expect(await owedToClient(engagementId)).toBe(30_000);
+    expect(await refundsOn(domain, client, jobId)).toMatchObject([
+      { amountCents: 30_000, state: "owed" },
+    ]);
     const [item] = (await domain.queues.home(admin.actor, { queue: "support" }))!.items;
     expect(item).toMatchObject({
       title: `Failed Refund: a Refund of ${formatRands(30_000)} to Thandi Mokoena`,
@@ -382,9 +381,8 @@ describe("a Refund the bank cannot take", () => {
       }),
     ).toMatchObject({ ok: true });
 
-    expect(await owedToClient(engagementId)).toBe(0);
-    expect(await moneyRows(engagementId, "refund.paid-by-hand")).toEqual([
-      { kind: "refund.paid-by-hand", amount_cents: 30_000 },
+    expect(await refundsOn(domain, client, jobId)).toMatchObject([
+      { amountCents: 30_000, state: "paid" },
     ]);
     const title = `Your Refund of ${formatRands(30_000)} was paid by bank transfer: Paint the lounge`;
     expect((await refundNotices(domain, client.actor))[0]).toMatchObject({ title });
@@ -406,7 +404,7 @@ describe("a Refund the bank cannot take", () => {
   test("needs the transfer's reference to be recorded", async () => {
     const { domain, given, payments } = await createHarness();
     const admin = await given.admin();
-    const { artisan, engagementId } = await hiredJob(given);
+    const { client, artisan, jobId, engagementId } = await hiredJob(given);
     await refunded(domain, artisan, engagementId, { labour: "300" });
     await receive(domain, await payments.failRefund(refundsAsked(payments)[0]!.id));
     const [item] = (await domain.queues.home(admin.actor, { queue: "support" }))!.items;
@@ -417,7 +415,9 @@ describe("a Refund the bank cannot take", () => {
     expect(
       await domain.queues.decide(admin.actor, { itemId: item!.id, decision: "resolve" }),
     ).toMatchObject({ ok: false, refusal: { reason: "not-allowed" } });
-    expect(await owedToClient(engagementId)).toBe(30_000);
+    expect(await refundsOn(domain, client, jobId)).toMatchObject([
+      { amountCents: 30_000, state: "owed" },
+    ]);
   });
 });
 
@@ -527,29 +527,18 @@ async function lastRow(domain: Harness["domain"], party: { actor: Actor }, jobId
   )?.items.at(-1);
 }
 
-/** The Engagement's ledger rows whose kind starts so, oldest first. */
-async function moneyRows(engagementId: string, kind: string) {
-  const { results } = await env.DB.prepare(
-    "SELECT kind, amount_cents FROM ledger_entries WHERE engagement_id = ? AND kind LIKE ? ORDER BY recorded_at, rowid",
-  )
-    .bind(engagementId, `${kind}%`)
-    .all<{ kind: string; amount_cents: number }>();
-  return results;
-}
-
 /** What the Account was told of Refunds, newest first. */
 async function refundNotices(domain: Harness["domain"], actor: Actor) {
   return (await domain.notices.list(actor)).filter((notice) => notice.event.startsWith("refund."));
 }
 
-/** What the Engagement's Refunds still owe the Client, from the ledger. */
-async function owedToClient(engagementId: string) {
-  const row = await env.DB.prepare(
-    `SELECT coalesce(sum(CASE kind WHEN 'refund.owed' THEN amount_cents
-       WHEN 'refund.paid' THEN -amount_cents WHEN 'refund.paid-by-hand' THEN -amount_cents
-       ELSE 0 END), 0) AS cents FROM ledger_entries WHERE engagement_id = ?`,
-  )
-    .bind(engagementId)
-    .first<{ cents: number }>();
-  return row?.cents;
+/** The Engagement's Refunds, as its Client sees them on the Job page. */
+async function refundsOn(domain: Harness["domain"], client: { actor: Actor }, jobId: string) {
+  const engagement = (await domain.jobs.view(client.actor, { jobId }))?.engagement;
+  return (engagement?.refunds ?? []).map(({ amountCents, materialsCents, labourCents, state }) => ({
+    amountCents,
+    materialsCents,
+    labourCents,
+    state,
+  }));
 }

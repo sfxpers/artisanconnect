@@ -9,7 +9,7 @@ export const REPORT_REASONS = [
   "other",
 ] as const;
 
-export type ReportReason = (typeof REPORT_REASONS)[number];
+type ReportReason = (typeof REPORT_REASONS)[number];
 
 export const REPORT_REASON_NAMES: Record<ReportReason, string> = {
   "contact-or-payment": "Contact or payment details",

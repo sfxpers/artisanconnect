@@ -16,11 +16,11 @@ import { ascii, need, startsWith, Unreadable, viewOf } from "./bytes";
 // hidden after the picture. The camera's orientation is applied first, since
 // it is metadata too.
 
-export type PhotoFormat = "jpeg" | "png" | "webp";
+type PhotoFormat = "jpeg" | "png" | "webp";
 
 /** The long side of the copy that is shown. */
 export const PHOTO_LONG_SIDE = 2048;
-export const THUMBNAIL_LONG_SIDE = 400;
+const THUMBNAIL_LONG_SIDE = 400;
 /**
  * The most pixels a photo may have. Decoding needs four bytes a pixel, twice
  * over (in the codec and in JavaScript), inside a Worker's 128 MB, and a small
@@ -50,7 +50,7 @@ export function photoFormat(bytes: Uint8Array): PhotoFormat | null {
   return null;
 }
 
-export type PhotoHeader = {
+type PhotoHeader = {
   width: number;
   height: number;
   /** An animated WebP or PNG: a moving picture, not a photo. */
@@ -69,7 +69,7 @@ export function readPhotoHeader(bytes: Uint8Array, format: PhotoFormat): PhotoHe
   }
 }
 
-export type Drawn = { copy: Uint8Array; thumbnail: Uint8Array; width: number; height: number };
+type Drawn = { copy: Uint8Array; thumbnail: Uint8Array; width: number; height: number };
 
 export async function drawPhoto(
   bytes: Uint8Array<ArrayBuffer>,

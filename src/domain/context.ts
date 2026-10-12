@@ -3,7 +3,7 @@ import { drizzle, type DrizzleD1Database } from "drizzle-orm/d1";
 import type { DomainConfig, Ports } from "./ports";
 import * as schema from "./schema";
 
-export type Db = DrizzleD1Database<typeof schema>;
+type Db = DrizzleD1Database<typeof schema>;
 
 /** One statement of a domain event's batch. */
 export type Write = BatchItem<"sqlite">;

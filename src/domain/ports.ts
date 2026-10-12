@@ -132,7 +132,7 @@ export type Refund = {
   state: "pending" | "succeeded" | "failed" | "paused";
 };
 
-export type BankAccount = {
+type BankAccount = {
   accountHolder: string;
   accountNumber: string;
   branchCode: string;
@@ -164,7 +164,7 @@ export type CreatePayout = {
   beneficiaryReference: string;
 };
 
-export type PayoutCreated = { state: "pending" } | { state: "refused"; reason: string };
+type PayoutCreated = { state: "pending" } | { state: "refused"; reason: string };
 
 export type Payout = {
   id: string;

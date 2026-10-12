@@ -19,21 +19,21 @@ import { writeReview } from "@/web/reviews";
 
 const t = copy.review;
 
-export type ReviewsShown = NonNullable<Awaited<ReturnType<Domain["reviews"]["ofArtisan"]>>>;
+type ReviewsShown = NonNullable<Awaited<ReturnType<Domain["reviews"]["ofArtisan"]>>>;
 
 type EngagementReviewsView = NonNullable<
   NonNullable<Awaited<ReturnType<Domain["jobs"]["view"]>>>["engagement"]
 >["reviews"];
 
 /** A rating as five stars, read out as "4 out of 5". */
-export function Stars({ rating }: { rating: number }) {
+function Stars({ rating }: { rating: number }) {
   return (
     <span role="img" aria-label={t.outOf(rating)} className="inline-flex gap-0.5">
       {[1, 2, 3, 4, 5].map((n) => (
         <Star
           key={n}
           aria-hidden
-          className={`size-4 ${n <= rating ? "fill-current text-amber-500" : "text-muted-foreground/40"}`}
+          className={`size-4 ${n <= rating ? "fill-current text-accent-foreground" : "text-muted-foreground/40"}`}
         />
       ))}
     </span>
@@ -124,7 +124,7 @@ export function WriteReview({
       }}
     >
       <div className="space-y-1">
-        <h3 className="font-medium">{t.write(of)}</h3>
+        <h3 className="font-semibold">{t.write(of)}</h3>
         <p className="text-xs text-muted-foreground">{t.writeLead(formatDate(reviews.closesAt))}</p>
       </div>
       <div className="space-y-1.5">
@@ -145,7 +145,7 @@ export function WriteReview({
             >
               <Star
                 aria-hidden
-                className={`size-7 ${rating !== null && n <= rating ? "fill-current text-amber-500" : "text-muted-foreground/50"}`}
+                className={`size-7 ${rating !== null && n <= rating ? "fill-current text-accent-foreground" : "text-muted-foreground/50"}`}
               />
             </button>
           ))}

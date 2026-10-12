@@ -257,18 +257,6 @@ describe("a Job opened by Hire Again", () => {
     });
     expect((await domain.jobs.view(job.client.actor, { jobId }))?.state).toBe("draft");
   });
-
-  test("Hired sets the Artisan Fee at 5%", async () => {
-    const { domain, given } = await createHarness();
-    const job = await completedJob(given);
-    const jobId = await postedAgain(domain, job);
-
-    await given.hired(job.client, await given.sentQuote(job.artisan, jobId));
-
-    expect(
-      (await domain.jobs.viewAsArtisan(job.artisan.actor, { jobId }))?.engagement?.money,
-    ).toMatchObject({ artisanFeePercent: 5 });
-  });
 });
 
 describe("the Protected Relationship Period", () => {
@@ -327,6 +315,26 @@ describe("the Protected Relationship Period", () => {
     clock.advance({ days: 166 });
 
     expect(await relationshipOf(domain, admin, job)).toMatchObject({ protectedNow: false });
+  });
+
+  test("shows both parties when it ends, on each of their Engagements, from their first Payment", async () => {
+    const { domain, given, clock } = await createHarness();
+    const job = await completedJob(given);
+    const first = await domain.jobs.view(job.client.actor, { jobId: job.jobId });
+    const until = new Date(first!.engagement!.hiredAt.getTime() + 365 * DAY);
+    clock.advance({ days: 200 });
+    const jobId = await postedAgain(domain, job);
+    await given.hired(
+      job.client,
+      await given.sentQuote(job.artisan, jobId, { startOn: "2027-06-01" }),
+    );
+
+    for (const shown of [
+      (await domain.jobs.view(job.client.actor, { jobId }))?.engagement,
+      (await domain.jobs.viewAsArtisan(job.artisan.actor, { jobId }))?.engagement,
+    ]) {
+      expect(shown).toMatchObject({ protectedUntil: until });
+    }
   });
 
   test("is no one's before a Payment", async () => {

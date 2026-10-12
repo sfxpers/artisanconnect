@@ -14,7 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { initials } from "@/components/app-header";
-import { Page, Refusal } from "@/components/page";
+import { Page, Refusal, withSidebar } from "@/components/page";
 import { getAdmins, inviteAdmin, removeAdmin } from "@/web/admin";
 import { copy, formatDate } from "@/web/copy";
 import { onlyForAdmins } from "@/web/guards";
@@ -35,9 +35,8 @@ type Admin = Awaited<ReturnType<typeof getAdmins>>[number];
 function Admins() {
   const admins = Route.useLoaderData();
   return (
-    <Page title={t.title}>
-      <p className="max-w-2xl text-sm text-muted-foreground">{t.lead}</p>
-      <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
+    <Page title={t.title} lead={t.lead}>
+      <div className={withSidebar}>
         <Card className="py-0">
           <ul className="divide-y">
             {admins.map((admin) => (

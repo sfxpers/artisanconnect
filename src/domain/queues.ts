@@ -39,7 +39,7 @@ export type DecisionOption = {
 };
 
 /** A decision allowed on an item now, by its key, with the values it is recorded with. */
-export type AllowedDecision = DecisionOption & { key: string; fields: DecisionField[] };
+type AllowedDecision = DecisionOption & { key: string; fields: DecisionField[] };
 
 /**
  * A value the Admin records with a decision, such as an Identity Number read

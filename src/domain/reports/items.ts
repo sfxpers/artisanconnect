@@ -450,7 +450,7 @@ async function accountRow(ctx: Context, accountId: string) {
 }
 
 /** The Reports folded into the item, oldest first, each with its reporter. */
-export async function reportsOf(ctx: Context, itemId: string) {
+async function reportsOf(ctx: Context, itemId: string) {
   return ctx.db
     .select({
       reason: reports.reason,

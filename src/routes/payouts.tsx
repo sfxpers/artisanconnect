@@ -1,8 +1,9 @@
+import { Banknote } from "lucide-react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Page } from "@/components/page";
+import { EmptyState, Page } from "@/components/page";
 import { formatRands } from "@/domain/money";
 import { copy, formatDate } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
@@ -30,21 +31,20 @@ function Payouts() {
   const noAccount = payouts.releases.some((release) => release.waitingFor === "payout-account");
   const stopped = payouts.releases.some((release) => isStopped(release.state));
   return (
-    <Page title={t.title}>
-      <p className="max-w-2xl text-sm text-muted-foreground">{t.lead}</p>
+    <Page title={t.title} lead={t.lead}>
       <div className="grid gap-4 sm:grid-cols-2">
         <Total label={t.unpaid} cents={payouts.unpaidCents} />
         <Total label={t.paid} cents={payouts.paidCents} />
       </div>
       {payouts.held && (
-        <Card size="sm" className="ring-2 ring-primary/80">
+        <Card size="sm" className="ring-2 ring-primary">
           <CardContent>
             <p className="text-sm">{t.held}</p>
           </CardContent>
         </Card>
       )}
       {noAccount && !payouts.held && (
-        <Card size="sm" className="ring-2 ring-primary/80">
+        <Card size="sm" className="ring-2 ring-primary">
           <CardContent className="flex flex-wrap items-center gap-3">
             <p className="flex-1 text-sm">{stopped ? t.stopped : t.noAccount}</p>
             <Link to="/verification" className={buttonVariants({ size: "sm" })}>
@@ -54,11 +54,7 @@ function Payouts() {
         </Card>
       )}
       {payouts.releases.length === 0 ? (
-        <Card>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">{t.empty}</p>
-          </CardContent>
-        </Card>
+        <EmptyState icon={<Banknote />}>{t.empty}</EmptyState>
       ) : (
         <Card className="py-0">
           <ul className="divide-y">

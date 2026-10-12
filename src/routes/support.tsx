@@ -32,8 +32,7 @@ const t = copy.support;
 function Support() {
   const requests = Route.useLoaderData();
   return (
-    <Page title={t.title} narrow>
-      <p className="text-sm text-muted-foreground">{t.lead}</p>
+    <Page title={t.title} lead={t.lead} narrow>
       <SupportForm />
       <Card size="sm">
         <CardHeader>

@@ -158,40 +158,29 @@ describe("an Email code", () => {
     expect(await confirm(code)).toMatchObject({ ok: false, refusal: { reason: "wrong-code" } });
   });
 
-  test("works for ten minutes", async () => {
+  test.each([
+    [9, { ok: true }],
+    [11, { ok: false, refusal: { reason: "code-expired" } }],
+  ])("works for ten minutes: after %i, it is %o", async (minutes, outcome) => {
     const { code, confirm, clock } = await sentCode();
 
-    clock.advance({ minutes: 9 });
+    clock.advance({ minutes });
 
-    expect(await confirm(code)).toMatchObject({ ok: true });
+    expect(await confirm(code)).toMatchObject(outcome);
   });
 
-  test("stops working after ten minutes", async () => {
-    const { code, confirm, clock } = await sentCode();
-
-    clock.advance({ minutes: 11 });
-
-    expect(await confirm(code)).toMatchObject({ ok: false, refusal: { reason: "code-expired" } });
-  });
-
-  test("dies after five wrong tries", async () => {
+  test.each([
+    [4, { ok: true }],
+    [5, { ok: false, refusal: { reason: "code-used-up" } }],
+  ])("dies after five wrong tries: after %i, it is %o", async (tries, outcome) => {
     const { code, confirm } = await sentCode();
     const wrong = code === "000000" ? "111111" : "000000";
 
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < tries; i++) {
       expect(await confirm(wrong)).toMatchObject({ refusal: { reason: "wrong-code" } });
     }
 
-    expect(await confirm(code)).toMatchObject({ ok: false, refusal: { reason: "code-used-up" } });
-  });
-
-  test("still works after four wrong tries", async () => {
-    const { code, confirm } = await sentCode();
-    const wrong = code === "000000" ? "111111" : "000000";
-
-    for (let i = 0; i < 4; i++) await confirm(wrong);
-
-    expect(await confirm(code)).toMatchObject({ ok: true });
+    expect(await confirm(code)).toMatchObject(outcome);
   });
 
   test("cannot be replaced within 60 seconds", async () => {

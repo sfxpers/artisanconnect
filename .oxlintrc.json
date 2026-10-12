@@ -4,13 +4,5 @@
   "categories": {
     "correctness": "error"
   },
-  "ignorePatterns": [
-    "**/routeTree.gen.ts",
-    "worker-configuration.d.ts",
-    "dist/**",
-    ".output/**",
-    ".wrangler/**",
-    ".tanstack/**",
-    "node_modules/**"
-  ]
+  "ignorePatterns": ["**/routeTree.gen.ts"]
 }

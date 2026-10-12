@@ -35,7 +35,11 @@ export function configFromEnv(env: Env): DomainConfig {
  * so its checkout page finds a collection whichever isolate opened it.
  */
 export function fakePaymentsFromEnv(env: Env) {
-  return createStoredFakePayments({ store: d1FakePaymentsStore(env.DB) });
+  if (!env.PAYMENTS_WEBHOOK_SECRET) throw new Error("Set the PAYMENTS_WEBHOOK_SECRET secret");
+  return createStoredFakePayments({
+    store: d1FakePaymentsStore(env.DB),
+    webhookSecret: env.PAYMENTS_WEBHOOK_SECRET,
+  });
 }
 
 /** Cloudflare Email Sending, outbound only. */

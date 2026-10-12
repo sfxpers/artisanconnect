@@ -34,7 +34,7 @@ type HeldKindDefinition = {
   view(ctx: Context, item: QueueItem): Promise<ItemView>;
 };
 
-export type HeldKind = QueueItemKind & {
+type HeldKind = QueueItemKind & {
   /**
    * The writes that mark the item's Pre-check withdrawn by its sender, if it
    * is in the queue. A decision recorded meanwhile aborts the batch it is in,

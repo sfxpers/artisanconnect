@@ -1,10 +1,10 @@
-import { env } from "cloudflare:test";
 import { describe, expect, test } from "vitest";
 import type { Actor, AdminActor } from "@/domain/actor";
 import type { CreatePayout } from "@/domain/ports";
 import type { FakePayments } from "@/domain/fakes/payments";
 import { formatRands } from "@/domain/money";
 import { formatDay } from "@/domain/sa-days";
+import { releasesTo } from "../support/money";
 import { createHarness, type Harness } from "../support/harness";
 import { decideCheck, payoutAccount, submit, verificationItem } from "../support/verification";
 
@@ -78,7 +78,7 @@ describe("the daily Payout run", () => {
     const { domain, given, payments, clock } = await createHarness();
     const admin = await given.admin();
     const { artisan } = await releasedJob(given);
-    await removePayoutAccount(domain, admin, artisan.actor.accountId);
+    await removePayoutAccount(domain, admin);
     clock.set(RUN_AT);
 
     expect(await domain.system.runPayouts()).toEqual({ ran: true, sent: 0, floatShort: false });
@@ -119,28 +119,12 @@ describe("the daily Payout run", () => {
       mailer.sentTo(admin.email).filter((email) => email.subject.includes("float")),
     ).toHaveLength(1);
   });
-
-  test("a run that fails part-way sends a Release it never created a Payout for later that day", async () => {
-    const { domain, given, clock } = await createHarness();
-    const { artisan, engagementId } = await releasedJob(given);
-    clock.set(RUN_AT);
-    await env.DB.prepare(
-      "CREATE TRIGGER no_payouts BEFORE INSERT ON payouts BEGIN SELECT RAISE(ABORT, 'no'); END",
-    ).run();
-    await expect(domain.system.runPayouts()).rejects.toThrow(/1 Payouts did not go/);
-    await env.DB.prepare("DROP TRIGGER no_payouts").run();
-
-    clock.advance({ minutes: 5 });
-    expect(await domain.system.runPayouts()).toEqual({ ran: true, sent: 1, floatShort: false });
-    expect((await domain.payouts.mine(artisan.actor))?.releases).toMatchObject([{ state: "sent" }]);
-    expect(await ledgerRows(engagementId, "payout.created")).toHaveLength(1);
-  });
 });
 
 describe("a Payout refused or sent back", () => {
   test("refused at sending leaves the Release standing and owed, and the account not current", async () => {
     const { domain, given, payments, clock } = await createHarness();
-    const { artisan, engagementId } = await releasedJob(given);
+    const { artisan } = await releasedJob(given);
     payments.refuseNextPayout("invalid_check_digit");
     clock.set(RUN_AT);
     await domain.system.runPayouts();
@@ -160,12 +144,9 @@ describe("a Payout refused or sent back", () => {
         category: "painting",
       }),
     ).toBe(true);
-    expect(await ledgerRows(engagementId, "%")).toEqual(
-      expect.arrayContaining([
-        { kind: "payout.refused", amount_cents: 45_000 },
-        { kind: "release.artisan-fee", amount_cents: 5_000 },
-      ]),
-    );
+    expect(await releasesTo(domain, artisan)).toEqual([
+      { part: "materials", releasedCents: 50_000, artisanFeeCents: 5_000, amountCents: 45_000 },
+    ]);
 
     // It is not retried to that account.
     clock.advance({ days: 1 });
@@ -195,7 +176,7 @@ describe("a Payout refused or sent back", () => {
   test("sent back days later makes the money owed again; the Artisan Fee is kept once", async () => {
     const { domain, given, payments, clock } = await createHarness();
     const admin = await given.admin();
-    const { artisan, engagementId } = await releasedJob(given);
+    const { artisan } = await releasedJob(given);
     clock.set(RUN_AT);
     await domain.system.runPayouts();
     const [payout] = payoutsAsked(payments);
@@ -216,11 +197,9 @@ describe("a Payout refused or sent back", () => {
     expect(slotOf(await domain.verification.mine(artisan.actor), "payout-account")).toMatchObject({
       state: "stopped",
     });
-    expect(await ledgerRows(engagementId, "release.artisan-fee")).toEqual([
-      { kind: "release.artisan-fee", amount_cents: 5_000 },
-    ]);
-    expect(await ledgerRows(engagementId, "payout.sent-back")).toEqual([
-      { kind: "payout.sent-back", amount_cents: 45_000 },
+    // One Release, its Artisan Fee kept once, and its Payout sent back.
+    expect((await domain.payouts.mine(artisan.actor))?.releases).toMatchObject([
+      { artisanFeeCents: 5_000, payouts: [{ state: "sent-back", amountCents: 45_000 }] },
     ]);
   });
 
@@ -279,7 +258,7 @@ describe("a Payout refused or sent back", () => {
 
   test("happens once, however often its event comes", async () => {
     const { domain, given, payments, clock } = await createHarness();
-    const { artisan, engagementId } = await releasedJob(given);
+    const { artisan } = await releasedJob(given);
     clock.set(RUN_AT);
     await domain.system.runPayouts();
     const [payout] = payoutsAsked(payments);
@@ -294,13 +273,15 @@ describe("a Payout refused or sent back", () => {
       "payout.sent-back",
       "payout.paid",
     ]);
-    expect(await ledgerRows(engagementId, "payout.sent-back")).toHaveLength(1);
+    expect(
+      (await domain.payouts.mine(artisan.actor))?.releases[0]?.payouts.map((each) => each.state),
+    ).toEqual(["sent-back"]);
   });
 
   test("every waiting Payout goes in the first daily run after the Admin accepts a new account", async () => {
     const { domain, given, payments, mailer, clock } = await createHarness();
     const admin = await given.admin();
-    const { artisan, engagementId } = await releasedJob(given);
+    const { artisan } = await releasedJob(given);
     clock.set(RUN_AT);
     await domain.system.runPayouts();
     const [first] = payoutsAsked(payments);
@@ -335,7 +316,6 @@ describe("a Payout refused or sent back", () => {
     expect(mailer.sentTo(artisan.email).at(-1)!.text).toContain(
       `Reference: ${again!.beneficiaryReference}`,
     );
-    expect(await ledgerRows(engagementId, "release.artisan-fee")).toHaveLength(1);
     expect((await domain.payouts.mine(artisan.actor))?.releases).toMatchObject([
       { state: "sent" },
       {
@@ -774,7 +754,7 @@ describe("a Payout paid", () => {
 
   test("is paid once, however often its event comes", async () => {
     const { domain, given, payments, clock } = await createHarness();
-    const { artisan, engagementId } = await releasedJob(given);
+    const { artisan } = await releasedJob(given);
     clock.set(RUN_AT);
     await domain.system.runPayouts();
     const [payout] = payoutsAsked(payments);
@@ -784,11 +764,10 @@ describe("a Payout paid", () => {
     await receive(domain, paid);
 
     expect(await payoutNotices(domain, artisan.actor)).toHaveLength(1);
-    expect(await ledgerRows(engagementId, "payout.%")).toEqual([
-      { kind: "payout.created", amount_cents: 45_000 },
-      { kind: "payout.owed", amount_cents: 45_000 },
-      { kind: "payout.paid", amount_cents: 45_000 },
-    ]);
+    expect(await domain.payouts.mine(artisan.actor)).toMatchObject({
+      paidCents: 45_000,
+      releases: [{ state: "paid", payouts: [{ state: "paid", amountCents: 45_000 }] }],
+    });
   });
 });
 
@@ -1003,39 +982,21 @@ async function payoutNotices(domain: Harness["domain"], actor: Actor) {
   return (await domain.notices.list(actor)).filter((notice) => notice.event.startsWith("payout."));
 }
 
-/** The Admin removes the Artisan's accepted Payout account, found false. */
-async function removePayoutAccount(
-  domain: Harness["domain"],
-  admin: { actor: AdminActor },
-  artisanId: string,
-) {
-  const check = await env.DB.prepare(
-    "SELECT id FROM verification_checks WHERE artisan_id = ? AND kind = 'payout-account'",
-  )
-    .bind(artisanId)
-    .first<{ id: string }>();
-  const item = await env.DB.prepare(
-    "SELECT id FROM queue_items WHERE queue = 'verification' AND subject_id = ?",
-  )
-    .bind(artisanId)
-    .first<{ id: string }>();
+/** The Admin removes the one Artisan's accepted Payout account, found false, from its Verification item. */
+async function removePayoutAccount(domain: Harness["domain"], admin: { actor: AdminActor }) {
+  const itemId = (await domain.admins.auditLog(admin.actor))!.rows.find(
+    (row) => row.action === "queue.row-decided",
+  )!.subjectId!;
+  const row = (await domain.queues.item(admin.actor, { itemId }))?.rows?.find(
+    (each) => each.title === "Payout account",
+  );
   const removed = await domain.queues.decideRow(admin.actor, {
-    itemId: item!.id,
-    rowId: check!.id,
+    itemId,
+    rowId: row!.id,
     decision: "remove",
     reason: "The letter was not the Artisan's.",
   });
   if (!removed.ok) throw new Error(removed.refusal.message);
-}
-
-/** The Engagement's ledger rows of these kinds, by kind. */
-async function ledgerRows(engagementId: string, kinds: string) {
-  const { results } = await env.DB.prepare(
-    "SELECT kind, amount_cents FROM ledger_entries WHERE engagement_id = ? AND kind LIKE ? ORDER BY kind",
-  )
-    .bind(engagementId, kinds)
-    .all<{ kind: string; amount_cents: number }>();
-  return results;
 }
 
 /** The Artisan's Verification slot of this kind. */

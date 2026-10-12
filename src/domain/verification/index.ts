@@ -7,6 +7,7 @@ import {
   isNull,
   ne,
   notExists,
+  or,
   sql,
   type SQLWrapper,
 } from "drizzle-orm";
@@ -58,7 +59,7 @@ import type { CheckDetails, CheckFile } from "./stored";
 // touches a Hired Engagement.
 
 /** Each part of a check's files, as the Artisan sends them. */
-export type CheckFiles = Partial<Record<FilePart["part"], Blob[]>>;
+type CheckFiles = Partial<Record<FilePart["part"], Blob[]>>;
 
 const KIND = "verification.checks";
 
@@ -645,7 +646,13 @@ function checkDates(dates: { expiresOn: string | null; issuedOn: string | null }
   return null;
 }
 
-/** Whether another Artisan holds this Identity Number or Payout account: has it accepted now. */
+/**
+ * Whether another Artisan holds this Identity Number or Payout account. A
+ * Payout account is held while accepted; an Identity Number from its first
+ * acceptance on, replaced or removed, so it never holds a second Artisan
+ * Account (ADR 0021). The trigger `verification_checks_one_holder`
+ * (migrations/0036) refuses the same at acceptance.
+ */
 async function heldByOther(ctx: Context, heldKey: string, artisanId: string) {
   const [held] = await ctx.db
     .select({ id: verificationChecks.id })
@@ -654,7 +661,13 @@ async function heldByOther(ctx: Context, heldKey: string, artisanId: string) {
       and(
         eq(verificationChecks.heldKey, heldKey),
         ne(verificationChecks.artisanId, artisanId),
-        eq(verificationChecks.state, "accepted"),
+        or(
+          eq(verificationChecks.state, "accepted"),
+          and(
+            eq(verificationChecks.kind, "identity"),
+            inArray(verificationChecks.state, ["superseded", "removed"]),
+          ),
+        ),
       ),
     )
     .limit(1);

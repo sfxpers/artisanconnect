@@ -20,8 +20,8 @@ const ready = Promise.all([
 ]);
 
 type Colour = [number, number, number];
-export const RED: Colour = [220, 30, 30];
-export const BLUE: Colour = [30, 30, 220];
+const RED: Colour = [220, 30, 30];
+const BLUE: Colour = [30, 30, 220];
 
 /** An image whose left half is one colour and right half another. */
 export function picture(width: number, height: number, left = RED, right = BLUE): ImageData {
@@ -96,11 +96,6 @@ export function riffChunks(bytes: Uint8Array): string[] {
     at += 8 + view.getUint32(at + 4, true) + (view.getUint32(at + 4, true) % 2);
   }
   return chunks;
-}
-
-export function pixelAt(image: ImageData, x: number, y: number): Colour {
-  const i = (y * image.width + x) * 4;
-  return [image.data[i]!, image.data[i + 1]!, image.data[i + 2]!];
 }
 
 export function fixture(dataUrl: string): Uint8Array<ArrayBuffer> {
@@ -427,9 +422,4 @@ export function fragmentedM4a(samples: number, sampleDuration = 1024): Uint8Arra
     ),
     box("mdat", new Uint8Array(16)),
   );
-}
-
-/** A JPEG with a fill byte before its first marker, as some cameras write. */
-export function withFillByte(jpeg: Uint8Array): Uint8Array<ArrayBuffer> {
-  return concat(jpeg.subarray(0, 2), new Uint8Array([0xff]), jpeg.subarray(2));
 }

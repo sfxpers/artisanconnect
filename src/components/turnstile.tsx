@@ -69,5 +69,5 @@ function TurnstileWidget({
       if (widgetId) window.turnstile?.remove(widgetId);
     };
   }, [siteKey, onToken]);
-  return <div ref={element} className="min-h-[65px]" />;
+  return <div ref={element} className="min-h-17" />;
 }

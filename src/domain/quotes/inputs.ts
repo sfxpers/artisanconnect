@@ -12,7 +12,7 @@ export const SCOPE_MAX = 2000;
 export const WARRANTY_MAX = 500;
 export const DURATION_MAX_DAYS = 365;
 /** The least a Quote totals, Labour plus Materials, in cents: R300. */
-export const QUOTE_MIN_CENTS = 30_000;
+const QUOTE_MIN_CENTS = 30_000;
 /** The most either line may be, in cents: R10 000 000. */
 const LINE_MAX_CENTS = 1_000_000_000;
 

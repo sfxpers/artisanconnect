@@ -51,8 +51,7 @@ function Regions() {
   }
 
   return (
-    <Page title={t.title} narrow>
-      <p className="text-sm text-muted-foreground">{t.lead}</p>
+    <Page title={t.title} lead={t.lead} narrow>
       <Card>
         <CardContent>
           <ul className="divide-y">

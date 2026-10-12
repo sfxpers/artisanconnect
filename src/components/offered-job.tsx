@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { initials } from "@/components/app-header";
 import { Details, Fact } from "@/components/job-details";
-import { NextStepCard, Page, Refusal } from "@/components/page";
+import { NextStepCard, Page, Refusal, withSidebar } from "@/components/page";
 import { useAction } from "@/components/use-action";
 import { QuoteForm } from "@/components/quote-form";
 import { ReportAction } from "@/components/report";
@@ -42,7 +42,7 @@ import { reviseQuote, sendQuote, withdrawQuoteBeingChecked, withdrawQuote } from
 import { getClientReviews } from "@/web/reviews";
 
 /** A Job as an Artisan offered it sees it. */
-export type OfferedJobView = Extract<Awaited<ReturnType<typeof getJob>>, { as: "artisan" }>;
+type OfferedJobView = Extract<Awaited<ReturnType<typeof getJob>>, { as: "artisan" }>;
 type OwnQuote = NonNullable<OfferedJobView["quote"]>;
 const t = copy.match;
 const tq = copy.quote;
@@ -84,7 +84,7 @@ export function OfferedJob({
       </div>
       <div className="space-y-1">
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight">{job.title}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{job.title}</h1>
           <Badge>
             {engagement
               ? copy.engagement.states[engagement.state]
@@ -108,7 +108,7 @@ export function OfferedJob({
         tab={tab}
         conversations={conversations}
         overview={
-          <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
+          <div className={withSidebar}>
             <div className="min-w-0 space-y-6">
               {engagement ? (
                 <>
@@ -240,7 +240,7 @@ function QuoteOrPass({
       {job.takesQuotes ? (
         <div className="space-y-3 rounded-lg border p-4">
           <div className="space-y-1">
-            <h3 className="font-medium">{tq.write}</h3>
+            <h3 className="font-semibold">{tq.write}</h3>
             <p className="text-xs text-muted-foreground">{tq.writeLead}</p>
           </div>
           <QuoteForm
@@ -293,7 +293,7 @@ function QuoteStep({
       {notice && <p className="text-sm text-muted-foreground">{notice}</p>}
       {beingChecked && (
         <div className="space-y-3 rounded-lg border p-4">
-          <Badge variant="secondary">{copy.job.beingChecked}</Badge>
+          <Badge variant="warning">{copy.job.beingChecked}</Badge>
           <p className="text-sm text-muted-foreground">{tq.revisionHeld}</p>
           <QuoteFacts quote={beingChecked} />
         </div>

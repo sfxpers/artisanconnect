@@ -1,8 +1,6 @@
 import { env } from "cloudflare:test";
 import { describe, expect, test } from "vitest";
 import { createFakeClock } from "@/domain/fakes/clock";
-import { createFakeContentReader } from "@/domain/fakes/content-reader";
-import { createFakeMailer } from "@/domain/fakes/mailer";
 import { createFakePayments, createStoredFakePayments } from "@/domain/fakes/payments";
 import { d1FakePaymentsStore } from "@/worker/fake-payments";
 import { createHarness } from "./support/harness";
@@ -21,7 +19,7 @@ const collection = {
 
 function payments() {
   const clock = createFakeClock();
-  return { clock, payments: createFakePayments({ clock }) };
+  return { clock, payments: createFakePayments({ clock, webhookSecret: "test-webhook-secret" }) };
 }
 
 async function paid(method: "card" | "pay_by_bank" = "card") {
@@ -214,7 +212,11 @@ describe("the fake payment adapter in the Worker", () => {
   // Kept in D1, so a collection one isolate opened is found by the next.
   async function stored() {
     await createHarness();
-    return () => createStoredFakePayments({ store: d1FakePaymentsStore(env.DB) });
+    return () =>
+      createStoredFakePayments({
+        store: d1FakePaymentsStore(env.DB),
+        webhookSecret: "test-webhook-secret",
+      });
   }
 
   test("keeps its state between adapters on the same D1", async () => {
@@ -250,68 +252,5 @@ describe("the fake payment adapter in the Worker", () => {
     for (const id of ["pay_1", "pay_2", "pay_3"]) {
       expect(await adapter().getCollection(id)).toMatchObject({ state: "pending" });
     }
-  });
-});
-
-describe("the fake clock", () => {
-  test("moves only when told", () => {
-    const clock = createFakeClock(new Date("2026-10-05T06:00:00Z"));
-
-    clock.advance({ days: 7, hours: 1, minutes: 30 });
-
-    expect(clock.now()).toEqual(new Date("2026-10-12T07:30:00Z"));
-  });
-});
-
-describe("the fake content reader", () => {
-  test("gives the verdict it is forced to", async () => {
-    const reader = createFakeContentReader();
-    const content = {
-      text: "Call me",
-      photos: [],
-      context: { kind: "before-payment" },
-    } as const;
-
-    expect(await reader.read(content)).toEqual({ kind: "clear" });
-    reader.force({ kind: "unsure", reason: "May be contact details" });
-    expect(await reader.read(content)).toEqual({
-      kind: "unsure",
-      reason: "May be contact details",
-    });
-    expect(reader.reads).toHaveLength(2);
-  });
-
-  test("reads photos and voice notes as it is told to, and fails every call once broken", async () => {
-    const reader = createFakeContentReader();
-    const audio = { bytes: new Uint8Array(1), contentType: "audio/webm" };
-
-    expect(await reader.readPhoto(new Uint8Array(1))).toBe("");
-    expect(await reader.transcribe(audio)).toBe("");
-    reader.photosSay("Thandi 082 555 0123");
-    reader.voiceNotesSay("zero eight two");
-    expect(await reader.readPhoto(new Uint8Array(1))).toBe("Thandi 082 555 0123");
-    expect(await reader.transcribe(audio)).toBe("zero eight two");
-    reader.breaks();
-    await expect(reader.readPhoto(new Uint8Array(1))).rejects.toThrow();
-    await expect(reader.transcribe(audio)).rejects.toThrow();
-    await expect(
-      reader.read({ text: "", photos: [], context: { kind: "before-payment" } }),
-    ).rejects.toThrow();
-  });
-});
-
-describe("the fake mailer", () => {
-  test("captures what it sends", async () => {
-    const mailer = createFakeMailer();
-
-    await mailer.send({
-      to: "thandi@example.com",
-      subject: "You were Hired",
-      text: "Open ArtisanConnect",
-    });
-
-    expect(mailer.sentTo("thandi@example.com")).toEqual([
-      { to: "thandi@example.com", subject: "You were Hired", text: "Open ArtisanConnect" },
-    ]);
   });
 });

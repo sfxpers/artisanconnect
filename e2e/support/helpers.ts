@@ -1,5 +1,24 @@
 import { execFileSync } from "node:child_process";
-import { expect, type Page } from "@playwright/test";
+import { expect, test as base, type Page } from "@playwright/test";
+
+export { expect };
+
+/**
+ * Each test starts with the rate limits cleared: every request comes from
+ * localhost, and a whole run's sign-ins and code requests would add up past
+ * them.
+ */
+export const test = base.extend<{ freshRateLimits: void }>({
+  freshRateLimits: [
+    // Playwright reads a fixture's dependencies from this pattern, so it stays.
+    // oxlint-disable-next-line no-empty-pattern
+    async ({}, use) => {
+      seed("freshRateLimits");
+      await use();
+    },
+    { auto: true },
+  ],
+});
 
 // What the smoke specs share: seeds, the local mailbox, and signing in. A
 // dev server Playwright has just started is slow on its first requests, so

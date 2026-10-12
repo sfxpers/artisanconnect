@@ -12,12 +12,13 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Page, Refusal } from "@/components/page";
+import { Page, Refusal, withSidebar } from "@/components/page";
 import { useAction } from "@/components/use-action";
 import { cn } from "@/lib/utils";
 import { addSuburb, getAdminSuburbs } from "@/web/admin";
 import { copy } from "@/web/copy";
 import { onlyForAdmins } from "@/web/guards";
+import { NativeSelect } from "@/components/ui/native-select";
 
 export const Route = createFileRoute("/admin/suburbs")({
   beforeLoad: ({ context }) => {
@@ -36,9 +37,8 @@ function Suburbs() {
   const regions = Route.useLoaderData();
   const total = regions.reduce((sum, region) => sum + region.suburbs.length, 0);
   return (
-    <Page title={t.title}>
-      <p className="max-w-2xl text-sm text-muted-foreground">{t.lead}</p>
-      <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
+    <Page title={t.title} lead={t.lead}>
+      <div className={withSidebar}>
         <div className="space-y-2">
           <Card className="py-0">
             <ul className="divide-y">
@@ -141,9 +141,9 @@ function AddCard({ regions }: { regions: Region[] }) {
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="suburb-region">{t.region}</Label>
-            <select
+            <NativeSelect
               id="suburb-region"
-              className="h-8 w-full rounded-lg border border-input bg-background px-2 text-sm"
+              className="w-full"
               value={regionId}
               onChange={(event) => {
                 setRegionId(event.target.value);
@@ -156,7 +156,7 @@ function AddCard({ regions }: { regions: Region[] }) {
                   {region.name}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </div>
           <Refusal message={action.refusal} />
           {added && <p className="text-sm text-muted-foreground">{added}</p>}

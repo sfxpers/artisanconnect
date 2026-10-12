@@ -20,7 +20,7 @@ import { copy } from "@/web/copy";
 const t = copy.quote;
 
 /** A Quote as its form starts: empty, or the Quote being revised. */
-export type QuoteStart = {
+type QuoteStart = {
   scope: string;
   labourCents: number;
   materialsCents: number;

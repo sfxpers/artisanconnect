@@ -56,14 +56,17 @@ function Account() {
                     ? t.payoutAccount.ending(me.payoutAccount.bank, me.payoutAccount.accountEnding)
                     : t.payoutAccount.none}
                 </div>
-                <Link to="/verification" className="underline">
+                <Link
+                  to="/verification"
+                  className="font-medium text-primary underline underline-offset-4"
+                >
                   {t.payoutAccount.change}
                 </Link>
               </SettingsRow>
             </>
           )}
           <SettingsRow label={t.rules}>
-            <Link to="/rules" className="underline">
+            <Link to="/rules" className="font-medium text-primary underline underline-offset-4">
               {t.accepted(me.rules.version, formatDate(me.rules.acceptedAt))}
             </Link>
           </SettingsRow>
@@ -74,7 +77,7 @@ function Account() {
             </SettingsRow>
           )}
           <SettingsRow label={t.support}>
-            <Link to="/support" className="underline">
+            <Link to="/support" className="font-medium text-primary underline underline-offset-4">
               {t.supportLink}
             </Link>
           </SettingsRow>
@@ -174,7 +177,7 @@ function NamesRow({ me }: { me: Me }) {
       {names.beingChecked && (
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-2 text-sm">
-            <Badge variant="secondary">{t.names.beingChecked}</Badge>
+            <Badge variant="warning">{t.names.beingChecked}</Badge>
             {[names.beingChecked.name, names.beingChecked.tradingName].filter(Boolean).join(" · ")}
           </div>
           <p className="text-xs text-muted-foreground">{t.names.beingCheckedLead}</p>
@@ -410,7 +413,11 @@ function DataRequests() {
                   {d.states[request.state]}
                 </Badge>
                 {request.state === "sent" && (
-                  <a href={`/data-exports/${request.requestId}`} className="underline" download>
+                  <a
+                    href={`/data-exports/${request.requestId}`}
+                    className="font-medium text-primary underline underline-offset-4"
+                    download
+                  >
                     {d.download}
                   </a>
                 )}
@@ -545,7 +552,7 @@ function VatNumber({ vatNumber }: { vatNumber: string | null }) {
 
 function SettingsRow({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="grid gap-1 p-4 sm:grid-cols-[10rem_1fr]">
+    <div className="grid gap-1 p-4 sm:grid-cols-3 sm:*:last:col-span-2">
       <dt className="text-sm text-muted-foreground">{label}</dt>
       <dd className="text-sm">{children}</dd>
     </div>

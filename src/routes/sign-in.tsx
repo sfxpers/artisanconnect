@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { NextStepCard, Page, Refusal } from "@/components/page";
+import { AuthCard, Refusal } from "@/components/page";
 import { useTurnstile } from "@/components/turnstile";
 import type { MarketplaceRules } from "@/domain/accounts/rules";
 import { getCurrentRules, signIn } from "@/web/accounts";
@@ -56,105 +56,117 @@ function SignIn() {
   }
 
   return (
-    <Page narrow>
-      <NextStepCard label={copy.appName} title={newRules ? t.rulesTitle : t.title}>
-        <form
-          className="space-y-4"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void submit();
-          }}
-        >
-          {newRules ? (
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">{t.rulesLead}</p>
-              <div className="rounded-lg border p-3 text-sm">
-                <div className="text-xs text-muted-foreground">
-                  {copy.rules.version(newRules.version, formatDate(newRules.publishedAt))}
-                </div>
-                <p>{newRules.summary}</p>
-                <Link to="/rules" target="_blank" className="underline">
-                  {copy.signUp.rules.read}
-                </Link>
+    <AuthCard label={t.label} title={newRules ? t.rulesTitle : t.title}>
+      <form
+        className="space-y-4"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void submit();
+        }}
+      >
+        {newRules ? (
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">{t.rulesLead}</p>
+            <div className="rounded-lg border p-3 text-sm">
+              <div className="text-xs text-muted-foreground">
+                {copy.rules.version(newRules.version, formatDate(newRules.publishedAt))}
               </div>
-              <Label className="items-start gap-2 leading-snug font-normal">
-                <Checkbox
-                  checked={accepts.rules}
-                  onCheckedChange={(checked) => setAccepts({ ...accepts, rules: checked })}
-                />
-                {copy.signUp.rules.accept(newRules.version)}
-              </Label>
-              <Label className="items-start gap-2 leading-snug font-normal">
-                <Checkbox
-                  checked={accepts.consent}
-                  onCheckedChange={(checked) => setAccepts({ ...accepts, consent: checked })}
-                />
-                {copy.consent}
-              </Label>
+              <p>{newRules.summary}</p>
+              <Link
+                to="/rules"
+                target="_blank"
+                className="font-medium text-primary underline underline-offset-4"
+              >
+                {copy.signUp.rules.read}
+              </Link>
             </div>
-          ) : (
-            <>
-              <div className="space-y-1.5">
-                <Label htmlFor="email">{t.email}</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="password">{t.password}</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                />
-              </div>
-            </>
-          )}
-          {turnstile.widget}
-          {refusal?.reason !== "accept-rules" && <Refusal message={refusal?.message} />}
-          {refusal?.reason === "email-not-proven" && (
-            <Link to="/confirm-email" search={{ email }} className="text-sm underline">
-              {t.enterCode}
-            </Link>
-          )}
-          {refusal?.reason === "closed" && (
-            <Link to="/reopen" search={{ email }} className="text-sm underline">
-              {copy.reopen.submit}
-            </Link>
-          )}
-          <Button
-            type="submit"
-            size="lg"
-            disabled={
-              busy || !turnstile.token || (!!newRules && !(accepts.rules && accepts.consent))
-            }
+            <Label className="items-start gap-2 leading-snug font-normal">
+              <Checkbox
+                checked={accepts.rules}
+                onCheckedChange={(checked) => setAccepts({ ...accepts, rules: checked })}
+              />
+              {copy.signUp.rules.accept(newRules.version)}
+            </Label>
+            <Label className="items-start gap-2 leading-snug font-normal">
+              <Checkbox
+                checked={accepts.consent}
+                onCheckedChange={(checked) => setAccepts({ ...accepts, consent: checked })}
+              />
+              {copy.consent}
+            </Label>
+          </div>
+        ) : (
+          <>
+            <div className="space-y-1.5">
+              <Label htmlFor="email">{t.email}</Label>
+              <Input
+                id="email"
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="password">{t.password}</Label>
+              <Input
+                id="password"
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+              />
+            </div>
+          </>
+        )}
+        {turnstile.widget}
+        {refusal?.reason !== "accept-rules" && <Refusal message={refusal?.message} />}
+        {refusal?.reason === "email-not-proven" && (
+          <Link
+            to="/confirm-email"
+            search={{ email }}
+            className="text-sm font-medium text-primary underline underline-offset-4"
           >
-            {newRules ? t.acceptAndSignIn : t.submit}
-          </Button>
-        </form>
-        <div className="flex flex-wrap justify-between gap-2 text-sm text-muted-foreground">
-          <span className="flex flex-col gap-1">
-            <Link to="/recover" className="underline">
-              {t.forgot}
-            </Link>
-            <Link to="/reopen" search={{ email: undefined }} className="underline">
-              {copy.reopen.link}
-            </Link>
-          </span>
-          <span>
-            {t.noAccount}{" "}
-            <Link to="/sign-up" className="underline">
-              {copy.signUp.title}
-            </Link>
-          </span>
-        </div>
-      </NextStepCard>
-    </Page>
+            {t.enterCode}
+          </Link>
+        )}
+        {refusal?.reason === "closed" && (
+          <Link
+            to="/reopen"
+            search={{ email }}
+            className="text-sm font-medium text-primary underline underline-offset-4"
+          >
+            {copy.reopen.submit}
+          </Link>
+        )}
+        <Button
+          type="submit"
+          size="lg"
+          disabled={busy || !turnstile.token || (!!newRules && !(accepts.rules && accepts.consent))}
+        >
+          {newRules ? t.acceptAndSignIn : t.submit}
+        </Button>
+      </form>
+      <div className="flex flex-wrap justify-between gap-2 text-sm text-muted-foreground">
+        <span className="flex flex-col gap-1">
+          <Link to="/recover" className="font-medium text-primary underline underline-offset-4">
+            {t.forgot}
+          </Link>
+          <Link
+            to="/reopen"
+            search={{ email: undefined }}
+            className="font-medium text-primary underline underline-offset-4"
+          >
+            {copy.reopen.link}
+          </Link>
+        </span>
+        <span>
+          {t.noAccount}{" "}
+          <Link to="/sign-up" className="font-medium text-primary underline underline-offset-4">
+            {copy.signUp.title}
+          </Link>
+        </span>
+      </div>
+    </AuthCard>
   );
 }

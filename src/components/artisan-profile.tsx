@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { BadgeCheck, MapPin, Star } from "lucide-react";
+import { BadgeCheck, Image as ImageIcon, MapPin, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Domain } from "@/domain";
@@ -7,10 +7,13 @@ import { formatDay } from "@/domain/sa-days";
 import { copy } from "@/web/copy";
 import { getArtisanReviews } from "@/web/reviews";
 import { ReviewList } from "@/components/reviews";
+import { EmptyState, withSidebar } from "@/components/page";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { initials } from "@/components/app-header";
 
-export type ArtisanProfile = NonNullable<Awaited<ReturnType<Domain["profiles"]["view"]>>>;
+type ArtisanProfile = NonNullable<Awaited<ReturnType<Domain["profiles"]["view"]>>>;
 
-export type ProfilePhotoView = ArtisanProfile["photos"][number];
+type ProfilePhotoView = ArtisanProfile["photos"][number];
 
 const t = copy.profile;
 
@@ -31,17 +34,26 @@ export function ArtisanProfileView({
 }) {
   const { reviews } = profile;
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
+    <div className={withSidebar}>
       <div className="min-w-0 space-y-6">
-        <header className="space-y-2">
-          <h1 className="text-2xl font-semibold tracking-tight">{profile.publicName}</h1>
+        <header className="space-y-3">
+          <div className="flex items-center gap-4">
+            <Avatar className="size-16">
+              <AvatarFallback className="bg-accent text-xl font-semibold text-accent-foreground">
+                {initials(profile.publicName)}
+              </AvatarFallback>
+            </Avatar>
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+              {profile.publicName}
+            </h1>
+          </div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
             <span className="inline-flex items-center gap-1">
               <Star className="size-4" />
               {reviews.average === null ? t.noRating : t.rating(reviews.average, reviews.count)}
             </span>
             <span>{t.completed(profile.completed)}</span>
-            <Badge variant={profile.availableForJobs ? "default" : "outline"}>
+            <Badge variant={profile.availableForJobs ? "success" : "outline"}>
               {profile.availableForJobs ? t.available : t.notAvailable}
             </Badge>
           </div>
@@ -67,12 +79,12 @@ export function ArtisanProfileView({
         </Card>
 
         <section className="space-y-3">
-          <h2 className="font-medium">{t.photos}</h2>
+          <h2 className="text-lg font-semibold tracking-tight">{t.photos}</h2>
           <PhotoGrid photos={profile.photos} empty={t.noPhotos} />
         </section>
 
         <section className="space-y-3">
-          <h2 className="font-medium">{t.reviews}</h2>
+          <h2 className="text-lg font-semibold tracking-tight">{t.reviews}</h2>
           <ReviewList
             first={reviews}
             load={(page) => getArtisanReviews({ data: { artisanId: profile.artisanId, page } })}
@@ -139,7 +151,7 @@ export function ArtisanProfileView({
 
 /** Work photos as thumbnails, each opening its full copy. */
 export function PhotoGrid({ photos, empty }: { photos: ProfilePhotoView[]; empty: string }) {
-  if (photos.length === 0) return <p className="text-sm text-muted-foreground">{empty}</p>;
+  if (photos.length === 0) return <EmptyState icon={<ImageIcon />}>{empty}</EmptyState>;
   return (
     <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
       {photos.map((photo, index) => (
@@ -151,7 +163,7 @@ export function PhotoGrid({ photos, empty }: { photos: ProfilePhotoView[]; empty
               width={photo.width}
               height={photo.height}
               loading="lazy"
-              className="aspect-[4/3] w-full rounded-lg border object-cover"
+              className="aspect-4/3 w-full rounded-lg border object-cover"
             />
           </a>
         </li>

@@ -51,7 +51,7 @@ function NewJob() {
         </Link>
         <ChevronRight className="size-3" />
       </div>
-      <h1 className="text-2xl font-semibold tracking-tight">{t.newTitle}</h1>
+      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t.newTitle}</h1>
       <p className="text-sm text-muted-foreground">{t.newLead}</p>
       <Card>
         <CardContent>

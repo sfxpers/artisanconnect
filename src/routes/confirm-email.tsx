@@ -3,7 +3,7 @@ import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router"
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { NextStepCard, Page, Refusal } from "@/components/page";
+import { AuthCard, Refusal } from "@/components/page";
 import { useTurnstile } from "@/components/turnstile";
 import { confirmEmail, resendCode } from "@/web/accounts";
 import { EMAIL_CODE } from "@/domain/accounts/inputs";
@@ -52,44 +52,38 @@ function ConfirmEmail() {
   }
 
   return (
-    <Page narrow>
-      <NextStepCard label={copy.signUp.title} title={t.title}>
-        <p className="text-sm text-muted-foreground">{t.lead(email)}</p>
-        <form
-          className="space-y-4"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void confirm();
-          }}
-        >
-          <div className="space-y-1.5">
-            <Label htmlFor="code">{t.code}</Label>
-            <Input
-              id="code"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={EMAIL_CODE.length}
-              value={code}
-              onChange={(event) => setCode(event.target.value)}
-            />
-          </div>
-          <Refusal message={refusal} />
-          {resent && <p className="text-sm text-muted-foreground">{t.resent}</p>}
-          <Button
-            type="submit"
-            size="lg"
-            disabled={busy || code.trim().length !== EMAIL_CODE.length}
-          >
-            {t.submit}
-          </Button>
-        </form>
-        <div className="space-y-2 border-t pt-4">
-          {turnstile.widget}
-          <Button variant="outline" onClick={() => void resend()} disabled={!turnstile.token}>
-            {t.resend}
-          </Button>
+    <AuthCard label={copy.signUp.title} title={t.title}>
+      <p className="text-sm text-muted-foreground">{t.lead(email)}</p>
+      <form
+        className="space-y-4"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void confirm();
+        }}
+      >
+        <div className="space-y-1.5">
+          <Label htmlFor="code">{t.code}</Label>
+          <Input
+            id="code"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={EMAIL_CODE.length}
+            value={code}
+            onChange={(event) => setCode(event.target.value)}
+          />
         </div>
-      </NextStepCard>
-    </Page>
+        <Refusal message={refusal} />
+        {resent && <p className="text-sm text-muted-foreground">{t.resent}</p>}
+        <Button type="submit" size="lg" disabled={busy || code.trim().length !== EMAIL_CODE.length}>
+          {t.submit}
+        </Button>
+      </form>
+      <div className="space-y-2 border-t pt-4">
+        {turnstile.widget}
+        <Button variant="outline" onClick={() => void resend()} disabled={!turnstile.token}>
+          {t.resend}
+        </Button>
+      </div>
+    </AuthCard>
   );
 }

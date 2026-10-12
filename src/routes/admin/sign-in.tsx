@@ -3,7 +3,7 @@ import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router"
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { NextStepCard, Page, Refusal } from "@/components/page";
+import { AuthCard, Refusal } from "@/components/page";
 import { useTurnstile } from "@/components/turnstile";
 import { EMAIL_CODE } from "@/domain/accounts/inputs";
 import { adminSignIn, requestAdminCode } from "@/web/admin";
@@ -50,78 +50,76 @@ function AdminSignIn() {
   }
 
   return (
-    <Page narrow>
-      <NextStepCard label={t.label} title={t.title}>
-        {sentTo ? (
-          <form
-            className="space-y-4"
-            onSubmit={(event) => {
-              event.preventDefault();
-              void signIn();
-            }}
-          >
-            <p className="text-sm text-muted-foreground">{t.sent(sentTo)}</p>
-            <div className="space-y-1.5">
-              <Label htmlFor="code">{t.code}</Label>
-              <Input
-                id="code"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                maxLength={EMAIL_CODE.length}
-                value={code}
-                onChange={(event) => setCode(event.target.value)}
-              />
-            </div>
-            <Refusal message={refusal} />
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="submit"
-                size="lg"
-                disabled={busy || code.trim().length !== EMAIL_CODE.length}
-              >
-                {t.submit}
-              </Button>
-              <Button
-                type="button"
-                size="lg"
-                variant="ghost"
-                onClick={() => {
-                  setSentTo(null);
-                  setCode("");
-                  setRefusal(null);
-                }}
-              >
-                {t.otherEmail}
-              </Button>
-            </div>
-          </form>
-        ) : (
-          <form
-            className="space-y-4"
-            onSubmit={(event) => {
-              event.preventDefault();
-              void sendCode();
-            }}
-          >
-            <p className="text-sm text-muted-foreground">{t.lead}</p>
-            <div className="space-y-1.5">
-              <Label htmlFor="email">{t.email}</Label>
-              <Input
-                id="email"
-                type="email"
-                autoComplete="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-              />
-            </div>
-            {turnstile.widget}
-            <Refusal message={refusal} />
-            <Button type="submit" size="lg" disabled={busy || !turnstile.token || !email.trim()}>
-              {t.send}
+    <AuthCard label={t.label} title={t.title}>
+      {sentTo ? (
+        <form
+          className="space-y-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void signIn();
+          }}
+        >
+          <p className="text-sm text-muted-foreground">{t.sent(sentTo)}</p>
+          <div className="space-y-1.5">
+            <Label htmlFor="code">{t.code}</Label>
+            <Input
+              id="code"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={EMAIL_CODE.length}
+              value={code}
+              onChange={(event) => setCode(event.target.value)}
+            />
+          </div>
+          <Refusal message={refusal} />
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="submit"
+              size="lg"
+              disabled={busy || code.trim().length !== EMAIL_CODE.length}
+            >
+              {t.submit}
             </Button>
-          </form>
-        )}
-      </NextStepCard>
-    </Page>
+            <Button
+              type="button"
+              size="lg"
+              variant="ghost"
+              onClick={() => {
+                setSentTo(null);
+                setCode("");
+                setRefusal(null);
+              }}
+            >
+              {t.otherEmail}
+            </Button>
+          </div>
+        </form>
+      ) : (
+        <form
+          className="space-y-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void sendCode();
+          }}
+        >
+          <p className="text-sm text-muted-foreground">{t.lead}</p>
+          <div className="space-y-1.5">
+            <Label htmlFor="email">{t.email}</Label>
+            <Input
+              id="email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+            />
+          </div>
+          {turnstile.widget}
+          <Refusal message={refusal} />
+          <Button type="submit" size="lg" disabled={busy || !turnstile.token || !email.trim()}>
+            {t.send}
+          </Button>
+        </form>
+      )}
+    </AuthCard>
   );
 }

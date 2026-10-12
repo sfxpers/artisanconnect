@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { NextStepCard, Page, Refusal } from "@/components/page";
+import { AuthCard, Refusal } from "@/components/page";
 import { useTurnstile } from "@/components/turnstile";
 import { EMAIL_CODE } from "@/domain/accounts/inputs";
 import type { MarketplaceRules } from "@/domain/accounts/rules";
@@ -72,96 +72,98 @@ function Reopen() {
   }
 
   return (
-    <Page narrow>
-      <NextStepCard label={copy.signIn.title} title={newRules ? copy.signIn.rulesTitle : t.title}>
-        {stage === "email" && (
-          <form
-            className="space-y-4"
-            onSubmit={(event) => {
-              event.preventDefault();
-              void send();
-            }}
-          >
-            <p className="text-sm text-muted-foreground">{t.lead}</p>
-            <div className="space-y-1.5">
-              <Label htmlFor="email">{t.email}</Label>
-              <Input
-                id="email"
-                type="email"
-                autoComplete="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-              />
-            </div>
-            {turnstile.widget}
-            <Refusal message={refusal?.message} />
-            <Button type="submit" size="lg" disabled={busy || !turnstile.token}>
-              {t.send}
-            </Button>
-          </form>
-        )}
-        {stage === "code" && (
-          <form
-            className="space-y-4"
-            onSubmit={(event) => {
-              event.preventDefault();
-              void submit();
-            }}
-          >
-            {newRules ? (
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">{copy.signIn.rulesLead}</p>
-                <div className="rounded-lg border p-3 text-sm">
-                  <div className="text-xs text-muted-foreground">
-                    {copy.rules.version(newRules.version, formatDate(newRules.publishedAt))}
-                  </div>
-                  <p>{newRules.summary}</p>
-                  <Link to="/rules" target="_blank" className="underline">
-                    {copy.signUp.rules.read}
-                  </Link>
+    <AuthCard label={copy.signIn.title} title={newRules ? copy.signIn.rulesTitle : t.title}>
+      {stage === "email" && (
+        <form
+          className="space-y-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void send();
+          }}
+        >
+          <p className="text-sm text-muted-foreground">{t.lead}</p>
+          <div className="space-y-1.5">
+            <Label htmlFor="email">{t.email}</Label>
+            <Input
+              id="email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+            />
+          </div>
+          {turnstile.widget}
+          <Refusal message={refusal?.message} />
+          <Button type="submit" size="lg" disabled={busy || !turnstile.token}>
+            {t.send}
+          </Button>
+        </form>
+      )}
+      {stage === "code" && (
+        <form
+          className="space-y-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void submit();
+          }}
+        >
+          {newRules ? (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">{copy.signIn.rulesLead}</p>
+              <div className="rounded-lg border p-3 text-sm">
+                <div className="text-xs text-muted-foreground">
+                  {copy.rules.version(newRules.version, formatDate(newRules.publishedAt))}
                 </div>
-                <Label className="items-start gap-2 leading-snug font-normal">
-                  <Checkbox
-                    checked={accepts.rules}
-                    onCheckedChange={(checked) => setAccepts({ ...accepts, rules: checked })}
-                  />
-                  {copy.signUp.rules.accept(newRules.version)}
-                </Label>
-                <Label className="items-start gap-2 leading-snug font-normal">
-                  <Checkbox
-                    checked={accepts.consent}
-                    onCheckedChange={(checked) => setAccepts({ ...accepts, consent: checked })}
-                  />
-                  {copy.consent}
-                </Label>
+                <p>{newRules.summary}</p>
+                <Link
+                  to="/rules"
+                  target="_blank"
+                  className="font-medium text-primary underline underline-offset-4"
+                >
+                  {copy.signUp.rules.read}
+                </Link>
               </div>
-            ) : (
-              <>
-                <p className="text-sm text-muted-foreground">{t.sent(email)}</p>
-                <div className="space-y-1.5">
-                  <Label htmlFor="code">{t.code}</Label>
-                  <Input
-                    id="code"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    maxLength={EMAIL_CODE.length}
-                    value={code}
-                    onChange={(event) => setCode(event.target.value)}
-                  />
-                </div>
-              </>
-            )}
-            {refusal?.reason !== "accept-rules" && <Refusal message={refusal?.message} />}
-            <Button
-              type="submit"
-              size="lg"
-              disabled={busy || (!!newRules && !(accepts.rules && accepts.consent))}
-            >
-              {newRules ? t.acceptAndReopen : t.submit}
-            </Button>
-          </form>
-        )}
-      </NextStepCard>
-    </Page>
+              <Label className="items-start gap-2 leading-snug font-normal">
+                <Checkbox
+                  checked={accepts.rules}
+                  onCheckedChange={(checked) => setAccepts({ ...accepts, rules: checked })}
+                />
+                {copy.signUp.rules.accept(newRules.version)}
+              </Label>
+              <Label className="items-start gap-2 leading-snug font-normal">
+                <Checkbox
+                  checked={accepts.consent}
+                  onCheckedChange={(checked) => setAccepts({ ...accepts, consent: checked })}
+                />
+                {copy.consent}
+              </Label>
+            </div>
+          ) : (
+            <>
+              <p className="text-sm text-muted-foreground">{t.sent(email)}</p>
+              <div className="space-y-1.5">
+                <Label htmlFor="code">{t.code}</Label>
+                <Input
+                  id="code"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={EMAIL_CODE.length}
+                  value={code}
+                  onChange={(event) => setCode(event.target.value)}
+                />
+              </div>
+            </>
+          )}
+          {refusal?.reason !== "accept-rules" && <Refusal message={refusal?.message} />}
+          <Button
+            type="submit"
+            size="lg"
+            disabled={busy || (!!newRules && !(accepts.rules && accepts.consent))}
+          >
+            {newRules ? t.acceptAndReopen : t.submit}
+          </Button>
+        </form>
+      )}
+    </AuthCard>
   );
 }

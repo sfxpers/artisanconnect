@@ -34,8 +34,7 @@ function Figures() {
   const figures = Route.useLoaderData();
   const period = Route.useSearch().period ?? DEFAULT_FIGURE_PERIOD;
   return (
-    <Page title={t.title}>
-      <p className="max-w-2xl text-sm text-muted-foreground">{t.lead}</p>
+    <Page title={t.title} lead={t.lead}>
       <div className="flex flex-wrap items-center gap-2">
         <nav aria-label={t.title} className="flex flex-wrap gap-2">
           {FIGURE_PERIODS.map((each) => (

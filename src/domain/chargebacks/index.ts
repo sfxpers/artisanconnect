@@ -1,4 +1,5 @@
 import { and, asc, eq, exists, inArray, isNull, sql, type SQL } from "drizzle-orm";
+import { windowResumesWrites } from "../reviews/window";
 import { system, type AdminActor } from "../actor";
 import type { Context, Write } from "../context";
 import { conversationBlocks } from "../conversations/admin-read";
@@ -60,7 +61,7 @@ import { windowOpensWrites } from "../reviews/window";
 // Cancelled. Its events may repeat or arrive out of order, so each reads the
 // current state and changes nothing twice.
 
-export type ChargebackRow = typeof chargebacks.$inferSelect;
+type ChargebackRow = typeof chargebacks.$inferSelect;
 
 /** What the Suspended Client sees as the reason. */
 const SUSPENSION_REASON =
@@ -307,7 +308,7 @@ async function chargebackRow(ctx: Context, chargebackId: string) {
 }
 
 /** The Engagement's Chargebacks, oldest first. */
-export async function chargebacksOf(ctx: Context, engagementId: string) {
+async function chargebacksOf(ctx: Context, engagementId: string) {
   return ctx.db
     .select()
     .from(chargebacks)
@@ -910,6 +911,9 @@ async function decisionWrites(
     );
   }
   writes.push(...endWrites(ctx, engagement, dispute ? endsAs(dispute) : null, decidedNow));
+  // A Completed Engagement's Review window runs on for the time it was frozen.
+  const frozenSince = new Date(Math.min(...deciding.map((each) => each.openedAt.getTime())));
+  writes.push(...windowResumesWrites(ctx, engagement, frozenSince, decidedNow));
   writes.push(eventWrite(ctx, engagement, "chargeback.decided", decidedNow));
   const link = `/jobs/${engagement.jobId}`;
   const parts = [

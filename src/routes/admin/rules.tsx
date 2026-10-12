@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Page, Refusal } from "@/components/page";
+import { Page, Refusal, withSidebar } from "@/components/page";
 import { useAction } from "@/components/use-action";
 import { getRulesVersions, publishRules } from "@/web/admin";
 import { copy, formatDate } from "@/web/copy";
@@ -36,9 +36,8 @@ function Rules() {
   const { accounts, versions } = Route.useLoaderData();
   const next = (versions[0]?.version ?? 0) + 1;
   return (
-    <Page title={t.title}>
-      <p className="max-w-2xl text-sm text-muted-foreground">{t.lead}</p>
-      <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
+    <Page title={t.title} lead={t.lead}>
+      <div className={withSidebar}>
         <section className="space-y-3">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="text-sm font-medium text-muted-foreground">{t.versions}</h2>

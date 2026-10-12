@@ -25,7 +25,7 @@ import { slotOf } from "../verification/checks";
 // place: not availability, nothing paid, no rating, no badge.
 
 /** The most Artisans one Batch offers a Job to. */
-export const BATCH_SIZE = 10;
+const BATCH_SIZE = 10;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

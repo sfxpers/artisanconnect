@@ -1,5 +1,4 @@
-import { expect, test } from "@playwright/test";
-import { seed, signIn } from "./support/helpers";
+import { expect, seed, signIn, test } from "./support/helpers";
 
 test("a Client Hires a Sent Quote through the fake checkout", async ({ page }) => {
   // A Client, and their Job with one Sent Quote.
@@ -31,4 +30,23 @@ test("a Client Hires a Sent Quote through the fake checkout", async ({ page }) =
   await expect(page.getByText("Paid. Next: Work started")).toBeVisible();
   await expect(page.getByText("Hired", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("Payments", { exact: true })).toBeVisible();
+});
+
+test("a Client compares Quotes in the order sent, or by total, lowest first", async ({ page }) => {
+  const { email, password, jobId } = seed<{ email: string; password: string; jobId: string }>(
+    "quotedTwice",
+  );
+  await signIn(page, { email, password });
+  await page.goto(`/jobs/${jobId}`);
+
+  const quotes = page
+    .getByRole("list")
+    .filter({ has: page.getByRole("button", { name: "Hire", exact: true }) });
+  const names = quotes.getByText(/^(Sipho Dlamini|Themba Nkosi)$/);
+  await expect(names).toHaveText(["Sipho Dlamini", "Themba Nkosi"]);
+  // A click before the page hydrates does nothing, so try until the order changes.
+  await expect(async () => {
+    await page.getByRole("button", { name: "Total, lowest first" }).click();
+    await expect(names).toHaveText(["Themba Nkosi", "Sipho Dlamini"], { timeout: 1000 });
+  }).toPass();
 });

@@ -20,6 +20,7 @@ import { copy } from "@/web/copy";
 import type { getJob } from "@/web/jobs";
 import { searchSuburbs } from "@/web/regions";
 import { shrinkPhoto } from "@/web/shrink-photo";
+import { NativeSelect } from "@/components/ui/native-select";
 
 const t = copy.job;
 
@@ -28,10 +29,8 @@ export type JobView = Extract<Awaited<ReturnType<typeof getJob>>, { as: "client"
 type Photo = JobView["photos"][number];
 type Suburb = { id: string; name: string; region: { id: string; name: string } };
 
-const SELECT = "h-8 w-full rounded-lg border border-input bg-transparent px-2 text-sm";
-
 /** What a Draft holds as the Client fills it in. */
-export type DraftState = {
+type DraftState = {
   category: string;
   gasWork: "" | "yes" | "no";
   siteType: SiteType | "";
@@ -44,7 +43,7 @@ export type DraftState = {
 };
 
 /** A Draft's form as last saved, or empty for a new Job. */
-export function draftStateOf(job: JobView | null): DraftState {
+function draftStateOf(job: JobView | null): DraftState {
   return {
     category: job?.category?.id ?? "",
     gasWork: job?.gasWork === true ? "yes" : job?.gasWork === false ? "no" : "",
@@ -121,9 +120,9 @@ export function DraftForm({
       )}
       <div className="space-y-1.5">
         <Label htmlFor="category">{t.category}</Label>
-        <select
+        <NativeSelect
           id="category"
-          className={SELECT}
+          className="w-full"
           value={draft.category}
           onChange={(event) => set("category", event.target.value)}
         >
@@ -133,7 +132,7 @@ export function DraftForm({
               {SERVICE_CATEGORY_NAMES[category]}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </div>
 
       {draft.category === "plumbing" && (
@@ -523,7 +522,7 @@ function PhotosField({ photos }: { photos: ReturnType<typeof usePhotos> }) {
                   src={photo.thumbnailHref}
                   alt={t.photo(index + 1)}
                   className={cn(
-                    "aspect-[4/3] w-full rounded-lg border object-cover",
+                    "aspect-4/3 w-full rounded-lg border object-cover",
                     gone && "opacity-30",
                   )}
                 />

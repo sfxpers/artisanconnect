@@ -1,7 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "artisanconnect",
-  "compatibility_date": "2026-09-14",
+  "compatibility_date": "2026-10-06",
   "compatibility_flags": ["nodejs_compat"],
   "main": "src/server.ts",
   "workers_dev": true,
@@ -12,7 +12,6 @@
   // Workers Logs. Errors also go to Sentry (SENTRY_DSN).
   "observability": {
     "enabled": true,
-    "head_sampling_rate": 1,
   },
   // Every clock is a row with a due time; this cron runs the due ones (ADR 0017),
   // and the daily Payout run once its time of day comes.
@@ -35,7 +34,12 @@
     "TURNSTILE_SITE_KEY": "1x00000000000000000000AA",
   },
   "secrets": {
-    "required": ["SENTRY_DSN", "BETTER_AUTH_SECRET", "TURNSTILE_SECRET_KEY"],
+    "required": [
+      "SENTRY_DSN",
+      "BETTER_AUTH_SECRET",
+      "TURNSTILE_SECRET_KEY",
+      "PAYMENTS_WEBHOOK_SECRET",
+    ],
   },
   // Workers Assets: the Vite plugin injects the client build directory.
   "assets": {
@@ -71,13 +75,18 @@
       "vars": {
         "APP_NAME": "artisanconnect",
         "ENVIRONMENT": "staging",
-        "MAIL_FROM": "ArtisanConnect <no-reply@example.com>",
-        "APP_URL": "https://staging.artisanconnect.example.com",
+        "MAIL_FROM": "ArtisanConnect <no-reply@artisanconnect.co.za>",
+        "APP_URL": "https://artisanconnect-staging.weathered-shadow-5138.workers.dev",
         "PAYOUT_RUN_TIME": "09:00",
-        "TURNSTILE_SITE_KEY": "replace-with-the-staging-turnstile-site-key",
+        "TURNSTILE_SITE_KEY": "0x4AAAAAAFU7PtdnwZ5hBIB7",
       },
       "secrets": {
-        "required": ["SENTRY_DSN", "BETTER_AUTH_SECRET", "TURNSTILE_SECRET_KEY"],
+        "required": [
+          "SENTRY_DSN",
+          "BETTER_AUTH_SECRET",
+          "TURNSTILE_SECRET_KEY",
+          "PAYMENTS_WEBHOOK_SECRET",
+        ],
       },
       "assets": {
         "binding": "ASSETS",
@@ -115,7 +124,12 @@
         "TURNSTILE_SITE_KEY": "replace-with-the-production-turnstile-site-key",
       },
       "secrets": {
-        "required": ["SENTRY_DSN", "BETTER_AUTH_SECRET", "TURNSTILE_SECRET_KEY"],
+        "required": [
+          "SENTRY_DSN",
+          "BETTER_AUTH_SECRET",
+          "TURNSTILE_SECRET_KEY",
+          "PAYMENTS_WEBHOOK_SECRET",
+        ],
       },
       "assets": {
         "binding": "ASSETS",

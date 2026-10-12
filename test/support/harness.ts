@@ -24,7 +24,7 @@ export async function createHarness() {
   await applyD1Migrations(env.DB, env.TEST_MIGRATIONS);
   const clock = withSystemTime(createFakeClock());
   const mailer = createFakeMailer();
-  const payments = createFakePayments({ clock });
+  const payments = createFakePayments({ clock, webhookSecret: "test-webhook-secret" });
   const ports = {
     db: env.DB,
     files: env.R2,

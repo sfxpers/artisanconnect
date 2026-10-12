@@ -1,6 +1,7 @@
 import { and, desc, eq, exists, inArray, lte, ne, or, sql, type SQLWrapper } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { shownName } from "../accounts/names";
+import { notFrozen } from "../chargebacks/frozen";
 import type { Context } from "../context";
 import { accounts, engagements, jobs, reviews, REVIEW_GROUNDS } from "../schema";
 import { SERVICE_CATEGORY_NAMES } from "../service-categories";
@@ -22,7 +23,7 @@ export const REVIEW_GROUND_NAMES: Record<ReviewGround, string> = {
 };
 
 /** How many Reviews a list shows at a time. */
-export const REVIEWS_PAGE = 20;
+const REVIEWS_PAGE = 20;
 
 /** The Review with its Engagement's parties, Job, and when it was Completed; null if none. */
 export async function reviewRow(ctx: Context, reviewId: string) {
@@ -51,7 +52,8 @@ export async function reviewsOn(ctx: Context, engagementId: string): Promise<Rev
 
 /**
  * The SQL that is true of a Review shown at `now`: published, and the other
- * party has written theirs or the window has closed. Join `engagements`.
+ * party has written theirs or the window has closed, not waiting on a
+ * Chargeback. Join `engagements`.
  */
 function shownAt(ctx: Context, now: Date) {
   const other = alias(reviews, "other_review");
@@ -66,12 +68,19 @@ function shownAt(ctx: Context, now: Date) {
             and(eq(other.engagementId, reviews.engagementId), ne(other.authorId, reviews.authorId)),
           ),
       ),
-      lte(engagements.completedAt, new Date(now.getTime() - REVIEW_WINDOW_MS)),
+      and(
+        lte(
+          sql`coalesce(${engagements.reviewWindowClosesAt}, ${engagements.completedAt} + ${REVIEW_WINDOW_MS})`,
+          now.getTime(),
+        ),
+        // While a Chargeback freezes the Engagement, its window waits.
+        notFrozen(ctx, engagements.id),
+      ),
     ),
   );
 }
 
-export type ReviewSummary = { average: number | null; count: number };
+type ReviewSummary = { average: number | null; count: number };
 
 const NONE: ReviewSummary = { average: null, count: 0 };
 
