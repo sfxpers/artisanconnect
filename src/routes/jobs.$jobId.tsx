@@ -1,11 +1,12 @@
 import { useState, type ReactNode } from "react";
 import { Link, createFileRoute, useNavigate, useRouterState } from "@tanstack/react-router";
-import { ChevronRight, ShieldCheck } from "lucide-react";
+import { useConfirm } from "@/components/confirm";
+import { ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DraftForm, EditForm, type JobView } from "@/components/job-form";
-import { NextStepCard, Page, Refusal, withSidebar } from "@/components/page";
+import { BackCrumb, NextStepCard, Page, Refusal, withSidebar } from "@/components/page";
 import { useAction } from "@/components/use-action";
 import { Details, Fact } from "@/components/job-details";
 import { InviteList, type InviteListView } from "@/components/invite-list";
@@ -164,12 +165,7 @@ function ClientJob({
 }) {
   return (
     <Page>
-      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-        <Link to="/jobs" className="hover:text-foreground">
-          {t.breadcrumb}
-        </Link>
-        <ChevronRight className="size-3" />
-      </div>
+      <BackCrumb to="/jobs" label={t.breadcrumb} />
       <div className="space-y-1">
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
@@ -281,6 +277,7 @@ function Posted({
   quotes: ClientQuote[];
   conversations: ConversationSummary[];
 }) {
+  const confirm = useConfirm();
   const action = useAction();
   const [editing, setEditing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -351,8 +348,8 @@ function Posted({
               <Button
                 variant="ghost"
                 disabled={action.busy}
-                onClick={() => {
-                  if (!window.confirm(t.closeConfirm)) return;
+                onClick={async () => {
+                  if (!(await confirm(t.closeConfirm))) return;
                   void action.run(() => closeJob({ data: { jobId: job.jobId } }));
                 }}
               >

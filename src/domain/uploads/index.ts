@@ -16,7 +16,7 @@ import { ok, refuse, type Result } from "../result";
 import { Locked, startsWith, Unreadable } from "./bytes";
 import { mediaContainer, readMedia, type MediaContainer } from "./media";
 import { hasActiveContent, isPdf } from "./pdf";
-import { drawPhoto, MAX_PHOTO_PIXELS, photoFormat, readPhotoHeader } from "./photos";
+import { drawPhoto, photoFormat } from "./photos";
 
 /** The most bytes any file may have: 10 MB (MiB, so a file a phone shows as "10 MB" fits). */
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
@@ -99,15 +99,9 @@ async function upload(
   bytes: Uint8Array<ArrayBuffer>,
   where: UploadContext,
 ): Promise<Result<StoredFile, UploadRefusal>> {
-  const photo = photoFormat(bytes);
-  if (photo) {
-    const header = readPhotoHeader(bytes, photo);
-    if (header.animated) return refuseVideo();
+  if (photoFormat(bytes)) {
     if (!where.takes.includes("photo")) return refuseHere(where);
-    if (header.width * header.height > MAX_PHOTO_PIXELS) {
-      return refuse("too-large", "A photo can be at most 12 megapixels.");
-    }
-    const drawn = await drawPhoto(bytes, photo);
+    const drawn = await drawPhoto(ctx.ports.images, bytes);
     const id = ctx.newId();
     const stored = {
       kind: "photo" as const,
@@ -258,10 +252,8 @@ const FILE_COUNT_LIMITS = {
   },
 } as const;
 
-export type FileCountLimit = keyof typeof FILE_COUNT_LIMITS;
-
 export function checkFileCount(
-  limit: FileCountLimit,
+  limit: keyof typeof FILE_COUNT_LIMITS,
   count: number,
 ): Result<null, "too-many-files"> {
   const { max, message } = FILE_COUNT_LIMITS[limit];

@@ -1,7 +1,7 @@
 import type { AdminActor } from "@/domain/actor";
 import type { Domain } from "@/domain";
 import { passesIdChecksum, type CheckDetailsInput } from "@/domain/verification/checks";
-import { cameraJpeg } from "./files";
+import { photos } from "./files";
 import { textPdf } from "./pdfs";
 
 // What an Artisan sends for Verification, as their device would send it.
@@ -21,7 +21,7 @@ export function saIdNumber(seed: number): string {
 }
 
 export async function photo(): Promise<Blob> {
-  return new Blob([await cameraJpeg(64, 48)], { type: "image/jpeg" });
+  return new Blob([photos.jpeg()], { type: "image/jpeg" });
 }
 
 export async function letter(lines: string[] = ["Sipho Dlamini"]): Promise<Blob> {

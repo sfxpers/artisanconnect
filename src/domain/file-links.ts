@@ -1,4 +1,5 @@
 import type { Context } from "./context";
+import { MINUTE_MS } from "./sa-days";
 
 // A stored file the Admin opens on a logged click (an identity document, a
 // photo in a Conversation) is reached through a link the logged read hands
@@ -12,7 +13,7 @@ const encoder = new TextEncoder();
 
 /** The web app's path to a stored file, for an Admin, for a while. */
 export async function fileLink(ctx: Context, key: string): Promise<string> {
-  const until = ctx.now().getTime() + LINK_MINUTES * 60_000;
+  const until = ctx.now().getTime() + LINK_MINUTES * MINUTE_MS;
   const payload = base64Url(encoder.encode(JSON.stringify({ key, until })));
   const signature = await crypto.subtle.sign(
     "HMAC",

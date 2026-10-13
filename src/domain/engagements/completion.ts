@@ -22,7 +22,7 @@ import type { Block } from "../queues";
 import { accountSidebar } from "../quotes/held";
 import { formatRands } from "../money";
 import { ok, refuse, type Result } from "../result";
-import { formatTime } from "../sa-days";
+import { DAY_MS, formatTime } from "../sa-days";
 import { windowOpensWrites } from "../reviews/window";
 import {
   completions,
@@ -67,7 +67,6 @@ const APPROVAL_CLOCK = "engagement.approval";
 /** The clock that reminds the Client 24 hours before Approval by silence. */
 const APPROVAL_REMINDER_CLOCK = "engagement.approval-reminder";
 
-const DAY_MS = 24 * 60 * 60 * 1000;
 /** How long the Client has to answer a Completion before its silence is Approval. */
 const APPROVAL_MS = 7 * DAY_MS;
 

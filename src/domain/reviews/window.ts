@@ -4,7 +4,7 @@ import type { ClockHandler } from "../clocks";
 import type { Context, Write } from "../context";
 import { engagementRow } from "../engagements/rows";
 import { insertWhile } from "../guarded";
-import { formatTime } from "../sa-days";
+import { DAY_MS, formatTime } from "../sa-days";
 import { dueClocks, engagements, reviews } from "../schema";
 import { tellWhile } from "../tells";
 import { notFrozen } from "../chargebacks/frozen";
@@ -15,8 +15,6 @@ import { notFrozen } from "../chargebacks/frozen";
 // from `completed_at`, which never changes once set. A Chargeback's freeze
 // pauses it like every clock on the Engagement: once the Admin decides, it
 // closes later by the time it was frozen (`review_window_closes_at`).
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** How long the window is open. */
 export const REVIEW_WINDOW_MS = 7 * DAY_MS;

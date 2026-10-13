@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Link, createFileRoute, useRouter } from "@tanstack/react-router";
 import { ChevronRight, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 import {
   Card,
   CardContent,
@@ -18,7 +20,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Blocks, QueueCounts } from "@/components/admin";
 import { Page, Refusal, withSidebar } from "@/components/page";
 import { formatRands } from "@/domain/money";
-import { splitOf, type Block, type DecisionField, type ItemRow } from "@/domain/queues";
+import { splitOf } from "@/domain/queue-names";
+import type { Block, DecisionField, ItemRow } from "@/domain/queues";
 import { cn } from "@/lib/utils";
 import { decideQueueItem, decideQueueRow, getQueueItem, openLoggedRead } from "@/web/admin";
 import { copy, formatDate } from "@/web/copy";
@@ -426,22 +429,20 @@ function DecisionFieldInput({
     return (
       <div className="space-y-2">
         <div className="flex justify-between gap-3 text-sm">
-          <Label htmlFor={id}>
+          <Label id={id}>
             {label}: {formatRands(released)}
           </Label>
           <span className="text-muted-foreground">
             {field.restLabel ?? t.splitRefunded}: {formatRands(total - released)}
           </span>
         </div>
-        <input
-          id={id}
-          type="range"
+        <Slider
+          aria-labelledby={id}
           min={0}
           max={total}
           step={total % 100 === 0 ? 100 : 1}
-          value={released}
-          onChange={(event) => onChange(event.target.value)}
-          className="w-full accent-primary"
+          value={[released]}
+          onValueChange={(next) => onChange(String(Array.isArray(next) ? next[0] : next))}
         />
         <p className="text-xs text-muted-foreground">
           {t.splitOf(formatRands(total), field.wholeLabel)}
@@ -453,21 +454,19 @@ function DecisionFieldInput({
     return (
       <div className="space-y-1.5">
         <Label id={id}>{label}</Label>
-        <div role="radiogroup" aria-labelledby={id} className="flex flex-wrap gap-2">
+        <RadioGroup
+          aria-labelledby={id}
+          value={value}
+          onValueChange={(next) => onChange(String(next))}
+          className="flex flex-wrap gap-4"
+        >
           {field.options?.map((option) => (
-            <Button
-              key={option.value}
-              type="button"
-              role="radio"
-              aria-checked={value === option.value}
-              variant={value === option.value ? "default" : "outline"}
-              size="sm"
-              onClick={() => onChange(option.value)}
-            >
+            <Label key={option.value} className="font-normal">
+              <RadioGroupItem value={option.value} />
               {option.label}
-            </Button>
+            </Label>
           ))}
-        </div>
+        </RadioGroup>
       </div>
     );
   }

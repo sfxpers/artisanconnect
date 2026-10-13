@@ -6,7 +6,7 @@ import type { Context, Write } from "./context";
 import { causedBy } from "./errors";
 import { insertWhile } from "./guarded";
 import { adminOnly, ok, refuse, type Result } from "./result";
-import { QUEUE_NAMES, type QueueName } from "./queue-names";
+import { QUEUE_NAMES, splitOf, type QueueName } from "./queue-names";
 import { admins, queueItems } from "./schema";
 import { emailTells } from "./tells";
 
@@ -67,11 +67,6 @@ export type DecisionField = {
 };
 
 export type RowDecision = AllowedDecision;
-
-/** The key a split's whole, as the Admin saw it, is sent back under, beside the split's own. */
-export function splitOf(key: string) {
-  return `${key}.of`;
-}
 
 /**
  * One row of an item whose rows are decided one at a time, such as each
@@ -163,7 +158,7 @@ type QueueItemKindDefinition = {
     admin: AdminActor,
     item: QueueItem,
     choice: { decision: string; reason: string | null; fields: Record<string, string> },
-  ): Promise<Result<Write[] | { writes: Write[]; afterCommit(): Promise<void> }>>;
+  ): Promise<Result<Write[] | { writes: Write[]; afterCommit: () => Promise<void> }>>;
   /**
    * The refusal for a batch a trigger aborted, such as one taking money a
    * party's command took first; null for any other error.

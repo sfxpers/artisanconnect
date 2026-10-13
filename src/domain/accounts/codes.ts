@@ -7,16 +7,11 @@ import { authUsers, authVerifications } from "../schema";
 // What every way of sending or entering an Email code shares: an Account's
 // sign-up and recovery, and an Admin's sign-in.
 
-/** Where the request came from, for rate limits. */
-export type From = { ip: string };
-
+// Per Email, exactly and on the domain's clock. Floods from one network are
+// stopped before the module, by the Workers Rate Limiting binding (src/web/session.ts).
 export const LIMITS = {
-  signUpPerIp: { max: 10, seconds: 60 * 60 },
   /** A new Email code only after 60 seconds. */
   codePerEmail: { max: 1, seconds: 60 },
-  codeRequestPerIp: { max: 10, seconds: 15 * 60 },
-  codeEntryPerIp: { max: 30, seconds: 15 * 60 },
-  signInPerIp: { max: 30, seconds: 15 * 60 },
   signInPerEmail: { max: 10, seconds: 15 * 60 },
 } as const;
 
@@ -34,23 +29,10 @@ export function slowDown(waitSeconds: number) {
   );
 }
 
-/**
- * Counts a code request for the IP, then the Email, so a request the IP's
- * limit refuses leaves the Email's 60 seconds alone. Neither depends on
- * whether anyone holds the Email.
- */
-export async function mayRequestCode(ctx: Context, address: string, ip: string) {
-  const perIp = await tryWithin(ctx, [{ key: `code-request:${ip}`, ...LIMITS.codeRequestPerIp }]);
-  if (!perIp.ok) return slowDown(perIp.waitSeconds);
+/** Counts a code request for the Email, whether or not anyone holds it. */
+export async function mayRequestCode(ctx: Context, address: string) {
   const perEmail = await tryWithin(ctx, [{ key: `code:${address}`, ...LIMITS.codePerEmail }]);
-  if (!perEmail.ok) return waitForCode(perEmail.waitSeconds);
-  return null;
-}
-
-/** Counts an Email code entered from the IP. */
-export async function mayEnterCode(ctx: Context, ip: string) {
-  const tried = await tryWithin(ctx, [{ key: `code-entry:${ip}`, ...LIMITS.codeEntryPerIp }]);
-  return tried.ok ? null : slowDown(tried.waitSeconds);
+  return perEmail.ok ? null : waitForCode(perEmail.waitSeconds);
 }
 
 /** The sign-in identity holding an Email: an Account's, a sign-up's, or an Admin's. */

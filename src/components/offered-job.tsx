@@ -1,13 +1,13 @@
 import { useState } from "react";
-import { Link, useNavigate } from "@tanstack/react-router";
-import { ChevronRight } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
+import { useConfirm } from "@/components/confirm";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { initials } from "@/components/app-header";
 import { Details, Fact } from "@/components/job-details";
-import { NextStepCard, Page, Refusal, withSidebar } from "@/components/page";
+import { BackCrumb, NextStepCard, Page, Refusal, withSidebar } from "@/components/page";
 import { useAction } from "@/components/use-action";
 import { QuoteForm } from "@/components/quote-form";
 import { ReportAction } from "@/components/report";
@@ -76,12 +76,7 @@ export function OfferedJob({
   const { quote, engagement } = job;
   return (
     <Page>
-      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-        <Link to="/home" className="hover:text-foreground">
-          {t.breadcrumb}
-        </Link>
-        <ChevronRight className="size-3" />
-      </div>
+      <BackCrumb to="/home" label={t.breadcrumb} />
       <div className="space-y-1">
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{job.title}</h1>
@@ -275,6 +270,7 @@ function QuoteStep({
   quote: OwnQuote;
   vatNumber: string | null;
 }) {
+  const confirm = useConfirm();
   const action = useAction();
   const [revising, setRevising] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -356,8 +352,8 @@ function QuoteStep({
               <Button
                 variant="ghost"
                 disabled={action.busy}
-                onClick={() => {
-                  if (!window.confirm(tq.withdrawConfirm)) return;
+                onClick={async () => {
+                  if (!(await confirm(tq.withdrawConfirm))) return;
                   void action.run(() => withdrawQuote({ data: { jobId } }));
                 }}
               >

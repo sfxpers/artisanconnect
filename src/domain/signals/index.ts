@@ -23,7 +23,7 @@ import { payoutReference } from "../payouts/rows";
 import { defineQueueItemKind, type Block, type DecisionField } from "../queues";
 import { accountSidebar } from "../quotes/held";
 import { ok, refuse } from "../result";
-import { formatDay, formatTime, saDay } from "../sa-days";
+import { DAY_MS, formatDay, formatTime, saDay } from "../sa-days";
 import {
   accounts,
   chargebacks,
@@ -77,8 +77,6 @@ const NEW_ACCOUNT_DAYS = 30;
 
 /** A second sent-back Payout within these days of another raises a Signal. */
 const SENT_BACK_WITHIN_DAYS = 90;
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 type SignalKind = (typeof SIGNAL_KINDS)[number];
 

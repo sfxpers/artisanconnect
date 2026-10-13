@@ -674,8 +674,7 @@ const CHECK_STATES = ["submitted", "accepted", "rejected", "removed", "supersede
  * its slot is accepted. Expiry is not a state: a check stops being current on
  * its expiry date. `verification_checks_state_moves_forward` refuses any
  * other change of state (migrations/0006), `_one_holder` an Identity Number
- * or Payout account accepted for two Artisans (migrations/0036), and
- * `_payouts_stopped_once` stopping a Payout account twice (migrations/0019).
+ * or Payout account accepted for two Artisans (migrations/0036).
  */
 export const verificationChecks = sqliteTable(
   "verification_checks",
@@ -785,7 +784,7 @@ const PROFILE_EDIT_STATES = ["held", "released", "refused", "withdrawn"] as cons
  * for the Admin's Pre-check whatever the Content check made of it, then
  * released, refused, or withdrawn. The newest one released is the Profile
  * shown; until the first, it shows no About text and no photos. It is
- * decided once (`profile_edits_decided_once`, migrations/0009).
+ * decided once.
  */
 export const profileEdits = sqliteTable(
   "profile_edits",
@@ -896,7 +895,7 @@ const JOB_EDIT_STATES = ["held", "released", "refused", "withdrawn"] as const;
  * title, description, photos, Site type, and Preferred start. One the
  * Content check clears is released at once; one it is unsure about is Held
  * for the Admin's Pre-check, and the Job shows as it was meanwhile. It is
- * decided once (`job_edits_decided_once`, migrations/0010).
+ * decided once.
  */
 export const jobEdits = sqliteTable(
   "job_edits",
@@ -933,7 +932,7 @@ export const jobEdits = sqliteTable(
  * The offer of a Job to one Artisan in a Batch, at most once per Job. The
  * newest offer time of each Artisan places them in the offer order: those
  * offered least recently come first, so nothing else may move it. Passing is
- * recorded once (`job_matches_fixed` refuses undoing it, migrations/0011).
+ * recorded once.
  */
 export const jobMatches = sqliteTable(
   "job_matches",
@@ -959,7 +958,7 @@ export const jobMatches = sqliteTable(
  * Each Invitation a Client sends one Artisan to Quote on a Job, which the
  * Artisan may pass. It stands beside any Job Match the Artisan holds for the
  * Job, which keeps its offer time and so the Artisan's place in the offer order.
- * It is passed once and never moved (`invitations_fixed`, migrations/0013).
+ * It is passed once and never moved.
  */
 export const invitations = sqliteTable(
   "invitations",
@@ -1061,8 +1060,7 @@ const QUOTE_REVISION_STATES = ["held", "released", "refused", "withdrawn"] as co
  * Each revision an Artisan makes to a Sent Quote, whole. One the Content
  * check clears is shown at once; one it is unsure about is Held for the
  * Admin's Pre-check, and the Quote shows as it was meanwhile, as a Job edit
- * does. Its 14 days never restart. It is decided once
- * (`quote_revisions_decided_once`, migrations/0014).
+ * does. Its 14 days never restart. It is decided once.
  */
 export const quoteRevisions = sqliteTable(
   "quote_revisions",
@@ -1264,8 +1262,8 @@ export const CANCELLED_BY = ["client", "artisan"] as const;
 /**
  * A Hired Quote's work and money, made at Hire, when its Payment arrived:
  * one per Job, Quote, and Payment. The Artisan Fee is fixed here for its whole
- * life. `engagements_fixed` refuses changing whose it is or its fee, and any
- * move of its state but the lifecycle's (migrations/0028).
+ * life. `engagements_fixed` refuses changing whose it is or its fee
+ * (migrations/0038).
  */
 export const engagements = sqliteTable(
   "engagements",
@@ -1333,8 +1331,7 @@ const UPDATED_QUOTE_STATES = ["proposed", "withdrawn", "rejected", "accepted", "
  * Each Updated Quote the Artisan proposes on an Engagement before Completion
  * (#134, ADR 0019): the Labour and Materials it stood at then, and the new
  * ones, neither lower. One is proposed at a time. What it proposes never
- * changes, and its state moves forward only (`updated_quotes_state_moves`,
- * migrations/0025).
+ * changes, and its state moves forward only.
  */
 export const updatedQuotes = sqliteTable(
   "updated_quotes",
@@ -1393,8 +1390,7 @@ export type CompletionDocument = Extract<StoredFile, { kind: "photo" | "pdf" }> 
  * Each time the Artisan marks the work complete (#130): a note, the
  * after-work photos, and any documents, the certificate among them. Once made,
  * the Client answers it once: Approval, or a Fix request with a note, after
- * which the next Completion is a new row. `completions_fixed` refuses any
- * other change (migrations/0020).
+ * which the next Completion is a new row.
  */
 export const completions = sqliteTable(
   "completions",
@@ -1476,7 +1472,7 @@ const REFUND_CAUSES = ["artisan", "not-hired", "cancellation", "dispute", "charg
  * Protection Fee, unless the Payment Hired nobody, when the whole of it goes
  * back. Our id is the payment adapter's idempotency key. What it refunds of
  * the Labour, Materials, and Protection Fee never changes; its state moves
- * forward only (`refunds_state_moves`, migrations/0030).
+ * forward only.
  */
 export const refunds = sqliteTable(
   "refunds",
@@ -1554,7 +1550,7 @@ const DISPUTE_REASON_STATES = ["shown", "held"] as const;
  * Client or all of it unreleased for the Artisan, which the Admin splits
  * between Release and Refund, finally. What is held now is derived from the
  * ledger. What it was opened for never changes, and its state moves forward
- * once (`disputes_fixed`, migrations/0026).
+ * once.
  */
 export const disputes = sqliteTable(
   "disputes",
@@ -1743,8 +1739,7 @@ export const STOPPED_PAYOUT_STATES = ["refused", "sent-back", "unsent"] as const
  * refuse it, at once or later, or send it back even days after it was paid;
  * one that never reached the adapter before its account stopped being
  * current is unsent (#129). Those three leave the Release owed again, and a
- * Release has at most one Payout in any other state. `payouts_state_moves`
- * refuses any other change (migrations/0019).
+ * Release has at most one Payout in any other state.
  */
 export const payouts = sqliteTable(
   "payouts",

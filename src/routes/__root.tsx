@@ -3,6 +3,8 @@ import { HeadContent, Link, Outlet, Scripts, createRootRoute } from "@tanstack/r
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import appCss from "@/styles.css?url";
 import { AppFooter } from "@/components/app-footer";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ConfirmProvider } from "@/components/confirm";
 import { AppHeader } from "@/components/app-header";
 import { Page } from "@/components/page";
 import { buttonVariants } from "@/components/ui/button";
@@ -55,15 +57,15 @@ function RootComponent() {
 function SuspendedBanner({ suspended }: { suspended: { reason: string; since: Date } }) {
   const t = copy.standing;
   return (
-    <div role="alert" className="border-b border-destructive/30 bg-destructive/10">
-      <div className="mx-auto max-w-6xl space-y-1 px-4 py-3 text-sm sm:px-6">
-        <p className="font-semibold text-destructive">{t.suspended}</p>
-        <p>{t.suspendedLead(suspended.reason)}</p>
+    <Alert variant="destructive" className="mx-auto max-w-6xl rounded-none border-x-0 border-t-0">
+      <AlertTitle>{t.suspended}</AlertTitle>
+      <AlertDescription>
+        {t.suspendedLead(suspended.reason)}{" "}
         <Link to="/support" className="font-medium text-primary underline underline-offset-4">
           {t.contest}
         </Link>
-      </div>
-    </div>
+      </AlertDescription>
+    </Alert>
   );
 }
 
@@ -95,7 +97,7 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
         <script dangerouslySetInnerHTML={{ __html: followColorScheme }} />
       </head>
       <body>
-        {children}
+        <ConfirmProvider>{children}</ConfirmProvider>
         <TanStackRouterDevtools position="bottom-right" />
         <Scripts />
       </body>

@@ -1,4 +1,4 @@
-import { expect, seed, signIn, test } from "./support/helpers";
+import { confirm, expect, seed, signIn, test } from "./support/helpers";
 
 test("a Client marks Work started, and approves the Artisan's Completion", async ({ page }) => {
   const { email, password, jobId, engagementId } = seed<{
@@ -7,8 +7,6 @@ test("a Client marks Work started, and approves the Artisan's Completion", async
     jobId: string;
     engagementId: string;
   }>("hired");
-  // Work started and Approve each ask to confirm.
-  page.on("dialog", (dialog) => void dialog.accept());
 
   await signIn(page, { email, password });
   await expect(page).toHaveURL(/\/jobs$/);
@@ -16,7 +14,9 @@ test("a Client marks Work started, and approves the Artisan's Completion", async
   // The seed's start date is 30 days out, so only the Client can mark Work started now.
   await page.goto(`/jobs/${jobId}`);
   await expect(async () => {
+    // Work started and Approve each ask to confirm.
     await page.getByRole("button", { name: "Work started", exact: true }).click();
+    await confirm(page);
     await expect(page.getByText("The Materials were released to the Artisan.")).toBeVisible({
       timeout: 2000,
     });
@@ -30,6 +30,7 @@ test("a Client marks Work started, and approves the Artisan's Completion", async
 
   await expect(async () => {
     await page.getByRole("button", { name: "Approve", exact: true }).click();
+    await confirm(page);
     await expect(page.getByText("Completed", { exact: true }).first()).toBeVisible({
       timeout: 2000,
     });

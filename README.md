@@ -45,7 +45,7 @@ nub run admin:setup -- you@example.com --env staging   # or --env production
 
 ## Domain module
 
-Every rule lives in `src/domain` (ADR 0017). It is built with exactly six ports, D1, R2, a clock, a content reader, a payment adapter, and a mailer, and nothing else, which is how ADR 0018 (no path to or from another product) is tested. Each section adds its commands and clocks to `sections` in `src/domain/index.ts`. A command takes the acting party first and returns the new state or a typed refusal.
+Every rule lives in `src/domain` (ADR 0017). It is built with exactly seven ports, D1, R2, Images, a clock, a content reader, a payment adapter, and a mailer, and nothing else, which is how ADR 0018 (no path to or from another product) is tested. Each section adds its commands and clocks to `sections` in `src/domain/index.ts`. A command takes the acting party first and returns the new state or a typed refusal.
 
 - **Clocks** are rows in `due_clocks`. The every-minute cron calls `system.runDueClocks`, the scheduled handler's only job. A clock fires once, however late, and does nothing if its condition has lapsed.
 - **Money** is append-only rows in `ledger_entries`. A domain event writes all its rows in one D1 batch.
@@ -53,7 +53,7 @@ Every rule lives in `src/domain` (ADR 0017). It is built with exactly six ports,
 
 Tests drive the module through `test/support/harness.ts`: real local D1 and R2, with a fake clock, content reader, payment adapter, and mailer. better-auth reads `Date`, so the harness keeps the system time on the fake clock.
 
-- **Sign-in** is better-auth (ADR 0017) inside the `accounts` section, on D1. Its HTTP handler is never mounted: the web app reaches it only through the module's commands, which add the rules (kinds, Marketplace rules, rate limits). Turnstile is checked by the server functions before a command runs.
+- **Sign-in** is better-auth (ADR 0017) inside the `accounts` section, on D1. Its HTTP handler is never mounted: the web app reaches it only through the module's commands, which add the rules (kinds, Marketplace rules, per-Email limits). Turnstile and a per-network limit (the Workers Rate Limiting binding `IP_LIMIT`) are checked by the server functions before a command runs.
 - **Admins** (ADR 0015) are better-auth identities with `role = "admin"` and no `accounts` row. They sign in with an Email code only (`/admin/sign-in`). The first is made by `nub run admin:setup`, which calls `system.setUpFirstAdmin` through `getPlatformProxy`; it refuses once there is an Admin. Every Admin decision and every logged read is written to `audit_log` in the same batch (`src/domain/audit.ts`).
 - **Queues**: a section raises an item in one of the Admin's eight queues with a kind from `defineQueueItemKind` (`src/domain/queues.ts`), declared in its `queueItems` like its `clocks`. The kind names the decisions it allows and who each tells, the writes a decision makes, its page's tabs and sidebar, and what opens only on a logged click. A recorded decision cannot be reopened.
 - **Tells** are rows in `notices` written with the event; their one email goes after the commit, and the every-minute cron retries one that did not go (`src/domain/tells.ts`).
@@ -69,18 +69,16 @@ Bindings live in `wrangler.jsonc` and are available in server code via `import {
 | `DB`                   | D1 (`artisanconnect`, `-staging`, `-production`)      |
 | `R2`                   | R2 bucket (same names)                                |
 | `AI`                   | Workers AI                                            |
+| `IMAGES`               | Cloudflare Images: draws each photo again             |
 | `SEND_EMAIL`           | Email Sending, outbound only                          |
-| `ASSETS`               | Workers Assets (Vite injects dir)                     |
-| `APP_NAME`             | env var                                               |
 | `ENVIRONMENT`          | env var: `local`, `staging`, or `production`          |
 | `MAIL_FROM`            | env var: the sending address                          |
 | `APP_URL`              | env var: the web app's origin, for links in email     |
 | `TURNSTILE_SITE_KEY`   | env var: locally, Cloudflare's always-pass test key   |
-| `SENTRY_DSN`           | secret; errors also go to Workers Logs                |
 | `BETTER_AUTH_SECRET`   | secret: signs session cookies                         |
 | `TURNSTILE_SECRET_KEY` | secret: locally, Cloudflare's always-pass test secret |
 
-Local secrets go in `.dev.vars` (copy `.dev.vars.example` and set `BETTER_AUTH_SECRET`). Set the others with `nubx wrangler secret put SENTRY_DSN --env staging` (or `production`), and the same for `BETTER_AUTH_SECRET` and `TURNSTILE_SECRET_KEY`. Replace `APP_URL` and `TURNSTILE_SITE_KEY` in `wrangler.jsonc` for staging and production. Set `MAIL_FROM` to an address on the domain verified for Email Sending.
+Local secrets go in `.dev.vars` (copy `.dev.vars.example` and set `BETTER_AUTH_SECRET`). Set the others with `nubx wrangler secret put BETTER_AUTH_SECRET --env staging` (or `production`), and the same for `TURNSTILE_SECRET_KEY` and `PAYMENTS_WEBHOOK_SECRET`. Errors go to Workers Logs, and Workers Issues groups them in the dashboard. Replace `APP_URL` and `TURNSTILE_SITE_KEY` in `wrangler.jsonc` for staging and production. Set `MAIL_FROM` to an address on the domain verified for Email Sending.
 
 Custom domain: uncomment `routes` in `wrangler.jsonc` and replace the hostname.
 

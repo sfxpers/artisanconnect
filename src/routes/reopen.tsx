@@ -1,15 +1,11 @@
 import { useState } from "react";
-import { Link, createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { AuthCard, Refusal } from "@/components/page";
+import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
+import { CODE_INPUT, useAppForm } from "@/components/form";
+import { AuthCard, Refusal, RulesCard } from "@/components/page";
 import { useTurnstile } from "@/components/turnstile";
-import { EMAIL_CODE } from "@/domain/accounts/inputs";
 import type { MarketplaceRules } from "@/domain/accounts/rules";
 import { getCurrentRules, reopen, requestReopenCode } from "@/web/accounts";
-import { copy, formatDate } from "@/web/copy";
+import { copy } from "@/web/copy";
 import { onlyForVisitors } from "@/web/guards";
 import { landingFor } from "@/web/me";
 
@@ -30,140 +26,87 @@ function Reopen() {
   const turnstile = useTurnstile();
   const search = Route.useSearch();
   const [stage, setStage] = useState<"email" | "code">("email");
-  const [email, setEmail] = useState(search.email ?? "");
-  const [code, setCode] = useState("");
-  const [busy, setBusy] = useState(false);
   const [refusal, setRefusal] = useState<{ reason: string; message: string } | null>(null);
   // Set when the Marketplace rules changed while the Account was Closed.
   const [newRules, setNewRules] = useState<MarketplaceRules | null>(null);
-  const [accepts, setAccepts] = useState({ rules: false, consent: false });
-
-  async function send() {
-    setBusy(true);
-    setRefusal(null);
-    const result = await requestReopenCode({ data: { email, turnstileToken: turnstile.token } });
-    turnstile.reset();
-    setBusy(false);
-    if (!result.ok) return setRefusal(result.refusal);
-    setEmail(result.value.email);
-    setStage("code");
-  }
-
-  async function submit() {
-    setBusy(true);
-    setRefusal(null);
-    const result = await reopen({
-      data: {
-        email,
-        code,
-        acceptsRules:
-          newRules && accepts.rules && accepts.consent
-            ? { rulesVersion: newRules.version, consentsToDataUse: true }
-            : undefined,
-      },
-    });
-    setBusy(false);
-    if (!result.ok) {
-      if (result.refusal.reason === "accept-rules") setNewRules(await getCurrentRules());
-      return setRefusal(result.refusal);
-    }
-    await router.invalidate();
-    if (result.value.me) await navigate({ to: landingFor(result.value.me) });
-  }
+  const form = useAppForm({
+    defaultValues: { email: search.email ?? "", code: "", acceptsRules: false, consents: false },
+    onSubmit: async ({ value, formApi }) => {
+      setRefusal(null);
+      if (stage === "email") {
+        const sent = await requestReopenCode({
+          data: { email: value.email, turnstileToken: turnstile.token },
+        });
+        turnstile.reset();
+        if (!sent.ok) return setRefusal(sent.refusal);
+        formApi.setFieldValue("email", sent.value.email);
+        return setStage("code");
+      }
+      const result = await reopen({
+        data: {
+          email: value.email,
+          code: value.code,
+          acceptsRules:
+            newRules && value.acceptsRules && value.consents
+              ? { rulesVersion: newRules.version, consentsToDataUse: true }
+              : undefined,
+        },
+      });
+      if (!result.ok) {
+        if (result.refusal.reason === "accept-rules") setNewRules(await getCurrentRules());
+        return setRefusal(result.refusal);
+      }
+      await router.invalidate();
+      if (result.value.me) await navigate({ to: landingFor(result.value.me) });
+    },
+  });
 
   return (
     <AuthCard label={copy.signIn.title} title={newRules ? copy.signIn.rulesTitle : t.title}>
-      {stage === "email" && (
-        <form
-          className="space-y-4"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void send();
-          }}
-        >
-          <p className="text-sm text-muted-foreground">{t.lead}</p>
-          <div className="space-y-1.5">
-            <Label htmlFor="email">{t.email}</Label>
-            <Input
-              id="email"
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-            />
-          </div>
-          {turnstile.widget}
-          <Refusal message={refusal?.message} />
-          <Button type="submit" size="lg" disabled={busy || !turnstile.token}>
-            {t.send}
-          </Button>
-        </form>
-      )}
-      {stage === "code" && (
-        <form
-          className="space-y-4"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void submit();
-          }}
-        >
-          {newRules ? (
+      <form.AppForm>
+        <form.Form className="space-y-4">
+          {stage === "email" ? (
+            <>
+              <p className="text-sm text-muted-foreground">{t.lead}</p>
+              <form.AppField name="email">
+                {(field) => <field.TextField label={t.email} type="email" autoComplete="email" />}
+              </form.AppField>
+              {turnstile.widget}
+            </>
+          ) : newRules ? (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">{copy.signIn.rulesLead}</p>
-              <div className="rounded-lg border p-3 text-sm">
-                <div className="text-xs text-muted-foreground">
-                  {copy.rules.version(newRules.version, formatDate(newRules.publishedAt))}
-                </div>
-                <p>{newRules.summary}</p>
-                <Link
-                  to="/rules"
-                  target="_blank"
-                  className="font-medium text-primary underline underline-offset-4"
-                >
-                  {copy.signUp.rules.read}
-                </Link>
-              </div>
-              <Label className="items-start gap-2 leading-snug font-normal">
-                <Checkbox
-                  checked={accepts.rules}
-                  onCheckedChange={(checked) => setAccepts({ ...accepts, rules: checked })}
-                />
-                {copy.signUp.rules.accept(newRules.version)}
-              </Label>
-              <Label className="items-start gap-2 leading-snug font-normal">
-                <Checkbox
-                  checked={accepts.consent}
-                  onCheckedChange={(checked) => setAccepts({ ...accepts, consent: checked })}
-                />
-                {copy.consent}
-              </Label>
+              <RulesCard rules={newRules} />
+              <form.AppField name="acceptsRules">
+                {(field) => (
+                  <field.CheckboxField label={copy.signUp.rules.accept(newRules.version)} />
+                )}
+              </form.AppField>
+              <form.AppField name="consents">
+                {(field) => <field.CheckboxField label={copy.consent} />}
+              </form.AppField>
             </div>
           ) : (
             <>
-              <p className="text-sm text-muted-foreground">{t.sent(email)}</p>
-              <div className="space-y-1.5">
-                <Label htmlFor="code">{t.code}</Label>
-                <Input
-                  id="code"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  maxLength={EMAIL_CODE.length}
-                  value={code}
-                  onChange={(event) => setCode(event.target.value)}
-                />
-              </div>
+              <p className="text-sm text-muted-foreground">{t.sent(form.state.values.email)}</p>
+              <form.AppField name="code">
+                {(field) => <field.TextField label={t.code} {...CODE_INPUT} />}
+              </form.AppField>
             </>
           )}
           {refusal?.reason !== "accept-rules" && <Refusal message={refusal?.message} />}
-          <Button
-            type="submit"
-            size="lg"
-            disabled={busy || (!!newRules && !(accepts.rules && accepts.consent))}
-          >
-            {newRules ? t.acceptAndReopen : t.submit}
-          </Button>
-        </form>
-      )}
+          <form.Subscribe selector={(state) => state.values.acceptsRules && state.values.consents}>
+            {(accepted) => (
+              <form.Submit
+                size="lg"
+                disabled={stage === "email" ? !turnstile.token : !!newRules && !accepted}
+              >
+                {stage === "email" ? t.send : newRules ? t.acceptAndReopen : t.submit}
+              </form.Submit>
+            )}
+          </form.Subscribe>
+        </form.Form>
+      </form.AppForm>
     </AuthCard>
   );
 }

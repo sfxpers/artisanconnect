@@ -170,9 +170,9 @@
 
 /*
  * Every action shows focus the same way. Outside any layer, so it holds over
- * the components' outline-none.
+ * the components' outline-none. An input group rings itself around its control.
  */
-:focus-visible {
+:focus-visible:not([data-slot="input-group-control"]) {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
 }

@@ -8,7 +8,7 @@ import { engagementMoney, isOverdrawn, paidInIs } from "../ledger";
 import { formatRands } from "../money";
 import { refundWrites, sendEngagementRefunds } from "../refunds";
 import { ok, refuse, type Result } from "../result";
-import { formatTime } from "../sa-days";
+import { HOUR_MS, formatTime } from "../sa-days";
 import { engagements, type CANCELLED_BY, type ENGAGEMENT_STATES } from "../schema";
 import { signalIfCancelling } from "../signals";
 import { emailTells, tellWhile } from "../tells";
@@ -33,7 +33,6 @@ const CANCELLATION_REFUND_CLOCK = "engagement.cancellation-refund";
 /** The clock that reminds the Artisan 24 hours before that refund. */
 const CANCELLATION_REMINDER_CLOCK = "engagement.cancellation-reminder";
 
-const HOUR_MS = 60 * 60 * 1000;
 /** How long after a Cancellation after Work started its unreleased Labour is refunded. */
 const REFUND_AFTER_MS = 72 * HOUR_MS;
 const REMIND_BEFORE_MS = 24 * HOUR_MS;

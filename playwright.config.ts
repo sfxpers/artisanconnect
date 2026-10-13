@@ -5,8 +5,7 @@ import { defineConfig } from "@playwright/test";
 // tested at the domain module; these only prove the pieces are wired.
 //
 // One worker: each seed writes the local D1 file the dev server also holds,
-// and two writers at once lock it. `test:smoke` first clears the local rate
-// limits, which every run's sign-ins and code requests from localhost add to.
+// and two writers at once lock it.
 export default defineConfig({
   testDir: "e2e",
   workers: 1,

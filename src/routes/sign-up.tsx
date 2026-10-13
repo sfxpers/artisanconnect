@@ -1,14 +1,11 @@
 import { useState } from "react";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useForm } from "@tanstack/react-form";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { FieldErrors, Page, Refusal } from "@/components/page";
+import { useAppForm } from "@/components/form";
+import { Page, Refusal } from "@/components/page";
 import { useTurnstile } from "@/components/turnstile";
 import { email, name, password, tradingNameText } from "@/domain/accounts/inputs";
 import { getCurrentRules, signUp } from "@/web/accounts";
@@ -34,7 +31,7 @@ function SignUp() {
   const [step, setStep] = useState<Step>("kind");
   const [refusal, setRefusal] = useState<string | null>(null);
 
-  const form = useForm({
+  const form = useAppForm({
     defaultValues: {
       kind: null as "client" | "artisan" | null,
       name: "",
@@ -72,218 +69,157 @@ function SignUp() {
 
   const at = STEPS.indexOf(step);
   async function continueFrom(fields: ("name" | "tradingName" | "email" | "password")[]) {
-    const errors = await Promise.all(fields.map((field) => form.validateField(field, "submit")));
+    const errors = await Promise.all(
+      fields.map(async (field) => form.validateField(field, "submit")),
+    );
     if (errors.every((list) => list.length === 0)) setStep(STEPS[at + 1]!);
   }
 
   return (
     <Page title={t.title} narrow>
-      <form
-        className="space-y-3"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void form.handleSubmit();
-        }}
-      >
-        <Row title={t.kind.step} index={0} at={at} onChange={() => setStep("kind")}>
-          {(open) =>
-            open ? (
-              <form.Field name="kind">
-                {(field) => (
-                  <div className="space-y-3">
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      {(["client", "artisan"] as const).map((kind) => (
-                        <button
-                          key={kind}
-                          type="button"
-                          className={cn(
-                            "rounded-xl border p-4 text-left transition-colors hover:border-primary hover:bg-secondary/50",
-                            field.state.value === kind &&
-                              "border-primary bg-secondary/50 ring-1 ring-primary",
-                          )}
-                          onClick={() => {
-                            field.handleChange(kind);
-                            setStep("names");
-                          }}
-                        >
-                          <div className="font-medium">{t.kind[kind]}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {kind === "client" ? t.kind.clientHint : t.kind.artisanHint}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                    <p className="text-xs text-muted-foreground">{t.kind.fixed}</p>
-                  </div>
-                )}
-              </form.Field>
-            ) : (
-              <form.Subscribe selector={(state) => state.values.kind}>
-                {(kind) => (kind ? t.kind.chosen[kind] : null)}
-              </form.Subscribe>
-            )
-          }
-        </Row>
-
-        <Row title={t.names.step} index={1} at={at} onChange={() => setStep("names")}>
-          {(open) =>
-            open ? (
-              <div className="space-y-4">
-                <form.Field name="name" validators={{ onSubmit: name }}>
+      <form.AppForm>
+        <form.Form className="space-y-3">
+          <Row title={t.kind.step} index={0} at={at} onChange={() => setStep("kind")}>
+            {(open) =>
+              open ? (
+                <form.Field name="kind">
                   {(field) => (
-                    <div className="space-y-1.5">
-                      <Label htmlFor={field.name}>{t.names.name}</Label>
-                      <Input
-                        id={field.name}
-                        autoComplete="name"
-                        value={field.state.value}
-                        onChange={(event) => field.handleChange(event.target.value)}
-                      />
-                      <FieldErrors errors={field.state.meta.errors} />
+                    <div className="space-y-3">
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {(["client", "artisan"] as const).map((kind) => (
+                          <button
+                            key={kind}
+                            type="button"
+                            className={cn(
+                              "rounded-xl border p-4 text-left transition-colors hover:border-primary hover:bg-secondary/50",
+                              field.state.value === kind &&
+                                "border-primary bg-secondary/50 ring-1 ring-primary",
+                            )}
+                            onClick={() => {
+                              field.handleChange(kind);
+                              setStep("names");
+                            }}
+                          >
+                            <div className="font-medium">{t.kind[kind]}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {kind === "client" ? t.kind.clientHint : t.kind.artisanHint}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground">{t.kind.fixed}</p>
                     </div>
                   )}
                 </form.Field>
-                <form.Field name="tradingName" validators={{ onSubmit: tradingNameText }}>
-                  {(field) => (
-                    <div className="space-y-1.5">
-                      <Label htmlFor={field.name}>{t.names.tradingName}</Label>
-                      <Input
-                        id={field.name}
-                        autoComplete="organization"
-                        value={field.state.value}
-                        onChange={(event) => field.handleChange(event.target.value)}
-                      />
-                      <FieldErrors errors={field.state.meta.errors} />
-                    </div>
-                  )}
-                </form.Field>
+              ) : (
                 <form.Subscribe selector={(state) => state.values.kind}>
-                  {(kind) => (
-                    <p className="text-xs text-muted-foreground">
-                      {kind === "artisan" ? t.names.artisanHint : t.names.clientHint}
-                    </p>
-                  )}
+                  {(kind) => (kind ? t.kind.chosen[kind] : null)}
                 </form.Subscribe>
-                <Refusal message={refusal} />
-                <Button type="button" onClick={() => void continueFrom(["name", "tradingName"])}>
-                  {t.continue}
-                </Button>
-              </div>
-            ) : (
-              <form.Subscribe selector={(state) => [state.values.name, state.values.tradingName]}>
-                {([fullName, trading]) => [fullName, trading].filter(Boolean).join(" · ")}
-              </form.Subscribe>
-            )
-          }
-        </Row>
+              )
+            }
+          </Row>
 
-        <Row title={t.email.step} index={2} at={at} onChange={() => setStep("email")}>
-          {(open) =>
-            open ? (
-              <div className="space-y-4">
-                <form.Field name="email" validators={{ onSubmit: email }}>
-                  {(field) => (
-                    <div className="space-y-1.5">
-                      <Label htmlFor={field.name}>{t.email.email}</Label>
-                      <Input
-                        id={field.name}
-                        type="email"
-                        autoComplete="email"
-                        value={field.state.value}
-                        onChange={(event) => field.handleChange(event.target.value)}
-                      />
-                      <FieldErrors errors={field.state.meta.errors} />
-                    </div>
-                  )}
-                </form.Field>
-                <form.Field name="password" validators={{ onSubmit: password }}>
-                  {(field) => (
-                    <div className="space-y-1.5">
-                      <Label htmlFor={field.name}>{t.email.password}</Label>
-                      <Input
-                        id={field.name}
+          <Row title={t.names.step} index={1} at={at} onChange={() => setStep("names")}>
+            {(open) =>
+              open ? (
+                <div className="space-y-4">
+                  <form.AppField name="name" validators={{ onSubmit: name }}>
+                    {(field) => <field.TextField label={t.names.name} autoComplete="name" />}
+                  </form.AppField>
+                  <form.AppField name="tradingName" validators={{ onSubmit: tradingNameText }}>
+                    {(field) => (
+                      <field.TextField label={t.names.tradingName} autoComplete="organization" />
+                    )}
+                  </form.AppField>
+                  <form.Subscribe selector={(state) => state.values.kind}>
+                    {(kind) => (
+                      <p className="text-xs text-muted-foreground">
+                        {kind === "artisan" ? t.names.artisanHint : t.names.clientHint}
+                      </p>
+                    )}
+                  </form.Subscribe>
+                  <Refusal message={refusal} />
+                  <Button type="button" onClick={() => void continueFrom(["name", "tradingName"])}>
+                    {t.continue}
+                  </Button>
+                </div>
+              ) : (
+                <form.Subscribe selector={(state) => [state.values.name, state.values.tradingName]}>
+                  {([fullName, trading]) => [fullName, trading].filter(Boolean).join(" · ")}
+                </form.Subscribe>
+              )
+            }
+          </Row>
+
+          <Row title={t.email.step} index={2} at={at} onChange={() => setStep("email")}>
+            {(open) =>
+              open ? (
+                <div className="space-y-4">
+                  <form.AppField name="email" validators={{ onSubmit: email }}>
+                    {(field) => (
+                      <field.TextField label={t.email.email} type="email" autoComplete="email" />
+                    )}
+                  </form.AppField>
+                  <form.AppField name="password" validators={{ onSubmit: password }}>
+                    {(field) => (
+                      <field.TextField
+                        label={t.email.password}
                         type="password"
                         autoComplete="new-password"
-                        value={field.state.value}
-                        onChange={(event) => field.handleChange(event.target.value)}
                       />
-                      <FieldErrors errors={field.state.meta.errors} />
-                    </div>
-                  )}
-                </form.Field>
-                <Button type="button" onClick={() => void continueFrom(["email", "password"])}>
-                  {t.continue}
-                </Button>
-              </div>
-            ) : (
-              <form.Subscribe selector={(state) => state.values.email}>
-                {(value) => value}
-              </form.Subscribe>
-            )
-          }
-        </Row>
-
-        <Row title={t.rules.step} index={3} at={at} onChange={() => setStep("rules")}>
-          {(open) =>
-            open && (
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  {rules.summary}{" "}
-                  <Link
-                    to="/rules"
-                    target="_blank"
-                    className="font-medium text-primary underline underline-offset-4"
-                  >
-                    {t.rules.read}
-                  </Link>
-                </p>
-                <form.Field name="acceptsRules">
-                  {(field) => (
-                    <Label className="items-start gap-2 leading-snug font-normal">
-                      <Checkbox
-                        checked={field.state.value}
-                        onCheckedChange={(checked) => field.handleChange(checked)}
-                      />
-                      {t.rules.accept(rules.version)}
-                    </Label>
-                  )}
-                </form.Field>
-                <form.Field name="consentsToDataUse">
-                  {(field) => (
-                    <Label className="items-start gap-2 leading-snug font-normal">
-                      <Checkbox
-                        checked={field.state.value}
-                        onCheckedChange={(checked) => field.handleChange(checked)}
-                      />
-                      {copy.consent}
-                    </Label>
-                  )}
-                </form.Field>
-                {turnstile.widget}
-                <Refusal message={refusal} />
-                <form.Subscribe
-                  selector={(state) =>
-                    [
-                      state.values.acceptsRules && state.values.consentsToDataUse,
-                      state.isSubmitting,
-                    ] as const
-                  }
-                >
-                  {([accepted, submitting]) => (
-                    <Button
-                      type="submit"
-                      size="lg"
-                      disabled={!accepted || submitting || !turnstile.token}
-                    >
-                      {t.send}
-                    </Button>
-                  )}
+                    )}
+                  </form.AppField>
+                  <Button type="button" onClick={() => void continueFrom(["email", "password"])}>
+                    {t.continue}
+                  </Button>
+                </div>
+              ) : (
+                <form.Subscribe selector={(state) => state.values.email}>
+                  {(value) => value}
                 </form.Subscribe>
-              </div>
-            )
-          }
-        </Row>
-      </form>
+              )
+            }
+          </Row>
+
+          <Row title={t.rules.step} index={3} at={at} onChange={() => setStep("rules")}>
+            {(open) =>
+              open && (
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    {rules.summary}{" "}
+                    <Link
+                      to="/rules"
+                      target="_blank"
+                      className="font-medium text-primary underline underline-offset-4"
+                    >
+                      {t.rules.read}
+                    </Link>
+                  </p>
+                  <form.AppField name="acceptsRules">
+                    {(field) => <field.CheckboxField label={t.rules.accept(rules.version)} />}
+                  </form.AppField>
+                  <form.AppField name="consentsToDataUse">
+                    {(field) => <field.CheckboxField label={copy.consent} />}
+                  </form.AppField>
+                  {turnstile.widget}
+                  <Refusal message={refusal} />
+                  <form.Subscribe
+                    selector={(state) =>
+                      state.values.acceptsRules && state.values.consentsToDataUse
+                    }
+                  >
+                    {(accepted) => (
+                      <form.Submit size="lg" disabled={!accepted || !turnstile.token}>
+                        {t.send}
+                      </form.Submit>
+                    )}
+                  </form.Subscribe>
+                </div>
+              )
+            }
+          </Row>
+        </form.Form>
+      </form.AppForm>
       <p className="text-sm text-muted-foreground">
         {t.haveAccount}{" "}
         <Link to="/sign-in" className="font-medium text-primary underline underline-offset-4">

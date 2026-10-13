@@ -27,7 +27,6 @@ describe("changing the Email", () => {
       email: "thandi.m@example.com",
       password: client.password,
       cookie: cookieOf(client.cookies),
-      ip: IP,
     });
 
     expect(asked).toEqual({ ok: true, value: { email: "thandi.m@example.com" } });
@@ -51,14 +50,12 @@ describe("changing the Email", () => {
       email: "thandi.m@example.com",
       password: client.password,
       cookie,
-      ip: IP,
     });
 
     const changed = await domain.accounts.changeEmail(client.actor, {
       email: "thandi.m@example.com",
       code: given.codeSentTo("thandi.m@example.com"),
       cookie,
-      ip: IP,
     });
 
     expect(changed).toEqual({
@@ -83,13 +80,11 @@ describe("changing the Email", () => {
       email: "thandi.m@example.com",
       password: client.password,
       cookie,
-      ip: IP,
     });
     await domain.accounts.changeEmail(client.actor, {
       email: "thandi.m@example.com",
       code: given.codeSentTo("thandi.m@example.com"),
       cookie,
-      ip: IP,
     });
 
     const told = mailer.sentTo("thandi@example.com").at(-1);
@@ -107,7 +102,6 @@ describe("changing the Email", () => {
       password: "another horse battery",
       rulesVersion: rules.version,
       consentsToDataUse: true,
-      ip: "198.51.100.200",
     });
     clock.advance({ minutes: 11 });
     const client = await given.client();
@@ -117,13 +111,11 @@ describe("changing the Email", () => {
       email: "taken@example.com",
       password: client.password,
       cookie,
-      ip: IP,
     });
     const changed = await domain.accounts.changeEmail(client.actor, {
       email: "taken@example.com",
       code: given.codeSentTo("taken@example.com"),
       cookie,
-      ip: IP,
     });
 
     expect(changed).toMatchObject({ ok: true });
@@ -152,7 +144,6 @@ describe("changing the Email, refused", () => {
       email,
       password: reason === "wrong-password" ? "not the password" : client.password,
       cookie: cookieOf(client.cookies),
-      ip: IP,
     });
 
     expect(asked).toMatchObject({ ok: false, refusal: { reason } });
@@ -167,7 +158,6 @@ describe("changing the Email, refused", () => {
       email: "new@example.com",
       password: client.password,
       cookie,
-      ip: IP,
     });
     const code = given.codeSentTo("new@example.com");
     clock.advance({ minutes: 1 });
@@ -177,7 +167,6 @@ describe("changing the Email, refused", () => {
       email: "new@example.com",
       code,
       cookie,
-      ip: IP,
     });
 
     expect(changed).toMatchObject({ ok: false, refusal: { reason: "held" } });
@@ -192,7 +181,6 @@ describe("changing the Email, refused", () => {
       email: "new@example.com",
       password: client.password,
       cookie,
-      ip: IP,
     });
     const right = given.codeSentTo("new@example.com");
     const wrong = right === "000000" ? "111111" : "000000";
@@ -201,7 +189,6 @@ describe("changing the Email, refused", () => {
       email: "new@example.com",
       code: wrong,
       cookie,
-      ip: IP,
     });
 
     expect(changed).toMatchObject({ ok: false, refusal: { reason: "wrong-code" } });
@@ -218,7 +205,6 @@ describe("changing the Email, refused", () => {
         email: "new@example.com",
         password: client.password,
         cookie: cookieOf(client.cookies),
-        ip: IP,
       }),
     ).toMatchObject({ ok: false, refusal: { reason: "sign-in-required" } });
     expect(
@@ -226,7 +212,6 @@ describe("changing the Email, refused", () => {
         email: "new@example.com",
         password: artisan.password,
         cookie: cookieOf(client.cookies),
-        ip: IP,
       }),
     ).toMatchObject({ ok: false, refusal: { reason: "sign-in-required" } });
   });

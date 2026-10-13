@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requestActor, requestDomain } from "./session";
+import { filesOf, textOf } from "./form-data";
 
 // Conversations: thin adapters onto the domain module, which decides who sees
 // a Conversation, what may be said in it, and who is told (ADR 0010).
@@ -26,11 +27,10 @@ export const getConversation = createServerFn({ method: "GET" })
 export const sendMessage = createServerFn({ method: "POST" })
   .validator((input: FormData) => {
     if (!(input instanceof FormData)) throw new Error("Expected a form");
-    const text = input.get("text");
     return {
-      conversationId: String(input.get("conversationId") ?? ""),
-      text: typeof text === "string" ? text : "",
-      files: input.getAll("files").filter((value): value is File => value instanceof File),
+      conversationId: textOf(input, "conversationId") ?? "",
+      text: textOf(input, "text") ?? "",
+      files: filesOf(input, "files"),
     };
   })
   .handler(async ({ data }) => {

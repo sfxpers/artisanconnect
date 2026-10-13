@@ -13,3 +13,8 @@ export const QUEUE_NAMES = [
 ] as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[number];
+
+/** The key a split's whole, as the Admin saw it, is sent back under, beside the split's own. */
+export function splitOf(key: string) {
+  return `${key}.of`;
+}

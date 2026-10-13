@@ -1,19 +1,28 @@
 import { createCipheriv, createHash, randomBytes } from "node:crypto";
 
 // PDFs built byte by byte, for what the fixtures saved by macOS's PDF writer
-// (RC4 and AES-128) do not cover: AES-256 encryption, a composite font whose
-// text is only known through its ToUnicode map, a script packed into an
-// encrypted object stream, and a page that is only a picture.
+// (RC4 and AES-128) do not cover: AES-256 encryption, a script packed into an
+// encrypted object stream, and a page that is only a picture. Each one's pages
+// are recorded, for the fake content reader to read back as Workers AI would.
+
+const written = new Map<string, string[]>();
+
+/** The text of each page of a PDF `textPdf` wrote; null for any other. */
+export function pagesOf(pdf: Uint8Array): string[] | null {
+  return written.get(keyOf(pdf)) ?? null;
+}
+
+function keyOf(pdf: Uint8Array): string {
+  let key = "";
+  for (let at = 0; at < pdf.length; at += 0x8000) {
+    key += String.fromCharCode(...pdf.subarray(at, at + 0x8000));
+  }
+  return key;
+}
 
 export type TextPdfOptions = {
   /** Each line of text, one under another. */
-  lines?: string[];
-  /**
-   * A simple font with WinAnsiEncoding; a composite one (Identity-H) with a
-   * ToUnicode map; or a symbolic one with neither, whose codes only its own
-   * glyph tables explain.
-   */
-  font?: "simple" | "composite" | "symbolic";
+  lines?: readonly string[];
   /** AES-256 (revision 6), opening without a password unless one is given. */
   aes256?: { userPassword?: string };
   /** A JavaScript action, packed into an object stream. */
@@ -22,21 +31,14 @@ export type TextPdfOptions = {
   scanned?: boolean;
   /** A second page that is a scan, after the page of text. */
   scannedSecondPage?: boolean;
-  /** Operators the page runs before its text, as a damaged or hostile file may hold. */
-  before?: string;
-  /** A FreeText annotation over the page, whose appearance shows this text. */
-  note?: string;
 };
 
 export async function textPdf({
   lines = [],
-  font = "simple",
   aes256,
   script = false,
   scanned = false,
   scannedSecondPage = false,
-  before = "",
-  note,
 }: TextPdfOptions = {}): Promise<Uint8Array<ArrayBuffer>> {
   const objects = new Map<number, { dict: string; stream?: Uint8Array }>();
   const catalog = `<< /Type /Catalog /Pages 2 0 R${script ? " /OpenAction 6 0 R" : ""} >>`;
@@ -53,65 +55,20 @@ export async function textPdf({
     objects.set(16, { dict: "<< >>", stream: ascii("q 595 0 0 842 0 0 cm /Im1 Do Q") });
   }
   objects.set(3, {
-    dict: `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> /XObject << /Im1 7 0 R >> >> /Contents 5 0 R${note ? " /Annots [13 0 R]" : ""} >>`,
+    dict: "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> /XObject << /Im1 7 0 R >> >> /Contents 5 0 R >>",
   });
-
-  const codes = new Map<string, number>();
-  const show = (line: string) => {
-    if (font !== "composite") return `(${line.replace(/[\\()]/g, (c) => `\\${c}`)}) Tj`;
-    const hex = [...line]
-      .map((char) => {
-        if (!codes.has(char)) codes.set(char, codes.size + 3);
-        return codes.get(char)!.toString(16).padStart(4, "0");
-      })
-      .join("");
-    return `<${hex}> Tj`;
-  };
+  const show = (line: string) => `(${line.replace(/[\\()]/g, (c) => `\\${c}`)}) Tj`;
   const content = scanned
     ? "q 595 0 0 842 0 0 cm /Im1 Do Q"
-    : `${before} BT /F1 12 Tf 72 760 Td 14 TL ${lines.map((line) => `${show(line)} T*`).join(" ")} ET`;
+    : `BT /F1 12 Tf 72 760 Td 14 TL ${lines.map((line) => `${show(line)} T*`).join(" ")} ET`;
   objects.set(5, { dict: "<< /Filter /FlateDecode >>", stream: await deflate(ascii(content)) });
   objects.set(7, {
     dict: "<< /Type /XObject /Subtype /Image /Width 1 /Height 1 /ColorSpace /DeviceGray /BitsPerComponent 8 >>",
     stream: new Uint8Array([0xff]),
   });
-
-  if (font === "simple") {
-    objects.set(4, {
-      dict: "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
-    });
-  } else if (font === "symbolic") {
-    objects.set(4, {
-      dict: "<< /Type /Font /Subtype /TrueType /BaseFont /ABCDEF+Sans /FontDescriptor 8 0 R >>",
-    });
-    objects.set(8, {
-      dict: "<< /Type /FontDescriptor /FontName /ABCDEF+Sans /Flags 4 /FontBBox [0 0 1000 1000] /ItalicAngle 0 /Ascent 800 /Descent -200 /CapHeight 700 /StemV 80 >>",
-    });
-  } else {
-    objects.set(4, {
-      dict: "<< /Type /Font /Subtype /Type0 /BaseFont /ABCDEF+Sans /Encoding /Identity-H /DescendantFonts [8 0 R] /ToUnicode 9 0 R >>",
-    });
-    objects.set(8, {
-      dict: "<< /Type /Font /Subtype /CIDFontType2 /BaseFont /ABCDEF+Sans /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> /DW 556 >>",
-    });
-    const chars = [...codes]
-      .map(([char, code]) => {
-        const utf16 = [...char].flatMap((c) => {
-          const units = c.length === 2 ? [c.charCodeAt(0), c.charCodeAt(1)] : [c.charCodeAt(0)];
-          return units.map((unit) => unit.toString(16).padStart(4, "0"));
-        });
-        return `<${code.toString(16).padStart(4, "0")}> <${utf16.join("")}>`;
-      })
-      .join("\n");
-    const cmap = `/CIDInit /ProcSet findresource begin 12 dict begin begincmap
-/CMapName /Adobe-Identity-UCS def /CMapType 2 def
-1 begincodespacerange <0000> <FFFF> endcodespacerange
-${codes.size} beginbfchar
-${chars}
-endbfchar
-endcmap CMapName currentdict /CMap defineresource pop end end`;
-    objects.set(9, { dict: "<< /Filter /FlateDecode >>", stream: await deflate(ascii(cmap)) });
-  }
+  objects.set(4, {
+    dict: "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
+  });
 
   if (script) {
     // Object 6, the action, is packed into object stream 10, so it is only seen once unpacked.
@@ -123,16 +80,6 @@ endcmap CMapName currentdict /CMap defineresource pop end end`;
     });
   }
   objects.set(11, { dict: "<< /Title (Confirmation of banking details) >>" });
-  if (note) {
-    objects.set(13, {
-      dict: "<< /Type /Annot /Subtype /FreeText /Rect [300 700 560 730] /DA (/F1 10 Tf 0 g) /AP << /N 14 0 R >> >>",
-    });
-    objects.set(14, {
-      dict: "<< /Type /XObject /Subtype /Form /BBox [0 0 260 30] /Resources << /Font << /F1 4 0 R >> >> >>",
-      stream: ascii(`BT /F1 10 Tf 2 10 Td (${note}) Tj ET`),
-    });
-  }
-
   const id = randomBytes(16);
   let encryption: Encryption | null = null;
   if (aes256) {
@@ -162,7 +109,10 @@ endcmap CMapName currentdict /CMap defineresource pop end end`;
   }
   const trailer = `<< /Root 1 0 R /Info 11 0 R /Size 17${encryption ? " /Encrypt 12 0 R" : ""} /ID [<${hex(id)}> <${hex(id)}>] >>`;
   parts.push(ascii(`trailer\n${trailer}\n%%EOF\n`));
-  return concat(...parts);
+  const pdf = concat(...parts);
+  const page = scanned ? "" : lines.join("\n");
+  written.set(keyOf(pdf), scannedSecondPage ? [page, ""] : [page]);
+  return pdf;
 }
 
 // AES-256, the standard security handler's revision 6

@@ -1,7 +1,8 @@
 /**
  * Cloudflare Turnstile (ADR 0017), which guards sign-up, sign-in, and code
  * requests from bots before they reach the domain module. Each token passes
- * once.
+ * once. Custom: better-auth's captcha plugin guards only its HTTP handler,
+ * which this app never mounts.
  */
 export async function passesTurnstile(
   env: Env,

@@ -1,4 +1,4 @@
-import type { Clock } from "../ports";
+import type { Clock } from "@/domain/ports";
 
 export type FakeClock = Clock & {
   set(now: Date): void;

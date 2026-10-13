@@ -1,13 +1,13 @@
 import { createDomain, type DomainConfig } from "@/domain";
 import type { Clock } from "@/domain/ports";
 import type { AdminActor } from "@/domain/actor";
-import { createFakeContentReader } from "@/domain/fakes/content-reader";
-import { createFakeMailer } from "@/domain/fakes/mailer";
+import { createFakeContentReader } from "../../test/support/fakes/content-reader";
+import { createFakeMailer } from "../../test/support/fakes/mailer";
 import { saDay } from "@/domain/sa-days";
 import { configFromEnv, fakePaymentsFromEnv, portsFromEnv } from "@/worker/ports";
 import { webmOpus } from "../../test/support/files";
 import { given } from "../../test/support/given";
-import { textPdf } from "../../test/support/pdfs";
+import { pagesOf, textPdf } from "../../test/support/pdfs";
 
 // What a smoke test needs in the local app's D1, made by the domain tests'
 // own builders through the module's commands. The Content check passes
@@ -163,7 +163,12 @@ async function world(env: Env, config: Partial<DomainConfig> = {}, clock?: Clock
   const mailer = createFakeMailer();
   const ports = portsFromEnv(env);
   const domain = createDomain(
-    { ...ports, clock: clock ?? ports.clock, contentReader: createFakeContentReader(), mailer },
+    {
+      ...ports,
+      clock: clock ?? ports.clock,
+      contentReader: createFakeContentReader(pagesOf),
+      mailer,
+    },
     { ...configFromEnv(env), ...config },
   );
   const make = given({

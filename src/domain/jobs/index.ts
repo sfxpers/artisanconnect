@@ -41,6 +41,7 @@ import {
   jobRow,
   jobsOf,
   jobText,
+  noJob,
   openWrites,
   photoView,
   type JobPhoto,
@@ -545,10 +546,13 @@ const FIX_HELD_FOR =
  */
 async function heldOnJob(ctx: Context, job: JobRow, artisan: { accountId: string }) {
   if (job.state !== "open" || job.outOfViewSince) return null;
-  const [match, invitation] = await Promise.all([
+  const [held, invitation, suspended] = await Promise.all([
     heldMatch(ctx, job.id, artisan.accountId),
     heldInvitation(ctx, job.id, artisan.accountId),
+    isSuspended(ctx, artisan.accountId),
   ]);
+  // A Suspended Artisan keeps no Job Match (GLOSSARY.md); Quoting refuses it as Suspended.
+  const match = suspended ? null : held;
   if (!match && !invitation) return null;
   return { offeredAt: match?.offeredAt ?? null, invitedAt: invitation?.invitedAt ?? null };
 }
@@ -630,10 +634,6 @@ function editBeingChecked() {
 
 function isEditable(state: JobState) {
   return (EDITABLE_STATES as readonly JobState[]).includes(state);
-}
-
-function noJob() {
-  return refuse("not-found", "That Job does not exist.");
 }
 
 /** What a Job would need from the Client, an incomplete Draft's or an edit's; null if nothing. */

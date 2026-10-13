@@ -39,6 +39,8 @@ const t = copy.conversation;
  * per Artisan, beside the one open; the Artisan's own. Events show as rows
  * that are not speech, and the viewer's messages being checked show to them
  * only. Once Hired, the Engagement's also takes voice notes and PDFs (#131).
+ * Custom: shadcn's Message and Bubble would add more lines than they replace,
+ * and its Message Scroller needs another package.
  */
 export function Messages({
   jobId,
@@ -240,7 +242,7 @@ function Composer({ view }: { view: ConversationView }) {
     form.append("text", text);
     // Anything else is drawn as a photo, which leaves a file the browser cannot draw as it is.
     const shrunk = await Promise.all(
-      files.map((file) =>
+      files.map(async (file) =>
         file.type === "application/pdf" || file.type.startsWith("audio/")
           ? file
           : shrinkPhoto(file),
@@ -369,6 +371,7 @@ const RECORDING_MAX_SECONDS = 5 * 60 - 2;
  * Records a voice note from the microphone, stopping by itself before it is
  * too long; each recording is handed over as a file, to a callback that only
  * sets state. `seconds` is how long the one going has run, or null when none is.
+ * Custom: neither shadcn nor TanStack records sound; this is the browser's MediaRecorder.
  */
 function useVoiceRecorder(onRecorded: (file: File) => void) {
   const [seconds, setSeconds] = useState<number | null>(null);

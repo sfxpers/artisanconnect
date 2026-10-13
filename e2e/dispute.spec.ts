@@ -1,4 +1,4 @@
-import { expect, seed, signIn, signInAdmin, test } from "./support/helpers";
+import { confirm, expect, seed, signIn, signInAdmin, test } from "./support/helpers";
 
 test("the Client disputes part of the Labour, and the Admin splits it after reading the Conversation", async ({
   browser,
@@ -11,14 +11,14 @@ test("the Client disputes part of the Labour, and the Admin splits it after read
   }>("hired");
 
   const asClient = await (await browser.newContext()).newPage();
-  // Work started and the Dispute each ask to confirm.
-  asClient.on("dialog", (dialog) => void dialog.accept());
   await signIn(asClient, { email, password });
   await asClient.goto(`/jobs/${jobId}`);
   await expect(async () => {
+    // Work started and the Dispute each ask to confirm.
     await asClient.getByRole("button", { name: "Work started", exact: true }).click({
       timeout: 2000,
     });
+    await confirm(asClient);
     await expect(asClient.getByText("The Materials were released to the Artisan.")).toBeVisible({
       timeout: 2000,
     });
@@ -36,6 +36,7 @@ test("the Client disputes part of the Labour, and the Admin splits it after read
   }).toPass();
   await asClient.getByLabel("Why").fill("The second coat is missing on the east wall.");
   await asClient.getByRole("button", { name: "Open the Dispute" }).click();
+  await confirm(asClient);
   await expect(asClient.getByText("Disputed: the Admin decides")).toBeVisible();
   await expect(
     asClient.getByText(/You disputed part of the Labour, and R\s600,00 is held/),
@@ -57,7 +58,7 @@ test("the Client disputes part of the Labour, and the Admin splits it after read
   }).toPass();
 
   await asAdmin.getByRole("button", { name: "Split the held amount" }).click();
-  await asAdmin.getByLabel(/Released to the Artisan/).fill("40000");
+  await asAdmin.getByRole("slider", { name: /Released to the Artisan/ }).fill("40000");
   await expect(asAdmin.getByText(/Refunded to the Client: R\s200,00/)).toBeVisible();
   await asAdmin
     .getByLabel("Reason, for both parties")

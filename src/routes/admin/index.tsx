@@ -1,6 +1,7 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { CheckCheck, ChevronRight } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 import { QueueBadge, QueueCounts } from "@/components/admin";
 import { EmptyState, Page } from "@/components/page";
 import { QUEUE_NAMES, type QueueName } from "@/domain/queue-names";
@@ -41,20 +42,16 @@ function AdminHome() {
         <p className="text-sm text-muted-foreground">{t.lead}</p>
       </div>
       {float.short && (
-        <Card role="alert" className="border-destructive ring-2 ring-destructive/60">
-          <CardHeader>
-            <CardTitle className="text-destructive">{t.floatShort}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm">
-              {t.floatShortLead(
-                formatRands(float.floatCents),
-                formatRands(float.neededCents),
-                formatDate(float.checkedAt),
-              )}
-            </p>
-          </CardContent>
-        </Card>
+        <Alert variant="destructive">
+          <AlertTitle>{t.floatShort}</AlertTitle>
+          <AlertDescription>
+            {t.floatShortLead(
+              formatRands(float.floatCents),
+              formatRands(float.neededCents),
+              formatDate(float.checkedAt),
+            )}
+          </AlertDescription>
+        </Alert>
       )}
       <div className="flex flex-wrap items-center gap-2">
         <Link

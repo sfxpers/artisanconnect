@@ -1,9 +1,8 @@
 import { useState } from "react";
-import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ChevronRight } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Card, CardContent } from "@/components/ui/card";
 import { DraftForm } from "@/components/job-form";
-import { Page } from "@/components/page";
+import { BackCrumb, Page } from "@/components/page";
 import { copy } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
 import { postJob, saveJobDraft } from "@/web/jobs";
@@ -45,12 +44,7 @@ function NewJob() {
 
   return (
     <Page narrow>
-      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-        <Link to="/jobs" className="hover:text-foreground">
-          {t.breadcrumb}
-        </Link>
-        <ChevronRight className="size-3" />
-      </div>
+      <BackCrumb to="/jobs" label={t.breadcrumb} />
       <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t.newTitle}</h1>
       <p className="text-sm text-muted-foreground">{t.newLead}</p>
       <Card>

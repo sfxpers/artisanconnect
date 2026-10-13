@@ -11,8 +11,17 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { Skeleton } from "@/components/ui/skeleton";
-import { copy } from "@/web/copy";
+import type { MarketplaceRules } from "@/domain/accounts/rules";
+import { copy, formatDate } from "@/web/copy";
 
 /** A page's main column, with its title, the line under it, and its actions. */
 export function Page({
@@ -105,28 +114,47 @@ export function AuthCard({
   );
 }
 
+/** A Marketplace rules version, to accept at sign-in or reopening. */
+export function RulesCard({ rules }: { rules: MarketplaceRules }) {
+  return (
+    <div className="rounded-lg border p-3 text-sm">
+      <div className="text-xs text-muted-foreground">
+        {copy.rules.version(rules.version, formatDate(rules.publishedAt))}
+      </div>
+      <p>{rules.summary}</p>
+      <Link
+        to="/rules"
+        target="_blank"
+        className="font-medium text-primary underline underline-offset-4"
+      >
+        {copy.signUp.rules.read}
+      </Link>
+    </div>
+  );
+}
+
+/** The way back to the list a page belongs to, above its title. */
+export function BackCrumb({ to, label }: { to: "/jobs" | "/home"; label: string }) {
+  return (
+    <Breadcrumb>
+      <BreadcrumbList>
+        <BreadcrumbItem>
+          <BreadcrumbLink render={<Link to={to} />}>{label}</BreadcrumbLink>
+        </BreadcrumbItem>
+        <BreadcrumbSeparator />
+      </BreadcrumbList>
+    </Breadcrumb>
+  );
+}
+
 /** Why the last request was refused, shown where the person acted. */
 export function Refusal({ message }: { message: string | null | undefined }) {
   if (!message) return null;
   return (
-    <p
-      role="alert"
-      className="rounded-lg bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive"
-    >
-      {message}
-    </p>
+    <Alert variant="destructive">
+      <AlertDescription>{message}</AlertDescription>
+    </Alert>
   );
-}
-
-/** A field's validation messages. */
-export function FieldErrors({ errors }: { errors: unknown[] }) {
-  const messages = errors
-    .map((error) =>
-      typeof error === "string" ? error : (error as { message?: string } | undefined)?.message,
-    )
-    .filter(Boolean);
-  if (messages.length === 0) return null;
-  return <p className="text-sm text-destructive">{messages[0]}</p>;
 }
 
 /** What a list shows while it has nothing in it. */

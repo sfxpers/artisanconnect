@@ -3,8 +3,6 @@ import type { ContentContext, ContentVerdict } from "../ports";
 import { ok, refuse, type Result } from "../result";
 import { recordRefusal, type SentOn } from "../signals";
 import type { StoredFile } from "../uploads";
-import { Locked } from "../uploads/bytes";
-import { pdfText } from "../uploads/pdf";
 import {
   patternHit,
   patternMessage,
@@ -118,15 +116,15 @@ export async function readFiles(ctx: Context, files: readonly StoredFile[]) {
           );
           break;
         case "pdf": {
-          const pdf = await pdfText(bytes);
+          const pages = await ctx.ports.contentReader.readPdf(bytes);
           // A scanned page is a picture of text, which text extraction cannot read.
-          if (pdf.scannedPages > 0) unread ??= "A PDF with scanned pages cannot be read.";
-          texts.push(pdf.text);
+          if (pages.some((page) => !page)) unread ??= "A PDF with scanned pages cannot be read.";
+          texts.push(pages.join("\n\n"));
           break;
         }
       }
     } catch (error) {
-      if (!(error instanceof Locked)) console.error(`File ${file.key} could not be read`, error);
+      console.error(`File ${file.key} could not be read`, error);
       unread ??= `A ${FILE_NAMES[file.kind]} could not be read.`;
     }
   }

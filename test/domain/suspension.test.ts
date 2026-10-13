@@ -172,20 +172,26 @@ describe("a Suspended Artisan", () => {
     expect(await domain.quotes.forJob(client.actor, { jobId })).toEqual([]);
   });
 
-  test("is offered no Job", async () => {
-    const { domain, given } = await createHarness();
-    const admin = await given.admin();
-    const artisan = await given.matchableArtisan();
-    await domain.people.suspend(admin.actor, {
-      accountId: artisan.actor.accountId,
-      reason: "Fraud.",
-    });
-    const client = await given.client();
+  test.each(["before", "after"] as const)(
+    "is offered no Job, and no longer sees one offered %s the Job opened",
+    async (when) => {
+      const { domain, given } = await createHarness();
+      const admin = await given.admin();
+      const artisan = await given.matchableArtisan();
+      const client = await given.client();
+      const suspend = () =>
+        domain.people.suspend(admin.actor, {
+          accountId: artisan.actor.accountId,
+          reason: "Fraud.",
+        });
+      if (when === "before") await suspend();
+      const jobId = await given.openJob(client);
+      if (when === "after") await suspend();
 
-    await given.openJob(client);
-
-    expect(await domain.matches.mine(artisan.actor)).toEqual([]);
-  });
+      expect(await domain.matches.mine(artisan.actor)).toEqual([]);
+      expect(await domain.jobs.viewAsArtisan(artisan.actor, { jobId })).toBeNull();
+    },
+  );
 
   test("leaves Browse, and so cannot be invited", async () => {
     const { domain, given } = await createHarness();

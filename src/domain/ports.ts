@@ -6,6 +6,8 @@ export type Ports = {
   db: D1Database;
   /** R2, for every uploaded file. */
   files: R2Bucket;
+  /** Cloudflare Images, which draws each photo again before it is stored. */
+  images: ImagesBinding;
   clock: Clock;
   contentReader: ContentReader;
   payments: PaymentAdapter;
@@ -15,6 +17,7 @@ export type Ports = {
 export const PORT_NAMES = [
   "db",
   "files",
+  "images",
   "clock",
   "contentReader",
   "payments",
@@ -75,6 +78,8 @@ export type ContentReader = {
   readPhoto(photo: Uint8Array): Promise<string>;
   /** The words spoken in a voice note. */
   transcribe(voiceNote: { bytes: Uint8Array; contentType: string }): Promise<string>;
+  /** The text of each page of a PDF; a page that is only a picture, as a scan is, has none. */
+  readPdf(pdf: Uint8Array): Promise<string[]>;
   /** Reads the text, and looks at the photos, for what patterns miss. */
   read(content: ContentToRead): Promise<ContentVerdict>;
 };

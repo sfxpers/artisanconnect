@@ -22,7 +22,6 @@ async function signUp(
     password: "correct horse battery",
     rulesVersion: rules.version,
     consentsToDataUse: true,
-    ip: IP,
     ...details,
   });
 }

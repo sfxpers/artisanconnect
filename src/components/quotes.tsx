@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useRouter } from "@tanstack/react-router";
+import { useConfirm } from "@/components/confirm";
 import { FileText, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -146,6 +147,7 @@ function QuoteRow({
   quote: ClientQuote;
   conversationId: string | undefined;
 }) {
+  const confirm = useConfirm();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [hiring, setHiring] = useState(false);
@@ -170,7 +172,7 @@ function QuoteRow({
   }
 
   async function decline() {
-    if (!window.confirm(q.declineConfirm)) return;
+    if (!(await confirm(q.declineConfirm))) return;
     setBusy(true);
     setRefusal(null);
     const result = await declineQuote({ data: { quoteId: quote.quoteId } });

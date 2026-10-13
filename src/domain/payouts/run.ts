@@ -15,7 +15,7 @@ import { causedBy } from "../errors";
 import { insertWhile } from "../guarded";
 import { LEDGER_KINDS, ledgerWrites } from "../ledger";
 import { formatRands } from "../money";
-import { saDay, saDayStart } from "../sa-days";
+import { MINUTE_MS, saDay, saDayStart } from "../sa-days";
 import {
   accounts,
   admins,
@@ -107,7 +107,7 @@ function runTimeOn(day: string, time: string): Date {
   const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(time);
   if (!match) throw new Error(`The Payout run time "${time}" is not a time of day like 10:00`);
   const minutes = Number(match[1]) * 60 + Number(match[2]);
-  return new Date(saDayStart(day).getTime() + minutes * 60_000);
+  return new Date(saDayStart(day).getTime() + minutes * MINUTE_MS);
 }
 
 async function runOn(ctx: Context, day: string) {

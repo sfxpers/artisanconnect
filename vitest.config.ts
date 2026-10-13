@@ -5,8 +5,7 @@ import { defineConfig } from "vitest/config";
 // Tests run inside workerd against real local D1 and R2, with the bindings
 // from wrangler.jsonc. The migrations are read here and applied per test.
 export default defineConfig(async () => {
-  // Sentry is off in tests, and the domain is given its own test config.
-  process.env.SENTRY_DSN ??= "";
+  // The domain is given its own test config.
   process.env.BETTER_AUTH_SECRET ??= "";
   process.env.TURNSTILE_SECRET_KEY ??= "";
   process.env.PAYMENTS_WEBHOOK_SECRET ??= "";
@@ -29,6 +28,8 @@ export default defineConfig(async () => {
       // A test drives whole Engagements through workerd, and the slowest take
       // about five seconds alone: past Vitest's default when the machine is busy.
       testTimeout: 20_000,
+      // On by default since 5.0.4, but workerd cannot read the cache it writes (@cloudflare/vitest-plugin 1.4.0).
+      fsModuleCache: false,
     },
   };
 });

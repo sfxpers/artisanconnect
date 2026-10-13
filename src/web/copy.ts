@@ -34,6 +34,8 @@ export const copy = {
     support: "Support",
   },
   loading: "Loading",
+  /** Before an act that cannot be undone. */
+  ask: { title: "Are you sure?", yes: "Confirm", no: "Go back" },
   skipToContent: "Skip to content",
   error: {
     title: "This page did not load",
@@ -293,7 +295,6 @@ export const copy = {
     siteTypes: { home: "Home", business: "Business" },
     suburb: "Suburb",
     suburbHint: "Search the City's official suburbs. Artisans see only the Region.",
-    suburbChange: "Change",
     noSuburb: "No suburb matches. Only a site inside the City of Cape Town can be placed.",
     region: "Region",
     street: "Street address",

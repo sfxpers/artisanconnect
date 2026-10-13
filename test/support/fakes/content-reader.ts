@@ -1,4 +1,4 @@
-import type { ContentReader, ContentToRead, ContentVerdict } from "../ports";
+import type { ContentReader, ContentToRead, ContentVerdict } from "@/domain/ports";
 
 type FakeContentReader = ContentReader & {
   /** Everything it was asked to read, oldest first. */
@@ -15,7 +15,13 @@ type FakeContentReader = ContentReader & {
   breaks(): void;
 };
 
-export function createFakeContentReader(): FakeContentReader {
+/**
+ * `pagesOf` gives a PDF's pages, as the test that wrote it knows them, or
+ * null for one it cannot read.
+ */
+export function createFakeContentReader(
+  pagesOf: (pdf: Uint8Array) => string[] | null = () => null,
+): FakeContentReader {
   let verdict: ContentVerdict = { kind: "clear" };
   const when: { text: string; verdict: ContentVerdict }[] = [];
   let photoText = "";
@@ -49,6 +55,12 @@ export function createFakeContentReader(): FakeContentReader {
     async transcribe() {
       working();
       return voiceNoteText;
+    },
+    async readPdf(pdf) {
+      working();
+      const pages = pagesOf(pdf);
+      if (!pages) throw new Error("The fake content reader reads only the PDFs the tests wrote.");
+      return pages;
     },
     async read(content) {
       working();

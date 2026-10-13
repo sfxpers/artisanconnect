@@ -1,8 +1,69 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["typescript", "react", "unicorn", "oxc", "import"],
+  "plugins": ["typescript", "react", "unicorn", "oxc", "import", "vitest", "jsx-a11y"],
   "categories": {
     "correctness": "error"
   },
-  "ignorePatterns": ["**/routeTree.gen.ts"]
+  "ignorePatterns": ["**/routeTree.gen.ts"],
+  // Type-aware rules, through oxlint-tsgolint.
+  "options": { "typeAware": true },
+  "rules": {
+    // A promise nobody awaits loses its failure; the domain is async throughout.
+    "typescript/no-floating-promises": "error",
+    // A voice note a party records has no captions; the Admin reads its transcript.
+    "jsx-a11y/media-has-caption": "off",
+    // role="status" on a line of text, and role="img" on a row of stars, are the
+    // patterns WAI-ARIA gives; <output> and <img> do not mean them.
+    "jsx-a11y/prefer-tag-over-role": "off"
+  },
+  "overrides": [
+    {
+      // A test stubs a fake's method by keeping the original to put back.
+      "files": ["test/**"],
+      "rules": { "typescript/unbound-method": "off" }
+    },
+    {
+      // shadcn's own components, as it writes them: an input group's click only
+      // focuses its input, which the keyboard reaches by itself.
+      "files": ["src/components/ui/**"],
+      "rules": {
+        "jsx-a11y/label-has-associated-control": "off",
+        "jsx-a11y/click-events-have-key-events": "off",
+        "jsx-a11y/no-noninteractive-element-interactions": "off"
+      }
+    },
+    {
+      // Every rule lives in the domain module (ADR 0017): pages and components
+      // may import only its types and the modules shared with the web app.
+      "files": ["src/routes/**", "src/components/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@/domain/**",
+                  "!@/domain/actor",
+                  "!@/domain/result",
+                  "!@/domain/money",
+                  "!@/domain/sa-days",
+                  "!@/domain/service-categories",
+                  "!@/domain/queue-names",
+                  "!@/domain/regions/places",
+                  "!@/domain/figures/periods",
+                  "!@/domain/support/topics",
+                  "!@/domain/reports/reasons",
+                  "!@/domain/verification/checks",
+                  "!@/domain/*/inputs"
+                ],
+                "allowTypeImports": true,
+                "message": "A rule belongs in src/domain; reach it through a server function in src/web."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }

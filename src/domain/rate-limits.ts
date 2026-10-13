@@ -2,7 +2,10 @@ import { and, asc, eq, gt, lte } from "drizzle-orm";
 import type { Context } from "./context";
 import { rateLimitHits } from "./schema";
 
-/** At most `max` tries per `seconds` for one key, such as an IP or an Email. */
+// Custom because the Workers Rate Limiting binding counts per location, roughly,
+// in 10- or 60-second windows; these per-Email limits are rules, kept exactly.
+
+/** At most `max` tries per `seconds` for one key, an Email. */
 type Limit = { key: string; max: number; seconds: number };
 
 /**

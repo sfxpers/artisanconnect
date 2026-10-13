@@ -16,7 +16,6 @@ async function signUp(
     password: "correct horse battery",
     rulesVersion: rules.version,
     consentsToDataUse: true,
-    ip: IP,
     ...details,
   });
 }
@@ -147,7 +146,7 @@ describe("an Email code", () => {
         ip: IP,
       });
     const resend = () =>
-      harness.domain.accounts.resendCode(visitor, { email: "thandi@example.com", ip: IP });
+      harness.domain.accounts.resendCode(visitor, { email: "thandi@example.com" });
     return { ...harness, code, confirm, resend };
   }
 
@@ -200,6 +199,7 @@ describe("an Email code", () => {
 
     expect(mailer.sentTo("thandi@example.com")).toHaveLength(2);
     if (newCode !== code) {
+      // oxlint-disable-next-line vitest/no-conditional-expect -- a new code may by chance be the old one.
       expect(await confirm(code)).toMatchObject({ refusal: { reason: "wrong-code" } });
     }
     expect(await confirm(newCode)).toMatchObject({ ok: true });
@@ -210,7 +210,7 @@ describe("an Email code", () => {
     await given.client({ email: "held@example.com" });
     clock.advance({ minutes: 2 });
 
-    const resent = await domain.accounts.resendCode(visitor, { email: "held@example.com", ip: IP });
+    const resent = await domain.accounts.resendCode(visitor, { email: "held@example.com" });
 
     expect(resent).toMatchObject({ ok: true });
     expect(mailer.sentTo("held@example.com")).toHaveLength(1);
@@ -309,10 +309,9 @@ describe("recovery", () => {
     clock.advance({ minutes: 1 });
     const sentBefore = mailer.sent.length;
 
-    const held = await domain.accounts.requestRecovery(visitor, { email, ip: IP });
+    const held = await domain.accounts.requestRecovery(visitor, { email });
     const notHeld = await domain.accounts.requestRecovery(visitor, {
       email: "nobody@example.com",
-      ip: "203.0.113.8",
     });
 
     expect(held).toEqual({ ok: true, value: { email } });
@@ -324,13 +323,12 @@ describe("recovery", () => {
     const { domain, given, clock } = await createHarness();
     const { email, password } = await given.client();
     clock.advance({ minutes: 1 });
-    await domain.accounts.requestRecovery(visitor, { email, ip: IP });
+    await domain.accounts.requestRecovery(visitor, { email });
 
     const recovered = await domain.accounts.recover(visitor, {
       email,
       code: given.codeSentTo(email),
       password: "a brand new password",
-      ip: IP,
     });
 
     expect(recovered).toMatchObject({ ok: true });
@@ -346,20 +344,18 @@ describe("recovery", () => {
     const { domain, given, clock } = await createHarness();
     const { email } = await given.client();
     clock.advance({ minutes: 1 });
-    await domain.accounts.requestRecovery(visitor, { email, ip: IP });
+    await domain.accounts.requestRecovery(visitor, { email });
     const wrong = given.codeSentTo(email) === "000000" ? "111111" : "000000";
 
     const held = await domain.accounts.recover(visitor, {
       email,
       code: wrong,
       password: "a brand new password",
-      ip: IP,
     });
     const notHeld = await domain.accounts.recover(visitor, {
       email: "nobody@example.com",
       code: wrong,
       password: "a brand new password",
-      ip: IP,
     });
 
     expect(held).toMatchObject({ ok: false, refusal: { reason: "wrong-code" } });
@@ -368,22 +364,6 @@ describe("recovery", () => {
 });
 
 describe("rate limits", () => {
-  test("stop a run of sign-ups from one IP, for an hour", async () => {
-    const harness = await createHarness();
-    for (let i = 0; i < 10; i++) {
-      expect(await signUp(harness, { email: `person${i}@example.com` })).toMatchObject({
-        ok: true,
-      });
-    }
-
-    expect(await signUp(harness, { email: "one-more@example.com" })).toMatchObject({
-      ok: false,
-      refusal: { reason: "slow-down" },
-    });
-    harness.clock.advance({ hours: 1 });
-    expect(await signUp(harness, { email: "one-more@example.com" })).toMatchObject({ ok: true });
-  });
-
   test("stop a run of sign-in tries at one Email, from any IP, for 15 minutes", async () => {
     const { domain, given, clock } = await createHarness();
     const { email, password } = await given.client();
@@ -403,36 +383,6 @@ describe("rate limits", () => {
     expect(await domain.accounts.signIn(visitor, { email, password, ip: IP })).toMatchObject({
       ok: true,
     });
-  });
-
-  test("stop a run of sign-in tries from one IP", async () => {
-    const { domain } = await createHarness();
-    for (let i = 0; i < 30; i++) {
-      await domain.accounts.signIn(visitor, {
-        email: `guess${i}@example.com`,
-        password: "a wrong guess",
-        ip: IP,
-      });
-    }
-
-    expect(
-      await domain.accounts.signIn(visitor, {
-        email: "another@example.com",
-        password: "a wrong guess",
-        ip: IP,
-      }),
-    ).toMatchObject({ ok: false, refusal: { reason: "slow-down" } });
-  });
-
-  test("stop a run of code requests from one IP", async () => {
-    const { domain } = await createHarness();
-    for (let i = 0; i < 10; i++) {
-      await domain.accounts.requestRecovery(visitor, { email: `guess${i}@example.com`, ip: IP });
-    }
-
-    expect(
-      await domain.accounts.requestRecovery(visitor, { email: "another@example.com", ip: IP }),
-    ).toMatchObject({ ok: false, refusal: { reason: "slow-down" } });
   });
 });
 
@@ -542,7 +492,6 @@ describe("the Marketplace rules", () => {
       password: "correct horse battery",
       rulesVersion: rules.version,
       consentsToDataUse: true,
-      ip: IP,
     });
     clock.advance({ days: 1 });
     await domain.marketplaceRules.publish(admin.actor, { summary: "Fees are now shown in bold." });
@@ -572,6 +521,29 @@ describe("the Marketplace rules", () => {
       ],
     });
     expect(await domain.marketplaceRules.versions(stays.actor)).toBeNull();
+  });
+});
+
+describe("one person's Client and Artisan Accounts", () => {
+  test("hold different Emails and share nothing: kind, sign-in, Jobs, or Notices", async () => {
+    const { domain, given } = await createHarness();
+    const name = "Thandi Mokoena";
+    const asClient = await given.client({ name, email: "thandi@example.com" });
+    const asArtisan = await given.artisan({ name, email: "thandi.builds@example.com" });
+    const jobId = await given.openJob(asClient);
+
+    expect(await domain.accounts.me(asClient.actor)).toMatchObject({
+      kind: "client",
+      email: "thandi@example.com",
+    });
+    expect(await domain.accounts.me(asArtisan.actor)).toMatchObject({
+      kind: "artisan",
+      email: "thandi.builds@example.com",
+    });
+    expect(asArtisan.actor.accountId).not.toBe(asClient.actor.accountId);
+    expect(await domain.jobs.view(asArtisan.actor, { jobId })).toBeNull();
+    expect(await domain.jobs.mine(asArtisan.actor)).toBeNull();
+    expect(await domain.notices.list(asArtisan.actor)).toEqual([]);
   });
 });
 

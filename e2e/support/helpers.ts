@@ -58,6 +58,13 @@ export async function submitSignIn(page: Page, account: { email: string; passwor
   await button.click();
 }
 
+/** Confirms an act the page asks about in its Alert Dialog. */
+export async function confirm(page: Page) {
+  await page.getByRole("alertdialog").getByRole("button", { name: "Confirm" }).click({
+    timeout: 2000,
+  });
+}
+
 /** Signs an Account in with its Email and password. */
 export async function signIn(page: Page, account: { email: string; password: string }) {
   await submitSignIn(page, account);

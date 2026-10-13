@@ -267,6 +267,13 @@
       "when": 1791810878246,
       "tag": "0037_review-window-pauses",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "6",
+      "when": 1791917259011,
+      "tag": "0038_domain-guards-the-moves",
+      "breakpoints": true
     }
   ]
 }

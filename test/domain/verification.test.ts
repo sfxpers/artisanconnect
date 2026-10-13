@@ -180,6 +180,26 @@ describe("submitting a check, refused", () => {
       },
       /^An account number has 6 to 16 digits\.$/,
     ],
+    [
+      "a South African ID number of 12 digits",
+      async () => identity({ number: "800101500908" }),
+      /^A South African ID number has 13 digits\.$/,
+    ],
+    [
+      "a South African ID number failing its checksum",
+      async () => identity({ number: "8001015009088" }),
+      /^This South African ID number is not valid/,
+    ],
+    [
+      "a refugee ID number of 3 characters",
+      async () => identity({ documentType: "refugee-id", number: "AB1" }),
+      /4 to 20 letters and digits/,
+    ],
+    [
+      "a passport with no issuing country",
+      async () => identity({ documentType: "passport", number: "FN123456" }),
+      /^Choose the country that issued the passport\.$/,
+    ],
   ])("for %s", async (_, submission, message) => {
     const { domain, given } = await createHarness();
     const artisan = await given.artisan();

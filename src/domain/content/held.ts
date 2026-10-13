@@ -31,7 +31,7 @@ type HeldKindDefinition = {
     refused: string;
     link: string | ((ctx: Context, subjectId: string) => Promise<string>);
   };
-  view(ctx: Context, item: QueueItem): Promise<ItemView>;
+  view: (ctx: Context, item: QueueItem) => Promise<ItemView>;
 };
 
 type HeldKind = QueueItemKind & {

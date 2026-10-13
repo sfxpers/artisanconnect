@@ -18,6 +18,7 @@ import {
   JOB_AS_ARTISAN_COLUMNS,
   jobAsArtisanView,
   jobRow,
+  noJob,
   type JobRow,
 } from "../jobs/rows";
 import { browse, type Narrowing } from "../profiles";
@@ -283,10 +284,6 @@ async function invitedTo(ctx: Context, jobId: string) {
     .from(invitations)
     .where(eq(invitations.jobId, jobId));
   return new Set(rows.map((row) => row.artisanId));
-}
-
-function noJob() {
-  return refuse("not-found", "That Job does not exist.");
 }
 
 function notOpen() {

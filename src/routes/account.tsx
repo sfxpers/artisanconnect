@@ -1,12 +1,12 @@
 import { useState, type ReactNode } from "react";
 import { Link, createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
+import { useConfirm } from "@/components/confirm";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { CODE_INPUT, useAppForm } from "@/components/form";
+import { useAction } from "@/components/use-action";
 import { Page, Refusal } from "@/components/page";
-import { EMAIL_CODE } from "@/domain/accounts/inputs";
 import {
   changeEmail,
   changeNames,
@@ -142,35 +142,21 @@ function StandingRows({ standing }: { standing: Me["standing"] }) {
  * Admin's reason, or not yet seen by anyone else; and a way to give new ones.
  */
 function NamesRow({ me }: { me: Me }) {
-  const router = useRouter();
   const { names } = me;
   const [editing, setEditing] = useState(false);
-  const [name, setName] = useState(me.name);
-  const [tradingName, setTradingName] = useState(me.tradingName ?? "");
-  const [busy, setBusy] = useState(false);
-  const [refusal, setRefusal] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
-
-  async function save() {
-    setBusy(true);
-    setRefusal(null);
-    const result = await changeNames({ data: { name, tradingName } });
-    setBusy(false);
-    if (!result.ok) return setRefusal(result.refusal.message);
-    setEditing(false);
-    setDone(result.value.names === "shown" ? t.names.saved : t.names.held);
-    await router.invalidate();
-  }
-
-  async function withdraw() {
-    setBusy(true);
-    setRefusal(null);
-    const result = await withdrawNames();
-    setBusy(false);
-    if (!result.ok) return setRefusal(result.refusal.message);
-    setDone(null);
-    await router.invalidate();
-  }
+  const { busy, refusal, run } = useAction();
+  const form = useAppForm({
+    defaultValues: { name: me.name, tradingName: me.tradingName ?? "" },
+    onSubmit: ({ value }) =>
+      run(
+        () => changeNames({ data: value }),
+        (saved) => {
+          setEditing(false);
+          setDone(saved.names === "shown" ? t.names.saved : t.names.held);
+        },
+      ),
+  });
 
   return (
     <div className="space-y-3 p-4">
@@ -181,56 +167,44 @@ function NamesRow({ me }: { me: Me }) {
             {[names.beingChecked.name, names.beingChecked.tradingName].filter(Boolean).join(" · ")}
           </div>
           <p className="text-xs text-muted-foreground">{t.names.beingCheckedLead}</p>
-          <Button variant="outline" size="sm" disabled={busy} onClick={() => void withdraw()}>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={busy}
+            onClick={() => void run(withdrawNames, () => setDone(null))}
+          >
             {t.names.withdraw}
           </Button>
         </div>
       )}
-      {names.refused && (
-        <p role="alert" className="text-sm text-destructive">
-          {t.names.refused(names.refused.reason)}
-        </p>
-      )}
+      {names.refused && <Refusal message={t.names.refused(names.refused.reason)} />}
       {!names.shown && !names.beingChecked && (
         <p className="text-sm text-muted-foreground">{t.names.notShown}</p>
       )}
       {done && <p className="text-sm text-muted-foreground">{done}</p>}
       {editing ? (
-        <form
-          className="space-y-3"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void save();
-          }}
-        >
-          <div className="space-y-1.5">
-            <Label htmlFor="name">{copy.signUp.names.name}</Label>
-            <Input
-              id="name"
-              autoComplete="name"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="tradingName">{copy.signUp.names.tradingName}</Label>
-            <Input
-              id="tradingName"
-              autoComplete="organization"
-              value={tradingName}
-              onChange={(event) => setTradingName(event.target.value)}
-            />
-          </div>
-          <Refusal message={refusal} />
-          <div className="flex gap-2">
-            <Button type="submit" disabled={busy}>
-              {t.names.save}
-            </Button>
-            <Button type="button" variant="ghost" onClick={() => setEditing(false)}>
-              {t.names.cancel}
-            </Button>
-          </div>
-        </form>
+        <form.AppForm>
+          <form.Form className="space-y-3">
+            <form.AppField name="name">
+              {(field) => <field.TextField label={copy.signUp.names.name} autoComplete="name" />}
+            </form.AppField>
+            <form.AppField name="tradingName">
+              {(field) => (
+                <field.TextField
+                  label={copy.signUp.names.tradingName}
+                  autoComplete="organization"
+                />
+              )}
+            </form.AppField>
+            <Refusal message={refusal} />
+            <div className="flex gap-2">
+              <form.Submit>{t.names.save}</form.Submit>
+              <Button type="button" variant="ghost" onClick={() => setEditing(false)}>
+                {t.names.cancel}
+              </Button>
+            </div>
+          </form.Form>
+        </form.AppForm>
       ) : (
         <>
           {!names.beingChecked && (
@@ -253,125 +227,89 @@ function EmailRow({ email }: { email: string }) {
   const router = useRouter();
   const e = t.emailChange;
   const [stage, setStage] = useState<"shown" | "new" | "code">("shown");
-  const [newEmail, setNewEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [code, setCode] = useState("");
-  const [busy, setBusy] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);
   const [done, setDone] = useState(false);
-
-  async function send() {
-    setBusy(true);
-    setRefusal(null);
-    const result = await requestEmailChange({ data: { email: newEmail, password } });
-    setBusy(false);
-    if (!result.ok) return setRefusal(result.refusal.message);
-    setPassword("");
-    setNewEmail(result.value.email);
-    setStage("code");
-  }
-
-  async function confirm() {
-    setBusy(true);
-    setRefusal(null);
-    const result = await changeEmail({ data: { email: newEmail, code } });
-    setBusy(false);
-    if (!result.ok) return setRefusal(result.refusal.message);
-    setStage("shown");
-    setCode("");
-    setDone(true);
-    await router.invalidate();
-  }
+  const form = useAppForm({
+    defaultValues: { email: "", password: "", code: "" },
+    onSubmit: async ({ value, formApi }) => {
+      setRefusal(null);
+      if (stage === "new") {
+        const sent = await requestEmailChange({
+          data: { email: value.email, password: value.password },
+        });
+        if (!sent.ok) return setRefusal(sent.refusal.message);
+        formApi.setFieldValue("email", sent.value.email);
+        return setStage("code");
+      }
+      const result = await changeEmail({ data: { email: value.email, code: value.code } });
+      if (!result.ok) return setRefusal(result.refusal.message);
+      setStage("shown");
+      setDone(true);
+      await router.invalidate();
+    },
+  });
 
   function cancel() {
     setStage("shown");
     setRefusal(null);
-    setPassword("");
-    setCode("");
   }
 
   return (
     <div className="space-y-2">
       <div>{email}</div>
       {done && <p className="text-xs text-muted-foreground">{e.done}</p>}
-      {stage === "shown" && (
+      {stage === "shown" ? (
         <Button
           variant="outline"
           size="sm"
           onClick={() => {
             setDone(false);
-            setNewEmail("");
+            form.reset();
             setStage("new");
           }}
         >
           {e.change}
         </Button>
-      )}
-      {stage === "new" && (
-        <form
-          className="space-y-2"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void send();
-          }}
-        >
-          <p className="text-xs text-muted-foreground">{e.lead}</p>
-          <Label htmlFor="new-email">{e.newEmail}</Label>
-          <Input
-            id="new-email"
-            type="email"
-            autoComplete="email"
-            value={newEmail}
-            onChange={(event) => setNewEmail(event.target.value)}
-          />
-          <Label htmlFor="current-password">{e.password}</Label>
-          <Input
-            id="current-password"
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
-          <Refusal message={refusal} />
-          <div className="flex gap-2">
-            <Button type="submit" size="sm" disabled={busy}>
-              {e.send}
-            </Button>
-            <Button type="button" size="sm" variant="ghost" onClick={cancel}>
-              {e.cancel}
-            </Button>
-          </div>
-        </form>
-      )}
-      {stage === "code" && (
-        <form
-          className="space-y-2"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void confirm();
-          }}
-        >
-          <p className="text-xs text-muted-foreground">{e.sent(newEmail)}</p>
-          <Label htmlFor="email-code">{e.code}</Label>
-          <Input
-            id="email-code"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={EMAIL_CODE.length}
-            className="max-w-40"
-            value={code}
-            onChange={(event) => setCode(event.target.value)}
-          />
-          <Refusal message={refusal} />
-          <div className="flex gap-2">
-            <Button type="submit" size="sm" disabled={busy}>
-              {e.submit}
-            </Button>
-            <Button type="button" size="sm" variant="ghost" onClick={cancel}>
-              {e.cancel}
-            </Button>
-          </div>
-        </form>
+      ) : (
+        <form.AppForm>
+          <form.Form className="space-y-2">
+            {stage === "new" ? (
+              <>
+                <p className="text-xs text-muted-foreground">{e.lead}</p>
+                <form.AppField name="email">
+                  {(field) => (
+                    <field.TextField label={e.newEmail} type="email" autoComplete="email" />
+                  )}
+                </form.AppField>
+                <form.AppField name="password">
+                  {(field) => (
+                    <field.TextField
+                      label={e.password}
+                      type="password"
+                      autoComplete="current-password"
+                    />
+                  )}
+                </form.AppField>
+              </>
+            ) : (
+              <>
+                <p className="text-xs text-muted-foreground">{e.sent(form.state.values.email)}</p>
+                <form.AppField name="code">
+                  {(field) => (
+                    <field.TextField label={e.code} className="max-w-40" {...CODE_INPUT} />
+                  )}
+                </form.AppField>
+              </>
+            )}
+            <Refusal message={refusal} />
+            <div className="flex gap-2">
+              <form.Submit size="sm">{stage === "new" ? e.send : e.submit}</form.Submit>
+              <Button type="button" size="sm" variant="ghost" onClick={cancel}>
+                {e.cancel}
+              </Button>
+            </div>
+          </form.Form>
+        </form.AppForm>
       )}
     </div>
   );
@@ -382,22 +320,18 @@ function EmailRow({ email }: { email: string }) {
  * download, and a way to ask for a copy or for erasure, which closes it.
  */
 function DataRequests() {
+  const confirm = useConfirm();
   const requests = Route.useLoaderData();
-  const router = useRouter();
   const navigate = useNavigate();
   const d = t.data;
-  const [busy, setBusy] = useState(false);
-  const [refusal, setRefusal] = useState<string | null>(null);
+  const { busy, refusal, run } = useAction();
 
   async function ask(kind: "copy" | "erasure") {
-    if (kind === "erasure" && !window.confirm(d.confirmErasure)) return;
-    setBusy(true);
-    setRefusal(null);
-    const result = await requestData({ data: { kind } });
-    setBusy(false);
-    if (!result.ok) return setRefusal(result.refusal.message);
-    await router.invalidate();
-    if (kind === "erasure") await navigate({ to: "/" });
+    if (kind === "erasure" && !(await confirm(d.confirmErasure))) return;
+    void run(
+      () => requestData({ data: { kind } }),
+      () => kind === "erasure" && navigate({ to: "/" }),
+    );
   }
 
   return (
@@ -432,10 +366,10 @@ function DataRequests() {
       )}
       <Refusal message={refusal} />
       <div className="flex flex-wrap gap-2">
-        <Button variant="outline" size="sm" disabled={busy} onClick={() => void ask("copy")}>
+        <Button variant="outline" size="sm" disabled={busy} onClick={() => ask("copy")}>
           {d.copy}
         </Button>
-        <Button variant="outline" size="sm" disabled={busy} onClick={() => void ask("erasure")}>
+        <Button variant="outline" size="sm" disabled={busy} onClick={() => ask("erasure")}>
           {d.erasure}
         </Button>
       </div>
@@ -445,28 +379,20 @@ function DataRequests() {
 
 /** Closing the Account, refused while an Engagement is in progress. */
 function CloseAccount() {
-  const router = useRouter();
+  const confirm = useConfirm();
   const navigate = useNavigate();
   const c = t.close;
-  const [busy, setBusy] = useState(false);
-  const [refusal, setRefusal] = useState<string | null>(null);
+  const { busy, refusal, run } = useAction();
 
   async function close() {
-    if (!window.confirm(c.confirm)) return;
-    setBusy(true);
-    setRefusal(null);
-    const result = await closeAccount();
-    setBusy(false);
-    if (!result.ok) return setRefusal(result.refusal.message);
-    await router.invalidate();
-    await navigate({ to: "/" });
+    if (await confirm(c.confirm)) void run(closeAccount, () => navigate({ to: "/" }));
   }
 
   return (
     <div className="space-y-2">
       <p className="text-xs text-muted-foreground">{c.lead}</p>
       <Refusal message={refusal} />
-      <Button variant="destructive" size="sm" disabled={busy} onClick={() => void close()}>
+      <Button variant="destructive" size="sm" disabled={busy} onClick={close}>
         {c.submit}
       </Button>
     </div>
@@ -475,52 +401,48 @@ function CloseAccount() {
 
 /** An Artisan's VAT number, stated or cleared: their Quotes' amounts include VAT. */
 function VatNumber({ vatNumber }: { vatNumber: string | null }) {
-  const router = useRouter();
   const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState(vatNumber ?? "");
-  const [busy, setBusy] = useState(false);
-  const [refusal, setRefusal] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const { busy, refusal, run } = useAction();
+  const form = useAppForm({
+    defaultValues: { vatNumber: vatNumber ?? "" },
+    onSubmit: ({ value }) => save(value.vatNumber),
+  });
 
-  async function save(next: string) {
-    setBusy(true);
-    setRefusal(null);
-    const result = await setVatNumber({ data: { vatNumber: next } });
-    setBusy(false);
-    if (!result.ok) return setRefusal(result.refusal.message);
-    setEditing(false);
-    setDone(true);
-    await router.invalidate();
+  function save(next: string) {
+    return run(
+      () => setVatNumber({ data: { vatNumber: next } }),
+      () => {
+        setEditing(false);
+        setDone(true);
+      },
+    );
   }
 
   if (editing) {
     return (
-      <form
-        className="space-y-2"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void save(value);
-        }}
-      >
-        <Input
-          aria-label={t.vat.label}
-          inputMode="numeric"
-          placeholder={t.vat.placeholder}
-          className="max-w-48"
-          value={value}
-          onChange={(event) => setValue(event.target.value)}
-        />
-        <p className="text-xs text-muted-foreground">{t.vat.lead}</p>
-        <Refusal message={refusal} />
-        <div className="flex gap-2">
-          <Button type="submit" size="sm" disabled={busy}>
-            {t.vat.save}
-          </Button>
-          <Button type="button" size="sm" variant="ghost" onClick={() => setEditing(false)}>
-            {t.vat.cancel}
-          </Button>
-        </div>
-      </form>
+      <form.AppForm>
+        <form.Form className="space-y-2">
+          <form.AppField name="vatNumber">
+            {(field) => (
+              <field.TextField
+                label={t.vat.label}
+                description={t.vat.lead}
+                inputMode="numeric"
+                placeholder={t.vat.placeholder}
+                className="max-w-48"
+              />
+            )}
+          </form.AppField>
+          <Refusal message={refusal} />
+          <div className="flex gap-2">
+            <form.Submit size="sm">{t.vat.save}</form.Submit>
+            <Button type="button" size="sm" variant="ghost" onClick={() => setEditing(false)}>
+              {t.vat.cancel}
+            </Button>
+          </div>
+        </form.Form>
+      </form.AppForm>
     );
   }
   return (
@@ -534,7 +456,7 @@ function VatNumber({ vatNumber }: { vatNumber: string | null }) {
           size="sm"
           onClick={() => {
             setDone(false);
-            setValue(vatNumber ?? "");
+            form.reset();
             setEditing(true);
           }}
         >

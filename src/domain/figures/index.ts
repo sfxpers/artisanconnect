@@ -25,13 +25,12 @@ import {
 } from "../schema";
 import { defineSection } from "../section";
 import { DEFAULT_FIGURE_PERIOD, FIGURE_PERIODS, periodDays, type FigurePeriod } from "./periods";
+import { DAY_MS } from "../sa-days";
 
 // The Admin's figures (#142): how the marketplace is doing over a period,
 // with no targets. Jobs and Hires are counted by when they were posted and
 // Hired, and what became of them since; money, Leaving, and refused sends by
 // when they happened.
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** The ledger rows each money figure adds up. */
 const MONEY = {

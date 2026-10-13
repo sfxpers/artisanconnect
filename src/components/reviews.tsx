@@ -1,10 +1,11 @@
 import { useState } from "react";
+import { Radio } from "@base-ui/react/radio";
+import { RadioGroup } from "@/components/ui/radio-group";
 import { Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { useAppForm } from "@/components/form";
 import { Refusal } from "@/components/page";
 import { ReportAction } from "@/components/report";
 import { useAction } from "@/components/use-action";
@@ -109,63 +110,65 @@ export function WriteReview({
   reviews: EngagementReviewsView;
   asClient: boolean;
 }) {
-  const action = useAction();
-  const [rating, setRating] = useState<number | null>(null);
-  const [comment, setComment] = useState("");
+  const { refusal, run } = useAction();
+  const form = useAppForm({
+    defaultValues: { rating: null as number | null, comment: "" },
+    onSubmit: ({ value: { rating, comment } }) =>
+      rating === null || run(() => writeReview({ data: { engagementId, rating, comment } })),
+  });
   if (!reviews?.open || reviews.mine) return null;
   const of = asClient ? t.theArtisan : t.theClient;
   return (
-    <form
-      className="space-y-3 rounded-lg border p-4"
-      onSubmit={(event) => {
-        event.preventDefault();
-        if (rating === null) return;
-        void action.run(() => writeReview({ data: { engagementId, rating, comment } }));
-      }}
-    >
-      <div className="space-y-1">
-        <h3 className="font-semibold">{t.write(of)}</h3>
-        <p className="text-xs text-muted-foreground">{t.writeLead(formatDate(reviews.closesAt))}</p>
-      </div>
-      <div className="space-y-1.5">
-        <span id="review-rating" className="text-sm font-medium">
-          {t.rating}
-        </span>
-        <div role="radiogroup" aria-labelledby="review-rating" className="flex gap-1">
-          {[1, 2, 3, 4, 5].map((n) => (
-            <button
-              key={n}
-              type="button"
-              role="radio"
-              aria-checked={rating === n}
-              aria-label={t.outOf(n)}
-              title={t.outOf(n)}
-              onClick={() => setRating(n)}
-              className="rounded outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <Star
-                aria-hidden
-                className={`size-7 ${rating !== null && n <= rating ? "fill-current text-accent-foreground" : "text-muted-foreground/50"}`}
-              />
-            </button>
-          ))}
+    <form.AppForm>
+      <form.Form className="space-y-3 rounded-lg border p-4">
+        <div className="space-y-1">
+          <h3 className="font-semibold">{t.write(of)}</h3>
+          <p className="text-xs text-muted-foreground">
+            {t.writeLead(formatDate(reviews.closesAt))}
+          </p>
         </div>
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="review-comment">{t.comment}</Label>
-        <Textarea
-          id="review-comment"
-          value={comment}
-          rows={3}
-          maxLength={REVIEW_COMMENT_MAX}
-          onChange={(event) => setComment(event.target.value)}
-        />
-      </div>
-      <Refusal message={action.refusal} />
-      <Button type="submit" disabled={action.busy || rating === null}>
-        {t.send}
-      </Button>
-    </form>
+        <form.Field name="rating">
+          {(field) => (
+            <div className="space-y-1.5">
+              <span id="review-rating" className="text-sm font-medium">
+                {t.rating}
+              </span>
+              {/* Base UI's own Radio, as shadcn's item always draws a dot, not a star. */}
+              <RadioGroup
+                aria-labelledby="review-rating"
+                value={field.state.value}
+                onValueChange={(n) => field.handleChange(n as number)}
+                className="flex w-auto gap-1"
+              >
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <Radio.Root
+                    key={n}
+                    value={n}
+                    aria-label={t.outOf(n)}
+                    title={t.outOf(n)}
+                    className="rounded outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <Star
+                      aria-hidden
+                      className={`size-7 ${field.state.value !== null && n <= field.state.value ? "fill-current text-accent-foreground" : "text-muted-foreground/50"}`}
+                    />
+                  </Radio.Root>
+                ))}
+              </RadioGroup>
+            </div>
+          )}
+        </form.Field>
+        <form.AppField name="comment">
+          {(field) => (
+            <field.TextareaField label={t.comment} rows={3} maxLength={REVIEW_COMMENT_MAX} />
+          )}
+        </form.AppField>
+        <Refusal message={refusal} />
+        <form.Subscribe selector={(state) => state.values.rating !== null}>
+          {(rated) => <form.Submit disabled={!rated}>{t.send}</form.Submit>}
+        </form.Subscribe>
+      </form.Form>
+    </form.AppForm>
   );
 }
 

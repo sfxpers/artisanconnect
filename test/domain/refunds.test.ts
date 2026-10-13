@@ -176,14 +176,22 @@ describe("a Refund by the Artisan", () => {
     ]);
 
     expect(approved).toEqual({ ok: true, value: null });
-    const money = (await domain.jobs.view(client.actor, { jobId }))?.engagement?.money;
-    expect(money).toMatchObject({ unreleasedCents: 0 });
-    expect(money!.releasedCents + money!.refundedCents).toBe(200_000);
-    if (refund.ok) {
-      expect(money).toMatchObject({ releasedCents: 50_000, refundedCents: 150_000 });
-    } else {
-      expect(refund.refusal.reason).toBe("nothing-unreleased");
-    }
+    const money = (await domain.jobs.view(client.actor, { jobId }))!.engagement!.money;
+    // Whichever ran first, the money is all accounted for, once.
+    expect([
+      { refused: null, unreleasedCents: 0, releasedCents: 50_000, refundedCents: 150_000 },
+      {
+        refused: "nothing-unreleased",
+        unreleasedCents: 0,
+        releasedCents: 200_000,
+        refundedCents: 0,
+      },
+    ]).toContainEqual({
+      refused: refund.ok ? null : refund.refusal.reason,
+      unreleasedCents: money.unreleasedCents,
+      releasedCents: money.releasedCents,
+      refundedCents: money.refundedCents,
+    });
   });
 
   test("on a Completed Engagement is refused: nothing is unreleased", async () => {

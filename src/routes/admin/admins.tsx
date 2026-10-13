@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,9 +11,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { useAppForm } from "@/components/form";
 import { initials } from "@/components/app-header";
+import { useAction } from "@/components/use-action";
 import { Page, Refusal, withSidebar } from "@/components/page";
 import { getAdmins, inviteAdmin, removeAdmin } from "@/web/admin";
 import { copy, formatDate } from "@/web/copy";
@@ -51,21 +51,16 @@ function Admins() {
 }
 
 function AdminRow({ admin }: { admin: Admin }) {
-  const router = useRouter();
   const navigate = useNavigate();
   const [confirming, setConfirming] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [refusal, setRefusal] = useState<string | null>(null);
+  const { busy, refusal, run } = useAction();
 
-  async function remove() {
-    setBusy(true);
-    setRefusal(null);
-    const result = await removeAdmin({ data: { adminId: admin.adminId } });
-    setBusy(false);
-    if (!result.ok) return setRefusal(result.refusal.message);
-    await router.invalidate();
+  function remove() {
     // Removing yourself signs you out.
-    if (admin.you) await navigate({ to: "/admin/sign-in" });
+    void run(
+      () => removeAdmin({ data: { adminId: admin.adminId } }),
+      () => admin.you && navigate({ to: "/admin/sign-in" }),
+    );
   }
 
   return (
@@ -101,7 +96,7 @@ function AdminRow({ admin }: { admin: Admin }) {
         <div className="space-y-3 rounded-lg border p-3">
           <p className="text-sm">{t.removeLead(admin.email)}</p>
           <div className="flex gap-2">
-            <Button variant="destructive" size="sm" disabled={busy} onClick={() => void remove()}>
+            <Button variant="destructive" size="sm" disabled={busy} onClick={remove}>
               {t.confirm}
             </Button>
             <Button variant="ghost" size="sm" onClick={() => setConfirming(false)}>
@@ -116,23 +111,21 @@ function AdminRow({ admin }: { admin: Admin }) {
 }
 
 function InviteCard({ admins }: { admins: Admin[] }) {
-  const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [refusal, setRefusal] = useState<string | null>(null);
   const [invited, setInvited] = useState<string | null>(null);
-
-  async function invite() {
-    setBusy(true);
-    setRefusal(null);
-    setInvited(null);
-    const result = await inviteAdmin({ data: { email } });
-    setBusy(false);
-    if (!result.ok) return setRefusal(result.refusal.message);
-    setInvited(result.value.email);
-    setEmail("");
-    await router.invalidate();
-  }
+  const { refusal, run } = useAction();
+  const form = useAppForm({
+    defaultValues: { email: "" },
+    onSubmit: ({ value, formApi }) => {
+      setInvited(null);
+      return run(
+        () => inviteAdmin({ data: value }),
+        (sent) => {
+          setInvited(sent.email);
+          formApi.reset();
+        },
+      );
+    },
+  });
 
   return (
     <Card size="sm" className="self-start">
@@ -140,34 +133,24 @@ function InviteCard({ admins }: { admins: Admin[] }) {
         <CardTitle>{t.invite}</CardTitle>
         <CardDescription>{t.inviteLead}</CardDescription>
       </CardHeader>
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          void invite();
-        }}
-      >
-        <CardContent className="space-y-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="invite-email">{t.email}</Label>
-            <Input
-              id="invite-email"
-              type="email"
-              autoComplete="off"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-            />
-          </div>
-          <Refusal message={refusal} />
-          {invited && admins.some((admin) => admin.email === invited) && (
-            <p className="text-sm text-muted-foreground">{t.invited(invited)}</p>
-          )}
-        </CardContent>
-        <CardFooter className="pt-4">
-          <Button type="submit" disabled={busy || !email.trim()}>
-            {t.send}
-          </Button>
-        </CardFooter>
-      </form>
+      <form.AppForm>
+        <form.Form>
+          <CardContent className="space-y-3">
+            <form.AppField name="email">
+              {(field) => <field.TextField label={t.email} type="email" autoComplete="off" />}
+            </form.AppField>
+            <Refusal message={refusal} />
+            {invited && admins.some((admin) => admin.email === invited) && (
+              <p className="text-sm text-muted-foreground">{t.invited(invited)}</p>
+            )}
+          </CardContent>
+          <CardFooter className="pt-4">
+            <form.Subscribe selector={(state) => !!state.values.email.trim()}>
+              {(given) => <form.Submit disabled={!given}>{t.send}</form.Submit>}
+            </form.Subscribe>
+          </CardFooter>
+        </form.Form>
+      </form.AppForm>
     </Card>
   );
 }

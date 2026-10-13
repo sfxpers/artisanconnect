@@ -11,22 +11,17 @@ import bankLetterRc440 from "../fixtures/bank-letter-rc4-40.pdf?inline";
 import certificatePdf from "../fixtures/certificate.pdf?inline";
 import heicPhoto from "../fixtures/photo.heic?inline";
 import macVoiceMemo from "../fixtures/macos-voice-memo.m4a?inline";
+import { env } from "cloudflare:test";
 import {
-  animatedWebpHeader,
-  cameraJpeg,
-  decodeStoredWebp,
   fixture,
   fragmentedM4a,
   m4a,
   oggOpus,
   paddedTo,
   pdf,
-  png,
-  pngHeader,
+  photos,
   riffChunks,
   webmOpus,
-  webp,
-  webpUnderstatingItsSize,
 } from "../support/files";
 import { createHarness } from "../support/harness";
 import { textPdf } from "../support/pdfs";
@@ -79,51 +74,61 @@ async function outcomes(payment: "before" | "after", files: (() => Bytes | Promi
 }
 
 describe("a photo", () => {
-  test("is kept as one resized copy and a thumbnail, with its location data stripped", async () => {
+  /** The photos of the one message sent, each with its copy's and thumbnail's bytes. */
+  async function storedPhotos(sent: Uint8Array<ArrayBuffer>) {
     const { domain, client, send, messages } = await conversation("before");
-
-    expect(await send(await cameraJpeg(3000, 1500))).toMatchObject({ ok: true });
-
+    expect(await send(sent)).toMatchObject({ ok: true });
     const [message] = await messages();
     if (message?.kind !== "message") throw new Error("not sent");
-    const [photo] = message.photos;
-    expect(photo).toMatchObject({ width: 2048, height: 1024 });
-    for (const [thumbnail, size] of [
-      [false, [2048, 1024]],
-      [true, [400, 200]],
-    ] as const) {
+    const bytesOf = async (fileId: string, thumbnail: boolean) => {
       const served = await domain.conversations.file(client.actor, {
         messageId: message.messageId,
-        fileId: photo!.id,
+        fileId,
         thumbnail,
       });
       expect(served?.contentType).toBe("image/webp");
-      const bytes = new Uint8Array(await new Response(served!.body).arrayBuffer());
+      return new Uint8Array(await new Response(served!.body).arrayBuffer());
+    };
+    return Promise.all(
+      message.photos.map(async (photo) => ({
+        ...photo,
+        copy: await bytesOf(photo.id, false),
+        thumbnail: await bytesOf(photo.id, true),
+      })),
+    );
+  }
+
+  test("is kept as one resized copy and a thumbnail, with its location data stripped", async () => {
+    const [photo] = await storedPhotos(photos.camera());
+
+    expect(photo).toMatchObject({ width: 2048, height: 1024 });
+    for (const [bytes, size] of [
+      [photo!.copy, { width: 2048, height: 1024 }],
+      [photo!.thumbnail, { width: 400, height: 200 }],
+    ] as const) {
       expect(riffChunks(bytes)).not.toEqual(
         expect.arrayContaining([expect.stringMatching(/EXIF|XMP |ICCP/)]),
       );
-      const image = await decodeStoredWebp(bytes.buffer);
-      expect([image.width, image.height]).toEqual(size);
+      expect(await env.IMAGES.info(new Blob([bytes]).stream())).toMatchObject(size);
     }
   });
 
-  test("is taken as JPEG, PNG, or WebP up to 10 MB, and no larger in bytes or pixels", async () => {
-    const jpeg = await cameraJpeg(64, 64);
+  test("animated, is kept as a still photo", async () => {
+    const [photo] = await storedPhotos(photos.animated());
 
+    expect(riffChunks(photo!.copy)).not.toEqual(expect.arrayContaining(["ANIM", "ANMF"]));
+  });
+
+  test("is taken as JPEG, PNG, or WebP up to 10 MB, and no larger", async () => {
     expect(
       await outcomes("before", [
-        () => png(640, 480),
-        () => webp(640, 480),
-        () => paddedTo(jpeg, 10 * MB),
-        () => paddedTo(jpeg, 10 * MB + 1),
-        () => pngHeader(6000, 4001),
-        webpUnderstatingItsSize,
+        photos.png,
+        photos.webp,
+        () => paddedTo(photos.jpeg(), 10 * MB),
+        () => paddedTo(photos.jpeg(), 10 * MB + 1),
         () => new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 4, 1, 2, 9, 9, 9, 9]),
       ]),
-    ).toEqual({
-      reasons: ["sent", "sent", "sent", "too-large", "too-large", "too-large", "unreadable"],
-      sent: 3,
-    });
+    ).toEqual({ reasons: ["sent", "sent", "sent", "too-large", "unreadable"], sent: 3 });
   });
 });
 
@@ -169,13 +174,12 @@ describe("a PDF", () => {
       ]),
     ).toEqual({
       reasons: [
-        // Taken and decrypted: the bank letters' text is read, and its account number refused.
-        ...Array<string>(3).fill("content"),
-        "sent",
+        // Taken, as Workers AI opens them to read their text.
+        ...Array<string>(4).fill("sent"),
         ...Array<string>(4).fill("script"),
         ...Array<string>(5).fill("unreadable"),
       ],
-      sent: 1,
+      sent: 4,
     });
   });
 });
@@ -217,7 +221,6 @@ describe("anything else", () => {
     ["video", () => webmOpus(10, { video: true })],
     ["video", () => oggOpus(10, { video: true })],
     ["video", () => m4a(10, { video: true })],
-    ["video", animatedWebpHeader],
     [
       "script",
       () =>

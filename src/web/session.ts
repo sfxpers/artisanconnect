@@ -69,8 +69,20 @@ export function sendCookies(cookies: string[]) {
   if (cookies.length > 0) setResponseHeader("set-cookie", cookies);
 }
 
-/** Turnstile's answer for this request, as a refusal when it fails. */
+/**
+ * A flood from one network, as a refusal. It is stopped here, by the Workers
+ * Rate Limiting binding, so a flood never reaches the module's D1.
+ */
+export async function floodRefusal(action: "guarded" | "code-entry") {
+  const { success } = await env.IP_LIMIT.limit({ key: `${action}:${requestIp()}` });
+  if (success) return null;
+  return refuse("slow-down", "Too many tries from your network. Wait a minute and try again.");
+}
+
+/** Turnstile's answer, and the network's limit, for a sign-up, sign-in, or code request. */
 export async function turnstileRefusal(token: string | undefined) {
+  const flood = await floodRefusal("guarded");
+  if (flood) return flood;
   if (await passesTurnstile(env, token, requestIp())) return null;
   return refuse("not-a-person", "We could not check that you are a person. Try again.");
 }

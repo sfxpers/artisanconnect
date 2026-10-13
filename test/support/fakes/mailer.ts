@@ -1,4 +1,4 @@
-import type { Email, Mailer } from "../ports";
+import type { Email, Mailer } from "@/domain/ports";
 
 export type FakeMailer = Mailer & {
   /** Every email sent, oldest first. */

@@ -1,10 +1,11 @@
-import { and, desc, eq, exists, isNull, notExists, sql } from "drizzle-orm";
+import { and, desc, eq, exists, isNull, not, notExists, sql } from "drizzle-orm";
 import type { Actor } from "../actor";
 import type { Context } from "../context";
 import { invitationOf } from "../invitations";
 import { inView, JOB_AS_ARTISAN_COLUMNS, jobAsArtisanView } from "../jobs/rows";
 import { liveQuoteOf } from "../quotes/rows";
 import { ok, refuse } from "../result";
+import { suspendedNow } from "../standing";
 import { jobMatches, jobs, regions, suburbs } from "../schema";
 import { defineSection } from "../section";
 import { batchClocks } from "./batches";
@@ -38,6 +39,8 @@ export const matchesSection = defineSection({
             inView(),
             notInvited(ctx),
             notQuoted(ctx),
+            // A Suspended Artisan cannot be offered a Job (GLOSSARY.md), nor keep one offered before.
+            not(suspendedNow(ctx, jobMatches.artisanId)),
           ),
         )
         .orderBy(desc(jobMatches.offeredAt), desc(jobs.openedAt));

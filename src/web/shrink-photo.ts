@@ -1,8 +1,8 @@
 // Browser only. Before a photo is sent it is drawn again at most 2048 pixels
-// on its long side (#113): that cuts its size over mobile data and keeps the
-// Worker's decode well inside its memory, since the domain refuses a photo
-// over 12 megapixels. Drawing it on a canvas also turns an iPhone's HEIC
-// photo into a JPEG in Safari, which can decode HEIC.
+// on its long side (#113), which cuts its size over mobile data. Drawing it on
+// a canvas also turns an iPhone's HEIC photo into a JPEG in Safari, which can
+// decode HEIC. Custom: the Images binding draws on the server, after the
+// full photo has crossed the mobile network.
 
 /** As `PHOTO_LONG_SIDE` in the domain's photo module, which runs only on the server. */
 const LONG_SIDE = 2048;

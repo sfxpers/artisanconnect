@@ -22,7 +22,7 @@ export function latin1(bytes: Uint8Array): string {
 }
 
 export function startsWith(bytes: Uint8Array, prefix: readonly number[] | string, at = 0): boolean {
-  const expected = typeof prefix === "string" ? [...prefix].map((c) => c.charCodeAt(0)) : prefix;
+  const expected = typeof prefix === "string" ? Array.from(prefix, (c) => c.charCodeAt(0)) : prefix;
   return expected.every((byte, i) => bytes[at + i] === byte);
 }
 

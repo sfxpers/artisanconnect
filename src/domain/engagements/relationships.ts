@@ -1,6 +1,7 @@
 import { and, desc, eq, min } from "drizzle-orm";
 import type { Context } from "../context";
 import { accounts, engagements } from "../schema";
+import { DAY_MS } from "../sa-days";
 
 // The Protected Relationship Period (#139, ADR 0014): the 365 days after the
 // first Payment in a Client Relationship, during which all work between the
@@ -9,8 +10,6 @@ import { accounts, engagements } from "../schema";
 // Engagements; the Admin sees it for every Client Relationship.
 
 const PROTECTED_RELATIONSHIP_DAYS = 365;
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 function protectedUntilAfter(firstPaymentAt: Date) {
   return new Date(firstPaymentAt.getTime() + PROTECTED_RELATIONSHIP_DAYS * DAY_MS);
