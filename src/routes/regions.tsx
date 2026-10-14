@@ -75,12 +75,12 @@ function Regions() {
                       size="sm"
                       aria-expanded={expanded}
                       aria-controls={`suburbs-${region.id}`}
-                      aria-label={expanded ? t.close(region.name) : t.open(region.name)}
                       onClick={() => setOpen(expanded ? null : region.id)}
                     >
                       <span className="text-muted-foreground">
                         {t.suburbs(region.suburbs.length)}
                       </span>
+                      <span className="sr-only">{t.inRegion(region.name)}</span>
                       <ChevronDown
                         className={cn("transition-transform", expanded && "rotate-180")}
                       />

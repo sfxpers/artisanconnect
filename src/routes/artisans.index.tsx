@@ -9,6 +9,7 @@ import { Choose } from "@/components/choose";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { EmptyState, Page } from "@/components/page";
 import { Pager } from "@/components/pager";
+import { TradeTiles } from "@/components/trade-tiles";
 import { RatingSummary } from "@/components/rating";
 import {
   isServiceCategory,
@@ -122,7 +123,10 @@ function Browse() {
             </p>
           </div>
           {!search.category || !listed ? (
-            <EmptyState icon={<Search />}>{t.chooseTrade}</EmptyState>
+            <section className="space-y-3">
+              <p className="text-sm text-muted-foreground">{t.chooseTrade}</p>
+              <TradeTiles region={search.region} />
+            </section>
           ) : count === 0 ? (
             <EmptyState
               icon={<UserSearch />}

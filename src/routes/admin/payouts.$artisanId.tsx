@@ -60,7 +60,7 @@ function MoneyHistory() {
 
 function Total({ label, cents }: { label: string; cents: number }) {
   return (
-    <Card size="sm">
+    <Card>
       <CardHeader>
         <CardDescription>{label}</CardDescription>
         <CardTitle className="text-2xl tabular-nums">{formatRands(cents)}</CardTitle>

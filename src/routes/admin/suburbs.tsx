@@ -68,10 +68,10 @@ function RegionRow({ region }: { region: Region }) {
           size="sm"
           aria-expanded={open}
           aria-controls={`suburbs-${region.id}`}
-          aria-label={open ? t.close(region.name) : t.open(region.name)}
           onClick={() => setOpen(!open)}
         >
           <span className="text-muted-foreground">{t.count(region.suburbs.length)}</span>
+          <span className="sr-only">{t.inRegion(region.name)}</span>
           <ChevronDown className={cn("transition-transform", open && "rotate-180")} />
         </Button>
       </div>

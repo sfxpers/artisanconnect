@@ -1,11 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { issuesOf, useAppForm } from "@/components/form";
-import { Refusal } from "@/components/page";
-import { formatRands } from "@/domain/money";
+import { MoneyLines, Refusal } from "@/components/page";
 import {
   DURATION_MAX_DAYS,
   MATERIALS_BY,
   quoteFields,
+  rands,
   SCOPE_MAX,
   WARRANTY_MAX,
   type MaterialsBy,
@@ -141,20 +141,26 @@ export function QuoteForm({
           />
         )}
       </form.AppField>
-      <form.Subscribe selector={(state) => quoteFields.safeParse(sent(state.values))}>
-        {(parsed) => (
-          <div className="rounded-lg bg-muted/60 p-3 text-sm">
-            <div className="flex items-baseline justify-between gap-3">
-              <span className="text-muted-foreground">{t.total}</span>
-              <span className="text-base font-semibold">
-                {parsed.success ? formatRands(parsed.data.labour + parsed.data.materials) : "–"}
-              </span>
+      {/* The money as lines, from Labour and Materials alone, so it adds up while it is typed. */}
+      <form.Subscribe selector={(state) => sent(state.values)}>
+        {(values) => {
+          const labour = cents(rands(t.labour).safeParse(values.labour));
+          const materials = cents(rands(t.materials).safeParse(values.materials));
+          return (
+            <div className="space-y-2 rounded-lg border bg-muted p-3">
+              <MoneyLines
+                lines={[
+                  { label: t.labourShort, cents: labour },
+                  { label: t.materialsShort, cents: materials },
+                  { label: t.total, cents: labour + materials, total: true },
+                ]}
+              />
+              <p className="text-xs text-muted-foreground">
+                {t.minimum} {vatNumber ? t.includesVat(vatNumber) : t.noVat}
+              </p>
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {t.minimum} {vatNumber ? t.includesVat(vatNumber) : t.noVat}
-            </p>
-          </div>
-        )}
+          );
+        }}
       </form.Subscribe>
       <Refusal message={refusal} />
       <div className="flex gap-2">
@@ -169,6 +175,11 @@ export function QuoteForm({
       </div>
     </form>
   );
+}
+
+/** Cents from a parse of rands, or none while what is typed is not yet an amount. */
+function cents(parsed: { success: boolean; data?: number }) {
+  return parsed.success ? (parsed.data ?? 0) : 0;
 }
 
 /** The Quote as it is sent: no Materials when the Client supplies them, and none typed is zero. */

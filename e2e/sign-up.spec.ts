@@ -81,17 +81,17 @@ test("a Visitor signs up as an Artisan and lands at Verification, then is asked 
     await expect(page.getByRole("tab", { name: tab })).toBeVisible();
   }
 
-  // Every setting in one place, an Artisan's included (#30).
+  // Every setting in one place, an Artisan's included (#30), grouped under headings.
   await header.getByRole("link", { name: "Account" }).click();
   await expect(page.locator("dt")).toHaveText([
     "Kind",
     "Name",
     "Trading name",
     "Email",
+    "Identity Number",
     "VAT number",
     "Payout account",
     "Marketplace rules",
-    "Identity Number",
     "Contact support",
     "Warnings",
     "Request my data",

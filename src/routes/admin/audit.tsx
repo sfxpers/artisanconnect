@@ -29,14 +29,19 @@ const columns: DataColumn<Entry>[] = [
     header: t.at,
     enableSorting: false,
     cell: ({ row }) => (
-      <time className="text-muted-foreground tabular-nums">{formatDate(row.original.at)}</time>
+      <time className="whitespace-normal text-muted-foreground tabular-nums">
+        {formatDate(row.original.at)}
+      </time>
     ),
   },
   {
     id: "who",
     header: t.who,
     enableSorting: false,
-    cell: ({ row }) => row.original.admin ?? t.system,
+    // Every cell wraps, so the log fits a phone and needs no sideways scroll.
+    cell: ({ row }) => (
+      <span className="break-all whitespace-normal">{row.original.admin ?? t.system}</span>
+    ),
   },
   {
     id: "what",

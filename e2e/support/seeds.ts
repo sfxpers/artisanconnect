@@ -300,6 +300,8 @@ export async function screens(env: Env) {
   });
   if (!review.ok) throw new Error(review.refusal.message);
   const awaiting = await done(sipho, "Paint the kitchen");
+  // A message in its Conversation, with a voice note and a PDF, for the Messages tab.
+  await engagementMessage(env, awaiting.engagementId);
   const disputed = await done(themba, "Paint the garage door");
   const opened = await domain.engagements.dispute(client.actor, {
     engagementId: disputed.engagementId,

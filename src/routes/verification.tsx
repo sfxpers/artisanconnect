@@ -51,6 +51,8 @@ function Verification() {
         : SERVICE_CATEGORY_NAMES[category],
     )
     .join(", ");
+  // The first check needed once and not yet sent, to begin with.
+  const first = mine.once.find((check) => check.needed === "required" && check.state === "missing");
   return (
     <Page title={t.title}>
       <NextStepCard
@@ -59,6 +61,18 @@ function Verification() {
       >
         <p className="text-sm text-muted-foreground">{t.lead}</p>
         {!verified && <p className="text-sm">{t.notYet}</p>}
+        {first && (
+          <Button
+            className="w-fit"
+            onClick={() => {
+              const row = document.getElementById(`check-${first.slot}`);
+              row?.scrollIntoView({ block: "center" });
+              row?.querySelector("button")?.focus({ preventScroll: true });
+            }}
+          >
+            {t.startWith(first.name)}
+          </Button>
+        )}
       </NextStepCard>
 
       <Group {...t.groups.once}>
@@ -149,7 +163,7 @@ function CheckRow({ check }: { check: VerificationSlot }) {
   const action =
     check.state === "accepted" ? t.replace : check.state === "missing" ? t.submit : t.submitAgain;
   return (
-    <div className="space-y-3 py-3 first:pt-0 last:pb-0">
+    <div id={`check-${check.slot}`} className="scroll-mt-20 space-y-3 py-3 first:pt-0 last:pb-0">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2 text-sm">

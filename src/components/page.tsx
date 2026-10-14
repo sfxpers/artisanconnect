@@ -22,7 +22,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { MarketplaceRules } from "@/domain/accounts/rules";
 import { formatRands } from "@/domain/money";
@@ -176,18 +175,17 @@ export function MoneyLines({ lines, className }: { lines: MoneyLine[]; className
   return (
     <dl className={cn("space-y-2 text-sm", className)}>
       {lines.map((line, index) => (
-        <div key={index} className="space-y-2">
-          {line.total && <Separator />}
-          <div
-            className={cn(
-              "flex items-baseline justify-between gap-4",
-              line.total && "font-semibold",
-            )}
-          >
-            <dt className={cn(!line.total && "text-muted-foreground")}>{line.label}</dt>
-            <dd className="tabular-nums">{formatRands(line.cents)}</dd>
-          </div>
-          {line.note && <p className="text-xs text-muted-foreground">{line.note}</p>}
+        // Each line one term and its amount, as a description list asks; a note is a second value.
+        <div
+          key={index}
+          className={cn(
+            "flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1",
+            line.total && "border-t pt-2 font-semibold",
+          )}
+        >
+          <dt className={cn(!line.total && "text-muted-foreground")}>{line.label}</dt>
+          <dd className="tabular-nums">{formatRands(line.cents)}</dd>
+          {line.note && <dd className="w-full text-xs text-muted-foreground">{line.note}</dd>}
         </div>
       ))}
     </dl>

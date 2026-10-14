@@ -88,7 +88,7 @@ export function Messages({
 /** One Conversation: what was said, oldest first, and the composer while it takes messages. */
 function Thread({ view, unread }: { view: ConversationView; unread: number }) {
   const router = useRouter();
-  const end = useRef<HTMLDivElement>(null);
+  const end = useRef<HTMLLIElement>(null);
 
   // Opening it reads what was delivered; the unread mark then goes on the next load.
   useEffect(() => {
@@ -111,7 +111,7 @@ function Thread({ view, unread }: { view: ConversationView; unread: number }) {
               <ItemRow item={item} />
             </li>
           ))}
-          <div ref={end} />
+          <li ref={end} aria-hidden />
         </ol>
         {view.takesMessages ? (
           <Composer view={view} />
@@ -286,6 +286,7 @@ function Composer({ view }: { view: ConversationView }) {
         type="file"
         accept={view.afterPayment ? `${PHOTO_TYPES},application/pdf,audio/*` : PHOTO_TYPES}
         multiple
+        aria-label={t.attach}
         className="sr-only"
         onChange={(event) => {
           // Added to what is chosen or recorded already; the input empties to take the same file again.

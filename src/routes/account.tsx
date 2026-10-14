@@ -4,7 +4,7 @@ import { Link, createFileRoute, useNavigate, useRouter } from "@tanstack/react-r
 import { useConfirm } from "@/components/confirm";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTurnstile } from "@/components/turnstile";
 import { CODE_INPUT, useAppForm } from "@/components/form";
 import { useAction } from "@/components/use-action";
@@ -39,60 +39,64 @@ function Account() {
   const navigate = useNavigate();
   return (
     <Page title={t.title} narrow>
-      <Card className="py-0">
-        <dl className="divide-y">
-          <SettingsRow label={t.kind}>{copy.signUp.kind.chosen[me.kind]}</SettingsRow>
-          <SettingsRow label={t.name}>{me.name}</SettingsRow>
-          <SettingsRow label={t.tradingName}>{me.tradingName ?? t.none}</SettingsRow>
+      <SettingsGroup title={t.groups.you}>
+        <SettingsRow label={t.kind}>{copy.signUp.kind.chosen[me.kind]}</SettingsRow>
+        <SettingsRow label={t.name}>{me.name}</SettingsRow>
+        <SettingsRow label={t.tradingName}>
+          {me.tradingName ?? t.none}
           <NamesRow me={me} />
-          <SettingsRow label={t.email}>
-            <EmailRow email={me.email} />
+        </SettingsRow>
+        <SettingsRow label={t.email}>
+          <EmailRow email={me.email} />
+        </SettingsRow>
+        {me.kind === "artisan" && (
+          <SettingsRow label={t.identityNumber.label}>
+            <div>{me.identityNumber ?? t.identityNumber.none}</div>
+            <p className="text-xs text-muted-foreground">{t.identityNumber.lead}</p>
           </SettingsRow>
-          {me.kind === "artisan" && (
-            <>
-              <SettingsRow label={t.vat.label}>
-                <VatNumber vatNumber={me.vatNumber} />
-              </SettingsRow>
-              <SettingsRow label={t.payoutAccount.label}>
-                <div>
-                  {me.payoutAccount
-                    ? t.payoutAccount.ending(me.payoutAccount.bank, me.payoutAccount.accountEnding)
-                    : t.payoutAccount.none}
-                </div>
-                <Link
-                  to="/verification"
-                  className="font-medium text-primary underline underline-offset-4"
-                >
-                  {t.payoutAccount.change}
-                </Link>
-              </SettingsRow>
-            </>
-          )}
-          <SettingsRow label={t.rules}>
-            <Link to="/rules" className="font-medium text-primary underline underline-offset-4">
-              {t.accepted(me.rules.version, formatDate(me.rules.acceptedAt))}
+        )}
+      </SettingsGroup>
+      {me.kind === "artisan" && (
+        <SettingsGroup title={t.groups.money}>
+          <SettingsRow label={t.vat.label}>
+            <VatNumber vatNumber={me.vatNumber} />
+          </SettingsRow>
+          <SettingsRow label={t.payoutAccount.label}>
+            <div>
+              {me.payoutAccount
+                ? t.payoutAccount.ending(me.payoutAccount.bank, me.payoutAccount.accountEnding)
+                : t.payoutAccount.none}
+            </div>
+            <Link
+              to="/verification"
+              className="font-medium text-primary underline underline-offset-4"
+            >
+              {t.payoutAccount.change}
             </Link>
           </SettingsRow>
-          {me.kind === "artisan" && (
-            <SettingsRow label={t.identityNumber.label}>
-              <div>{me.identityNumber ?? t.identityNumber.none}</div>
-              <p className="text-xs text-muted-foreground">{t.identityNumber.lead}</p>
-            </SettingsRow>
-          )}
-          <SettingsRow label={t.support}>
-            <Link to="/support" className="font-medium text-primary underline underline-offset-4">
-              {t.supportLink}
-            </Link>
-          </SettingsRow>
-          <StandingRows standing={me.standing} />
-          <SettingsRow label={t.data.label}>
-            <DataRequests />
-          </SettingsRow>
-          <SettingsRow label={t.close.label}>
-            <CloseAccount />
-          </SettingsRow>
-        </dl>
-      </Card>
+        </SettingsGroup>
+      )}
+      <SettingsGroup title={t.groups.rules}>
+        <SettingsRow label={t.rules}>
+          <Link to="/rules" className="font-medium text-primary underline underline-offset-4">
+            {t.accepted(me.rules.version, formatDate(me.rules.acceptedAt))}
+          </Link>
+        </SettingsRow>
+        <SettingsRow label={t.support}>
+          <Link to="/support" className="font-medium text-primary underline underline-offset-4">
+            {t.supportLink}
+          </Link>
+        </SettingsRow>
+        <StandingRows standing={me.standing} />
+      </SettingsGroup>
+      <SettingsGroup title={t.groups.data}>
+        <SettingsRow label={t.data.label}>
+          <DataRequests />
+        </SettingsRow>
+        <SettingsRow label={t.close.label}>
+          <CloseAccount />
+        </SettingsRow>
+      </SettingsGroup>
       <Button
         variant="outline"
         onClick={async () => {
@@ -161,9 +165,9 @@ function NamesRow({ me }: { me: Me }) {
   });
 
   return (
-    // Under the names, in their value column, so changing them reads as part of them.
-    <div className="space-y-3 p-4 sm:grid sm:grid-cols-3">
-      <div className="space-y-3 sm:col-span-2 sm:col-start-2">
+    // Under the names, in their value cell, so changing them reads as part of them.
+    <div className="mt-3 space-y-3">
+      <div className="space-y-3">
         {names.beingChecked && (
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -480,6 +484,18 @@ function VatNumber({ vatNumber }: { vatNumber: string | null }) {
         )}
       </div>
     </div>
+  );
+}
+
+/** A group of settings under its heading, one card. */
+function SettingsGroup({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <Card className="gap-0 py-0">
+      <CardHeader className="border-b py-3">
+        <CardTitle>{title}</CardTitle>
+      </CardHeader>
+      <dl className="divide-y">{children}</dl>
+    </Card>
   );
 }
 

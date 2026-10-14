@@ -46,6 +46,9 @@ function navFor(me: Me | null): NavItem[] {
   ];
 }
 
+/** How many unread Notices the bell's badge shows: up to 9, then "9+". */
+const badge = (unread: number) => (unread > 9 ? "9+" : String(unread));
+
 export function initials(name: string) {
   return name
     .split(/\s+/)
@@ -90,14 +93,17 @@ export function AppHeader({ me, unread = 0 }: { me: Me | null; unread?: number }
           {me && (
             <Link
               to="/notices"
-              aria-label={unread > 0 ? copy.header.noticesUnread(unread) : copy.header.notices}
+              // The name holds the badge's own text, so it matches what is seen (WCAG 2.5.3).
+              aria-label={
+                unread > 0 ? copy.header.noticesUnread(badge(unread)) : copy.header.notices
+              }
               className={buttonVariants({ variant: "ghost", size: "icon", className: "relative" })}
               activeProps={{ className: "bg-muted" }}
             >
               <Bell />
               {unread > 0 && (
                 <Badge className="absolute -top-1 -right-1 h-4 min-w-4 px-1 tabular-nums">
-                  {unread > 9 ? "9+" : unread}
+                  {badge(unread)}
                 </Badge>
               )}
             </Link>
@@ -113,7 +119,11 @@ export function AppHeader({ me, unread = 0 }: { me: Me | null; unread?: number }
           )}
           <ThemeMenu />
           {me && (
-            <Link to="/account" aria-label={copy.header.client.account} className="rounded-full">
+            <Link
+              to="/account"
+              aria-label={copy.header.accountOf(initials(me.publicName))}
+              className="rounded-full"
+            >
               <Avatar size="sm">
                 <AvatarFallback>{initials(me.publicName)}</AvatarFallback>
               </Avatar>

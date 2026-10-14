@@ -173,8 +173,8 @@ function DecisionCard({ item }: { item: Item }) {
   return (
     <Card className="ring-primary">
       <CardHeader>
-        <CardDescription>{t.decision}</CardDescription>
-        <CardTitle className="text-lg">{option?.label ?? t.choose}</CardTitle>
+        <CardDescription className="text-xs font-medium text-primary">{t.decision}</CardDescription>
+        <CardTitle className="text-lg font-semibold">{option?.label ?? t.choose}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {item.decisions.length === 0 ? (
@@ -246,8 +246,8 @@ function DecidedCard({ decided }: { decided: NonNullable<Item["decided"]> }) {
   return (
     <Card className="ring-primary">
       <CardHeader>
-        <CardDescription>{t.decision}</CardDescription>
-        <CardTitle className="text-lg">{t.recorded(decided.label)}</CardTitle>
+        <CardDescription className="text-xs font-medium text-primary">{t.decision}</CardDescription>
+        <CardTitle className="text-lg font-semibold">{t.recorded(decided.label)}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-2 text-sm">
         {decided.reason && (
@@ -282,8 +282,10 @@ function RowsCard({
   return (
     <Card className={cn(highlighted && "ring-primary")}>
       <CardHeader>
-        <CardDescription>{t.decision}</CardDescription>
-        <CardTitle className="text-lg">{highlighted ? t.eachRow : t.rowsNow}</CardTitle>
+        <CardDescription className="text-xs font-medium text-primary">{t.decision}</CardDescription>
+        <CardTitle className="text-lg font-semibold">
+          {highlighted ? t.eachRow : t.rowsNow}
+        </CardTitle>
       </CardHeader>
       <CardContent className="divide-y">
         {rows.length === 0 && <p className="text-sm text-muted-foreground">{t.noRows}</p>}

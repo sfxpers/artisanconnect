@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Choose } from "@/components/choose";
 import { SuburbPicker, type Suburb } from "@/components/job-form";
+import { TradeTiles } from "@/components/trade-tiles";
 import {
   SERVICE_CATEGORIES,
   SERVICE_CATEGORY_NAMES,
@@ -68,29 +69,7 @@ function Landing() {
           <h2 id="trades" className="text-xl font-semibold">
             {t.tradesTitle}
           </h2>
-          <ul className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            {SERVICE_CATEGORIES.map((category) => (
-              <li key={category}>
-                <Link
-                  to="/artisans"
-                  search={{ category }}
-                  className="group block space-y-2 rounded-lg"
-                >
-                  <img
-                    src={`/trades/${category}.jpg`}
-                    alt={t.tradePhoto(SERVICE_CATEGORY_NAMES[category])}
-                    loading="lazy"
-                    width={960}
-                    height={640}
-                    className="aspect-4/3 w-full rounded-lg border bg-muted object-cover"
-                  />
-                  <span className="block text-sm font-medium group-hover:underline">
-                    {SERVICE_CATEGORY_NAMES[category]}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <TradeTiles />
         </section>
 
         <section aria-labelledby="how" className="space-y-4">
