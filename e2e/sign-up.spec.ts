@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 import { SERVICE_CATEGORY_NAMES } from "@/domain/service-categories";
-import { codeSentTo, expect, test } from "./support/helpers";
+import { clickUntil, codeSentTo, expect, test } from "./support/helpers";
 
 /** Signs a Visitor up as a Client or an Artisan, through to the proven Email. */
 async function signUp(page: Page, kind: RegExp) {
@@ -10,11 +10,9 @@ async function signUp(page: Page, kind: RegExp) {
     .getByRole("link", { name: "Sign up" })
     .click();
 
-  // A click before the page hydrates does nothing, so try until the next row opens.
-  await expect(async () => {
-    await page.getByRole("radio", { name: kind }).click();
-    await expect(page.getByLabel("Full name")).toBeVisible({ timeout: 1000 });
-  }).toPass();
+  await clickUntil(page.getByRole("radio", { name: kind }), () =>
+    expect(page.getByLabel("Full name")).toBeVisible({ timeout: 1000 }),
+  );
   await page.getByLabel("Full name").fill("Thandi Mokoena");
   await page.getByRole("button", { name: "Continue" }).click();
   await page.getByLabel("Email", { exact: true }).fill(email);
@@ -100,9 +98,8 @@ test("a Visitor signs up as an Artisan and lands at Verification, then is asked 
     "Close Account",
   ]);
   // A new Email's code is sent only once Turnstile has passed (#20).
-  await expect(async () => {
-    await page.getByRole("button", { name: "Change Email" }).click();
-    await expect(page.getByLabel("New Email")).toBeVisible({ timeout: 1000 });
-  }).toPass();
+  await clickUntil(page.getByRole("button", { name: "Change Email" }), () =>
+    expect(page.getByLabel("New Email")).toBeVisible({ timeout: 1000 }),
+  );
   await expect(page.getByRole("button", { name: "Send a code" })).toBeEnabled({ timeout: 30_000 });
 });
