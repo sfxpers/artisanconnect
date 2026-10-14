@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Link, createFileRoute, useRouter } from "@tanstack/react-router";
-import { ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,26 +35,19 @@ type Act = "warn" | "suspend" | "lift";
 function Person() {
   const person = Route.useLoaderData();
   return (
-    <Page>
-      <nav className="flex items-center gap-1 text-sm text-muted-foreground">
-        <Link to="/admin/people" className="hover:text-foreground">
-          {t.title}
-        </Link>
-        <ChevronRight className="size-4" />
-        <span className="text-foreground">{person.name}</span>
-      </nav>
-      <div className="space-y-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-semibold">{person.name}</h1>
+    <Page
+      crumbs={[{ to: "/admin/people", label: t.title }]}
+      title={person.name}
+      status={
+        <>
           <Badge variant="secondary">{copy.signUp.kind.chosen[person.kind]}</Badge>
           {person.suspended && <Badge variant="destructive">{t.suspended}</Badge>}
           {person.closed && <Badge variant="outline">{t.closed[person.closed]}</Badge>}
           {person.payoutsHeld && <Badge variant="destructive">{t.payoutsHeld}</Badge>}
-        </div>
-        <p className="text-sm text-muted-foreground">
-          {person.email} · {t.signedUp(formatDate(person.signedUpAt))}
-        </p>
-      </div>
+        </>
+      }
+      meta={`${person.email} · ${t.signedUp(formatDate(person.signedUpAt))}`}
+    >
       <div className={withSidebar}>
         <div className="min-w-0 space-y-6">
           <Actions person={person} />

@@ -235,11 +235,6 @@ export function RulesCard({ rules }: { rules: MarketplaceRules }) {
   );
 }
 
-/** The way back to the list a page belongs to, above its title. */
-export function BackCrumb({ to, label }: { to: "/jobs" | "/home"; label: string }) {
-  return <Crumbs crumbs={[{ to, label }]} current={null} />;
-}
-
 /** Why the last request was refused, shown where the person acted. */
 export function Refusal({ message }: { message: string | null | undefined }) {
   if (!message) return null;

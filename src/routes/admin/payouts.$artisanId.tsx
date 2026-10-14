@@ -1,5 +1,5 @@
-import { Link, createFileRoute } from "@tanstack/react-router";
-import { Banknote, ChevronRight } from "lucide-react";
+import { createFileRoute } from "@tanstack/react-router";
+import { Banknote } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState, Page } from "@/components/page";
@@ -29,22 +29,13 @@ type Payout = Release["payouts"][number];
 function MoneyHistory() {
   const history = Route.useLoaderData();
   return (
-    <Page>
-      <nav className="flex items-center gap-1 text-sm text-muted-foreground">
-        <Link to="/admin/payouts" className="hover:text-foreground">
-          {copy.admin.payouts.title}
-        </Link>
-        <ChevronRight className="size-4" />
-        <span className="text-foreground">{copy.admin.payouts.history}</span>
-      </nav>
-      <div className="space-y-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-semibold">{history.name}</h1>
-          {history.held && <Badge variant="destructive">{copy.admin.payouts.held}</Badge>}
-        </div>
-        <p className="text-sm text-muted-foreground">{history.email}</p>
-      </div>
-      <p className="max-w-2xl text-sm text-muted-foreground">{t.lead}</p>
+    <Page
+      crumbs={[{ to: "/admin/payouts", label: copy.admin.payouts.title }]}
+      title={history.name}
+      status={history.held && <Badge variant="destructive">{copy.admin.payouts.held}</Badge>}
+      meta={history.email}
+      lead={t.lead}
+    >
       <div className="grid gap-4 sm:grid-cols-2">
         <Total label={copy.admin.payouts.unpaid} cents={history.unpaidCents} />
         <Total label={t.paid} cents={history.paidCents} />
