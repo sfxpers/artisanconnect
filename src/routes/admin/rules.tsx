@@ -98,7 +98,7 @@ function PublishCard({ next }: { next: number }) {
         <CardDescription>{t.publishLead}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <Label htmlFor="rules-summary">{t.summary}</Label>
           <Textarea
             id="rules-summary"

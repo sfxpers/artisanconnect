@@ -226,7 +226,7 @@ export function AuthCard({
           {label && (
             <CardDescription className="text-xs font-medium text-primary">{label}</CardDescription>
           )}
-          <h1 className="text-xl font-semibold">{title}</h1>
+          <h1 className="text-2xl font-semibold">{title}</h1>
           {lead && <CardDescription>{lead}</CardDescription>}
         </CardHeader>
         <CardContent className="space-y-5">{children}</CardContent>
@@ -239,7 +239,7 @@ export function AuthCard({
 /** A Marketplace rules version, to accept at sign-in or reopening. */
 export function RulesCard({ rules }: { rules: MarketplaceRules }) {
   return (
-    <div className="space-y-1 rounded-lg border p-3 text-sm">
+    <div className="space-y-1 rounded-lg border p-4 text-sm">
       <div className="text-xs text-muted-foreground">
         {copy.rules.version(rules.version, formatDate(rules.publishedAt))}
       </div>

@@ -111,7 +111,7 @@ export function InviteList({
                   >
                     {artisan.publicName}
                   </Link>
-                  <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <p className="flex items-center gap-2 text-xs text-muted-foreground">
                     <MapPin className="size-3" aria-hidden />
                     {artisan.regions.map((each) => each.name).join(", ") || copy.browse.noRegions}
                     {!artisan.availableForJobs && ` · ${copy.browse.notAvailable}`}

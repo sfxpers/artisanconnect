@@ -267,7 +267,7 @@ function Row({
               open && "border-primary text-primary",
             )}
           >
-            {done ? <Check className="size-3.5" /> : index + 1}
+            {done ? <Check className="size-4" /> : index + 1}
           </span>
           <span className="font-semibold">{title}</span>
           {done && (

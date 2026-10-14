@@ -209,7 +209,7 @@ function CheckDetailsLine({ check }: { check: VerificationSlot }) {
   }
   if (lines.length === 0) return null;
   return (
-    <div className="space-y-0.5 text-sm">
+    <div className="space-y-1 text-sm">
       {lines.map((line) => (
         <p key={line}>{line}</p>
       ))}
@@ -272,7 +272,7 @@ function CheckForm({
 
   return (
     <form.AppForm>
-      <form.Form className="space-y-3 rounded-lg border bg-muted/30 p-3">
+      <form.Form className="space-y-4 rounded-lg border bg-muted p-4">
         <form.Subscribe selector={(state) => state.values}>
           {(values) => {
             const shown = fieldsOf(kind, values);

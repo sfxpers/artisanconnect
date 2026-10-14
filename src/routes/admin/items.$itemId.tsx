@@ -43,7 +43,7 @@ const t = copy.admin.item;
 type Item = Awaited<ReturnType<typeof getQueueItem>>;
 
 /**
- * A queue item in the Contract look (#107): breadcrumb with queue counts, a
+ * A queue item (#107): breadcrumb with queue counts, a
  * highlighted Decision card, tabs, and a sidebar. Each kind of item fills the
  * tabs and sidebar; a recorded decision is shown and never reopened.
  */
@@ -116,7 +116,7 @@ function QueueItemPage() {
               <ol className="space-y-2 text-sm">
                 {item.timeline.map((entry, index) => (
                   <li key={index} className="flex gap-2">
-                    <div className="mt-1.5 size-2 shrink-0 rounded-full bg-primary" aria-hidden />
+                    <div className="mt-2 size-2 shrink-0 rounded-full bg-primary" aria-hidden />
                     <div>
                       <div>{entry.text}</div>
                       <div className="text-xs text-muted-foreground">{formatDate(entry.at)}</div>
@@ -203,7 +203,7 @@ function DecisionCard({ item }: { item: Item }) {
           />
         ))}
         {option && option.reason !== "none" && (
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label htmlFor="reason">
               {option.reason === "required"
                 ? (option.reasonLabel ?? t.reason)
@@ -355,7 +355,7 @@ function RowDecision({ itemId, row }: { itemId: string; row: ItemRow }) {
         />
       ))}
       {row.decisions.length > 0 && (
-        <div className="space-y-3 rounded-lg border bg-muted/30 p-3">
+        <div className="space-y-4 rounded-lg border bg-muted p-4">
           <div className="flex flex-wrap gap-2">
             {row.decisions.map((decision) => (
               <Button
@@ -379,7 +379,7 @@ function RowDecision({ itemId, row }: { itemId: string; row: ItemRow }) {
             />
           ))}
           {option && option.reason !== "none" && (
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label htmlFor={`${row.id}-reason`}>
                 {option.reason === "required"
                   ? (option.reasonLabel ?? t.reason)
@@ -454,7 +454,7 @@ function DecisionFieldInput({
   }
   if (field.type === "choice") {
     return (
-      <div className="space-y-1.5">
+      <div className="space-y-2">
         <Label id={id}>{label}</Label>
         <RadioGroup
           aria-labelledby={id}
@@ -473,7 +473,7 @@ function DecisionFieldInput({
     );
   }
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-2">
       <Label htmlFor={id}>{label}</Label>
       <Input
         id={id}

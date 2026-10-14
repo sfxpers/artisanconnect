@@ -52,7 +52,7 @@ export function ReviewList({
     <div className="space-y-3">
       <ul className="divide-y">
         {items.map((review) => (
-          <li key={review.reviewId} className="space-y-1.5 py-3 first:pt-0">
+          <li key={review.reviewId} className="space-y-2 py-3 first:pt-0">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
               <Stars rating={review.rating} />
               <span className="text-xs text-muted-foreground">
@@ -107,7 +107,7 @@ export function WriteReview({
   const of = asClient ? t.theArtisan : t.theClient;
   return (
     <form.AppForm>
-      <form.Form className="space-y-3 rounded-lg border p-4">
+      <form.Form className="space-y-4 rounded-lg border p-4">
         <div className="space-y-1">
           <h3 className="font-semibold">{t.write(of)}</h3>
           <p className="text-xs text-muted-foreground">
@@ -116,7 +116,7 @@ export function WriteReview({
         </div>
         <form.Field name="rating">
           {(field) => (
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <span id="review-rating" className="text-sm font-medium">
                 {t.rating}
               </span>
@@ -187,7 +187,7 @@ export function EngagementReviewsCard({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
-        <section className="space-y-1.5">
+        <section className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-sm font-medium">{t.yours}</h3>
             {mine && <Badge variant="secondary">{t.states[mine.state]}</Badge>}
@@ -207,7 +207,7 @@ export function EngagementReviewsCard({
             </p>
           )}
         </section>
-        <section className="space-y-1.5">
+        <section className="space-y-2">
           <h3 className="text-sm font-medium">{t.theirs(of)}</h3>
           {theirs ? (
             <>

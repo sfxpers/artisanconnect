@@ -77,7 +77,7 @@ function Landing() {
 
       <div className="mx-auto max-w-7xl space-y-12 px-4 py-10 sm:px-6 lg:py-14">
         <section aria-labelledby="trades" className="space-y-4">
-          <h2 id="trades" className="text-xl font-semibold">
+          <h2 id="trades" className="text-lg font-semibold">
             {t.tradesTitle}
           </h2>
           <TradeTiles />
@@ -86,14 +86,14 @@ function Landing() {
         <HowAJobGoes />
 
         <section aria-labelledby="trust" className="space-y-4">
-          <h2 id="trust" className="text-xl font-semibold">
+          <h2 id="trust" className="text-lg font-semibold">
             {t.trustTitle}
           </h2>
           <ul className="divide-y rounded-lg border bg-card lg:grid lg:grid-cols-3 lg:divide-x lg:divide-y-0">
             {t.trust.map((fact, index) => {
               const Icon = TRUST_ICONS[index]!;
               return (
-                <li key={fact.title} className="space-y-1.5 p-5">
+                <li key={fact.title} className="space-y-2 p-5">
                   <h3 className="flex items-center gap-2 font-semibold">
                     <Icon className="size-4 text-primary" aria-hidden />
                     {fact.title}

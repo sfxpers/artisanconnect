@@ -262,7 +262,7 @@ function ArtisanCard({ card }: { card: BrowseCard }) {
         <RatingSummary average={card.reviews.average} count={card.reviews.count} />
         <p className="text-sm text-muted-foreground">{copy.profile.completed(card.completed)}</p>
         {badges.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-2">
             {badges.slice(0, 2).map((badge) => (
               <Badge key={`${badge.kind}:${badge.category ?? ""}`} variant="outline">
                 <ShieldCheck />
@@ -275,7 +275,7 @@ function ArtisanCard({ card }: { card: BrowseCard }) {
           </div>
         )}
         {card.gasWork && <p className="text-xs text-muted-foreground">{t.gasWork}</p>}
-        <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+        <p className="flex items-center gap-2 text-sm text-muted-foreground">
           <MapPin className="size-4 shrink-0" aria-hidden />
           <span className="truncate">
             {card.regions.map((each) => each.name).join(", ") || t.noRegions}

@@ -7,7 +7,7 @@ import { QUEUE_NAMES, type QueueName } from "@/domain/queue-names";
 import type { Block } from "@/domain/queues";
 import { copy } from "@/web/copy";
 
-// Pieces of the Admin's pages, in the Contract look (#107).
+// Pieces of the Admin's pages (#107).
 
 /**
  * All queues and each queue with its count, each opening the home stream

@@ -92,7 +92,7 @@ function Regions() {
                       className="mt-3 columns-2 gap-4 text-xs text-muted-foreground sm:columns-3"
                     >
                       {region.suburbs.map((suburb) => (
-                        <li key={suburb.id} className="break-inside-avoid py-0.5">
+                        <li key={suburb.id} className="break-inside-avoid py-1">
                           {suburb.name}
                         </li>
                       ))}
@@ -148,7 +148,7 @@ function FindSuburb() {
         <CardDescription>{t.findLead}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <Label htmlFor="suburb">{t.findLabel}</Label>
           <Input
             id="suburb"
@@ -165,7 +165,7 @@ function FindSuburb() {
           ) : (
             <ul className="divide-y text-sm" aria-live="polite">
               {found.suburbs.map((suburb) => (
-                <li key={suburb.id} className="flex justify-between gap-3 py-1.5">
+                <li key={suburb.id} className="flex justify-between gap-3 py-2">
                   <span>{suburb.name}</span>
                   <span className="text-muted-foreground">{suburb.region.name}</span>
                 </li>

@@ -520,7 +520,7 @@ function Hired({
               <span className="font-medium">{copy.quotes.noName}</span>
             )}
             {artisan.badges.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {artisan.badges.map((badge) => (
                   <Badge key={`${badge.kind}:${badge.category ?? ""}`} variant="outline">
                     <ShieldCheck />

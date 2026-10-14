@@ -81,7 +81,7 @@ function RegionRow({ region }: { region: Region }) {
           className="mt-3 columns-2 gap-4 text-xs text-muted-foreground sm:columns-3"
         >
           {region.suburbs.map((suburb) => (
-            <li key={suburb.id} className="break-inside-avoid py-0.5">
+            <li key={suburb.id} className="break-inside-avoid py-1">
               {suburb.name}
             </li>
           ))}

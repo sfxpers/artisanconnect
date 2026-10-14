@@ -91,7 +91,7 @@ export function DraftForm({
     <form.AppForm>
       <form.Form className="space-y-5">
         {job?.hireAgain && (
-          <div className="space-y-1 rounded-lg border bg-muted/40 p-3 text-sm">
+          <div className="space-y-1 rounded-lg border bg-muted p-4 text-sm">
             <p className="font-medium">{t.hireAgain}</p>
             <p className="text-muted-foreground">
               {t.hireAgainDraftLead(job.hireAgain.publicName ?? copy.quotes.noName)}

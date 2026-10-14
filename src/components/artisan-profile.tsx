@@ -75,7 +75,7 @@ export function ArtisanProfileView({
               <AvatarFallback>{initials(profile.publicName)}</AvatarFallback>
             </Avatar>
             <div className="min-w-0 space-y-1">
-              <h1 className="truncate text-xl font-semibold">{profile.publicName}</h1>
+              <h1 className="truncate text-2xl font-semibold">{profile.publicName}</h1>
               {profile.availableForJobs ? (
                 <Badge variant="success">{t.available}</Badge>
               ) : (
@@ -88,12 +88,12 @@ export function ArtisanProfileView({
               <RatingSummary average={reviews.average} count={reviews.count} />
               <p className="text-sm text-muted-foreground">{t.completed(profile.completed ?? 0)}</p>
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <p className="text-xs font-medium text-muted-foreground">{t.verifiedFor}</p>
               {profile.categories.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t.notVerifiedNow}</p>
               ) : (
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-2">
                   {profile.categories.map(({ category, name, gasWork }) => (
                     <Badge key={category} variant="secondary">
                       {gasWork ? `${name}, ${t.gasWork}` : name}
@@ -111,10 +111,10 @@ export function ArtisanProfileView({
               <CardTitle>{t.badges}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <ul className="space-y-1.5 text-sm">
+              <ul className="space-y-2 text-sm">
                 {profile.badges.map((badge) => (
                   <li key={`${badge.kind}:${badge.category}`} className="flex gap-2">
-                    <BadgeCheck className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+                    <BadgeCheck className="mt-1 size-4 shrink-0 text-primary" aria-hidden />
                     <span>
                       {badge.name}
                       {badge.expiresOn && (

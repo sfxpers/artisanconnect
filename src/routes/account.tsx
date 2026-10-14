@@ -356,7 +356,7 @@ function DataRequests() {
       {requests.length > 0 && (
         <ul className="space-y-2">
           {requests.map((request) => (
-            <li key={request.requestId} className="space-y-0.5">
+            <li key={request.requestId} className="space-y-1">
               <div className="flex flex-wrap items-center gap-2">
                 {d.kinds[request.kind]}
                 <Badge variant={request.state === "refused" ? "destructive" : "secondary"}>

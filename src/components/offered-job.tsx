@@ -231,7 +231,7 @@ function QuoteOrPass({
       <p className="text-sm text-muted-foreground">{t.lead}</p>
       {refused?.refused && <Refusal message={tq.refusedLead(refused.refused.reason)} />}
       {job.takesQuotes ? (
-        <div className="space-y-3 rounded-lg border p-4">
+        <div className="space-y-4 rounded-lg border p-4">
           <div className="space-y-1">
             <h3 className="font-semibold">{tq.write}</h3>
             <p className="text-xs text-muted-foreground">{tq.writeLead}</p>
@@ -286,7 +286,7 @@ function QuoteStep({
         <p className="text-sm text-muted-foreground">{tq.endedLead[quote.state]}</p>
       )}
       {beingChecked && (
-        <div className="space-y-3 rounded-lg border p-4">
+        <div className="space-y-4 rounded-lg border p-4">
           <Badge variant="warning">{copy.job.beingChecked}</Badge>
           <p className="text-sm text-muted-foreground">{tq.revisionHeld}</p>
           <QuoteFacts quote={beingChecked} />

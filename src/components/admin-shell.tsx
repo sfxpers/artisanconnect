@@ -56,7 +56,7 @@ export function AdminShell({ admin, children }: { admin: AdminMe; children: Reac
     <SidebarProvider>
       <Sidebar collapsible="offcanvas" aria-label={t.nav}>
         <SidebarHeader>
-          <Link to="/admin" aria-label={copy.appName} className="rounded-md px-2 py-1.5">
+          <Link to="/admin" aria-label={copy.appName} className="rounded-md px-2 py-2">
             <Wordmark />
           </Link>
         </SidebarHeader>
@@ -82,7 +82,7 @@ export function AdminShell({ admin, children }: { admin: AdminMe; children: Reac
         </SidebarContent>
         <SidebarFooter>
           <SidebarMenu>
-            <SidebarMenuItem className="flex items-center gap-2 px-2 py-1.5 text-sm">
+            <SidebarMenuItem className="flex items-center gap-2 px-2 py-2 text-sm">
               <Avatar size="sm">
                 <AvatarFallback>{initials(admin.email)}</AvatarFallback>
               </Avatar>

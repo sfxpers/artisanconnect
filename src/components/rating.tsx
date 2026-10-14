@@ -6,7 +6,7 @@ import { copy } from "@/web/copy";
 export function Stars({ rating, className }: { rating: number; className?: string }) {
   const whole = Math.round(rating);
   return (
-    <span role="img" aria-label={copy.review.outOf(whole)} className="inline-flex gap-0.5">
+    <span role="img" aria-label={copy.review.outOf(whole)} className="inline-flex gap-1">
       {[1, 2, 3, 4, 5].map((n) => (
         <Star
           key={n}
@@ -28,7 +28,7 @@ export function RatingSummary({ average, count }: { average: number | null; coun
     return <span className="text-sm text-muted-foreground">{copy.profile.noRating}</span>;
   }
   return (
-    <span className="inline-flex items-center gap-1.5 text-sm">
+    <span className="inline-flex items-center gap-2 text-sm">
       <Stars rating={average} />
       <span className="font-medium tabular-nums">{average.toFixed(1)}</span>
       <span className="text-muted-foreground">{copy.profile.reviewCount(count)}</span>

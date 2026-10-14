@@ -134,7 +134,7 @@ function EarlierPayouts({ release }: { release: Release }) {
   );
   if (shown.length === 0) return null;
   return (
-    <ul className="space-y-0.5 text-xs text-destructive">
+    <ul className="space-y-1 text-xs text-destructive">
       {shown.map((payout) => (
         <li key={payout.reference}>
           {t.earlier(payout.reference, t.earlierStates[payout.state], formatDate(payout.stoppedAt))}
@@ -146,7 +146,7 @@ function EarlierPayouts({ release }: { release: Release }) {
 
 function Amount({ label, cents, strong }: { label: string; cents: number; strong?: boolean }) {
   return (
-    <div className="space-y-0.5">
+    <div className="space-y-1">
       <dt className="text-xs text-muted-foreground">{label}</dt>
       <dd className={strong ? "font-medium tabular-nums" : "tabular-nums"}>{formatRands(cents)}</dd>
     </div>

@@ -149,7 +149,7 @@ function ItemRow({ item }: { item: Item }) {
       >
         {item.text && <p className="whitespace-pre-line break-words">{item.text}</p>}
         {item.photos.length > 0 && (
-          <div className="grid grid-cols-2 gap-1.5">
+          <div className="grid grid-cols-2 gap-2">
             {item.photos.map((photo, index) => (
               <a key={photo.id} href={photo.href} target="_blank" rel="noreferrer">
                 <img
@@ -269,7 +269,7 @@ function Composer({ view }: { view: ConversationView }) {
       }}
     >
       {view.firstMessage && (
-        <p className="flex gap-2 rounded-lg bg-muted/60 p-3 text-xs text-muted-foreground">
+        <p className="flex gap-2 rounded-lg bg-muted p-4 text-xs text-muted-foreground">
           <ShieldAlert className="size-4 shrink-0" />
           {view.afterPayment ? t.adminMayReadAfterPayment : t.adminMayRead}
         </p>

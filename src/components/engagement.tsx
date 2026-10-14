@@ -322,7 +322,7 @@ export function CancelAction({
   });
   return (
     <form.AppForm>
-      <form.Form className="space-y-3 rounded-lg border p-3">
+      <form.Form className="space-y-4 rounded-lg border p-4">
         <p className="text-sm text-muted-foreground">{lead}</p>
         <form.AppField name="reason">
           {(field) => (
@@ -454,7 +454,7 @@ function DisputeForm({
   const labour = formatRands(labourCents);
   return (
     <form.AppForm>
-      <form.Form className="space-y-3 rounded-lg border p-3">
+      <form.Form className="space-y-4 rounded-lg border p-4">
         <p className="text-sm text-muted-foreground">
           {asClient ? d.clientLead(labour) : d.artisanLead(labour, until && formatDeadline(until))}
         </p>
@@ -545,7 +545,7 @@ function ReleaseHeld({ engagement, heldCents }: { engagement: Engagement; heldCe
       )}
       {open && (
         <form.AppForm>
-          <form.Form className="space-y-3 rounded-lg border p-3">
+          <form.Form className="space-y-4 rounded-lg border p-4">
             <p className="text-sm text-muted-foreground">{d.releaseLead(formatRands(heldCents))}</p>
             <form.AppField name="amount">
               {(field) => <field.RandsField label={d.releaseAmount} />}
@@ -638,7 +638,7 @@ export function DisputeCard({
           <p className="text-muted-foreground">{d.settled(formatDate(dispute.closedAt))}</p>
         )}
         {dispute.decision && dispute.closedAt && (
-          <div className="space-y-2 rounded-lg bg-muted/60 p-3">
+          <div className="space-y-2 rounded-lg bg-muted p-4">
             <dl className="space-y-2">
               <Row label={d.releasedTo(asClient)}>
                 {formatRands(dispute.decision.releasedCents)}
@@ -778,7 +778,7 @@ function PayOrReject({ proposed }: { proposed: Extract<Proposed, { payCents: num
 
   return (
     <div className="space-y-3">
-      <dl className="space-y-1 rounded-lg bg-muted/60 p-3 text-sm">
+      <dl className="space-y-1 rounded-lg bg-muted p-4 text-sm">
         <div className="flex justify-between gap-3">
           <dt className="text-muted-foreground">{u.fee(PROTECTION_FEE_PERCENT)}</dt>
           <dd>{fee}</dd>
@@ -929,7 +929,7 @@ function FixRequestNote({
   asClient: boolean;
 }) {
   return (
-    <div className="space-y-1 rounded-lg bg-muted/60 p-3 text-sm">
+    <div className="space-y-1 rounded-lg bg-muted p-4 text-sm">
       <div className="text-xs text-muted-foreground">
         {t.fixRequestNote} · {formatDate(fixRequest.requestedAt)}
       </div>
@@ -961,7 +961,7 @@ function CompletionCheck({
     return <p className="text-sm text-destructive">{t.completionRefused(check.reason)}</p>;
   }
   return (
-    <div className="space-y-2 rounded-lg bg-muted/60 p-3 text-sm">
+    <div className="space-y-2 rounded-lg bg-muted p-4 text-sm">
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant="warning">{t.completionBeingChecked}</Badge>
         <ActionButton
@@ -1241,7 +1241,7 @@ export function PaymentsCard({ engagement }: { engagement: Engagement }) {
           ))}
         </ol>
         {approval && (
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Progress value={Math.round(approval.elapsed * 100)} aria-label={barLabel} />
             <p className="text-xs text-muted-foreground">{barLabel}</p>
           </div>
@@ -1332,7 +1332,7 @@ function RefundForm({ engagement }: { engagement: ArtisanEngagement }) {
   }
   return (
     <form.AppForm>
-      <form.Form className="space-y-3 rounded-lg border p-3">
+      <form.Form className="space-y-4 rounded-lg border p-4">
         <p className="text-sm text-muted-foreground">{t.refundLead}</p>
         <div className="grid gap-3 sm:grid-cols-2">
           {lines.map((part) => (

@@ -401,7 +401,7 @@ function ProfileCard({ work }: { work: Work }) {
           </div>
         </div>
         {work.profile && work.profile.badges.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-2">
             {work.profile.badges.map((badge) => (
               <Badge key={`${badge.kind}:${badge.category ?? ""}`} variant="outline">
                 <ShieldCheck />
@@ -471,7 +471,7 @@ function RegionsCard({ regions }: { regions: Work["regions"] }) {
             </Link>
           </>
         ) : (
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-2">
             {regions.map((region) => (
               <Badge key={region.id} variant="secondary">
                 {region.name}

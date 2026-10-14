@@ -140,7 +140,7 @@ export function QuoteForm({
             const labour = cents(rands(t.labour).safeParse(values.labour));
             const materials = cents(rands(t.materials).safeParse(values.materials));
             return (
-              <div className="space-y-2 rounded-lg border bg-muted p-3">
+              <div className="space-y-2 rounded-lg border bg-muted p-4">
                 <MoneyLines
                   lines={[
                     { label: t.labourShort, cents: labour },

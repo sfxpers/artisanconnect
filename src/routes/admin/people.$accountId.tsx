@@ -125,7 +125,7 @@ function Actions({ person }: { person: Person }) {
           ))}
         </div>
         {act && (
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label htmlFor="reason">{act === "lift" ? t.liftNote : t.reason}</Label>
             <Textarea
               id="reason"
