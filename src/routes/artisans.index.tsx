@@ -17,15 +17,11 @@ import {
   type ServiceCategory,
 } from "@/domain/service-categories";
 import { copy } from "@/web/copy";
-import { getBrowse, getProfiles, getRegionNames } from "@/web/profiles";
-
-const SORTS = ["recommended", "rating", "reviews"] as const;
-type Sort = (typeof SORTS)[number];
+import { getBrowse, getRegionNames } from "@/web/profiles";
 
 type Search = {
   category?: ServiceCategory;
   region?: string;
-  sort?: Sort;
   available?: boolean;
   page?: number;
 };
@@ -34,13 +30,12 @@ type Search = {
 const PER_PAGE = 12;
 
 // Browse (ADR 0016): anyone, signed in or not, lists the Artisans verified
-// for one trade, optionally in one Region, in the module's order unless the
-// viewer sorts by rating or Reviews; 12 to a page.
+// for one trade, optionally in one Region, in the module's one order (#111
+// story 3); 12 to a page.
 export const Route = createFileRoute("/artisans/")({
   validateSearch: (search: Record<string, unknown>): Search => ({
     category: isServiceCategory(search.category) ? search.category : undefined,
     region: typeof search.region === "string" && search.region ? search.region : undefined,
-    sort: SORTS.find((each) => each !== "recommended" && each === search.sort),
     available: search.available === true ? true : undefined,
     page: typeof search.page === "number" && search.page > 1 ? Math.floor(search.page) : undefined,
   }),
@@ -52,20 +47,13 @@ export const Route = createFileRoute("/artisans/")({
         ? getBrowse({ data: { category: deps.category, regionId: deps.region } })
         : null,
     ]);
-    if (!listed) return { regions, listed: null, count: 0, page: 1, pageCount: 1, cards: [] };
-    const shown = sorted(
-      deps.available ? listed.filter((each) => each.availableForJobs) : listed,
-      deps.sort ?? "recommended",
-    );
-    const pageCount = Math.max(1, Math.ceil(shown.length / PER_PAGE));
+    const shown =
+      listed && deps.available ? listed.filter((each) => each.availableForJobs) : listed;
+    const count = shown?.length ?? 0;
+    const pageCount = Math.max(1, Math.ceil(count / PER_PAGE));
     const page = Math.min(deps.page ?? 1, pageCount);
-    const onPage = shown.slice((page - 1) * PER_PAGE, page * PER_PAGE);
-    const profiles = await getProfiles({ data: { artisanIds: onPage.map((a) => a.artisanId) } });
-    const cards = onPage.map((artisan, index) => ({
-      ...artisan,
-      profile: profiles[index] ?? null,
-    }));
-    return { regions, listed, count: shown.length, page, pageCount, cards };
+    const cards = shown?.slice((page - 1) * PER_PAGE, page * PER_PAGE) ?? [];
+    return { regions, listed, count, page, pageCount, cards };
   },
   head: ({ match }) => ({
     meta: [
@@ -80,17 +68,6 @@ export const Route = createFileRoute("/artisans/")({
 const t = copy.browse;
 
 type Listed = NonNullable<Awaited<ReturnType<typeof getBrowse>>>;
-
-/** The module's order, or by rating or Reviews, each falling back to it. */
-function sorted(listed: Listed, sort: Sort): Listed {
-  if (sort === "recommended") return listed;
-  const key = (each: Listed[number]) =>
-    sort === "rating" ? (each.reviews.average ?? 0) : each.reviews.count;
-  return listed
-    .map((each, index) => ({ each, index }))
-    .sort((a, b) => key(b.each) - key(a.each) || a.index - b.index)
-    .map(({ each }) => each);
-}
 
 function Browse() {
   const { regions, listed, count, page, pageCount, cards } = Route.useLoaderData();
@@ -139,20 +116,6 @@ function Browse() {
                   ? t.count(0)
                   : t.showing((page - 1) * PER_PAGE + 1, Math.min(page * PER_PAGE, count), count))}
             </p>
-            <div className="flex items-center gap-2">
-              <FieldLabel htmlFor="sort" className="shrink-0">
-                {t.sort}
-              </FieldLabel>
-              <Choose
-                id="sort"
-                className="w-auto"
-                value={search.sort ?? "recommended"}
-                onChange={(value) =>
-                  go({ sort: value === "recommended" || !value ? undefined : value })
-                }
-                options={SORTS.map((each) => ({ value: each, label: t.sorts[each] }))}
-              />
-            </div>
           </div>
           {!search.category || !listed ? (
             <EmptyState icon={<Search />}>{t.chooseTrade}</EmptyState>
@@ -181,9 +144,7 @@ function Browse() {
               ))}
             </ul>
           )}
-          {!search.sort && listed && count > 0 && (
-            <p className="text-xs text-muted-foreground">{t.recommendedLead}</p>
-          )}
+          {listed && count > 0 && <p className="text-xs text-muted-foreground">{t.orderLead}</p>}
           <Pager
             page={page}
             pageCount={pageCount}
@@ -249,14 +210,11 @@ function Filters({
   );
 }
 
-type BrowseCard = Listed[number] & {
-  profile: Awaited<ReturnType<typeof getProfiles>>[number];
-};
+type BrowseCard = Listed[number];
 
 /** An Artisan as a listing: a work photo, the name, rating, Completed count, badges, and Regions. */
 function ArtisanCard({ card }: { card: BrowseCard }) {
-  const photo = card.profile?.photos[0];
-  const badges = card.profile?.badges ?? [];
+  const { photo, badges } = card;
   return (
     <Card className="h-full gap-0 py-0">
       <Link
@@ -300,11 +258,7 @@ function ArtisanCard({ card }: { card: BrowseCard }) {
           )}
         </div>
         <RatingSummary average={card.reviews.average} count={card.reviews.count} />
-        {card.profile && (
-          <p className="text-sm text-muted-foreground">
-            {copy.profile.completed(card.profile.completed ?? 0)}
-          </p>
-        )}
+        <p className="text-sm text-muted-foreground">{copy.profile.completed(card.completed)}</p>
         {badges.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {badges.slice(0, 2).map((badge) => (

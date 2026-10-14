@@ -1,4 +1,4 @@
-import { and, desc, eq, lte, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, lte, sql, type SQLWrapper } from "drizzle-orm";
 import { publicName } from "../accounts/names";
 import type { Context, Write } from "../context";
 import { defineHeldKind } from "../content/held";
@@ -28,6 +28,27 @@ export async function shownVersion(ctx: Context, artisanId: string): Promise<Pro
     .orderBy(desc(profileEdits.releasedAt), desc(sql.raw(`"profile_edits"."rowid"`)))
     .limit(1);
   return shown ?? EMPTY;
+}
+
+/** The first photo of each Artisan's Profile shown now, by id; none if it has none. */
+export async function firstShownPhotos(
+  ctx: Context,
+  artisanIds: string[] | SQLWrapper,
+): Promise<Map<string, ProfilePhoto>> {
+  const rows = await ctx.db
+    .select({ artisanId: profileEdits.artisanId, photos: profileEdits.photos })
+    .from(profileEdits)
+    .where(and(inArray(profileEdits.artisanId, artisanIds), eq(profileEdits.state, "released")))
+    // As shownVersion orders them, so the first row of each Artisan is the one shown.
+    .orderBy(desc(profileEdits.releasedAt), desc(sql.raw(`"profile_edits"."rowid"`)));
+  const first = new Map<string, ProfilePhoto>();
+  const seen = new Set<string>();
+  for (const row of rows) {
+    if (seen.has(row.artisanId)) continue;
+    seen.add(row.artisanId);
+    if (row.photos[0]) first.set(row.artisanId, row.photos[0]);
+  }
+  return first;
 }
 
 /**

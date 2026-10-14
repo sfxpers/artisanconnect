@@ -76,12 +76,42 @@ describe("Browse", () => {
     expect(await browsed(domain, { category: "plumbing" })).toEqual([]);
   });
 
+  test("lists each Artisan with the first work photo shown, the badges, and the Completed count", async () => {
+    const harness = await createHarness();
+    const { domain, given } = harness;
+    const admin = await given.admin();
+    const artisan = await given.matchableArtisan({ name: "Sipho Dlamini" });
+    await edit(harness, artisan, { about: "I paint homes.", add: [await photo(), await photo()] });
+    await decide(harness, admin, "release");
+    const client = await given.client();
+    const jobId = await given.openJob(client);
+    await given.hired(client, await given.sentQuote(artisan, jobId));
+    const engagementId = await given.engagementOf(client, jobId);
+    await given.workStarted(client, engagementId);
+    await given.markedComplete(artisan, engagementId);
+    await given.approved(client, engagementId);
+
+    const [listed] = await domain.profiles.browse(visitor, { category: "painting" });
+    const shown = await domain.profiles.view(visitor, { artisanId: artisan.actor.accountId });
+
+    expect(listed).toMatchObject({
+      publicName: "Sipho Dlamini",
+      photo: shown!.photos[0],
+      badges: [
+        expect.objectContaining({ name: "Identity verified" }),
+        expect.objectContaining({ name: "Work photos, Painting" }),
+      ],
+      completed: 1,
+    });
+  });
+
   test("is the same for a Visitor, a Client, and an Artisan", async () => {
     const { domain, given } = await createHarness();
     const artisan = await given.verifiedArtisan({ name: "Sipho Dlamini" });
     const client = await given.client();
 
     const asVisitor = await domain.profiles.browse(visitor, { category: "plumbing" });
+    const profile = await domain.profiles.view(visitor, { artisanId: artisan.actor.accountId });
 
     expect(asVisitor).toEqual([
       {
@@ -91,6 +121,9 @@ describe("Browse", () => {
         gasWork: false,
         regions: [],
         reviews: { average: null, count: 0 },
+        photo: null,
+        badges: profile!.badges,
+        completed: 0,
       },
     ]);
     expect(await domain.profiles.browse(client.actor, { category: "plumbing" })).toEqual(asVisitor);

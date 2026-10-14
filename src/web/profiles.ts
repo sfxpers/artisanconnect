@@ -14,21 +14,6 @@ export const getBrowse = createServerFn({ method: "GET" })
     return domain.profiles.browse(await requestActor(domain), data);
   });
 
-/**
- * The public Profiles of the Artisans on one page of Browse, for their cards'
- * photo, badges, and Completed count. Browse itself lists none of these yet
- * (an open question in docs/review/111.md), so each card reads the Profile.
- */
-export const getProfiles = createServerFn({ method: "GET" })
-  .validator((input: { artisanIds: string[] }) => input)
-  .handler(async ({ data }) => {
-    const domain = requestDomain();
-    const actor = await requestActor(domain);
-    return Promise.all(
-      data.artisanIds.map((artisanId) => domain.profiles.view(actor, { artisanId })),
-    );
-  });
-
 /** An Artisan's public Profile; one nobody may open is a page that does not exist. */
 export const getProfile = createServerFn({ method: "GET" })
   .validator((input: { artisanId: string }) => input)

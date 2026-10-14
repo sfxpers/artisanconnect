@@ -28,10 +28,11 @@ import {
   type ServiceCategory,
 } from "../service-categories";
 import { checkFileCount, discardFiles, uploadFile, UPLOAD_CONTEXTS } from "../uploads";
-import { badgesOf, verifiedCategoriesOf } from "../verification";
+import { badgesOf, badgesOfEach, verifiedCategoriesOf } from "../verification";
 import { slotOf } from "../verification/checks";
 import {
   editsStanding,
+  firstShownPhotos,
   heldProfile,
   holdEdit,
   photoById,
@@ -355,7 +356,8 @@ async function publicProfile(ctx: Context, artisanId: string) {
  * Browse: the Artisans verified now for the category, in the Region or only
  * the Artisan if one is given, Available for Jobs first, then by higher
  * Review average (none last), then more Reviews, then by public name A to Z,
- * so the order is predictable and cannot be bought.
+ * so the order is predictable and cannot be bought. Each comes with what a
+ * listing shows: the first work photo shown, the badges, and the Completed count.
  */
 export async function browse(ctx: Context, category: ServiceCategory, narrow: Narrowing = {}) {
   const listed = await listedArtisans(ctx, category, narrow);
@@ -421,10 +423,14 @@ async function listedArtisans(
             ),
       ),
     );
-  const [rows, verified, worksIn] = await Promise.all([
+  // Each read takes the candidates as a subquery: D1 binds at most 100 values a query.
+  const [rows, verified, worksIn, photos, badges, completed] = await Promise.all([
     ctx.db.select(LISTED_COLUMNS).from(accounts).where(inArray(accounts.id, candidates)),
     verifiedCategoriesOf(ctx, candidates),
     regionsOf(ctx, candidates),
+    firstShownPhotos(ctx, candidates),
+    badgesOfEach(ctx, candidates),
+    completedCounts(ctx, "artisanId", candidates),
   ]);
   return rows.flatMap((row) => {
     const status = verified.get(row.id)?.find((each) => each.category === category);
@@ -437,9 +443,24 @@ async function listedArtisans(
         /** Whether the Artisan is verified for gas work in the category, too. */
         gasWork: status.gasWork,
         regions: worksIn.get(row.id) ?? [],
+        photo: listingPhoto(row.id, photos.get(row.id)),
+        badges: badges.get(row.id),
+        completed: completed.get(row.id),
       },
     ];
   });
+}
+
+/** The work photo a listing shows: the first of the Profile shown, if it has one. */
+function listingPhoto(artisanId: string, photo: ProfilePhoto | undefined) {
+  if (!photo) return null;
+  return {
+    id: photo.id,
+    width: photo.width,
+    height: photo.height,
+    href: photoPath(artisanId, photo),
+    thumbnailHref: photoPath(artisanId, photo, true),
+  };
 }
 
 /** The Regions each of these Artisans works in, A to Z, by id. */
