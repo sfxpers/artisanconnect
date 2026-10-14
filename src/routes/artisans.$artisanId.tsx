@@ -32,8 +32,12 @@ export const Route = createFileRoute("/artisans/$artisanId")({
       // A Client may invite the Artisan to one of their Open Jobs from here.
       context.me?.kind === "client" ? getMyJobs() : null,
     ]);
+    // Only Jobs in a trade the Artisan is verified for, so none is chosen only to be refused.
+    const trades = new Set(profile.categories.map((each) => each.name));
     const openJobs = jobs
-      ? [...jobs.needsYou, ...jobs.inProgress].filter((job) => job.state === "open")
+      ? [...jobs.needsYou, ...jobs.inProgress].filter(
+          (job) => job.state === "open" && job.category !== null && trades.has(job.category),
+        )
       : [];
     return { profile, openJobs, origin: context.origin };
   },
@@ -82,7 +86,12 @@ function ArtisanProfilePage() {
       {t.invite}
     </Link>
   ) : me?.kind === "client" ? (
-    <InviteDialog name={profile.publicName} artisanId={profile.artisanId} jobs={openJobs} />
+    <InviteDialog
+      name={profile.publicName}
+      artisanId={profile.artisanId}
+      trades={profile.categories.map((each) => each.name).join(", ")}
+      jobs={openJobs}
+    />
   ) : null;
   return (
     <Page crumbs={[{ to: "/artisans", label: t.back }]}>
@@ -130,10 +139,12 @@ function ArtisanProfilePage() {
 function InviteDialog({
   name,
   artisanId,
+  trades,
   jobs,
 }: {
   name: string;
   artisanId: string;
+  trades: string;
   jobs: { jobId: string; title: string | null }[];
 }) {
   const router = useRouter();
@@ -168,7 +179,7 @@ function InviteDialog({
               </Link>
             }
           >
-            {t.noOpenJob}
+            {t.noOpenJob(name, trades)}
           </EmptyState>
         ) : (
           <Field>

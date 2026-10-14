@@ -98,55 +98,67 @@ function Waiting({ work, onSee }: { work: Work; onSee: (tab: Tab) => void }) {
   const jobs = invitations.length > 0 || matches.length > 0;
   const hired = work.quotes.filter((quote) => quote.waitsOnArtisan).length;
   const cards = [
-    hired > 0 && (
-      <NextStepCard key="hired" label={t.waiting} title={t.hiredWaiting(hired)}>
-        <p className="text-sm text-muted-foreground">{t.hiredLead}</p>
-        <div className="flex flex-wrap gap-2">
-          <Button onClick={() => onSee("active")}>{t.seeActive}</Button>
-        </div>
-      </NextStepCard>
-    ),
-    !work.verified && (
-      <NextStepCard key="verification" label={t.waiting} title={t.verification}>
-        <p className="text-sm text-muted-foreground">{t.verificationLead}</p>
-        <Link to="/verification" className={buttonVariants()}>
-          {t.open}
-        </Link>
-      </NextStepCard>
-    ),
-    work.regions.length === 0 && (
-      <NextStepCard key="regions" label={t.waiting} title={t.chooseYourRegions}>
-        <p className="text-sm text-muted-foreground">{t.chooseRegionsLead}</p>
-        <Link to="/regions" className={buttonVariants()}>
-          {t.chooseRegions}
-        </Link>
-      </NextStepCard>
-    ),
-    jobs && (
-      <NextStepCard
-        key="jobs"
-        label={t.waiting}
-        title={t.jobsWaiting(invitations.length, matches.length)}
-      >
-        <p className="text-sm text-muted-foreground">
-          {invitations.length > 0 ? t.invitationsLead : t.matchesLead}
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {invitations.length > 0 && (
-            <Button onClick={() => onSee("invitations")}>{t.seeInvitations}</Button>
-          )}
-          {matches.length > 0 && (
-            <Button
-              variant={invitations.length > 0 ? "outline" : "default"}
-              onClick={() => onSee("matches")}
-            >
-              {t.seeMatches}
-            </Button>
-          )}
-        </div>
-      </NextStepCard>
-    ),
-  ].filter(Boolean);
+    hired > 0 && {
+      label: t.more.hired,
+      card: (
+        <NextStepCard key="hired" label={t.waiting} title={t.hiredWaiting(hired)}>
+          <p className="text-sm text-muted-foreground">{t.hiredLead}</p>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => onSee("active")}>{t.seeActive}</Button>
+          </div>
+        </NextStepCard>
+      ),
+    },
+    !work.verified && {
+      label: t.more.verification,
+      card: (
+        <NextStepCard key="verification" label={t.waiting} title={t.verification}>
+          <p className="text-sm text-muted-foreground">{t.verificationLead}</p>
+          <Link to="/verification" className={buttonVariants()}>
+            {t.open}
+          </Link>
+        </NextStepCard>
+      ),
+    },
+    work.regions.length === 0 && {
+      label: t.more.regions,
+      card: (
+        <NextStepCard key="regions" label={t.waiting} title={t.chooseYourRegions}>
+          <p className="text-sm text-muted-foreground">{t.chooseRegionsLead}</p>
+          <Link to="/regions" className={buttonVariants()}>
+            {t.chooseRegions}
+          </Link>
+        </NextStepCard>
+      ),
+    },
+    jobs && {
+      label: t.more.jobs,
+      card: (
+        <NextStepCard
+          key="jobs"
+          label={t.waiting}
+          title={t.jobsWaiting(invitations.length, matches.length)}
+        >
+          <p className="text-sm text-muted-foreground">
+            {invitations.length > 0 ? t.invitationsLead : t.matchesLead}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {invitations.length > 0 && (
+              <Button onClick={() => onSee("invitations")}>{t.seeInvitations}</Button>
+            )}
+            {matches.length > 0 && (
+              <Button
+                variant={invitations.length > 0 ? "outline" : "default"}
+                onClick={() => onSee("matches")}
+              >
+                {t.seeMatches}
+              </Button>
+            )}
+          </div>
+        </NextStepCard>
+      ),
+    },
+  ].filter((each) => each !== false);
   if (cards.length === 0) {
     return (
       <NextStepCard label={t.waiting} title={t.nothingWaiting}>
@@ -154,7 +166,17 @@ function Waiting({ work, onSee }: { work: Work; onSee: (tab: Tab) => void }) {
       </NextStepCard>
     );
   }
-  return cards[0];
+  const [first, ...rest] = cards;
+  return (
+    <div className="space-y-2">
+      {first!.card}
+      {rest.length > 0 && (
+        <p className="text-sm text-muted-foreground">
+          {t.moreWaiting(rest.map((each) => each.label))}
+        </p>
+      )}
+    </div>
+  );
 }
 
 function Matches({ matches, available }: { matches: Match[]; available: boolean }) {

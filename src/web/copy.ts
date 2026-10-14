@@ -113,14 +113,8 @@ export const copy = {
     filters: "Filters",
     clear: "Clear filters",
     availableOnly: "Available for Jobs only",
-    sort: "Sort by",
-    sorts: {
-      recommended: "Recommended",
-      rating: "Highest rated",
-      reviews: "Most Reviews",
-    },
-    recommendedLead:
-      "Recommended puts those Available for Jobs first, then by Review average, then by how many Reviews, then by name.",
+    orderLead:
+      "Those Available for Jobs come first, then by Review average, then by how many Reviews, then by name.",
     count: (count: number) => (count === 1 ? "1 Artisan" : `${count} Artisans`),
     showing: (from: number, to: number, count: number) => `${from}–${to} of ${count} Artisans`,
     empty: "No Artisan is verified for this trade here yet.",
@@ -173,7 +167,8 @@ export const copy = {
     chooseJob: "Choose a Job",
     sendInvitation: "Send the Invitation",
     invited: (name: string) => `${name} is invited.`,
-    noOpenJob: "You have no Open Job to invite to. Post one first.",
+    noOpenJob: (name: string, trades: string) =>
+      `You have no Open Job in ${trades}, the trades ${name} is verified for. Post one first.`,
     postJob: "Post a Job",
     cancel: "Cancel",
     gallery: "Work photos",
@@ -493,6 +488,14 @@ export const copy = {
   home: {
     title: "Home",
     waiting: "Waiting on you",
+    more: {
+      hired: "Hired work",
+      verification: "Verification",
+      regions: "your Regions",
+      jobs: "Job Matches and Invitations",
+    },
+    moreWaiting: (items: string[]) =>
+      `Also waiting: ${items.join(", ")}. Each comes up here in turn.`,
     verification: "Get verified to start quoting",
     open: "Open Verification",
     verificationLead: "You are offered Jobs only in the Service Categories you are verified for.",

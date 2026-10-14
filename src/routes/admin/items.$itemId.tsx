@@ -57,7 +57,10 @@ function QueueItemPage() {
         item.decided ? <Badge variant="secondary">{t.decided}</Badge> : <Badge>{t.open}</Badge>
       }
     >
-      <QueueCounts counts={item.counts} current={item.queue} />
+      {/* On a phone the crumbs and the Sidebar's menu say where the Admin is. */}
+      <div className="hidden md:block">
+        <QueueCounts counts={item.counts} current={item.queue} />
+      </div>
       <div className={withSidebar}>
         <div className="min-w-0 space-y-6">
           {item.decided ? (
