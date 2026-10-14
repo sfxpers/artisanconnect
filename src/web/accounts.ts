@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { env } from "cloudflare:workers";
 import { notFound } from "@tanstack/react-router";
+import { getRequestUrl } from "@tanstack/react-start/server";
 import type { SignUpDetails } from "@/domain/accounts/inputs";
 import { visitor } from "@/domain/actor";
 import { localMail } from "@/worker/ports";
@@ -19,7 +20,10 @@ import {
 type Guarded<T> = T & { turnstileToken?: string };
 type Acceptance = { rulesVersion: number; consentsToDataUse: boolean };
 
-/** Who is signed in (an Account or an Admin), as they see themselves, and the Turnstile site key. */
+/**
+ * Who is signed in (an Account or an Admin), as they see themselves, the
+ * Turnstile site key, and the app's origin, for links shared off the site.
+ */
 export const getSession = createServerFn({ method: "GET" }).handler(async () => {
   const domain = requestDomain();
   const actor = await requestActor(domain);
@@ -27,6 +31,7 @@ export const getSession = createServerFn({ method: "GET" }).handler(async () => 
     me: await domain.accounts.me(actor),
     admin: await domain.admins.me(actor),
     turnstileSiteKey: env.TURNSTILE_SITE_KEY,
+    origin: getRequestUrl().origin,
   };
 });
 

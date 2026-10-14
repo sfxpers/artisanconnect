@@ -47,10 +47,11 @@ test("a Client compares Quotes in the order sent, or by total, lowest first", as
   await signIn(page, { email, password });
   await page.goto(`/jobs/${jobId}`);
 
-  const quotes = page
-    .getByRole("list")
-    .filter({ has: page.getByRole("button", { name: "Hire", exact: true }) });
-  const names = quotes.getByText(/^(Sipho Dlamini|Themba Nkosi)$/);
+  // Each Quote is a column of the comparison table, headed by the Artisan.
+  const names = page
+    .getByRole("table", { name: "Quotes side by side" })
+    .getByRole("columnheader")
+    .filter({ hasText: /^(Sipho Dlamini|Themba Nkosi)$/ });
   await expect(names).toHaveText(["Sipho Dlamini", "Themba Nkosi"]);
   // A click before the page hydrates does nothing, so try until the order changes.
   await expect(async () => {

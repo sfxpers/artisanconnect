@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { useAppForm } from "@/components/form";
-import { NextStepCard, Refusal } from "@/components/page";
+import { Deadline, NextStepCard, Refusal } from "@/components/page";
 import { useAction } from "@/components/use-action";
 import {
   CANCELLATION_REASON_MAX,
@@ -37,7 +37,7 @@ import {
 } from "@/domain/engagements/inputs";
 import { formatRands, PROTECTION_FEE_PERCENT } from "@/domain/money";
 import { formatDay } from "@/domain/sa-days";
-import { copy, formatDate } from "@/web/copy";
+import { copy, formatDate, formatDeadline } from "@/web/copy";
 import {
   acceptUpdatedQuote,
   answerNotStarted,
@@ -119,7 +119,7 @@ function nextStep(engagement: Engagement, asClient: boolean): [string, string] {
     case "work-started":
       return [t.workStarted, asClient ? t.workStartedClientLead : t.workStartedArtisanLead];
     case "awaiting-approval": {
-      const by = engagement.approval ? formatDate(engagement.approval.dueAt) : "";
+      const by = engagement.approval ? formatDeadline(engagement.approval.dueAt) : "";
       return asClient
         ? [t.awaitingClient, t.awaitingClientLead(by)]
         : [t.awaitingArtisan, t.awaitingArtisanLead(by)];
@@ -153,14 +153,14 @@ function nextStep(engagement: Engagement, asClient: boolean): [string, string] {
           asClient,
           labourRefund: labourRefund && {
             amount: formatRands(labourRefund.amountCents),
-            on: formatDate(labourRefund.dueAt),
+            on: formatDeadline(labourRefund.dueAt),
           },
         }),
       ];
     }
   }
   if (engagement.startClaim) {
-    const answerBy = formatDate(engagement.startClaim.answerBy);
+    const answerBy = formatDeadline(engagement.startClaim.answerBy);
     return asClient
       ? [t.claimedClient, t.claimedClientLead(answerBy)]
       : [t.claimedArtisan, t.claimedArtisanLead(answerBy)];
@@ -456,7 +456,7 @@ function DisputeForm({
     <form.AppForm>
       <form.Form className="space-y-3 rounded-lg border p-3">
         <p className="text-sm text-muted-foreground">
-          {asClient ? d.clientLead(labour) : d.artisanLead(labour, until && formatDate(until))}
+          {asClient ? d.clientLead(labour) : d.artisanLead(labour, until && formatDeadline(until))}
         </p>
         {asClient && (
           <form.AppField name="amount">
@@ -1216,7 +1216,7 @@ export function CompletionCard({ engagement }: { engagement: Engagement }) {
 export function PaymentsCard({ engagement }: { engagement: Engagement }) {
   const { approval } = engagement;
   const barLabel = approval
-    ? (engagement.state === "disputed" ? t.restBar : t.approvalBar)(formatDate(approval.dueAt))
+    ? (engagement.state === "disputed" ? t.restBar : t.approvalBar)(formatDeadline(approval.dueAt))
     : "";
   return (
     <Card>
@@ -1224,11 +1224,11 @@ export function PaymentsCard({ engagement }: { engagement: Engagement }) {
         <CardTitle>{t.payments}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <ol className="divide-y rounded-xl border bg-card">
+        <ol className="divide-y rounded-lg border">
           {engagement.money.payments.map((payment, index) => (
             <li key={payment.part} className="flex flex-wrap items-center gap-3 p-3 text-sm">
-              <span className="flex size-6 items-center justify-center rounded-full bg-muted text-xs font-medium">
-                {index + 1}
+              <span className="text-xs font-medium text-muted-foreground tabular-nums">
+                {index + 1}.
               </span>
               <div className="min-w-0 flex-1">
                 <div className="font-medium">{t.parts[payment.part].title}</div>
@@ -1236,8 +1236,10 @@ export function PaymentsCard({ engagement }: { engagement: Engagement }) {
                   {t.parts[payment.part].released}
                 </div>
               </div>
-              <span className="font-medium">{formatRands(payment.amountCents)}</span>
-              <Badge variant="secondary">{t.partStates[payment.state]}</Badge>
+              <span className="font-medium tabular-nums">{formatRands(payment.amountCents)}</span>
+              <Badge variant={payment.state === "released" ? "success" : "secondary"}>
+                {t.partStates[payment.state]}
+              </Badge>
             </li>
           ))}
         </ol>
@@ -1261,11 +1263,11 @@ function RefundsList({ engagement }: { engagement: Engagement }) {
   return (
     <div className="space-y-2">
       <h3 className="text-sm font-medium">{t.refunds}</h3>
-      <ul className="divide-y rounded-xl border bg-card">
+      <ul className="divide-y rounded-lg border">
         {engagement.refunds.map((each) => (
           <li key={each.refundId} className="flex flex-wrap items-center gap-3 p-3 text-sm">
             <div className="min-w-0 flex-1">
-              <div className="font-medium">{formatRands(each.amountCents)}</div>
+              <div className="font-medium tabular-nums">{formatRands(each.amountCents)}</div>
               <div className="text-xs text-muted-foreground">
                 {[
                   t.refundLine(
@@ -1433,7 +1435,7 @@ export function HiredQuoteCard({ engagement }: { engagement: Engagement }) {
             {engagement.warranty ?? copy.quote.noWarranty}
           </Fact>
           <Fact label={t.protectedUntil}>
-            {formatDate(engagement.protectedUntil)}
+            <Deadline at={engagement.protectedUntil} />
             <p className="text-xs font-normal text-muted-foreground">{t.protectedLead}</p>
           </Fact>
         </dl>
@@ -1446,7 +1448,7 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex items-baseline justify-between gap-3">
       <dt className="text-muted-foreground">{label}</dt>
-      <dd className="font-medium">{children}</dd>
+      <dd className="font-medium tabular-nums">{children}</dd>
     </div>
   );
 }

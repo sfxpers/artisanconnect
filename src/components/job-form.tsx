@@ -32,7 +32,7 @@ const t = copy.job;
 
 /** A Job as its Client sees it. */
 export type JobView = Extract<Awaited<ReturnType<typeof getJob>>, { as: "client" }>;
-type Suburb = { id: string; name: string; region: { id: string; name: string } };
+export type Suburb = { id: string; name: string; region: { id: string; name: string } };
 
 /** A Draft's form as last saved, or empty for a new Job. */
 function draftValuesOf(job: JobView | null) {
@@ -298,12 +298,16 @@ function asFormData(values: Record<string, string | undefined>) {
  * The suburb, searched as the City publishes it, each with its Region beside
  * it: two pairs of official names read alike (GOEDE HOOP and GOEDEHOOP).
  */
-function SuburbPicker({
+export function SuburbPicker({
   value,
   onChange,
+  label = t.suburb,
+  hint = t.suburbHint,
 }: {
   value: Suburb | null;
   onChange: (suburb: Suburb | null) => void;
+  label?: string;
+  hint?: string | null;
 }) {
   const [query, setQuery] = useState("");
   // What was found, and for which query, so an older answer never shows under a newer query.
@@ -326,7 +330,7 @@ function SuburbPicker({
 
   return (
     <Field>
-      <FieldLabel htmlFor="suburb">{t.suburb}</FieldLabel>
+      <FieldLabel htmlFor="suburb">{label}</FieldLabel>
       <Combobox
         items={found?.suburbs ?? []}
         filter={null}
@@ -349,7 +353,7 @@ function SuburbPicker({
           </ComboboxList>
         </ComboboxContent>
       </Combobox>
-      <FieldDescription>{t.suburbHint}</FieldDescription>
+      {hint && <FieldDescription>{hint}</FieldDescription>}
     </Field>
   );
 }

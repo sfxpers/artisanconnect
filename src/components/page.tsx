@@ -1,11 +1,12 @@
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import { Link, useRouter } from "@tanstack/react-router";
-import { CloudOff, Inbox } from "lucide-react";
+import { CircleAlert, CloudOff, Inbox } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { buttonVariants, Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Empty,
+  EmptyContent,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
@@ -17,22 +18,43 @@ import {
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
+  BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Wordmark } from "@/components/wordmark";
 import type { MarketplaceRules } from "@/domain/accounts/rules";
-import { copy, formatDate } from "@/web/copy";
+import { formatRands } from "@/domain/money";
+import { copy, countdownTo, formatDate } from "@/web/copy";
 
-/** A page's main column, with its title, the line under it, and its actions. */
+/** A step back up the pages, above a page's title. */
+export type Crumb = {
+  to: string;
+  label: string;
+  params?: Record<string, string>;
+  search?: Record<string, string>;
+};
+
+/**
+ * A page's main column: where the viewer is (the crumbs), the title with one
+ * status badge, the line under it, and its actions. 1280 pixels at most.
+ */
 export function Page({
   title,
   lead,
+  crumbs,
+  status,
+  meta,
   actions,
   narrow,
   children,
 }: {
-  title?: string;
+  title?: ReactNode;
   lead?: ReactNode;
+  crumbs?: Crumb[];
+  status?: ReactNode;
+  meta?: ReactNode;
   actions?: ReactNode;
   narrow?: boolean;
   children: ReactNode;
@@ -40,30 +62,63 @@ export function Page({
   return (
     <main
       className={cn(
-        "mx-auto w-full space-y-6 px-4 py-6 sm:px-6 sm:py-10",
-        narrow ? "max-w-xl" : "max-w-6xl",
+        "mx-auto w-full space-y-6 px-4 py-6 sm:px-6 lg:py-8",
+        narrow ? "max-w-2xl" : "max-w-7xl",
       )}
     >
-      {(title || actions) && (
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div className="max-w-2xl space-y-2">
-            {title && (
-              <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h1>
-            )}
-            {lead && <p className="text-muted-foreground">{lead}</p>}
+      {(crumbs || title || actions) && (
+        <header className="space-y-3">
+          {crumbs && <Crumbs crumbs={crumbs} current={typeof title === "string" ? title : null} />}
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="min-w-0 space-y-1">
+              {title && (
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <h1 className="text-2xl font-semibold">{title}</h1>
+                  {status}
+                </div>
+              )}
+              {meta && <p className="text-sm text-muted-foreground">{meta}</p>}
+              {lead && <p className="max-w-3xl text-muted-foreground">{lead}</p>}
+            </div>
+            {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
           </div>
-          {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
-        </div>
+        </header>
       )}
       {children}
     </main>
   );
 }
 
+function Crumbs({ crumbs, current }: { crumbs: Crumb[]; current: string | null }) {
+  return (
+    <Breadcrumb>
+      <BreadcrumbList>
+        {crumbs.map((crumb) => (
+          <Fragment key={crumb.label}>
+            <BreadcrumbItem>
+              <BreadcrumbLink
+                render={<Link to={crumb.to} params={crumb.params} search={crumb.search} />}
+              >
+                {crumb.label}
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+          </Fragment>
+        ))}
+        {current && (
+          <BreadcrumbItem>
+            <BreadcrumbPage className="max-w-48 truncate">{current}</BreadcrumbPage>
+          </BreadcrumbItem>
+        )}
+      </BreadcrumbList>
+    </Breadcrumb>
+  );
+}
+
 /** A page's main column and its sidebar, which goes under it on a phone. */
 export const withSidebar = "grid items-start gap-6 lg:grid-cols-3 lg:*:first:col-span-2";
 
-/** The highlighted card for what the viewer can do now (#107). */
+/** The card for what the viewer can do now (#107): one per page, outlined in the brand. */
 export function NextStepCard({
   label,
   title,
@@ -74,42 +129,89 @@ export function NextStepCard({
   children: ReactNode;
 }) {
   return (
-    <Card className="bg-secondary/60 ring-2 ring-primary">
+    <Card className="ring-primary">
       <CardHeader>
-        <CardDescription className="text-xs font-semibold tracking-wide text-primary uppercase">
-          {label}
-        </CardDescription>
-        <CardTitle className="text-xl font-semibold tracking-tight">{title}</CardTitle>
+        <CardDescription className="text-xs font-medium text-primary">{label}</CardDescription>
+        <CardTitle className="text-lg font-semibold">{title}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">{children}</CardContent>
     </Card>
   );
 }
 
-/** Signing in, signing up, and getting back in: one card, under the wordmark. */
+/** One line of money: what it is, the amount, and a note under it. */
+export type MoneyLine = { label: ReactNode; cents: number; note?: ReactNode; total?: boolean };
+
+/** Money as a line breakdown, the total last and ruled off; rands in tabular figures. */
+export function MoneyLines({ lines, className }: { lines: MoneyLine[]; className?: string }) {
+  return (
+    <dl className={cn("space-y-2 text-sm", className)}>
+      {lines.map((line, index) => (
+        <div key={index} className="space-y-2">
+          {line.total && <Separator />}
+          <div
+            className={cn(
+              "flex items-baseline justify-between gap-4",
+              line.total && "font-semibold",
+            )}
+          >
+            <dt className={cn(!line.total && "text-muted-foreground")}>{line.label}</dt>
+            <dd className="tabular-nums">{formatRands(line.cents)}</dd>
+          </div>
+          {line.note && <p className="text-xs text-muted-foreground">{line.note}</p>}
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+/** A deadline as its date and how long is left. */
+export function Deadline({ at, className }: { at: Date | string; className?: string }) {
+  return (
+    <time dateTime={new Date(at).toISOString()} className={className}>
+      {formatDate(at)}{" "}
+      {/* The countdown may move on between the server's render and the browser's. */}
+      <span className="text-muted-foreground" suppressHydrationWarning>
+        ({countdownTo(at)})
+      </span>
+    </time>
+  );
+}
+
+/** Signing in, signing up, and getting back in: one card under the wordmark (shadcn login-03). */
 export function AuthCard({
   label,
   title,
   lead,
+  footer,
   children,
 }: {
-  label: string;
+  label?: string;
   title: string;
   lead?: ReactNode;
+  footer?: ReactNode;
   children: ReactNode;
 }) {
   return (
-    <main className="mx-auto w-full max-w-md space-y-6 px-4 py-10 sm:py-16">
-      <Card className="shadow-md">
-        <CardHeader className="gap-2">
-          <CardDescription className="text-xs font-semibold tracking-wide text-primary uppercase">
-            {label}
-          </CardDescription>
-          <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-          {lead && <p className="text-sm text-muted-foreground">{lead}</p>}
-        </CardHeader>
-        <CardContent className="space-y-5">{children}</CardContent>
-      </Card>
+    <main className="flex min-h-full flex-col items-center gap-6 bg-muted px-4 py-10 sm:py-16">
+      <div className="flex w-full max-w-md flex-col gap-6">
+        <Link to="/" aria-label={copy.appName} className="self-center rounded-md">
+          <Wordmark />
+        </Link>
+        <Card>
+          <CardHeader className="text-center">
+            {label && (
+              <CardDescription className="text-xs font-medium text-primary">
+                {label}
+              </CardDescription>
+            )}
+            <h1 className="text-xl font-semibold">{title}</h1>
+            {lead && <CardDescription>{lead}</CardDescription>}
+          </CardHeader>
+          <CardContent className="space-y-5">{children}</CardContent>
+        </Card>
+        {footer && <div className="text-center text-sm text-muted-foreground">{footer}</div>}
+      </div>
     </main>
   );
 }
@@ -117,16 +219,12 @@ export function AuthCard({
 /** A Marketplace rules version, to accept at sign-in or reopening. */
 export function RulesCard({ rules }: { rules: MarketplaceRules }) {
   return (
-    <div className="rounded-lg border p-3 text-sm">
+    <div className="space-y-1 rounded-lg border p-3 text-sm">
       <div className="text-xs text-muted-foreground">
         {copy.rules.version(rules.version, formatDate(rules.publishedAt))}
       </div>
       <p>{rules.summary}</p>
-      <Link
-        to="/rules"
-        target="_blank"
-        className="font-medium text-primary underline underline-offset-4"
-      >
+      <Link to="/rules" target="_blank" className="font-medium text-primary hover:underline">
         {copy.signUp.rules.read}
       </Link>
     </div>
@@ -135,16 +233,7 @@ export function RulesCard({ rules }: { rules: MarketplaceRules }) {
 
 /** The way back to the list a page belongs to, above its title. */
 export function BackCrumb({ to, label }: { to: "/jobs" | "/home"; label: string }) {
-  return (
-    <Breadcrumb>
-      <BreadcrumbList>
-        <BreadcrumbItem>
-          <BreadcrumbLink render={<Link to={to} />}>{label}</BreadcrumbLink>
-        </BreadcrumbItem>
-        <BreadcrumbSeparator />
-      </BreadcrumbList>
-    </Breadcrumb>
-  );
+  return <Crumbs crumbs={[{ to, label }]} current={null} />;
 }
 
 /** Why the last request was refused, shown where the person acted. */
@@ -152,30 +241,32 @@ export function Refusal({ message }: { message: string | null | undefined }) {
   if (!message) return null;
   return (
     <Alert variant="destructive">
+      <CircleAlert />
       <AlertDescription>{message}</AlertDescription>
     </Alert>
   );
 }
 
-/** What a list shows while it has nothing in it. */
+/** What a list shows while it has nothing in it, and what to do about it. */
 export function EmptyState({
   title,
   icon = <Inbox />,
+  action,
   children,
 }: {
   title?: string;
   icon?: ReactNode;
+  action?: ReactNode;
   children: ReactNode;
 }) {
   return (
-    <Empty className="border border-border bg-card">
+    <Empty className="border bg-card">
       <EmptyHeader>
-        <EmptyMedia variant="icon" className="bg-secondary text-secondary-foreground">
-          {icon}
-        </EmptyMedia>
+        <EmptyMedia variant="icon">{icon}</EmptyMedia>
         {title && <EmptyTitle>{title}</EmptyTitle>}
         <EmptyDescription>{children}</EmptyDescription>
       </EmptyHeader>
+      {action && <EmptyContent>{action}</EmptyContent>}
     </Empty>
   );
 }
@@ -184,21 +275,22 @@ export function EmptyState({
 export function PageSkeleton() {
   return (
     <main
-      className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 sm:px-6 sm:py-10"
+      className="mx-auto w-full max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:py-8"
       aria-busy="true"
       aria-label={copy.loading}
     >
       <div className="space-y-3">
+        <Skeleton className="h-4 w-40" />
         <Skeleton className="h-8 w-2/3 max-w-sm" />
         <Skeleton className="h-4 w-full max-w-xl" />
       </div>
       <div className={withSidebar}>
         <div className="space-y-4">
-          <Skeleton className="h-40 rounded-xl" />
-          <Skeleton className="h-24 rounded-xl" />
-          <Skeleton className="h-24 rounded-xl" />
+          <Skeleton className="h-40" />
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
         </div>
-        <Skeleton className="h-56 rounded-xl" />
+        <Skeleton className="h-56" />
       </div>
     </main>
   );
@@ -210,21 +302,20 @@ export function PageError() {
   const t = copy.error;
   return (
     <Page narrow>
-      <Empty className="border border-border bg-card py-12">
-        <EmptyHeader>
-          <EmptyMedia variant="icon" className="bg-destructive/10 text-destructive">
-            <CloudOff />
-          </EmptyMedia>
-          <EmptyTitle className="text-lg">{t.title}</EmptyTitle>
-          <EmptyDescription>{t.lead}</EmptyDescription>
-        </EmptyHeader>
-        <div className="flex flex-wrap justify-center gap-2">
-          <Button onClick={() => router.invalidate()}>{t.retry}</Button>
-          <Link to="/" className={buttonVariants({ variant: "outline" })}>
-            {t.home}
-          </Link>
-        </div>
-      </Empty>
+      <EmptyState
+        icon={<CloudOff />}
+        title={t.title}
+        action={
+          <div className="flex flex-wrap justify-center gap-2">
+            <Button onClick={() => router.invalidate()}>{t.retry}</Button>
+            <Link to="/" className={buttonVariants({ variant: "outline" })}>
+              {t.home}
+            </Link>
+          </div>
+        }
+      >
+        {t.lead}
+      </EmptyState>
     </Page>
   );
 }

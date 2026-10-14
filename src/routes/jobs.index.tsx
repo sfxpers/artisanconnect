@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { NextStepCard, Page } from "@/components/page";
-import { copy, formatDate } from "@/web/copy";
+import { copy, formatDeadline } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
 import { getMyJobs } from "@/web/jobs";
 
@@ -73,7 +73,9 @@ function Group({ title, jobs }: { title: string; jobs: Summary[] }) {
                     {[
                       job.category,
                       job.region,
-                      job.state === "open" && job.expiresAt && t.expires(formatDate(job.expiresAt)),
+                      job.state === "open" &&
+                        job.expiresAt &&
+                        t.expires(formatDeadline(job.expiresAt)),
                     ]
                       .filter(Boolean)
                       .join(" · ")}

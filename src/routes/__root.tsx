@@ -2,7 +2,11 @@ import type { ReactNode } from "react";
 import { HeadContent, Link, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import appCss from "@/styles.css?url";
+import { ThemeProvider } from "next-themes";
 import { AppFooter } from "@/components/app-footer";
+import { AdminShell } from "@/components/admin-shell";
+import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ConfirmProvider } from "@/components/confirm";
 import { AppHeader } from "@/components/app-header";
@@ -33,22 +37,34 @@ export const Route = createRootRoute({
 
 function RootComponent() {
   const { me, admin } = Route.useRouteContext();
+  const skip = (
+    <a
+      href="#main"
+      className="sr-only z-50 rounded-md bg-primary px-3 py-2 text-primary-foreground focus:not-sr-only focus:fixed focus:top-2 focus:left-2"
+    >
+      {copy.skipToContent}
+    </a>
+  );
   return (
     <RootDocument>
-      <div className="flex min-h-svh flex-col">
-        <a
-          href="#main"
-          className="sr-only z-50 rounded-lg bg-primary px-3 py-2 text-primary-foreground focus:not-sr-only focus:fixed focus:top-2 focus:left-2"
-        >
-          {copy.skipToContent}
-        </a>
-        <AppHeader me={me} admin={admin} />
-        {me?.standing.suspended && <SuspendedBanner suspended={me.standing.suspended} />}
-        <div id="main" className="flex-1">
-          <Outlet />
+      {admin ? (
+        <AdminShell admin={admin}>
+          {skip}
+          <div id="main" className="flex-1">
+            <Outlet />
+          </div>
+        </AdminShell>
+      ) : (
+        <div className="flex min-h-svh flex-col">
+          {skip}
+          <AppHeader me={me} />
+          {me?.standing.suspended && <SuspendedBanner suspended={me.standing.suspended} />}
+          <div id="main" className="flex flex-1 flex-col">
+            <Outlet />
+          </div>
+          <AppFooter signedIn={me !== null} />
         </div>
-        {!admin && <AppFooter signedIn={me !== null} />}
-      </div>
+      )}
     </RootDocument>
   );
 }
@@ -57,11 +73,11 @@ function RootComponent() {
 function SuspendedBanner({ suspended }: { suspended: { reason: string; since: Date } }) {
   const t = copy.standing;
   return (
-    <Alert variant="destructive" className="mx-auto max-w-6xl rounded-none border-x-0 border-t-0">
+    <Alert variant="destructive" className="rounded-none border-x-0 border-t-0">
       <AlertTitle>{t.suspended}</AlertTitle>
       <AlertDescription>
         {t.suspendedLead(suspended.reason)}{" "}
-        <Link to="/support" className="font-medium text-primary underline underline-offset-4">
+        <Link to="/support" className="font-medium text-primary hover:underline">
           {t.contest}
         </Link>
       </AlertDescription>
@@ -80,24 +96,25 @@ function NotFound() {
   );
 }
 
-/** Dark when the device is, from the first paint and as it changes. */
-const followColorScheme = `(() => {
-  const dark = matchMedia("(prefers-color-scheme: dark)");
-  const apply = () => document.documentElement.classList.toggle("dark", dark.matches);
-  apply();
-  dark.addEventListener("change", apply);
-})();`;
-
 function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    // The scheme is set before the first paint, so the class differs from the server's.
+    // next-themes sets the theme's class before the first paint, so it differs from the server's.
     <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
-        <script dangerouslySetInnerHTML={{ __html: followColorScheme }} />
       </head>
       <body>
-        <ConfirmProvider>{children}</ConfirmProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <TooltipProvider>
+            <ConfirmProvider>{children}</ConfirmProvider>
+            <Toaster />
+          </TooltipProvider>
+        </ThemeProvider>
         <TanStackRouterDevtools position="bottom-right" />
         <Scripts />
       </body>

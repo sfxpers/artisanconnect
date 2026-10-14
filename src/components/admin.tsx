@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { cn } from "@/lib/utils";
+import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { QUEUE_NAMES, type QueueName } from "@/domain/queue-names";
 import type { Block } from "@/domain/queues";
@@ -7,7 +7,7 @@ import { copy } from "@/web/copy";
 
 // Pieces of the Admin's pages, in the Contract look (#107).
 
-/** Every queue with its count, each linking to the home stream filtered to it. */
+/** All queues and each queue with its count, each opening the home stream filtered to it. */
 export function QueueCounts({
   counts,
   current,
@@ -15,27 +15,29 @@ export function QueueCounts({
   counts: Record<QueueName, number>;
   current?: QueueName;
 }) {
+  const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
+  const link = (active: boolean) =>
+    buttonVariants({ variant: active ? "secondary" : "ghost", size: "sm" });
   return (
-    <nav aria-label={copy.admin.home.title} className="flex flex-wrap gap-2">
+    <nav aria-label={copy.admin.home.filter} className="flex flex-wrap gap-1">
+      <Link to="/admin" className={link(!current)} aria-current={current ? undefined : "page"}>
+        {copy.admin.home.all}
+        <Badge variant="outline" className="tabular-nums">
+          {total}
+        </Badge>
+      </Link>
       {QUEUE_NAMES.map((queue) => (
         <Link
           key={queue}
           to="/admin"
           search={{ queue }}
-          className={cn(
-            "inline-flex items-center gap-1.5 rounded-full border bg-background px-3 py-1 text-xs",
-            queue === current ? "border-primary text-foreground" : "text-muted-foreground",
-          )}
+          className={link(queue === current)}
+          aria-current={queue === current ? "page" : undefined}
         >
           {copy.admin.queues[queue]}
-          <span
-            className={cn(
-              "font-semibold tabular-nums",
-              counts[queue] > 0 ? "text-foreground" : "text-muted-foreground",
-            )}
-          >
+          <Badge variant={counts[queue] > 0 ? "default" : "outline"} className="tabular-nums">
             {counts[queue]}
-          </span>
+          </Badge>
         </Link>
       ))}
     </nav>

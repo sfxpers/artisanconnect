@@ -1,15 +1,8 @@
 import { useState } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Link, createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import {
@@ -54,27 +47,17 @@ type Item = Awaited<ReturnType<typeof getQueueItem>>;
 function QueueItemPage() {
   const item = Route.useLoaderData();
   return (
-    <Page>
-      <div className="space-y-3">
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink render={<Link to="/admin" />}>{t.queues}</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbLink render={<Link to="/admin" search={{ queue: item.queue }} />}>
-                {copy.admin.queues[item.queue]}
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-        <QueueCounts counts={item.counts} current={item.queue} />
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{item.title}</h1>
-          {item.decided ? <Badge variant="secondary">{t.decided}</Badge> : <Badge>{t.open}</Badge>}
-        </div>
-      </div>
+    <Page
+      crumbs={[
+        { to: "/admin", label: t.queues },
+        { to: "/admin", search: { queue: item.queue }, label: copy.admin.queues[item.queue] },
+      ]}
+      title={item.title}
+      status={
+        item.decided ? <Badge variant="secondary">{t.decided}</Badge> : <Badge>{t.open}</Badge>
+      }
+    >
+      <QueueCounts counts={item.counts} current={item.queue} />
       <div className={withSidebar}>
         <div className="min-w-0 space-y-6">
           {item.decided ? (
@@ -127,7 +110,7 @@ function QueueItemPage() {
               <ol className="space-y-2 text-sm">
                 {item.timeline.map((entry, index) => (
                   <li key={index} className="flex gap-2">
-                    <div className="mt-1.5 size-2 shrink-0 rounded-full bg-primary" />
+                    <div className="mt-1.5 size-2 shrink-0 rounded-full bg-primary" aria-hidden />
                     <div>
                       <div>{entry.text}</div>
                       <div className="text-xs text-muted-foreground">{formatDate(entry.at)}</div>

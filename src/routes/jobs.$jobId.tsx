@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DraftForm, EditForm, type JobView } from "@/components/job-form";
-import { BackCrumb, NextStepCard, Page, Refusal, withSidebar } from "@/components/page";
+import { NextStepCard, Page, Refusal, withSidebar } from "@/components/page";
 import { useAction } from "@/components/use-action";
 import { Details, Fact } from "@/components/job-details";
 import { InviteList, type InviteListView } from "@/components/invite-list";
@@ -35,7 +35,7 @@ import {
   type ConversationView,
 } from "@/components/conversation";
 import { JOB_TABS, JobTabs, type JobTab } from "@/components/job-tabs";
-import { copy, formatDate } from "@/web/copy";
+import { copy, formatDeadline } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
 import { getConversation, getConversations } from "@/web/conversations";
 import { getInviteList } from "@/web/invitations";
@@ -164,25 +164,20 @@ function ClientJob({
   open: ConversationView | null;
 }) {
   return (
-    <Page>
-      <BackCrumb to="/jobs" label={t.breadcrumb} />
-      <div className="space-y-1">
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            {job.title || copy.jobs.untitled}
-          </h1>
-          <Badge variant={job.state === "open" ? "default" : "secondary"}>
-            {job.engagement
-              ? copy.engagement.states[job.engagement.state]
-              : copy.jobs.states[job.state]}
-          </Badge>
-        </div>
-        <p className="text-sm text-muted-foreground">
-          {[job.category?.name, job.suburb?.name, job.siteType && t.siteTypes[job.siteType]]
-            .filter(Boolean)
-            .join(" · ")}
-        </p>
-      </div>
+    <Page
+      crumbs={[{ to: "/jobs", label: t.breadcrumb }]}
+      title={job.title || copy.jobs.untitled}
+      status={
+        <Badge variant={job.state === "open" ? "default" : "secondary"}>
+          {job.engagement
+            ? copy.engagement.states[job.engagement.state]
+            : copy.jobs.states[job.state]}
+        </Badge>
+      }
+      meta={[job.category?.name, job.suburb?.name, job.siteType && t.siteTypes[job.siteType]]
+        .filter(Boolean)
+        .join(" · ")}
+    >
       {job.state === "draft" ? (
         <Draft job={job} />
       ) : (
@@ -287,145 +282,147 @@ function Posted({
   const sent = quotes.filter((quote) => quote.state === "sent").length;
 
   return (
-    <div className={withSidebar}>
-      <div className="min-w-0 space-y-6">
-        <NextStepCard
-          label={copy.jobs.nextStep}
-          title={sent > 0 ? copy.quotes.title(sent) : copy.jobs.states[job.state]}
-        >
-          {job.outOfView && <Refusal message={t.outOfView(job.outOfView.reason)} />}
-          {job.state === "held" && <p className="text-sm text-muted-foreground">{t.heldLead}</p>}
-          {job.state === "open" && job.expiresAt && (
-            <p className="text-sm text-muted-foreground">{t.openLead(formatDate(job.expiresAt))}</p>
+    <div className="space-y-6">
+      <NextStepCard
+        label={copy.jobs.nextStep}
+        title={sent > 0 ? copy.quotes.title(sent) : copy.jobs.states[job.state]}
+      >
+        {job.outOfView && <Refusal message={t.outOfView(job.outOfView.reason)} />}
+        {job.state === "held" && <p className="text-sm text-muted-foreground">{t.heldLead}</p>}
+        {job.state === "open" && job.expiresAt && (
+          <p className="text-sm text-muted-foreground">
+            {t.openLead(formatDeadline(job.expiresAt))}
+          </p>
+        )}
+        {job.state === "expired" && (
+          <p className="text-sm text-muted-foreground">{t.expiredLead}</p>
+        )}
+        {job.state === "closed" && <p className="text-sm text-muted-foreground">{t.closedLead}</p>}
+        {job.state === "open" && !job.takesQuotes && (
+          <p className="text-sm text-muted-foreground">{t.fullLead}</p>
+        )}
+        <NotHired job={job} />
+        {job.state !== "held" && (
+          <ClientQuotes jobId={job.jobId} quotes={quotes} conversations={conversations} />
+        )}
+        {notice && <p className="text-sm text-muted-foreground">{notice}</p>}
+        {refused && !beingChecked && <Refusal message={t.editRefused(refused.reason)} />}
+        {!editing && <Refusal message={action.refusal} />}
+        <div className="flex flex-wrap gap-2">
+          {job.state === "held" && (
+            <Button
+              variant="outline"
+              disabled={action.busy}
+              onClick={() => void action.run(() => withdrawJob({ data: { jobId: job.jobId } }))}
+            >
+              {t.withdraw}
+            </Button>
           )}
           {job.state === "expired" && (
-            <p className="text-sm text-muted-foreground">{t.expiredLead}</p>
+            <Button
+              disabled={action.busy}
+              onClick={() => void action.run(() => renewJob({ data: { jobId: job.jobId } }))}
+            >
+              {t.renew}
+            </Button>
           )}
-          {job.state === "closed" && (
-            <p className="text-sm text-muted-foreground">{t.closedLead}</p>
+          {editable && !beingChecked && !editing && (
+            <Button
+              variant="outline"
+              disabled={action.busy}
+              onClick={() => {
+                setNotice(null);
+                action.setRefusal(null);
+                setEditing(true);
+              }}
+            >
+              {t.edit}
+            </Button>
           )}
-          {job.state === "open" && !job.takesQuotes && (
-            <p className="text-sm text-muted-foreground">{t.fullLead}</p>
+          {job.state === "open" && (
+            <Button
+              variant="ghost"
+              disabled={action.busy}
+              onClick={async () => {
+                if (!(await confirm(t.closeConfirm))) return;
+                void action.run(() => closeJob({ data: { jobId: job.jobId } }));
+              }}
+            >
+              {t.close}
+            </Button>
           )}
-          <NotHired job={job} />
-          {job.state !== "held" && (
-            <ClientQuotes jobId={job.jobId} quotes={quotes} conversations={conversations} />
-          )}
-          {notice && <p className="text-sm text-muted-foreground">{notice}</p>}
-          {refused && !beingChecked && <Refusal message={t.editRefused(refused.reason)} />}
-          {!editing && <Refusal message={action.refusal} />}
-          <div className="flex flex-wrap gap-2">
-            {job.state === "held" && (
-              <Button
-                variant="outline"
-                disabled={action.busy}
-                onClick={() => void action.run(() => withdrawJob({ data: { jobId: job.jobId } }))}
-              >
-                {t.withdraw}
-              </Button>
-            )}
-            {job.state === "expired" && (
-              <Button
-                disabled={action.busy}
-                onClick={() => void action.run(() => renewJob({ data: { jobId: job.jobId } }))}
-              >
-                {t.renew}
-              </Button>
-            )}
-            {editable && !beingChecked && !editing && (
-              <Button
-                variant="outline"
-                disabled={action.busy}
-                onClick={() => {
-                  setNotice(null);
-                  action.setRefusal(null);
-                  setEditing(true);
-                }}
-              >
-                {t.edit}
-              </Button>
-            )}
-            {job.state === "open" && (
-              <Button
-                variant="ghost"
-                disabled={action.busy}
-                onClick={async () => {
-                  if (!(await confirm(t.closeConfirm))) return;
-                  void action.run(() => closeJob({ data: { jobId: job.jobId } }));
-                }}
-              >
-                {t.close}
-              </Button>
-            )}
-          </div>
-        </NextStepCard>
+        </div>
+      </NextStepCard>
 
-        {invite && (
-          <InviteList
-            jobId={job.jobId}
-            inviteOnly={job.matching === "invite-only"}
-            hireAgain={job.hireAgain && (job.hireAgain.publicName ?? copy.quotes.noName)}
-            list={invite}
-          />
-        )}
+      <div className={withSidebar}>
+        <div className="min-w-0 space-y-6">
+          {invite && (
+            <InviteList
+              jobId={job.jobId}
+              inviteOnly={job.matching === "invite-only"}
+              hireAgain={job.hireAgain && (job.hireAgain.publicName ?? copy.quotes.noName)}
+              list={invite}
+            />
+          )}
 
-        {beingChecked && (
-          <Card>
-            <CardHeader>
-              <Badge variant="warning">{t.beingChecked}</Badge>
-              <p className="text-sm text-muted-foreground">{t.editBeingChecked}</p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Details job={{ ...job, ...beingChecked }} />
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={action.busy}
-                onClick={() => void action.run(() => withdrawJob({ data: { jobId: job.jobId } }))}
-              >
-                {t.withdraw}
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+          {beingChecked && (
+            <Card>
+              <CardHeader>
+                <Badge variant="warning">{t.beingChecked}</Badge>
+                <p className="text-sm text-muted-foreground">{t.editBeingChecked}</p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Details job={{ ...job, ...beingChecked }} />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={action.busy}
+                  onClick={() => void action.run(() => withdrawJob({ data: { jobId: job.jobId } }))}
+                >
+                  {t.withdraw}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
-        {editing && (
-          <Card>
-            <CardHeader>
-              <CardTitle>{t.editTitle}</CardTitle>
-              <p className="text-sm text-muted-foreground">{t.editLead}</p>
-            </CardHeader>
-            <CardContent>
-              <EditForm
-                job={job}
-                busy={action.busy}
-                refusal={action.refusal}
-                onCancel={() => setEditing(false)}
-                onSend={(form) =>
-                  void action.run(
-                    async () => {
-                      const edited = await editJob({ data: form });
-                      // One being checked shows in its own card.
-                      if (edited.ok && edited.value.edit === "applied") setNotice(t.editApplied);
-                      return edited;
-                    },
-                    () => setEditing(false),
-                  )
-                }
-              />
-            </CardContent>
-          </Card>
-        )}
+          {editing && (
+            <Card>
+              <CardHeader>
+                <CardTitle>{t.editTitle}</CardTitle>
+                <p className="text-sm text-muted-foreground">{t.editLead}</p>
+              </CardHeader>
+              <CardContent>
+                <EditForm
+                  job={job}
+                  busy={action.busy}
+                  refusal={action.refusal}
+                  onCancel={() => setEditing(false)}
+                  onSend={(form) =>
+                    void action.run(
+                      async () => {
+                        const edited = await editJob({ data: form });
+                        // One being checked shows in its own card.
+                        if (edited.ok && edited.value.edit === "applied") setNotice(t.editApplied);
+                        return edited;
+                      },
+                      () => setEditing(false),
+                    )
+                  }
+                />
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        <aside className="space-y-6">
+          <SiteCard job={job}>
+            <p className="mt-3 text-xs text-muted-foreground">{t.locked}</p>
+            {!editable && quotes.length > 0 && (
+              <p className="mt-2 text-xs text-muted-foreground">{t.editLocked}</p>
+            )}
+          </SiteCard>
+        </aside>
       </div>
-
-      <aside className="space-y-6">
-        <SiteCard job={job}>
-          <p className="mt-3 text-xs text-muted-foreground">{t.locked}</p>
-          {!editable && quotes.length > 0 && (
-            <p className="mt-2 text-xs text-muted-foreground">{t.editLocked}</p>
-          )}
-        </SiteCard>
-      </aside>
     </div>
   );
 }

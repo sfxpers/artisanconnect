@@ -4,11 +4,18 @@ import { MapPin, UserSearch } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+import { Field, FieldLabel } from "@/components/ui/field";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Pager } from "@/components/pager";
 import { EmptyState, Refusal } from "@/components/page";
 import { copy } from "@/web/copy";
 import { getInviteList, inviteArtisan } from "@/web/invitations";
-import { NativeSelect } from "@/components/ui/native-select";
 
 /** Whom the Client may invite, as the Job page loads it. */
 export type InviteListView = {
@@ -19,6 +26,9 @@ export type InviteListView = {
 };
 
 const t = copy.invite;
+
+/** Artisans on one page of the invite list. */
+const PER_PAGE = 10;
 
 /**
  * The invite list (#123): Browse narrowed to the Job's trade, and to
@@ -41,6 +51,10 @@ export function InviteList({
   const navigate = useNavigate();
   const [busy, setBusy] = useState<string | null>(null);
   const [refusal, setRefusal] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const pageCount = Math.max(1, Math.ceil(list.artisans.length / PER_PAGE));
+  const shownPage = Math.min(page, pageCount);
+  const onPage = list.artisans.slice((shownPage - 1) * PER_PAGE, shownPage * PER_PAGE);
 
   async function invite(artisanId: string) {
     setBusy(artisanId);
@@ -62,28 +76,36 @@ export function InviteList({
       <CardContent className="space-y-4">
         {/* One Artisan is listed on a Job opened by Hire Again, wherever they work. */}
         {!hireAgain && (
-          <div className="space-y-1.5">
-            <Label htmlFor="invite-region">{t.region}</Label>
-            <NativeSelect
-              id="invite-region"
+          <Field className="max-w-xs">
+            <FieldLabel htmlFor="invite-region">{t.region}</FieldLabel>
+            <Select
+              items={[
+                { value: "", label: t.allRegions },
+                ...list.regions.map((each) => ({ value: each.id, label: each.name })),
+              ]}
               value={list.region ?? ""}
-              onChange={(event) =>
+              onValueChange={(value) =>
                 void navigate({
                   to: "/jobs/$jobId",
                   params: { jobId },
-                  search: { region: event.target.value || undefined },
+                  search: { region: (value as string) || undefined },
                   replace: true,
                 })
               }
             >
-              <option value="">{t.allRegions}</option>
-              {list.regions.map((each) => (
-                <option key={each.id} value={each.id}>
-                  {each.name}
-                </option>
-              ))}
-            </NativeSelect>
-          </div>
+              <SelectTrigger id="invite-region" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">{t.allRegions}</SelectItem>
+                {list.regions.map((each) => (
+                  <SelectItem key={each.id} value={each.id}>
+                    {each.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
         )}
         <Refusal message={refusal} />
         {list.artisans.length === 0 ? (
@@ -91,8 +113,8 @@ export function InviteList({
             {hireAgain ? t.emptyHireAgain(hireAgain) : t.empty}
           </EmptyState>
         ) : (
-          <ul className="divide-y rounded-xl border bg-card">
-            {list.artisans.map((artisan) => (
+          <ul className="divide-y rounded-lg border">
+            {onPage.map((artisan) => (
               <li
                 key={artisan.artisanId}
                 className="flex flex-wrap items-center justify-between gap-3 p-3"
@@ -107,7 +129,7 @@ export function InviteList({
                     {artisan.publicName}
                   </Link>
                   <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <MapPin className="size-3" />
+                    <MapPin className="size-3" aria-hidden />
                     {artisan.regions.map((each) => each.name).join(", ") || copy.browse.noRegions}
                     {!artisan.availableForJobs && ` · ${copy.browse.notAvailable}`}
                   </p>
@@ -128,6 +150,7 @@ export function InviteList({
             ))}
           </ul>
         )}
+        <Pager page={shownPage} pageCount={pageCount} label={copy.browse.pages} go={setPage} />
       </CardContent>
     </Card>
   );

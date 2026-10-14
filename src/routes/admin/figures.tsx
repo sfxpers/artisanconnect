@@ -4,7 +4,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Page } from "@/components/page";
 import { DEFAULT_FIGURE_PERIOD, FIGURE_PERIODS, type FigurePeriod } from "@/domain/figures/periods";
 import { formatRands } from "@/domain/money";
-import { cn } from "@/lib/utils";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { buttonVariants } from "@/components/ui/button";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
 import { getFigures } from "@/web/admin";
 import { copy, formatDate } from "@/web/copy";
 import { onlyForAdmins } from "@/web/guards";
@@ -36,17 +43,17 @@ function Figures() {
   return (
     <Page title={t.title} lead={t.lead}>
       <div className="flex flex-wrap items-center gap-2">
-        <nav aria-label={t.title} className="flex flex-wrap gap-2">
+        <nav aria-label={t.title} className="flex flex-wrap gap-1">
           {FIGURE_PERIODS.map((each) => (
             <Link
               key={each}
               to="/admin/figures"
               search={each === DEFAULT_FIGURE_PERIOD ? {} : { period: each }}
               aria-current={each === period ? "page" : undefined}
-              className={cn(
-                "rounded-full border bg-background px-3 py-1 text-xs",
-                each === period ? "border-primary text-foreground" : "text-muted-foreground",
-              )}
+              className={buttonVariants({
+                variant: each === period ? "secondary" : "ghost",
+                size: "sm",
+              })}
             >
               {t.periods[each]}
             </Link>
@@ -56,6 +63,13 @@ function Figures() {
           {figures.since ? t.since(formatDate(figures.since)) : t.allTime}
         </span>
       </div>
+
+      <Outcomes
+        completed={figures.completedRate.count}
+        byClient={figures.cancellationRate.byClient}
+        byArtisan={figures.cancellationRate.byArtisan}
+        inProgress={figures.inProgress}
+      />
 
       <Group title={t.jobs}>
         <Figure label={t.jobsPosted} value={figures.jobsPosted} note={t.jobsPostedNote} />
@@ -126,6 +140,46 @@ function Figures() {
     </Page>
   );
 }
+
+/** The period's Hires by how they ended, in shadcn's Chart. */
+function Outcomes(counts: Record<keyof typeof t.outcome, number>) {
+  const data = (Object.keys(t.outcome) as (keyof typeof t.outcome)[]).map((key) => ({
+    outcome: t.outcome[key],
+    count: counts[key],
+  }));
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{t.outcomes}</CardTitle>
+        <CardDescription>{t.outcomesLead}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ChartContainer config={chartConfig} className="aspect-auto h-56 w-full">
+          <BarChart
+            accessibilityLayer
+            data={data}
+            layout="vertical"
+            margin={{ left: 8, right: 24 }}
+          >
+            <CartesianGrid horizontal={false} />
+            <YAxis
+              dataKey="outcome"
+              type="category"
+              tickLine={false}
+              axisLine={false}
+              width={170}
+            />
+            <XAxis dataKey="count" type="number" allowDecimals={false} tickLine={false} />
+            <ChartTooltip content={<ChartTooltipContent hideIndicator />} />
+            <Bar dataKey="count" fill="var(--color-count)" radius={4} />
+          </BarChart>
+        </ChartContainer>
+      </CardContent>
+    </Card>
+  );
+}
+
+const chartConfig = { count: { label: t.count, color: "var(--chart-1)" } } satisfies ChartConfig;
 
 function Group({ title, children }: { title: string; children: ReactNode }) {
   return (

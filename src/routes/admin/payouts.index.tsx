@@ -1,10 +1,11 @@
 import { Banknote } from "lucide-react";
 import { useState } from "react";
 import { Link, createFileRoute, useRouter } from "@tanstack/react-router";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { EmptyState, Page, Refusal } from "@/components/page";
+import { DataTable, type DataColumn } from "@/components/data-table";
+import { EmptyState, Page } from "@/components/page";
 import { formatRands } from "@/domain/money";
 import { copy } from "@/web/copy";
 import { onlyForAdmins } from "@/web/guards";
@@ -22,66 +23,83 @@ const t = copy.admin.payouts;
 
 type Row = Awaited<ReturnType<typeof getUnpaidTotals>>[number];
 
+const columns: DataColumn<Row>[] = [
+  {
+    id: "artisan",
+    header: t.artisan,
+    accessorFn: (row) => row.name,
+    cell: ({ row }) => (
+      <div className="min-w-0">
+        <Link
+          to="/admin/payouts/$artisanId"
+          params={{ artisanId: row.original.artisanId }}
+          className="font-medium text-primary hover:underline"
+        >
+          {row.original.name}
+        </Link>
+        <div className="truncate text-xs text-muted-foreground">{row.original.email}</div>
+      </div>
+    ),
+  },
+  {
+    id: "unpaid",
+    header: t.unpaid,
+    accessorFn: (row) => row.unpaidCents,
+    cell: ({ row }) => (
+      <span className="tabular-nums">{formatRands(row.original.unpaidCents)}</span>
+    ),
+  },
+  {
+    id: "standing",
+    header: t.standing,
+    accessorFn: (row) => (row.held ? 1 : 0),
+    cell: ({ row }) =>
+      row.original.held ? (
+        <Badge variant="destructive">{t.held}</Badge>
+      ) : (
+        <span className="text-muted-foreground">{t.flowing}</span>
+      ),
+  },
+  {
+    id: "act",
+    header: t.act,
+    enableSorting: false,
+    cell: ({ row }) => <HoldToggle row={row.original} />,
+  },
+];
+
 /** Each Artisan's unpaid total, and holding or freeing their Payouts (#128). */
 function AdminPayouts() {
   const rows = Route.useLoaderData();
   return (
     <Page title={t.title} lead={t.lead}>
-      {rows.length === 0 ? (
-        <EmptyState icon={<Banknote />}>{t.empty}</EmptyState>
-      ) : (
-        <Card className="py-0">
-          <ul className="divide-y">
-            {rows.map((row) => (
-              <ArtisanRow key={row.artisanId} row={row} />
-            ))}
-          </ul>
-        </Card>
-      )}
+      <DataTable
+        label={t.table}
+        columns={columns}
+        data={rows}
+        empty={<EmptyState icon={<Banknote />}>{t.empty}</EmptyState>}
+      />
     </Page>
   );
 }
 
-function ArtisanRow({ row }: { row: Row }) {
+/** Holds the Artisan's Payouts, or lifts the hold; a refusal shows as a toast. */
+function HoldToggle({ row }: { row: Row }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
-  const [refusal, setRefusal] = useState<string | null>(null);
 
   async function toggle() {
     setBusy(true);
-    setRefusal(null);
     const change = row.held ? liftPayoutHold : holdPayouts;
     const result = await change({ data: { artisanId: row.artisanId } });
-    if (!result.ok) setRefusal(result.refusal.message);
+    if (!result.ok) toast.error(result.refusal.message);
     await router.invalidate();
     setBusy(false);
   }
 
   return (
-    <li className="space-y-2 p-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <Link
-              to="/admin/payouts/$artisanId"
-              params={{ artisanId: row.artisanId }}
-              className="truncate font-medium hover:underline"
-            >
-              {row.name}
-            </Link>
-            {row.held && <Badge variant="destructive">{t.held}</Badge>}
-          </div>
-          <div className="truncate text-xs text-muted-foreground">{row.email}</div>
-        </div>
-        <div className="text-right">
-          <div className="text-xs text-muted-foreground">{t.unpaid}</div>
-          <div className="font-medium tabular-nums">{formatRands(row.unpaidCents)}</div>
-        </div>
-        <Button variant="outline" size="sm" disabled={busy} onClick={() => void toggle()}>
-          {row.held ? t.lift : t.hold}
-        </Button>
-      </div>
-      <Refusal message={refusal} />
-    </li>
+    <Button variant="outline" size="sm" disabled={busy} onClick={() => void toggle()}>
+      {row.held ? t.lift : t.hold}
+    </Button>
   );
 }

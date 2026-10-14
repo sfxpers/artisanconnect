@@ -1,6 +1,16 @@
 import { useState } from "react";
 import { Flag } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { useAppForm } from "@/components/form";
 import { Refusal } from "@/components/page";
 import type { About } from "@/domain/reports/subjects";
@@ -35,64 +45,63 @@ export function ReportAction({ about, label = t.action }: { about: About; label?
   });
 
   async function start() {
-    setOpen(true);
     setRefusal(null);
     if (await getReportMade({ data: { about } })) setMade(true);
   }
 
-  if (!open) {
-    return (
-      <Button
-        variant="ghost"
-        size="sm"
-        className="text-muted-foreground"
-        onClick={() => void start()}
-      >
-        <Flag className="size-3.5" />
-        {label}
-      </Button>
-    );
-  }
-  if (made) {
-    return (
-      <p role="status" className="text-sm text-muted-foreground">
-        {t.made}
-      </p>
-    );
-  }
   return (
-    <form.AppForm>
-      <form.Form className="w-full max-w-md space-y-3 rounded-lg border bg-background p-3 text-left text-foreground">
-        <form.AppField name="reason">
-          {(field) => (
-            <field.ChoiceField
-              label={t.why}
-              options={REPORT_REASONS.map((value) => ({
-                value,
-                label: REPORT_REASON_NAMES[value],
-              }))}
-            />
-          )}
-        </form.AppField>
-        <form.AppField name="note">
-          {(field) => (
-            <field.TextareaField label={t.note} description={t.lead} maxLength={REPORT_NOTE_MAX} />
-          )}
-        </form.AppField>
-        <Refusal message={refusal} />
-        <div className="flex gap-2">
-          <form.Subscribe selector={(state) => !!state.values.reason}>
-            {(chosen) => (
-              <form.Submit size="sm" disabled={!chosen}>
-                {t.send}
-              </form.Submit>
-            )}
-          </form.Subscribe>
-          <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(false)}>
-            {t.cancel}
-          </Button>
-        </div>
-      </form.Form>
-    </form.AppForm>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (next) void start();
+      }}
+    >
+      <DialogTrigger
+        render={<Button variant="ghost" size="sm" className="text-muted-foreground" />}
+      >
+        <Flag data-icon="inline-start" />
+        {label}
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{label}</DialogTitle>
+          <DialogDescription>{t.lead}</DialogDescription>
+        </DialogHeader>
+        {made ? (
+          <p role="status" className="text-sm">
+            {t.made}
+          </p>
+        ) : (
+          <form.AppForm>
+            <form.Form className="space-y-4">
+              <form.AppField name="reason">
+                {(field) => (
+                  <field.ChoiceField
+                    label={t.why}
+                    options={REPORT_REASONS.map((value) => ({
+                      value,
+                      label: REPORT_REASON_NAMES[value],
+                    }))}
+                  />
+                )}
+              </form.AppField>
+              <form.AppField name="note">
+                {(field) => <field.TextareaField label={t.note} maxLength={REPORT_NOTE_MAX} />}
+              </form.AppField>
+              <Refusal message={refusal} />
+              <DialogFooter>
+                <DialogClose render={<Button type="button" variant="outline" />}>
+                  {t.cancel}
+                </DialogClose>
+                <form.Subscribe selector={(state) => !!state.values.reason}>
+                  {(chosen) => <form.Submit disabled={!chosen}>{t.send}</form.Submit>}
+                </form.Subscribe>
+              </DialogFooter>
+            </form.Form>
+          </form.AppForm>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -29,12 +29,14 @@ async function signUp(page: Page, kind: RegExp) {
 }
 
 test("a Visitor signs up as a Client and lands ready to post a Job", async ({ page }) => {
-  // The landing page: how a Job goes, the eight trades, fees before paying, and what a badge is.
+  // The landing page: how a Job goes, the eight trades, fees before paying, what a badge is,
+  // and that money is released after the work.
   await page.goto("/");
   for (const shown of [
     "How a Job goes",
-    "Fees shown before you pay",
+    "Fees are shown before you pay",
     "A badge is a check, not a guarantee",
+    "Money is released after the work",
     ...Object.values(SERVICE_CATEGORY_NAMES),
   ]) {
     await expect(page.getByText(shown, { exact: true }).first()).toBeVisible();
@@ -71,7 +73,9 @@ test("a Visitor signs up as an Artisan and lands at Verification, then is asked 
   const header = page.getByRole("navigation", { name: "Main" });
   await expect(header.getByRole("link")).toHaveText(["Home", "Profile", "Payouts", "Account"]);
   await header.getByRole("link", { name: "Home" }).click();
-  await expect(page.getByText("Choose your Regions").first()).toBeVisible();
+  // One card for what waits first, Verification; the Regions card asks for Regions.
+  await expect(page.getByText("Get verified to start quoting")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Choose Regions" })).toBeVisible();
   for (const tab of [/^Job Matches/, /^Invitations/, /^Active Jobs/, /^Notices/]) {
     await expect(page.getByRole("tab", { name: tab })).toBeVisible();
   }

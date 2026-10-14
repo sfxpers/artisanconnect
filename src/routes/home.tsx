@@ -52,7 +52,7 @@ function Home() {
   const { notices, work, payouts } = Route.useLoaderData();
   const [tab, setTab] = useState<Tab>("matches");
   return (
-    <Page>
+    <Page title={t.title}>
       <div className={withSidebar}>
         <div className="min-w-0 space-y-6">
           <Waiting work={work} onSee={setTab} />
@@ -90,7 +90,7 @@ function Home() {
 }
 
 /**
- * What waits on the Artisan, first things first: Hired work to start,
+ * What waits on the Artisan, in one card: the first of Hired work to start,
  * complete, or fix, then Verification, Regions, Invitations, and Job Matches.
  */
 function Waiting({ work, onSee }: { work: Work; onSee: (tab: Tab) => void }) {
@@ -102,16 +102,14 @@ function Waiting({ work, onSee }: { work: Work; onSee: (tab: Tab) => void }) {
       <NextStepCard key="hired" label={t.waiting} title={t.hiredWaiting(hired)}>
         <p className="text-sm text-muted-foreground">{t.hiredLead}</p>
         <div className="flex flex-wrap gap-2">
-          <Button size="lg" onClick={() => onSee("active")}>
-            {t.seeActive}
-          </Button>
+          <Button onClick={() => onSee("active")}>{t.seeActive}</Button>
         </div>
       </NextStepCard>
     ),
     !work.verified && (
       <NextStepCard key="verification" label={t.waiting} title={t.verification}>
         <p className="text-sm text-muted-foreground">{t.verificationLead}</p>
-        <Link to="/verification" className={buttonVariants({ size: "lg" })}>
+        <Link to="/verification" className={buttonVariants()}>
           {t.open}
         </Link>
       </NextStepCard>
@@ -119,7 +117,7 @@ function Waiting({ work, onSee }: { work: Work; onSee: (tab: Tab) => void }) {
     work.regions.length === 0 && (
       <NextStepCard key="regions" label={t.waiting} title={t.chooseYourRegions}>
         <p className="text-sm text-muted-foreground">{t.chooseRegionsLead}</p>
-        <Link to="/regions" className={buttonVariants({ size: "lg" })}>
+        <Link to="/regions" className={buttonVariants()}>
           {t.chooseRegions}
         </Link>
       </NextStepCard>
@@ -135,13 +133,10 @@ function Waiting({ work, onSee }: { work: Work; onSee: (tab: Tab) => void }) {
         </p>
         <div className="flex flex-wrap gap-2">
           {invitations.length > 0 && (
-            <Button size="lg" onClick={() => onSee("invitations")}>
-              {t.seeInvitations}
-            </Button>
+            <Button onClick={() => onSee("invitations")}>{t.seeInvitations}</Button>
           )}
           {matches.length > 0 && (
             <Button
-              size="lg"
               variant={invitations.length > 0 ? "outline" : "default"}
               onClick={() => onSee("matches")}
             >
@@ -159,7 +154,7 @@ function Waiting({ work, onSee }: { work: Work; onSee: (tab: Tab) => void }) {
       </NextStepCard>
     );
   }
-  return <div className="space-y-4">{cards}</div>;
+  return cards[0];
 }
 
 function Matches({ matches, available }: { matches: Match[]; available: boolean }) {
@@ -220,7 +215,9 @@ function Active({ quotes }: { quotes: Quoted[] }) {
                 ? copy.engagement.states[quote.engagementState]
                 : copy.quote.states[quote.state]}
             </Badge>
-            <span className="self-center text-sm font-medium">{formatRands(quote.totalCents)}</span>
+            <span className="self-center text-sm font-medium tabular-nums">
+              {formatRands(quote.totalCents)}
+            </span>
           </JobListRow>
         ))}
       </ul>
@@ -295,7 +292,7 @@ function JobListRow({
         </Link>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1">
-            <MapPin className="size-3" />
+            <MapPin className="size-3" aria-hidden />
             {job.region}
           </span>
           <span>{job.category?.name}</span>
@@ -307,7 +304,7 @@ function JobListRow({
           <Link
             to="/jobs/$jobId"
             params={{ jobId: job.jobId }}
-            className={buttonVariants({ size: "sm" })}
+            className={buttonVariants({ size: "sm", variant: "outline" })}
           >
             {t.openJob}
           </Link>

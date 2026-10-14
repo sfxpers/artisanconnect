@@ -1,13 +1,21 @@
 import type { ReactNode } from "react";
-import { BadgeCheck, Image as ImageIcon, MapPin, Star } from "lucide-react";
+import { BadgeCheck, ImageOff, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 import type { Domain } from "@/domain";
 import { formatDay } from "@/domain/sa-days";
 import { copy } from "@/web/copy";
 import { getArtisanReviews } from "@/web/reviews";
 import { ReviewList } from "@/components/reviews";
-import { EmptyState, withSidebar } from "@/components/page";
+import { EmptyState } from "@/components/page";
+import { RatingSummary } from "@/components/rating";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { initials } from "@/components/app-header";
 
@@ -18,73 +26,74 @@ type ProfilePhotoView = ArtisanProfile["photos"][number];
 const t = copy.profile;
 
 /**
- * An Artisan Profile as anyone sees it: the categories verified, badges, work
- * photos, Regions, Completed count, rating, and Reviews, and no contact. The
- * aside holds what the viewer may do, if anything.
+ * An Artisan Profile as anyone sees it, laid out as a product page: who it
+ * is, the rating, and what the viewer may do first; then the work photos,
+ * About, and Reviews; then the badges and Regions. No contact.
  */
 export function ArtisanProfileView({
   profile,
-  aside,
+  actions,
   canReport = false,
 }: {
   profile: ArtisanProfile;
-  aside?: ReactNode;
+  /** What the viewer may do, if anything: the first is the one primary action. */
+  actions?: ReactNode;
   /** Whether the viewer is signed in, so may Report a Review. */
   canReport?: boolean;
 }) {
   const { reviews } = profile;
   return (
-    <div className={withSidebar}>
-      <div className="min-w-0 space-y-6">
-        <header className="space-y-3">
-          <div className="flex items-center gap-4">
-            <Avatar className="size-16">
-              <AvatarFallback className="bg-accent text-xl font-semibold text-accent-foreground">
-                {initials(profile.publicName)}
-              </AvatarFallback>
-            </Avatar>
-            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-              {profile.publicName}
-            </h1>
-          </div>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-            <span className="inline-flex items-center gap-1">
-              <Star className="size-4" />
-              {reviews.average === null ? t.noRating : t.rating(reviews.average, reviews.count)}
-            </span>
-            <span>{t.completed(profile.completed)}</span>
-            <Badge variant={profile.availableForJobs ? "success" : "outline"}>
-              {profile.availableForJobs ? t.available : t.notAvailable}
-            </Badge>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {profile.categories.length === 0 && (
-              <span className="text-sm text-muted-foreground">{t.notVerifiedNow}</span>
+    <div className="grid items-start gap-6 lg:grid-cols-3">
+      <Card className="lg:col-start-3 lg:row-start-1">
+        <CardHeader className="flex items-center gap-3">
+          <Avatar size="lg">
+            <AvatarFallback>{initials(profile.publicName)}</AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 space-y-1">
+            <h1 className="truncate text-xl font-semibold">{profile.publicName}</h1>
+            {profile.availableForJobs ? (
+              <Badge variant="success">{t.available}</Badge>
+            ) : (
+              <Badge variant="outline">{t.notAvailable}</Badge>
             )}
-            {profile.categories.map(({ category, name, gasWork }) => (
-              <Badge key={category} variant="secondary">
-                {gasWork ? `${name}, ${t.gasWork}` : name}
-              </Badge>
-            ))}
           </div>
-        </header>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-1">
+            <RatingSummary average={reviews.average} count={reviews.count} />
+            <p className="text-sm text-muted-foreground">{t.completed(profile.completed ?? 0)}</p>
+          </div>
+          <div className="space-y-1.5">
+            <p className="text-xs font-medium text-muted-foreground">{t.verifiedFor}</p>
+            {profile.categories.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t.notVerifiedNow}</p>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {profile.categories.map(({ category, name, gasWork }) => (
+                  <Badge key={category} variant="secondary">
+                    {gasWork ? `${name}, ${t.gasWork}` : name}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
+          {actions && <div className="flex flex-col gap-2">{actions}</div>}
+        </CardContent>
+      </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>{t.about}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm whitespace-pre-line">{profile.about || t.noAbout}</p>
-          </CardContent>
-        </Card>
+      <div className="min-w-0 space-y-8 lg:col-span-2 lg:col-start-1 lg:row-span-2 lg:row-start-1">
+        <Gallery photos={profile.photos} />
 
-        <section className="space-y-3">
-          <h2 className="text-lg font-semibold tracking-tight">{t.photos}</h2>
-          <PhotoGrid photos={profile.photos} empty={t.noPhotos} />
+        <section className="space-y-2">
+          <h2 className="text-lg font-semibold">{t.about}</h2>
+          <p className="text-sm whitespace-pre-line">{profile.about || t.noAbout}</p>
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-lg font-semibold tracking-tight">{t.reviews}</h2>
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="text-lg font-semibold">{t.reviews}</h2>
+            <RatingSummary average={reviews.average} count={reviews.count} />
+          </div>
           <ReviewList
             first={reviews}
             load={(page) => getArtisanReviews({ data: { artisanId: profile.artisanId, page } })}
@@ -94,8 +103,7 @@ export function ArtisanProfileView({
         </section>
       </div>
 
-      <aside className="space-y-6">
-        {aside}
+      <div className="space-y-4 lg:col-start-3 lg:row-start-2">
         <Card size="sm">
           <CardHeader>
             <CardTitle>{t.badges}</CardTitle>
@@ -104,7 +112,7 @@ export function ArtisanProfileView({
             <ul className="space-y-1.5 text-sm">
               {profile.badges.map((badge) => (
                 <li key={`${badge.kind}:${badge.category}`} className="flex gap-2">
-                  <BadgeCheck className="mt-0.5 size-4 shrink-0 text-primary" />
+                  <BadgeCheck className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
                   <span>
                     {badge.name}
                     {badge.expiresOn && (
@@ -135,7 +143,7 @@ export function ArtisanProfileView({
               <ul className="space-y-1 text-sm">
                 {profile.regions.map((region) => (
                   <li key={region.id} className="flex items-center gap-2">
-                    <MapPin className="size-4 text-muted-foreground" />
+                    <MapPin className="size-4 text-muted-foreground" aria-hidden />
                     {region.name}
                   </li>
                 ))}
@@ -144,19 +152,54 @@ export function ArtisanProfileView({
           </CardContent>
         </Card>
         <p className="text-xs text-muted-foreground">{t.noContact}</p>
-      </aside>
+      </div>
     </div>
+  );
+}
+
+/** The work photos in shadcn's Carousel, each opening its full copy. */
+function Gallery({ photos }: { photos: ProfilePhotoView[] }) {
+  if (photos.length === 0) {
+    return <EmptyState icon={<ImageOff />}>{t.noPhotos}</EmptyState>;
+  }
+  return (
+    <section aria-label={t.gallery}>
+      <Carousel opts={{ loop: photos.length > 1 }} className="relative">
+        <CarouselContent>
+          {photos.map((photo, index) => (
+            <CarouselItem key={photo.id}>
+              <a href={photo.href} target="_blank" rel="noreferrer" className="block rounded-lg">
+                <img
+                  src={photo.href}
+                  alt={t.photo(index + 1)}
+                  width={photo.width}
+                  height={photo.height}
+                  loading={index === 0 ? "eager" : "lazy"}
+                  className="aspect-4/3 w-full rounded-lg border bg-muted object-cover"
+                />
+              </a>
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+        {photos.length > 1 && (
+          <>
+            <CarouselPrevious className="left-3" aria-label={t.previous} />
+            <CarouselNext className="right-3" aria-label={t.next} />
+          </>
+        )}
+      </Carousel>
+    </section>
   );
 }
 
 /** Work photos as thumbnails, each opening its full copy. */
 export function PhotoGrid({ photos, empty }: { photos: ProfilePhotoView[]; empty: string }) {
-  if (photos.length === 0) return <EmptyState icon={<ImageIcon />}>{empty}</EmptyState>;
+  if (photos.length === 0) return <EmptyState icon={<ImageOff />}>{empty}</EmptyState>;
   return (
     <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
       {photos.map((photo, index) => (
         <li key={photo.id}>
-          <a href={photo.href} target="_blank" rel="noreferrer">
+          <a href={photo.href} target="_blank" rel="noreferrer" className="block rounded-lg">
             <img
               src={photo.thumbnailHref}
               alt={t.photo(index + 1)}

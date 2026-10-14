@@ -14,6 +14,7 @@ import {
 import { useAppForm } from "@/components/form";
 import { initials } from "@/components/app-header";
 import { useAction } from "@/components/use-action";
+import { useConfirm } from "@/components/confirm";
 import { Page, Refusal, withSidebar } from "@/components/page";
 import { getAdmins, inviteAdmin, removeAdmin } from "@/web/admin";
 import { copy, formatDate } from "@/web/copy";
@@ -52,10 +53,11 @@ function Admins() {
 
 function AdminRow({ admin }: { admin: Admin }) {
   const navigate = useNavigate();
-  const [confirming, setConfirming] = useState(false);
+  const confirm = useConfirm();
   const { busy, refusal, run } = useAction();
 
-  function remove() {
+  async function remove() {
+    if (!(await confirm(t.removeLead(admin.email)))) return;
     // Removing yourself signs you out.
     void run(
       () => removeAdmin({ data: { adminId: admin.adminId } }),
@@ -80,31 +82,16 @@ function AdminRow({ admin }: { admin: Admin }) {
               : t.setUp(formatDate(admin.invitedAt))}
           </div>
         </div>
-        {!confirming && (
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={!admin.removable}
-            title={admin.removable ? undefined : t.last}
-            onClick={() => setConfirming(true)}
-          >
-            {t.remove}
-          </Button>
-        )}
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={!admin.removable || busy}
+          title={admin.removable ? undefined : t.last}
+          onClick={() => void remove()}
+        >
+          {t.remove}
+        </Button>
       </div>
-      {confirming && (
-        <div className="space-y-3 rounded-lg border p-3">
-          <p className="text-sm">{t.removeLead(admin.email)}</p>
-          <div className="flex gap-2">
-            <Button variant="destructive" size="sm" disabled={busy} onClick={remove}>
-              {t.confirm}
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => setConfirming(false)}>
-              {t.cancel}
-            </Button>
-          </div>
-        </div>
-      )}
       <Refusal message={refusal} />
     </li>
   );

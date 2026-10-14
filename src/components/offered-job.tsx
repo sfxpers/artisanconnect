@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { initials } from "@/components/app-header";
 import { Details, Fact } from "@/components/job-details";
-import { BackCrumb, NextStepCard, Page, Refusal, withSidebar } from "@/components/page";
+import { NextStepCard, Page, Refusal, withSidebar } from "@/components/page";
 import { useAction } from "@/components/use-action";
 import { QuoteForm } from "@/components/quote-form";
 import { ReportAction } from "@/components/report";
@@ -34,7 +34,7 @@ import {
 } from "@/components/conversation";
 import { JobTabs, type JobTab } from "@/components/job-tabs";
 import type { QuoteFields } from "@/domain/quotes/inputs";
-import { copy, formatDate } from "@/web/copy";
+import { copy, formatDate, formatDeadline } from "@/web/copy";
 import type { getJob } from "@/web/jobs";
 import { passInvitation } from "@/web/invitations";
 import { passMatch } from "@/web/matches";
@@ -75,29 +75,26 @@ export function OfferedJob({
   const holding = job.offeredAt !== null || invited;
   const { quote, engagement } = job;
   return (
-    <Page>
-      <BackCrumb to="/home" label={t.breadcrumb} />
-      <div className="space-y-1">
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{job.title}</h1>
-          <Badge>
-            {engagement
-              ? copy.engagement.states[engagement.state]
-              : quote && quote.state !== "refused"
-                ? tq.states[quote.state]
-                : job.state !== "open"
-                  ? copy.jobs.states[job.state]
-                  : invited
-                    ? t.invitationBadge
-                    : t.badge}
-          </Badge>
-        </div>
-        <p className="text-sm text-muted-foreground">
-          {[job.category?.name, job.region?.name, job.siteType && copy.job.siteTypes[job.siteType]]
-            .filter(Boolean)
-            .join(" · ")}
-        </p>
-      </div>
+    <Page
+      crumbs={[{ to: "/home", label: t.breadcrumb }]}
+      title={job.title}
+      status={
+        <Badge>
+          {engagement
+            ? copy.engagement.states[engagement.state]
+            : quote && quote.state !== "refused"
+              ? tq.states[quote.state]
+              : job.state !== "open"
+                ? copy.jobs.states[job.state]
+                : invited
+                  ? t.invitationBadge
+                  : t.badge}
+        </Badge>
+      }
+      meta={[job.category?.name, job.region?.name, job.siteType && copy.job.siteTypes[job.siteType]]
+        .filter(Boolean)
+        .join(" · ")}
+    >
       <JobTabs
         jobId={job.jobId}
         tab={tab}
@@ -274,7 +271,9 @@ function QuoteStep({
     <NextStepCard label={copy.jobs.nextStep} title={tq.yourQuote}>
       {quote.state === "held" && <p className="text-sm text-muted-foreground">{tq.heldLead}</p>}
       {quote.state === "sent" && quote.expiresAt && (
-        <p className="text-sm text-muted-foreground">{tq.sentLead(formatDate(quote.expiresAt))}</p>
+        <p className="text-sm text-muted-foreground">
+          {tq.sentLead(formatDeadline(quote.expiresAt))}
+        </p>
       )}
       {quote.state !== "held" && quote.state !== "sent" && quote.state !== "refused" && (
         <p className="text-sm text-muted-foreground">{tq.endedLead[quote.state]}</p>
