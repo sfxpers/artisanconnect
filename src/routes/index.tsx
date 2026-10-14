@@ -17,13 +17,19 @@ import { onlyForVisitors } from "@/web/guards";
 
 export const Route = createFileRoute("/")({
   beforeLoad: ({ context }) => onlyForVisitors(context),
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
       { title: pageTitle(t.title) },
       { name: "description", content: t.lead },
+      { property: "og:type", content: "website" },
+      { property: "og:site_name", content: copy.appName },
       { property: "og:title", content: t.title },
       { property: "og:description", content: t.lead },
+      { property: "og:url", content: `${match.context.origin}/` },
+      { property: "og:image", content: `${match.context.origin}/trades/carpentry.jpg` },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
+    links: [{ rel: "canonical", href: `${match.context.origin}/` }],
   }),
   component: Landing,
 });
@@ -57,6 +63,10 @@ function Landing() {
           </div>
           <img
             src="/trades/carpentry.jpg"
+            srcSet="/trades/carpentry-480.jpg 480w, /trades/carpentry.jpg 960w"
+            sizes="(min-width: 1024px) 50vw, 100vw"
+            // The largest thing on the page, so it is fetched first.
+            fetchPriority="high"
             alt={t.tradePhoto(SERVICE_CATEGORY_NAMES.carpentry)}
             width={960}
             height={640}

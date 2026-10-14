@@ -460,7 +460,7 @@ function DisputeForm({
         </p>
         {asClient && (
           <form.AppField name="amount">
-            {(field) => <field.TextField label={d.amount} inputMode="decimal" placeholder="0.00" />}
+            {(field) => <field.RandsField label={d.amount} />}
           </form.AppField>
         )}
         <form.AppField name="reason">
@@ -548,9 +548,7 @@ function ReleaseHeld({ engagement, heldCents }: { engagement: Engagement; heldCe
           <form.Form className="space-y-3 rounded-lg border p-3">
             <p className="text-sm text-muted-foreground">{d.releaseLead(formatRands(heldCents))}</p>
             <form.AppField name="amount">
-              {(field) => (
-                <field.TextField label={d.releaseAmount} inputMode="decimal" placeholder="0.00" />
-              )}
+              {(field) => <field.RandsField label={d.releaseAmount} />}
             </form.AppField>
             <div className="flex flex-wrap gap-2">
               <form.Subscribe
@@ -886,14 +884,14 @@ function ProposeForm({
           {(["labour", "materials"] as const).map((part) => (
             <form.AppField key={part} name={part}>
               {(field) => (
-                <field.TextField
+                <field.RandsField
                   label={u[part]}
                   description={
                     part === "materials" && clientSupplies
                       ? u.clientSupplies
                       : u.atLeast(formatRands(now[`${part}Cents`]))
                   }
-                  inputMode="decimal"
+
                   disabled={part === "materials" && clientSupplies}
                 />
               )}
@@ -1340,9 +1338,9 @@ function RefundForm({ engagement }: { engagement: ArtisanEngagement }) {
           {lines.map((part) => (
             <form.AppField key={part} name={part}>
               {(field) => (
-                <field.TextField
+                <field.RandsField
                   label={t.refundUpTo(t.parts[part].title, formatRands(refundable[`${part}Cents`]))}
-                  inputMode="decimal"
+
                   placeholder="0.00"
                 />
               )}

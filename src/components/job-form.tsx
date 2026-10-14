@@ -271,7 +271,7 @@ const siteTypes = {
   label: t.siteType,
   options: SITE_TYPES.map((siteType) => ({ value: siteType, label: t.siteTypes[siteType] })),
 };
-const preferredStart = { label: t.preferredStart };
+const preferredStart = { label: t.preferredStart, fromToday: true };
 
 /** The form's values as the server function takes them, leaving out none given. */
 function asFormData(values: Record<string, string | undefined>) {

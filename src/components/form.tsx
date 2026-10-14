@@ -21,6 +21,7 @@ import {
   InputGroupAddon,
   InputGroupButton,
   InputGroupInput,
+  InputGroupText,
 } from "@/components/ui/input-group";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Spinner } from "@/components/ui/spinner";
@@ -71,6 +72,35 @@ function TextField({ label, description, ...input }: Labelled & ComponentProps<t
   );
 }
 
+/** An amount in rands, with the R before it, as South Africans write it; typed as 1500.00. */
+function RandsField({ label, description, ...input }: Labelled & ComponentProps<typeof Input>) {
+  const { field, id, invalid, error } = useBound<string>();
+  return (
+    <Field data-invalid={invalid}>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <InputGroup>
+        <InputGroupAddon>
+          <InputGroupText>{copy.rand}</InputGroupText>
+        </InputGroupAddon>
+        <InputGroupInput
+          id={id}
+          name={field.name}
+          inputMode="decimal"
+          placeholder="0.00"
+          className="tabular-nums"
+          value={field.state.value}
+          onBlur={field.handleBlur}
+          onChange={(event) => field.handleChange(event.target.value)}
+          aria-invalid={invalid}
+          {...input}
+        />
+      </InputGroup>
+      {description && <FieldDescription>{description}</FieldDescription>}
+      {error}
+    </Field>
+  );
+}
+
 /** A day as "YYYY-MM-DD", read and written in the browser's own calendar. */
 const dayOf = (date: Date) =>
   [date.getFullYear(), date.getMonth() + 1, date.getDate()]
@@ -85,8 +115,17 @@ const dateOf = (day: string) => {
  * A day: typed, or picked on shadcn's Calendar in a Popover (its date picker
  * with an input), so typing costs no more clicks than before. "" for none.
  */
-function DateField({ label, description }: Labelled) {
+function DateField({
+  label,
+  description,
+  fromToday,
+}: Labelled & {
+  /** A start date: days before today are greyed out, as the module refuses them anyway. */
+  fromToday?: boolean;
+}) {
   const { field, id, invalid, error } = useBound<string>();
+  // Today as the field first showed, held so the render stays pure.
+  const [today] = useState(() => new Date());
   const [open, setOpen] = useState(false);
   const day = /^\d{4}-\d{2}-\d{2}$/.test(field.state.value) ? dateOf(field.state.value) : undefined;
   return (
@@ -96,6 +135,7 @@ function DateField({ label, description }: Labelled) {
         <InputGroupInput
           id={id}
           type="date"
+          min={fromToday ? dayOf(today) : undefined}
           name={field.name}
           value={field.state.value}
           onBlur={field.handleBlur}
@@ -113,6 +153,7 @@ function DateField({ label, description }: Labelled) {
                 selected={day}
                 defaultMonth={day}
                 captionLayout="dropdown"
+                disabled={fromToday ? { before: today } : undefined}
                 onSelect={(picked) => {
                   field.handleChange(picked ? dayOf(picked) : "");
                   field.handleBlur();
@@ -286,6 +327,6 @@ function Submit({ disabled, children, ...props }: ComponentProps<typeof Button>)
 export const { useAppForm } = createFormHook({
   fieldContext,
   formContext,
-  fieldComponents: { TextField, DateField, TextareaField, ChoiceField, CheckboxField },
+  fieldComponents: { TextField, RandsField, DateField, TextareaField, ChoiceField, CheckboxField },
   formComponents: { Form, Submit },
 });

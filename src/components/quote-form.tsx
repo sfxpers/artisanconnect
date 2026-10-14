@@ -90,18 +90,16 @@ export function QuoteForm({
         </form.AppField>
         <div className="grid gap-4 sm:grid-cols-2">
           <form.AppField name="labour">
-            {(field) => (
-              <field.TextField label={t.labour} description={t.labourHint} inputMode="decimal" />
-            )}
+            {(field) => <field.RandsField label={t.labour} description={t.labourHint} />}
           </form.AppField>
           <form.Subscribe selector={(state) => state.values.materialsBy === "client"}>
             {(clientSupplies) => (
               <form.AppField name="materials">
                 {(field) => (
-                  <field.TextField
+                  <field.RandsField
                     label={t.materials}
                     description={t.materialsHint}
-                    inputMode="decimal"
+
                     disabled={clientSupplies}
                     {...(clientSupplies && { value: "0.00" })}
                   />
@@ -110,7 +108,7 @@ export function QuoteForm({
             )}
           </form.Subscribe>
           <form.AppField name="startOn">
-            {(field) => <field.DateField label={t.startOn} />}
+            {(field) => <field.DateField label={t.startOn} fromToday />}
           </form.AppField>
           <form.AppField name="durationDays">
             {(field) => (

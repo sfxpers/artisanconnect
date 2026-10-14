@@ -57,34 +57,38 @@ export function FilePicker({
           ))}
         </ul>
       )}
-      {/* The browser's input, hidden; its label is the button, and shows its focus. */}
-      <input
-        id={id}
-        type="file"
-        accept={accept}
-        multiple={multiple}
-        className="peer sr-only"
-        onChange={(event) => {
-          const picked = [...(event.target.files ?? [])];
-          onFiles(multiple ? [...files, ...picked] : picked);
-          // Emptied, so the same file can be chosen again after it is taken out.
-          event.target.value = "";
-        }}
-      />
-      <label
-        htmlFor={id}
-        className={cn(
-          buttonVariants({ variant: "outline" }),
-          "w-fit cursor-pointer peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ring",
-        )}
-      >
-        {photosOnly ? (
-          <ImagePlus data-icon="inline-start" />
-        ) : (
-          <Paperclip data-icon="inline-start" />
-        )}
-        {files.length > 0 && multiple ? t.more : photosOnly ? t.photos : t.files}
-      </label>
+
+      {/* Wrapped, as the Field widens its own children and the button fits its label. */}
+      <div>
+        {/* The browser's input, hidden; its label is the button, and shows its focus. */}
+        <input
+          id={id}
+          type="file"
+          accept={accept}
+          multiple={multiple}
+          className="peer sr-only"
+          onChange={(event) => {
+            const picked = [...(event.target.files ?? [])];
+            onFiles(multiple ? [...files, ...picked] : picked);
+            // Emptied, so the same file can be chosen again after it is taken out.
+            event.target.value = "";
+          }}
+        />
+        <label
+          htmlFor={id}
+          className={cn(
+            buttonVariants({ variant: "outline" }),
+            "w-fit cursor-pointer peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ring",
+          )}
+        >
+          {photosOnly ? (
+            <ImagePlus data-icon="inline-start" />
+          ) : (
+            <Paperclip data-icon="inline-start" />
+          )}
+          {files.length > 0 && multiple ? t.more : photosOnly ? t.photos : t.files}
+        </label>
+      </div>
     </Field>
   );
 }

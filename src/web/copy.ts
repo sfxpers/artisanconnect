@@ -41,6 +41,7 @@ export const copy = {
   },
   loading: "Loading",
   pickDay: "Pick a day",
+  rand: "R",
   files: {
     photos: "Choose photos",
     files: "Choose files",

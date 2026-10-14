@@ -129,7 +129,8 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
         >
           <TooltipProvider>
             <ConfirmProvider>{children}</ConfirmProvider>
-            <Toaster />
+            {/* At the top, clear of the bars a phone holds at its foot. */}
+            <Toaster position="top-center" />
           </TooltipProvider>
         </ThemeProvider>
         <TanStackRouterDevtools position="bottom-right" />
