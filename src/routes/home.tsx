@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { initials } from "@/components/app-header";
-import { NoticeList } from "@/components/notice-list";
+import { NoticeList, useNoticesSeen } from "@/components/notice-list";
 import { EmptyState, NextStepCard, Page, Refusal, withSidebar } from "@/components/page";
 import { REGIONS_MAX } from "@/domain/regions/places";
 import { formatRands } from "@/domain/money";
@@ -52,6 +52,7 @@ type Result = { ok: true } | { ok: false; refusal: { message: string } };
 function Home() {
   const { notices, work, payouts } = Route.useLoaderData();
   const [tab, setTab] = useState<Tab>("matches");
+  const fresh = useNoticesSeen(tab === "notices");
   return (
     <Page title={t.title}>
       <div className={withSidebar}>
@@ -76,7 +77,7 @@ function Home() {
               <Active quotes={work.quotes} />
             </TabsContent>
             <TabsContent value="notices" className="pt-4">
-              <NoticeList notices={notices} />
+              <NoticeList notices={notices} fresh={fresh} />
             </TabsContent>
           </Tabs>
         </div>

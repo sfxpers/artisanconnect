@@ -118,6 +118,26 @@ describe("the Notices stream", () => {
     const { domain } = await createHarness();
 
     expect(await domain.notices.list(visitor)).toEqual([]);
+    expect(await domain.notices.unread(visitor)).toBe(0);
+  });
+
+  test("counts as unread what was told since the Account last opened it", async () => {
+    const { domain, given, clock } = await createHarness();
+    const { actor } = await given.client();
+    const admin = await given.admin();
+    const publish = (summary: string) => domain.marketplaceRules.publish(admin.actor, { summary });
+
+    await publish("Version 2.");
+    clock.advance({ minutes: 1 });
+    await publish("Version 3.");
+    expect(await domain.notices.unread(actor)).toBe(2);
+
+    await domain.notices.seen(actor);
+    expect(await domain.notices.unread(actor)).toBe(0);
+
+    clock.advance({ minutes: 1 });
+    await publish("Version 4.");
+    expect(await domain.notices.unread(actor)).toBe(1);
   });
 });
 

@@ -26,6 +26,7 @@ export const copy = {
       toggle: "Show or hide the menu",
     },
     notices: "Notices",
+    noticesUnread: (count: number) => `Notices, ${count} unread`,
     main: "Main",
     menu: "Menu",
     theme: { label: "Theme", light: "Light", dark: "Dark", system: "As the device" },
@@ -39,6 +40,13 @@ export const copy = {
   },
   loading: "Loading",
   pickDay: "Pick a day",
+  files: {
+    photos: "Choose photos",
+    files: "Choose files",
+    more: "Add more",
+    remove: (name: string) => `Take out ${name}`,
+  },
+  nextStepBack: "Go to it",
   /** Before an act that cannot be undone. */
   ask: { title: "Are you sure?", yes: "Confirm", no: "Go back" },
   skipToContent: "Skip to content",
@@ -300,6 +308,7 @@ export const copy = {
       "The full rules are being written. They will say how a Job, a Quote, a Hire, and the money work, what may be said, and how your personal data is used.",
   },
   notices: {
+    new: "New",
     title: "Notices",
     empty: "Nothing yet. We tell you here, and by email, when something needs you.",
     open: "Open",

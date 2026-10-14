@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Bell, Menu, Monitor, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -59,7 +60,7 @@ const navLink =
 const navActive = { className: "text-foreground bg-muted" };
 
 /** The one header of a Visitor, a Client, or an Artisan (#107). The Admin's is its sidebar. */
-export function AppHeader({ me }: { me: Me | null }) {
+export function AppHeader({ me, unread = 0 }: { me: Me | null; unread?: number }) {
   const nav = navFor(me);
   return (
     <header className="sticky top-0 z-40 border-b bg-background">
@@ -89,11 +90,16 @@ export function AppHeader({ me }: { me: Me | null }) {
           {me && (
             <Link
               to="/notices"
-              aria-label={copy.header.notices}
-              className={buttonVariants({ variant: "ghost", size: "icon" })}
+              aria-label={unread > 0 ? copy.header.noticesUnread(unread) : copy.header.notices}
+              className={buttonVariants({ variant: "ghost", size: "icon", className: "relative" })}
               activeProps={{ className: "bg-muted" }}
             >
               <Bell />
+              {unread > 0 && (
+                <Badge className="absolute -top-1 -right-1 h-4 min-w-4 px-1 tabular-nums">
+                  {unread > 9 ? "9+" : unread}
+                </Badge>
+              )}
             </Link>
           )}
           {!me && (

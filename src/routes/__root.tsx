@@ -40,7 +40,7 @@ export const Route = createRootRoute({
 });
 
 function RootComponent() {
-  const { me, admin } = Route.useRouteContext();
+  const { me, admin, unreadNotices } = Route.useRouteContext();
   const skip = (
     <a
       href="#main"
@@ -61,7 +61,7 @@ function RootComponent() {
       ) : (
         <div className="flex min-h-svh flex-col">
           {skip}
-          <AppHeader me={me} />
+          <AppHeader me={me} unread={unreadNotices} />
           {me?.standing.suspended && <SuspendedBanner suspended={me.standing.suspended} />}
           <div id="main" className="flex flex-1 flex-col">
             <Outlet />

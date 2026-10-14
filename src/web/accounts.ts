@@ -30,6 +30,8 @@ export const getSession = createServerFn({ method: "GET" }).handler(async () => 
   return {
     me: await domain.accounts.me(actor),
     admin: await domain.admins.me(actor),
+    /** Notices told since the Account last opened them, for the bell. */
+    unreadNotices: await domain.notices.unread(actor),
     turnstileSiteKey: env.TURNSTILE_SITE_KEY,
     origin: getRequestUrl().origin,
   };
@@ -202,6 +204,12 @@ export const withdrawNames = createServerFn({ method: "POST" }).handler(async ()
 export const getNotices = createServerFn({ method: "GET" }).handler(async () => {
   const domain = requestDomain();
   return domain.notices.list(await requestActor(domain));
+});
+
+/** The Account has opened its Notices: they are read. */
+export const markNoticesSeen = createServerFn({ method: "POST" }).handler(async () => {
+  const domain = requestDomain();
+  await domain.notices.seen(await requestActor(domain));
 });
 
 /** Locally only: the emails the app would have sent, newest first. */

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { NoticeList } from "@/components/notice-list";
+import { NoticeList, useNoticesSeen } from "@/components/notice-list";
 import { Page } from "@/components/page";
 import { getNotices } from "@/web/accounts";
 import { copy, pageTitle } from "@/web/copy";
@@ -15,9 +15,10 @@ export const Route = createFileRoute("/notices")({
 });
 
 function Notices() {
+  const fresh = useNoticesSeen();
   return (
     <Page title={copy.notices.title}>
-      <NoticeList notices={Route.useLoaderData()} />
+      <NoticeList notices={Route.useLoaderData()} fresh={fresh} />
     </Page>
   );
 }

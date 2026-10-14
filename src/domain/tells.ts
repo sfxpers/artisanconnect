@@ -176,5 +176,32 @@ export const noticesSection = defineSection({
         .where(eq(notices.accountId, accountId))
         .orderBy(desc(notices.toldAt), desc(notices.id));
     },
+
+    /** How many Notices the viewer was told since last opening the stream; 0 to anyone else. */
+    async unread(viewer: Actor) {
+      const accountId = accountIdOf(viewer);
+      if (!accountId) return 0;
+      const [row] = await ctx.db
+        .select({ count: sql<number>`count(*)` })
+        .from(notices)
+        .innerJoin(accounts, eq(accounts.id, notices.accountId))
+        .where(
+          and(
+            eq(notices.accountId, accountId),
+            sql`${accounts.noticesSeenAt} is null or ${notices.toldAt} > ${accounts.noticesSeenAt}`,
+          ),
+        );
+      return row?.count ?? 0;
+    },
+
+    /** The viewer has opened the Notices stream: all told until now are read. */
+    async seen(viewer: Actor) {
+      const accountId = accountIdOf(viewer);
+      if (!accountId) return;
+      await ctx.db
+        .update(accounts)
+        .set({ noticesSeenAt: ctx.now() })
+        .where(eq(accounts.id, accountId));
+    },
   }),
 });
