@@ -231,10 +231,10 @@ function ArtisanCard({ card }: { card: BrowseCard }) {
             loading="lazy"
             width={photo.width}
             height={photo.height}
-            className="aspect-4/3 w-full border-b bg-muted object-cover"
+            className="aspect-video w-full border-b bg-muted object-cover sm:aspect-4/3"
           />
         ) : (
-          <div className="grid aspect-4/3 w-full place-items-center border-b bg-muted text-muted-foreground">
+          <div className="grid aspect-video w-full place-items-center border-b bg-muted text-muted-foreground sm:aspect-4/3">
             <span className="flex items-center gap-2 text-sm">
               <ImageOff className="size-4" aria-hidden />
               {t.noPhoto}

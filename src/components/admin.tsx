@@ -1,4 +1,6 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { Choose } from "@/components/choose";
+import { FieldLabel } from "@/components/ui/field";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { QUEUE_NAMES, type QueueName } from "@/domain/queue-names";
@@ -7,7 +9,10 @@ import { copy } from "@/web/copy";
 
 // Pieces of the Admin's pages, in the Contract look (#107).
 
-/** All queues and each queue with its count, each opening the home stream filtered to it. */
+/**
+ * All queues and each queue with its count, each opening the home stream
+ * filtered to it: buttons on a wide screen, one Select on a phone.
+ */
 export function QueueCounts({
   counts,
   current,
@@ -15,32 +20,52 @@ export function QueueCounts({
   counts: Record<QueueName, number>;
   current?: QueueName;
 }) {
+  const navigate = useNavigate();
   const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
   const link = (active: boolean) =>
     buttonVariants({ variant: active ? "secondary" : "ghost", size: "sm" });
   return (
-    <nav aria-label={copy.admin.home.filter} className="flex flex-wrap gap-1">
-      <Link to="/admin" className={link(!current)} aria-current={current ? undefined : "page"}>
-        {copy.admin.home.all}
-        <Badge variant="outline" className="tabular-nums">
-          {total}
-        </Badge>
-      </Link>
-      {QUEUE_NAMES.map((queue) => (
-        <Link
-          key={queue}
-          to="/admin"
-          search={{ queue }}
-          className={link(queue === current)}
-          aria-current={queue === current ? "page" : undefined}
-        >
-          {copy.admin.queues[queue]}
-          <Badge variant={counts[queue] > 0 ? "default" : "outline"} className="tabular-nums">
-            {counts[queue]}
+    <>
+      <div className="md:hidden">
+        <FieldLabel htmlFor="queue" className="sr-only">
+          {copy.admin.home.filter}
+        </FieldLabel>
+        <Choose
+          id="queue"
+          value={current ?? ""}
+          onChange={(queue) => void navigate({ to: "/admin", search: queue ? { queue } : {} })}
+          options={[
+            { value: "", label: `${copy.admin.home.all} (${total})` },
+            ...QUEUE_NAMES.map((queue) => ({
+              value: queue,
+              label: `${copy.admin.queues[queue]} (${counts[queue]})`,
+            })),
+          ]}
+        />
+      </div>
+      <nav aria-label={copy.admin.home.filter} className="hidden flex-wrap gap-1 md:flex">
+        <Link to="/admin" className={link(!current)} aria-current={current ? undefined : "page"}>
+          {copy.admin.home.all}
+          <Badge variant="outline" className="tabular-nums">
+            {total}
           </Badge>
         </Link>
-      ))}
-    </nav>
+        {QUEUE_NAMES.map((queue) => (
+          <Link
+            key={queue}
+            to="/admin"
+            search={{ queue }}
+            className={link(queue === current)}
+            aria-current={queue === current ? "page" : undefined}
+          >
+            {copy.admin.queues[queue]}
+            <Badge variant={counts[queue] > 0 ? "default" : "outline"} className="tabular-nums">
+              {counts[queue]}
+            </Badge>
+          </Link>
+        ))}
+      </nav>
+    </>
   );
 }
 

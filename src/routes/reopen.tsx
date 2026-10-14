@@ -99,6 +99,7 @@ function Reopen() {
             {(accepted) => (
               <form.Submit
                 size="lg"
+                className="w-full"
                 disabled={stage === "email" ? !turnstile.token : !!newRules && !accepted}
               >
                 {stage === "email" ? t.send : newRules ? t.acceptAndReopen : t.submit}

@@ -76,7 +76,11 @@ function Recover() {
               </>
             )}
             <Refusal message={refusal} />
-            <form.Submit size="lg" disabled={stage === "email" && !turnstile.token}>
+            <form.Submit
+              size="lg"
+              className="w-full"
+              disabled={stage === "email" && !turnstile.token}
+            >
               {stage === "email" ? t.send : t.submit}
             </form.Submit>
           </form.Form>

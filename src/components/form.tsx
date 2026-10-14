@@ -175,7 +175,7 @@ function ChoiceField<Option extends string>({
         name={group}
         value={field.state.value}
         onValueChange={(value) => field.handleChange(value as Option)}
-        className={cards ? "sm:grid-cols-2" : "flex flex-wrap gap-4"}
+        className="sm:grid-cols-2"
       >
         {options.map((option) => {
           const id = `${group}-${option.value}`;

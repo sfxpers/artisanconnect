@@ -64,7 +64,7 @@ function ConfirmEmail() {
             selector={(state) => state.values.code.trim().length === EMAIL_CODE.length}
           >
             {(whole) => (
-              <form.Submit size="lg" disabled={!whole}>
+              <form.Submit size="lg" className="w-full" disabled={!whole}>
                 {t.submit}
               </form.Submit>
             )}

@@ -13,6 +13,10 @@ type Seeded = {
 type Screen = { name: string; path: string; act?: (page: Page) => Promise<void> };
 
 const label = process.env.SCREENS ?? "after";
+/** Where the captures go: docs/review/screens/<SCREENS>, unless SCREENS_DIR says. */
+const dir = process.env.SCREENS_DIR ?? `docs/review/screens/${label}`;
+/** With SCREENS_ALL set, every other screen too, for a review of the whole app. */
+const all = Boolean(process.env.SCREENS_ALL);
 const widths = [375, 1280];
 const schemes = ["light", "dark"] as const;
 
@@ -57,6 +61,43 @@ test("capture every designed screen", async ({ browser }) => {
       { name: "admin-item", path: `/admin/items/${s.disputeItemId}` },
     ],
   };
+  if (all) {
+    screens.visitor.push(
+      { name: "rules", path: "/rules" },
+      { name: "recover", path: "/recover" },
+      { name: "reopen", path: "/reopen" },
+      { name: "not-found", path: "/no-such-page" },
+    );
+    screens.client.push(
+      { name: "job-new", path: "/jobs/new" },
+      { name: "job-messages", path: `/jobs/${s.awaitingJobId}?tab=messages` },
+      { name: "job-details", path: `/jobs/${s.awaitingJobId}?tab=details` },
+      { name: "client-account", path: "/account" },
+      { name: "client-notices", path: "/notices" },
+      { name: "client-support", path: "/support" },
+      { name: "client-profile-view", path: `/artisans/${s.artisan.id}` },
+    );
+    screens.artisan.push(
+      { name: "artisan-offered-quoted", path: `/jobs/${s.quotedJobId}` },
+      { name: "artisan-job-awaiting", path: `/jobs/${s.awaitingJobId}` },
+      { name: "artisan-profile-edit", path: "/profile" },
+      { name: "artisan-verification", path: "/verification" },
+      { name: "artisan-regions", path: "/regions" },
+      { name: "artisan-payouts", path: "/payouts" },
+      { name: "artisan-account", path: "/account" },
+    );
+    screens.admin.push(
+      { name: "admin-people", path: "/admin/people?q=Sipho" },
+      { name: "admin-person", path: `/admin/people/${s.artisan.id}` },
+      { name: "admin-payouts", path: "/admin/payouts" },
+      { name: "admin-payout-history", path: `/admin/payouts/${s.artisan.id}` },
+      { name: "admin-figures", path: "/admin/figures" },
+      { name: "admin-suburbs", path: "/admin/suburbs" },
+      { name: "admin-rules", path: "/admin/rules" },
+      { name: "admin-admins", path: "/admin/admins" },
+      { name: "admin-audit", path: "/admin/audit" },
+    );
+  }
   for (const [role, list] of Object.entries(screens)) {
     for (const width of widths) {
       for (const colorScheme of schemes) {
@@ -77,7 +118,7 @@ test("capture every designed screen", async ({ browser }) => {
           await screen.act?.(page).catch(() => undefined);
           await page.waitForTimeout(300);
           await page.screenshot({
-            path: `docs/review/screens/${label}/${screen.name}-${width}-${colorScheme}.jpg`,
+            path: `${dir}/${screen.name}-${width}-${colorScheme}.jpg`,
             fullPage: true,
             type: "jpeg",
             quality: 70,

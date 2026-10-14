@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { BadgeCheck, HandCoins, Receipt, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Field, FieldLabel } from "@/components/ui/field";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Choose } from "@/components/choose";
 import { SuburbPicker, type Suburb } from "@/components/job-form";
 import {
@@ -129,31 +129,36 @@ function TradeSearch() {
   const navigate = useNavigate();
   const [category, setCategory] = useState<ServiceCategory | null>(null);
   const [suburb, setSuburb] = useState<Suburb | null>(null);
+  const [missing, setMissing] = useState(false);
   return (
     <form
       aria-label={t.searchLabel}
-      className="grid gap-3 rounded-lg border bg-background p-4 sm:grid-cols-2 sm:items-end"
+      className="grid gap-3 rounded-lg border bg-background p-4 sm:grid-cols-2 sm:items-start"
       onSubmit={(event) => {
         event.preventDefault();
-        if (!category) return;
+        if (!category) return setMissing(true);
         void navigate({ to: "/artisans", search: { category, region: suburb?.region.id } });
       }}
     >
-      <Field>
+      <Field data-invalid={missing}>
         <FieldLabel htmlFor="trade">{t.trade}</FieldLabel>
         <Choose
           id="trade"
           value={category ?? ""}
-          onChange={(value) => setCategory(value || null)}
+          onChange={(value) => {
+            setCategory(value || null);
+            setMissing(false);
+          }}
           placeholder={t.chooseTrade}
           options={SERVICE_CATEGORIES.map((each) => ({
             value: each,
             label: SERVICE_CATEGORY_NAMES[each],
           }))}
         />
+        {missing && <FieldError>{t.searchHint}</FieldError>}
       </Field>
       <SuburbPicker value={suburb} onChange={setSuburb} label={t.suburb} hint={null} />
-      <Button type="submit" size="lg" className="sm:col-span-2" disabled={!category}>
+      <Button type="submit" size="lg" className="sm:col-span-2">
         <Search data-icon="inline-start" />
         {t.search}
       </Button>

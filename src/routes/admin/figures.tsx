@@ -171,7 +171,8 @@ function Outcomes(counts: Record<keyof typeof t.outcome, number>) {
             />
             <XAxis dataKey="count" type="number" allowDecimals={false} tickLine={false} />
             <ChartTooltip content={<ChartTooltipContent hideIndicator />} />
-            <Bar dataKey="count" fill="var(--color-count)" radius={4} />
+            {/* No decorative animation (#111 design rules): the bars are drawn at once. */}
+            <Bar dataKey="count" fill="var(--color-count)" radius={4} isAnimationActive={false} />
           </BarChart>
         </ChartContainer>
       </CardContent>
@@ -193,7 +194,7 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
 /** One figure: what it is, its value, and what it counts. */
 function Figure({ label, value, note }: { label: string; value: ReactNode; note: string }) {
   return (
-    <Card size="sm">
+    <Card>
       <CardHeader>
         <CardDescription>{label}</CardDescription>
         <CardTitle className="text-2xl tabular-nums">{value}</CardTitle>

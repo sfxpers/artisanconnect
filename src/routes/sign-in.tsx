@@ -103,7 +103,11 @@ function SignIn() {
           )}
           <form.Subscribe selector={(state) => state.values.acceptsRules && state.values.consents}>
             {(accepted) => (
-              <form.Submit size="lg" disabled={!turnstile.token || (!!newRules && !accepted)}>
+              <form.Submit
+                size="lg"
+                className="w-full"
+                disabled={!turnstile.token || (!!newRules && !accepted)}
+              >
                 {newRules ? t.acceptAndSignIn : t.submit}
               </form.Submit>
             )}

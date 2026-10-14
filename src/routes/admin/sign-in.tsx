@@ -72,7 +72,11 @@ function AdminSignIn() {
               }
             >
               {(ready) => (
-                <form.Submit size="lg" disabled={!ready || (!sentTo && !turnstile.token)}>
+                <form.Submit
+                  size="lg"
+                  className="w-full"
+                  disabled={!ready || (!sentTo && !turnstile.token)}
+                >
                   {sentTo ? t.submit : t.send}
                 </form.Submit>
               )}

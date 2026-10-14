@@ -23,7 +23,6 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Wordmark } from "@/components/wordmark";
 import type { MarketplaceRules } from "@/domain/accounts/rules";
 import { formatRands } from "@/domain/money";
 import { copy, countdownTo, formatDate } from "@/web/copy";
@@ -178,7 +177,7 @@ export function Deadline({ at, className }: { at: Date | string; className?: str
   );
 }
 
-/** Signing in, signing up, and getting back in: one card under the wordmark (shadcn login-03). */
+/** Signing in and getting back in: one centred card (shadcn login-03), under the header. */
 export function AuthCard({
   label,
   title,
@@ -193,25 +192,18 @@ export function AuthCard({
   children: ReactNode;
 }) {
   return (
-    <main className="flex min-h-full flex-col items-center gap-6 bg-muted px-4 py-10 sm:py-16">
-      <div className="flex w-full max-w-md flex-col gap-6">
-        <Link to="/" aria-label={copy.appName} className="self-center rounded-md">
-          <Wordmark />
-        </Link>
-        <Card>
-          <CardHeader className="text-center">
-            {label && (
-              <CardDescription className="text-xs font-medium text-primary">
-                {label}
-              </CardDescription>
-            )}
-            <h1 className="text-xl font-semibold">{title}</h1>
-            {lead && <CardDescription>{lead}</CardDescription>}
-          </CardHeader>
-          <CardContent className="space-y-5">{children}</CardContent>
-        </Card>
-        {footer && <div className="text-center text-sm text-muted-foreground">{footer}</div>}
-      </div>
+    <main className="mx-auto flex w-full max-w-md flex-col gap-6 px-4 py-10 sm:py-16">
+      <Card>
+        <CardHeader className="text-center">
+          {label && (
+            <CardDescription className="text-xs font-medium text-primary">{label}</CardDescription>
+          )}
+          <h1 className="text-xl font-semibold">{title}</h1>
+          {lead && <CardDescription>{lead}</CardDescription>}
+        </CardHeader>
+        <CardContent className="space-y-5">{children}</CardContent>
+      </Card>
+      {footer && <div className="text-center text-sm text-muted-foreground">{footer}</div>}
     </main>
   );
 }

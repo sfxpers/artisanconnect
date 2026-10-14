@@ -15,7 +15,8 @@ import { Wordmark } from "@/components/wordmark";
 import type { Me } from "@/web/me";
 import { copy } from "@/web/copy";
 
-type NavItem = { to: string; label: string };
+/** A page in the header; `cta` draws it as an outlined button, as a Visitor's Sign up is. */
+type NavItem = { to: string; label: string; cta?: boolean };
 
 /** Each party's header, as #111 names it. */
 function navFor(me: Me | null): NavItem[] {
@@ -23,7 +24,7 @@ function navFor(me: Me | null): NavItem[] {
     const t = copy.header.visitor;
     return [
       { to: "/artisans", label: t.findArtisans },
-      { to: "/sign-up", label: t.signUp },
+      { to: "/sign-up", label: t.signUp, cta: true },
       { to: "/sign-in", label: t.signIn },
     ];
   }
@@ -68,11 +69,21 @@ export function AppHeader({ me }: { me: Me | null }) {
           <Wordmark />
         </Link>
         <nav aria-label={copy.header.main} className="ml-auto hidden items-center gap-1 md:flex">
-          {nav.map((item) => (
-            <Link key={item.to} to={item.to} className={navLink} activeProps={navActive}>
-              {item.label}
-            </Link>
-          ))}
+          {nav.map((item) =>
+            item.cta ? (
+              <Link
+                key={item.to}
+                to={item.to}
+                className={buttonVariants({ variant: "outline", className: "mx-1" })}
+              >
+                {item.label}
+              </Link>
+            ) : (
+              <Link key={item.to} to={item.to} className={navLink} activeProps={navActive}>
+                {item.label}
+              </Link>
+            ),
+          )}
         </nav>
         <div className="ml-auto flex items-center gap-1 md:ml-2">
           {me && (

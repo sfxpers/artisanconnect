@@ -43,45 +43,10 @@ export function ArtisanProfileView({
 }) {
   const { reviews } = profile;
   return (
-    <div className="grid items-start gap-6 lg:grid-cols-3">
-      <Card className="lg:col-start-3 lg:row-start-1">
-        <CardHeader className="flex items-center gap-3">
-          <Avatar size="lg">
-            <AvatarFallback>{initials(profile.publicName)}</AvatarFallback>
-          </Avatar>
-          <div className="min-w-0 space-y-1">
-            <h1 className="truncate text-xl font-semibold">{profile.publicName}</h1>
-            {profile.availableForJobs ? (
-              <Badge variant="success">{t.available}</Badge>
-            ) : (
-              <Badge variant="outline">{t.notAvailable}</Badge>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-1">
-            <RatingSummary average={reviews.average} count={reviews.count} />
-            <p className="text-sm text-muted-foreground">{t.completed(profile.completed ?? 0)}</p>
-          </div>
-          <div className="space-y-1.5">
-            <p className="text-xs font-medium text-muted-foreground">{t.verifiedFor}</p>
-            {profile.categories.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t.notVerifiedNow}</p>
-            ) : (
-              <div className="flex flex-wrap gap-1.5">
-                {profile.categories.map(({ category, name, gasWork }) => (
-                  <Badge key={category} variant="secondary">
-                    {gasWork ? `${name}, ${t.gasWork}` : name}
-                  </Badge>
-                ))}
-              </div>
-            )}
-          </div>
-          {actions && <div className="flex flex-col gap-2">{actions}</div>}
-        </CardContent>
-      </Card>
-
-      <div className="min-w-0 space-y-8 lg:col-span-2 lg:col-start-1 lg:row-span-2 lg:row-start-1">
+    // On a phone: who it is, then the work, then the badges. On a wide screen
+    // the work is the main column, and the rest one column beside it.
+    <div className="flex flex-col gap-6 lg:grid lg:grid-cols-3 lg:items-start">
+      <div className="order-2 min-w-0 space-y-8 lg:col-span-2">
         <Gallery photos={profile.photos} />
 
         <section className="space-y-2">
@@ -103,55 +68,93 @@ export function ArtisanProfileView({
         </section>
       </div>
 
-      <div className="space-y-4 lg:col-start-3 lg:row-start-2">
-        <Card size="sm">
-          <CardHeader>
-            <CardTitle>{t.badges}</CardTitle>
+      <div className="contents lg:order-3 lg:flex lg:flex-col lg:gap-4">
+        <Card className="order-1">
+          <CardHeader className="flex items-center gap-3">
+            <Avatar size="lg">
+              <AvatarFallback>{initials(profile.publicName)}</AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 space-y-1">
+              <h1 className="truncate text-xl font-semibold">{profile.publicName}</h1>
+              {profile.availableForJobs ? (
+                <Badge variant="success">{t.available}</Badge>
+              ) : (
+                <Badge variant="outline">{t.notAvailable}</Badge>
+              )}
+            </div>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <ul className="space-y-1.5 text-sm">
-              {profile.badges.map((badge) => (
-                <li key={`${badge.kind}:${badge.category}`} className="flex gap-2">
-                  <BadgeCheck className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
-                  <span>
-                    {badge.name}
-                    {badge.expiresOn && (
-                      <span className="text-muted-foreground">
-                        , {t.expires(formatDay(badge.expiresOn))}
-                      </span>
-                    )}
-                    {badge.issuedOn && (
-                      <span className="text-muted-foreground">
-                        , {t.issued(formatDay(badge.issuedOn))}
-                      </span>
-                    )}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            <p className="text-xs text-muted-foreground">{t.badgesNote}</p>
+          <CardContent className="space-y-4">
+            <div className="space-y-1">
+              <RatingSummary average={reviews.average} count={reviews.count} />
+              <p className="text-sm text-muted-foreground">{t.completed(profile.completed ?? 0)}</p>
+            </div>
+            <div className="space-y-1.5">
+              <p className="text-xs font-medium text-muted-foreground">{t.verifiedFor}</p>
+              {profile.categories.length === 0 ? (
+                <p className="text-sm text-muted-foreground">{t.notVerifiedNow}</p>
+              ) : (
+                <div className="flex flex-wrap gap-1.5">
+                  {profile.categories.map(({ category, name, gasWork }) => (
+                    <Badge key={category} variant="secondary">
+                      {gasWork ? `${name}, ${t.gasWork}` : name}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+            {actions && <div className="flex flex-col gap-2">{actions}</div>}
           </CardContent>
         </Card>
-        <Card size="sm">
-          <CardHeader>
-            <CardTitle>{t.regions}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {profile.regions.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t.noRegions}</p>
-            ) : (
-              <ul className="space-y-1 text-sm">
-                {profile.regions.map((region) => (
-                  <li key={region.id} className="flex items-center gap-2">
-                    <MapPin className="size-4 text-muted-foreground" aria-hidden />
-                    {region.name}
+        <div className="order-3 space-y-4">
+          <Card size="sm">
+            <CardHeader>
+              <CardTitle>{t.badges}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <ul className="space-y-1.5 text-sm">
+                {profile.badges.map((badge) => (
+                  <li key={`${badge.kind}:${badge.category}`} className="flex gap-2">
+                    <BadgeCheck className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+                    <span>
+                      {badge.name}
+                      {badge.expiresOn && (
+                        <span className="text-muted-foreground">
+                          , {t.expires(formatDay(badge.expiresOn))}
+                        </span>
+                      )}
+                      {badge.issuedOn && (
+                        <span className="text-muted-foreground">
+                          , {t.issued(formatDay(badge.issuedOn))}
+                        </span>
+                      )}
+                    </span>
                   </li>
                 ))}
               </ul>
-            )}
-          </CardContent>
-        </Card>
-        <p className="text-xs text-muted-foreground">{t.noContact}</p>
+              <p className="text-xs text-muted-foreground">{t.badgesNote}</p>
+            </CardContent>
+          </Card>
+          <Card size="sm">
+            <CardHeader>
+              <CardTitle>{t.regions}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {profile.regions.length === 0 ? (
+                <p className="text-sm text-muted-foreground">{t.noRegions}</p>
+              ) : (
+                <ul className="space-y-1 text-sm">
+                  {profile.regions.map((region) => (
+                    <li key={region.id} className="flex items-center gap-2">
+                      <MapPin className="size-4 text-muted-foreground" aria-hidden />
+                      {region.name}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+          <p className="text-xs text-muted-foreground">{t.noContact}</p>
+        </div>
       </div>
     </div>
   );
@@ -175,7 +178,7 @@ function Gallery({ photos }: { photos: ProfilePhotoView[] }) {
                   width={photo.width}
                   height={photo.height}
                   loading={index === 0 ? "eager" : "lazy"}
-                  className="aspect-4/3 w-full rounded-lg border bg-muted object-cover"
+                  className="aspect-4/3 w-full rounded-lg border bg-muted object-cover lg:aspect-video"
                 />
               </a>
             </CarouselItem>

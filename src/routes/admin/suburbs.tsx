@@ -123,7 +123,8 @@ function AddCard({ regions }: { regions: Region[] }) {
         <CardDescription>{t.addLead}</CardDescription>
       </CardHeader>
       <form.AppForm>
-        <form.Form>
+        {/* The form holds the content and the footer, so it keeps the card's gap between them. */}
+        <form.Form className="space-y-4">
           <CardContent className="space-y-3">
             <form.AppField name="name">
               {(field) => (

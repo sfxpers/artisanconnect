@@ -160,62 +160,67 @@ function NamesRow({ me }: { me: Me }) {
   });
 
   return (
-    <div className="space-y-3 p-4">
-      {names.beingChecked && (
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-center gap-2 text-sm">
-            <Badge variant="warning">{t.names.beingChecked}</Badge>
-            {[names.beingChecked.name, names.beingChecked.tradingName].filter(Boolean).join(" · ")}
-          </div>
-          <p className="text-xs text-muted-foreground">{t.names.beingCheckedLead}</p>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={busy}
-            onClick={() => void run(withdrawNames, () => setDone(null))}
-          >
-            {t.names.withdraw}
-          </Button>
-        </div>
-      )}
-      {names.refused && <Refusal message={t.names.refused(names.refused.reason)} />}
-      {!names.shown && !names.beingChecked && (
-        <p className="text-sm text-muted-foreground">{t.names.notShown}</p>
-      )}
-      {done && <p className="text-sm text-muted-foreground">{done}</p>}
-      {editing ? (
-        <form.AppForm>
-          <form.Form className="space-y-3">
-            <form.AppField name="name">
-              {(field) => <field.TextField label={copy.signUp.names.name} autoComplete="name" />}
-            </form.AppField>
-            <form.AppField name="tradingName">
-              {(field) => (
-                <field.TextField
-                  label={copy.signUp.names.tradingName}
-                  autoComplete="organization"
-                />
-              )}
-            </form.AppField>
-            <Refusal message={refusal} />
-            <div className="flex gap-2">
-              <form.Submit>{t.names.save}</form.Submit>
-              <Button type="button" variant="ghost" onClick={() => setEditing(false)}>
-                {t.names.cancel}
-              </Button>
+    // Under the names, in their value column, so changing them reads as part of them.
+    <div className="space-y-3 p-4 sm:grid sm:grid-cols-3">
+      <div className="space-y-3 sm:col-span-2 sm:col-start-2">
+        {names.beingChecked && (
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <Badge variant="warning">{t.names.beingChecked}</Badge>
+              {[names.beingChecked.name, names.beingChecked.tradingName]
+                .filter(Boolean)
+                .join(" · ")}
             </div>
-          </form.Form>
-        </form.AppForm>
-      ) : (
-        <>
-          {!names.beingChecked && (
-            <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
-              {t.names.change}
+            <p className="text-xs text-muted-foreground">{t.names.beingCheckedLead}</p>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={busy}
+              onClick={() => void run(withdrawNames, () => setDone(null))}
+            >
+              {t.names.withdraw}
             </Button>
-          )}
-          <Refusal message={refusal} />
-        </>
-      )}
+          </div>
+        )}
+        {names.refused && <Refusal message={t.names.refused(names.refused.reason)} />}
+        {!names.shown && !names.beingChecked && (
+          <p className="text-sm text-muted-foreground">{t.names.notShown}</p>
+        )}
+        {done && <p className="text-sm text-muted-foreground">{done}</p>}
+        {editing ? (
+          <form.AppForm>
+            <form.Form className="space-y-3">
+              <form.AppField name="name">
+                {(field) => <field.TextField label={copy.signUp.names.name} autoComplete="name" />}
+              </form.AppField>
+              <form.AppField name="tradingName">
+                {(field) => (
+                  <field.TextField
+                    label={copy.signUp.names.tradingName}
+                    autoComplete="organization"
+                  />
+                )}
+              </form.AppField>
+              <Refusal message={refusal} />
+              <div className="flex gap-2">
+                <form.Submit>{t.names.save}</form.Submit>
+                <Button type="button" variant="ghost" onClick={() => setEditing(false)}>
+                  {t.names.cancel}
+                </Button>
+              </div>
+            </form.Form>
+          </form.AppForm>
+        ) : (
+          <>
+            {!names.beingChecked && (
+              <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
+                {t.names.change}
+              </Button>
+            )}
+            <Refusal message={refusal} />
+          </>
+        )}
+      </div>
     </div>
   );
 }
