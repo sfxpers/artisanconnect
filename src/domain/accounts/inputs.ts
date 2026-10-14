@@ -5,7 +5,8 @@ import * as z from "zod";
 
 /** An Email code works once, for ten minutes, and dies after five wrong tries. */
 export const EMAIL_CODE = { length: 6, minutes: 10, wrongTries: 5 } as const;
-export const PASSWORD_LENGTH = { min: 10, max: 128 } as const;
+/** At least 15 characters, as NIST SP 800-63B asks where a password is the only factor. */
+export const PASSWORD_LENGTH = { min: 15, max: 128 } as const;
 
 export const NAME_MAX = 80;
 
