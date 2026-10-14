@@ -21,7 +21,7 @@
 
   // The top level is local. Staging and production below repeat every binding
   // with their own D1, R2, and secrets; bindings are not inherited.
-  // MAIL_FROM: replace with an address on the domain verified for Email Sending.
+  // MAIL_FROM: the sending address, on artisanconnect.co.za, the domain onboarded for Email Sending.
   // APP_URL: the web app's origin, which links in emails point to.
   // PAYOUT_RUN_TIME: when the daily Payout run goes, as a South African time of day.
   // TURNSTILE_SITE_KEY: locally, Cloudflare's test key that always passes.
