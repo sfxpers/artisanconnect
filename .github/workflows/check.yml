@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       # Node and nub, at the versions mise.toml pins.
-      - uses: jdx/mise-action@v2
+      - uses: jdx/mise-action@v5
       - run: nub install --frozen-lockfile
       - run: nub run lint
       - run: nub run fmt:check
