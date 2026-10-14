@@ -359,6 +359,26 @@ describe("when the Payment arrives", () => {
     ).toMatchObject({ ok: false, refusal: { reason: "read-only" } });
   });
 
+  test("waits on the Artisan until the work is marked complete, and again at a Fix request", async () => {
+    const { domain, given } = await createHarness();
+    const { client, artisan, jobId, quoteId } = await quoted(given);
+    const waits = async () => (await domain.quotes.mine(artisan.actor))![0]!.waitsOnArtisan;
+    expect(await waits()).toBe(false);
+
+    await given.hired(client, quoteId);
+    expect(await waits()).toBe(true);
+    const engagementId = await given.engagementOf(client, jobId);
+    await given.workStarted(client, engagementId);
+    expect(await waits()).toBe(true);
+    await given.markedComplete(artisan, engagementId);
+    expect(await waits()).toBe(false);
+    await domain.engagements.requestFix(client.actor, {
+      engagementId,
+      note: "One wall is patchy.",
+    });
+    expect(await waits()).toBe(true);
+  });
+
   test("joins the Artisan's Active Jobs, without the address", async () => {
     const { domain, given } = await createHarness();
     const { client, artisan, jobId, quoteId } = await quoted(given);

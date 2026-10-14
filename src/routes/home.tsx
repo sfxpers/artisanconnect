@@ -90,13 +90,24 @@ function Home() {
 }
 
 /**
- * What waits on the Artisan, first things first: Verification, Regions, then
- * Invitations and Job Matches. An Invitation may come before the rest is done.
+ * What waits on the Artisan, first things first: Hired work to start,
+ * complete, or fix, then Verification, Regions, Invitations, and Job Matches.
  */
 function Waiting({ work, onSee }: { work: Work; onSee: (tab: Tab) => void }) {
   const { invitations, matches } = work;
   const jobs = invitations.length > 0 || matches.length > 0;
+  const hired = work.quotes.filter((quote) => quote.waitsOnArtisan).length;
   const cards = [
+    hired > 0 && (
+      <NextStepCard key="hired" label={t.waiting} title={t.hiredWaiting(hired)}>
+        <p className="text-sm text-muted-foreground">{t.hiredLead}</p>
+        <div className="flex flex-wrap gap-2">
+          <Button size="lg" onClick={() => onSee("active")}>
+            {t.seeActive}
+          </Button>
+        </div>
+      </NextStepCard>
+    ),
     !work.verified && (
       <NextStepCard key="verification" label={t.waiting} title={t.verification}>
         <p className="text-sm text-muted-foreground">{t.verificationLead}</p>

@@ -455,6 +455,10 @@ export const copy = {
         .join(" and ") + (invitations + matches === 1 ? " is waiting" : " are waiting"),
     invitationsLead: "A Client chose you and asked you to Quote. You may pass; nobody is told.",
     seeInvitations: "See Invitations",
+    hiredWaiting: (count: number) =>
+      count === 1 ? "A Hired Job is waiting" : `${count} Hired Jobs are waiting`,
+    hiredLead: "Start the work, mark it complete, or put right what the Client asked.",
+    seeActive: "See Active Jobs",
     nothingWaiting: "Nothing is waiting on you",
     nothingWaitingLead: "New Job Matches and Invitations show here.",
     tabs: {
