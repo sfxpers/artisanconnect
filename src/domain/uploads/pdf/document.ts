@@ -21,7 +21,7 @@ import {
 /** What decoding every stream of one PDF may come to, so a small file cannot unpack into a huge one. */
 export const MAX_DECODED_BYTES = 32 * 1024 * 1024;
 
-export type PdfStream = {
+type PdfStream = {
   dict: PdfDict;
   /** The stream's bytes as stored: encrypted, if the PDF is, and still encoded. */
   raw: Uint8Array;

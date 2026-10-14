@@ -22,7 +22,7 @@ export function requestCookie(): string | null {
   return getRequestHeader("cookie") ?? null;
 }
 
-export function requestIp(): string {
+function requestIp(): string {
   return getRequestHeader("cf-connecting-ip") ?? getRequestIP() ?? "unknown";
 }
 

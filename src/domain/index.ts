@@ -35,7 +35,7 @@ import { verificationSection } from "./verification";
 import { PORT_NAMES, type DomainConfig, type Ports, type Webhook } from "./ports";
 
 /** Every section of the module. Each ticket adds its section here. */
-export const sections = [
+const sections = [
   accountsSection,
   adminsSection,
   availabilitySection,
@@ -62,24 +62,17 @@ export const sections = [
 
 export type Domain = ReturnType<typeof createDomain>;
 
+/** Builds the module from its sections, on exactly its ports. */
 export function createDomain(ports: Ports, config: DomainConfig) {
-  return assembleDomain(ports, config, sections);
-}
-
-/** Builds the module from its sections. Tests of the harness itself add a probe section. */
-export function assembleDomain<const Sections extends readonly Section[]>(
-  ports: Ports,
-  config: DomainConfig,
-  sections: Sections,
-) {
   assertExactPorts(ports);
   const ctx = createContext(ports, config);
   const clocks: Record<string, ClockHandler> = {};
   const queueItemKinds: Record<string, QueueItemKind> = {};
   const api: Record<string, unknown> = {};
   for (const section of sections) {
-    if (section.name in api || section.name === "system" || section.name === "queues") {
-      throw new Error(`Section "${section.name}" is defined twice`);
+    const name: string = section.name;
+    if (name in api || name === "system" || name === "queues") {
+      throw new Error(`Section "${name}" is defined twice`);
     }
     api[section.name] = section.api(ctx);
     for (const [kind, handler] of Object.entries(section.clocks ?? {})) {
@@ -94,7 +87,7 @@ export function assembleDomain<const Sections extends readonly Section[]>(
     }
   }
   return {
-    ...(api as SectionsApi<Sections>),
+    ...(api as SectionsApi<typeof sections>),
     /** The Admin's home stream and item pages, over every section's queue items. */
     queues: createQueues(ctx, queueItemKinds),
     /** Entry points the platform calls, not a party. */
@@ -154,4 +147,3 @@ function assertExactPorts(ports: Ports) {
 export type { Actor } from "./actor";
 export type { Result, Refusal } from "./result";
 export type * from "./ports";
-export { PORT_NAMES } from "./ports";
