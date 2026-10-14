@@ -38,6 +38,7 @@ export const copy = {
     support: "Support",
   },
   loading: "Loading",
+  pickDay: "Pick a day",
   /** Before an act that cannot be undone. */
   ask: { title: "Are you sure?", yes: "Confirm", no: "Go back" },
   skipToContent: "Skip to content",

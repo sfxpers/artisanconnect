@@ -3,13 +3,7 @@ import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { BadgeCheck, HandCoins, Receipt, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Choose } from "@/components/choose";
 import { SuburbPicker, type Suburb } from "@/components/job-form";
 import {
   SERVICE_CATEGORIES,
@@ -147,25 +141,16 @@ function TradeSearch() {
     >
       <Field>
         <FieldLabel htmlFor="trade">{t.trade}</FieldLabel>
-        <Select
-          items={SERVICE_CATEGORIES.map((each) => ({
+        <Choose
+          id="trade"
+          value={category ?? ""}
+          onChange={(value) => setCategory(value || null)}
+          placeholder={t.chooseTrade}
+          options={SERVICE_CATEGORIES.map((each) => ({
             value: each,
             label: SERVICE_CATEGORY_NAMES[each],
           }))}
-          value={category}
-          onValueChange={(value) => setCategory(value as ServiceCategory | null)}
-        >
-          <SelectTrigger id="trade" className="w-full">
-            <SelectValue placeholder={t.chooseTrade} />
-          </SelectTrigger>
-          <SelectContent>
-            {SERVICE_CATEGORIES.map((each) => (
-              <SelectItem key={each} value={each}>
-                {SERVICE_CATEGORY_NAMES[each]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        />
       </Field>
       <SuburbPicker value={suburb} onChange={setSuburb} label={t.suburb} hint={null} />
       <Button type="submit" size="lg" className="sm:col-span-2" disabled={!category}>

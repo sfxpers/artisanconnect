@@ -165,7 +165,7 @@ function DecisionCard({ item }: { item: Item }) {
   }
 
   return (
-    <Card className="ring-2 ring-primary">
+    <Card className="ring-primary">
       <CardHeader>
         <CardDescription>{t.decision}</CardDescription>
         <CardTitle className="text-lg">{option?.label ?? t.choose}</CardTitle>
@@ -238,7 +238,7 @@ function DecisionCard({ item }: { item: Item }) {
 
 function DecidedCard({ decided }: { decided: NonNullable<Item["decided"]> }) {
   return (
-    <Card className="ring-2 ring-primary">
+    <Card className="ring-primary">
       <CardHeader>
         <CardDescription>{t.decision}</CardDescription>
         <CardTitle className="text-lg">{t.recorded(decided.label)}</CardTitle>
@@ -274,7 +274,7 @@ function RowsCard({
   highlighted: boolean;
 }) {
   return (
-    <Card className={cn(highlighted && "ring-2 ring-primary")}>
+    <Card className={cn(highlighted && "ring-primary")}>
       <CardHeader>
         <CardDescription>{t.decision}</CardDescription>
         <CardTitle className="text-lg">{highlighted ? t.eachRow : t.rowsNow}</CardTitle>

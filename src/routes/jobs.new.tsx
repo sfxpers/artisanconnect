@@ -45,7 +45,7 @@ function NewJob() {
   return (
     <Page narrow>
       <BackCrumb to="/jobs" label={t.breadcrumb} />
-      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t.newTitle}</h1>
+      <h1 className="text-2xl font-semibold">{t.newTitle}</h1>
       <p className="text-sm text-muted-foreground">{t.newLead}</p>
       <Card>
         <CardContent>

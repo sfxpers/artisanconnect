@@ -224,7 +224,11 @@ export function RulesCard({ rules }: { rules: MarketplaceRules }) {
         {copy.rules.version(rules.version, formatDate(rules.publishedAt))}
       </div>
       <p>{rules.summary}</p>
-      <Link to="/rules" target="_blank" className="font-medium text-primary hover:underline">
+      <Link
+        to="/rules"
+        target="_blank"
+        className="font-medium text-primary underline underline-offset-4"
+      >
         {copy.signUp.rules.read}
       </Link>
     </div>

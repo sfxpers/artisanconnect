@@ -56,7 +56,7 @@ function MyProfile() {
       )}
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold tracking-tight">{t.preview}</h2>
+        <h2 className="text-lg font-semibold">{t.preview}</h2>
         {mine.profile ? (
           <ArtisanProfileView profile={mine.profile} />
         ) : (

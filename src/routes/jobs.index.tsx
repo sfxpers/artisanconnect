@@ -46,7 +46,7 @@ function MyJobs() {
 function Group({ title, jobs }: { title: string; jobs: Summary[] }) {
   return (
     <section className="space-y-3">
-      <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
+      <h2 className="text-lg font-semibold">{title}</h2>
       {jobs.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t.empty}</p>
       ) : (

@@ -1,4 +1,5 @@
-import { useId, type ComponentProps, type ReactNode } from "react";
+import { useId, useState, type ComponentProps, type ReactNode } from "react";
+import { CalendarDays } from "lucide-react";
 import { createFormHook, createFormHookContexts } from "@tanstack/react-form";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -13,9 +14,13 @@ import {
   FieldSet,
   FieldTitle,
 } from "@/components/ui/field";
+import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import { EMAIL_CODE } from "@/domain/accounts/inputs";
+import { formatDay } from "@/domain/sa-days";
+import { copy } from "@/web/copy";
 
 // Every form is TanStack Form (ADR 0017) on shadcn's Field, with these fields
 // bound once: a form's own code names only its values, schema, and submit.
@@ -54,6 +59,59 @@ function TextField({ label, description, ...input }: Labelled & ComponentProps<t
         aria-invalid={invalid}
         {...input}
       />
+      {description && <FieldDescription>{description}</FieldDescription>}
+      {error}
+    </Field>
+  );
+}
+
+/** A day as "YYYY-MM-DD", read and written in the browser's own calendar. */
+const dayOf = (date: Date) =>
+  [date.getFullYear(), date.getMonth() + 1, date.getDate()]
+    .map((part, index) => String(part).padStart(index === 0 ? 4 : 2, "0"))
+    .join("-");
+const dateOf = (day: string) => {
+  const [year, month, date] = day.split("-").map(Number);
+  return new Date(year!, month! - 1, date);
+};
+
+/** A day, picked on shadcn's Calendar in a Popover (its Date Picker); "" for none. */
+function DateField({ label, description }: Labelled) {
+  const { field, id, invalid, error } = useBound<string>();
+  const [open, setOpen] = useState(false);
+  const day = field.state.value ? dateOf(field.state.value) : undefined;
+  return (
+    <Field data-invalid={invalid}>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger
+          render={
+            <Button
+              id={id}
+              type="button"
+              variant="outline"
+              className="w-56 justify-between font-normal"
+              aria-invalid={invalid}
+            />
+          }
+        >
+          {field.state.value ? formatDay(field.state.value) : copy.pickDay}
+          <CalendarDays data-icon="inline-end" />
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar
+            mode="single"
+            selected={day}
+            defaultMonth={day}
+            captionLayout="dropdown"
+            onSelect={(picked) => {
+              field.handleChange(picked ? dayOf(picked) : "");
+              field.handleBlur();
+              setOpen(false);
+            }}
+          />
+        </PopoverContent>
+      </Popover>
       {description && <FieldDescription>{description}</FieldDescription>}
       {error}
     </Field>
@@ -202,6 +260,6 @@ function Submit({ disabled, ...props }: ComponentProps<typeof Button>) {
 export const { useAppForm } = createFormHook({
   fieldContext,
   formContext,
-  fieldComponents: { TextField, TextareaField, ChoiceField, CheckboxField },
+  fieldComponents: { TextField, DateField, TextareaField, ChoiceField, CheckboxField },
   formComponents: { Form, Submit },
 });

@@ -77,7 +77,7 @@ function SuspendedBanner({ suspended }: { suspended: { reason: string; since: Da
       <AlertTitle>{t.suspended}</AlertTitle>
       <AlertDescription>
         {t.suspendedLead(suspended.reason)}{" "}
-        <Link to="/support" className="font-medium text-primary hover:underline">
+        <Link to="/support" className="font-medium text-primary underline underline-offset-4">
           {t.contest}
         </Link>
       </AlertDescription>

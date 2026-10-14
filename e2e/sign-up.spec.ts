@@ -5,11 +5,14 @@ import { codeSentTo, expect, test } from "./support/helpers";
 /** Signs a Visitor up as a Client or an Artisan, through to the proven Email. */
 async function signUp(page: Page, kind: RegExp) {
   const email = `sign-up-${Date.now()}@example.com`;
-  await page.getByRole("navigation").getByRole("link", { name: "Sign up" }).click();
+  await page
+    .getByRole("navigation", { name: "Main" })
+    .getByRole("link", { name: "Sign up" })
+    .click();
 
   // A click before the page hydrates does nothing, so try until the next row opens.
   await expect(async () => {
-    await page.getByRole("button", { name: kind }).click();
+    await page.getByRole("radio", { name: kind }).click();
     await expect(page.getByLabel("Full name")).toBeVisible({ timeout: 1000 });
   }).toPass();
   await page.getByLabel("Full name").fill("Thandi Mokoena");

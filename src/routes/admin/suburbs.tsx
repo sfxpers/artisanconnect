@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { addSuburb, getAdminSuburbs } from "@/web/admin";
 import { copy } from "@/web/copy";
 import { onlyForAdmins } from "@/web/guards";
-import { NativeSelect } from "@/components/ui/native-select";
+import { Choose } from "@/components/choose";
 
 export const Route = createFileRoute("/admin/suburbs")({
   beforeLoad: ({ context }) => {
@@ -138,19 +138,13 @@ function AddCard({ regions }: { regions: Region[] }) {
               {(field) => (
                 <Field>
                   <FieldLabel htmlFor="suburb-region">{t.region}</FieldLabel>
-                  <NativeSelect
+                  <Choose
                     id="suburb-region"
-                    className="w-full"
                     value={field.state.value}
-                    onChange={(event) => field.handleChange(event.target.value)}
-                  >
-                    <option value="">{t.chooseRegion}</option>
-                    {regions.map((region) => (
-                      <option key={region.id} value={region.id}>
-                        {region.name}
-                      </option>
-                    ))}
-                  </NativeSelect>
+                    onChange={field.handleChange}
+                    placeholder={t.chooseRegion}
+                    options={regions.map((region) => ({ value: region.id, label: region.name }))}
+                  />
                 </Field>
               )}
             </form.Field>

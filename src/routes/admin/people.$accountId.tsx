@@ -46,7 +46,7 @@ function Person() {
       </nav>
       <div className="space-y-1">
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{person.name}</h1>
+          <h1 className="text-2xl font-semibold">{person.name}</h1>
           <Badge variant="secondary">{copy.signUp.kind.chosen[person.kind]}</Badge>
           {person.suspended && <Badge variant="destructive">{t.suspended}</Badge>}
           {person.closed && <Badge variant="outline">{t.closed[person.closed]}</Badge>}
@@ -107,7 +107,7 @@ function Actions({ person }: { person: Person }) {
   }
 
   return (
-    <Card className="ring-2 ring-primary">
+    <Card className="ring-primary">
       <CardHeader>
         <CardTitle>
           {person.suspended ? t.suspendedSince(formatDate(person.suspended.since)) : t.act}

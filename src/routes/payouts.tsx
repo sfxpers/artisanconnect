@@ -37,14 +37,14 @@ function Payouts() {
         <Total label={t.paid} cents={payouts.paidCents} />
       </div>
       {payouts.held && (
-        <Card size="sm" className="ring-2 ring-primary">
+        <Card size="sm" className="ring-primary">
           <CardContent>
             <p className="text-sm">{t.held}</p>
           </CardContent>
         </Card>
       )}
       {noAccount && !payouts.held && (
-        <Card size="sm" className="ring-2 ring-primary">
+        <Card size="sm" className="ring-primary">
           <CardContent className="flex flex-wrap items-center gap-3">
             <p className="flex-1 text-sm">{stopped ? t.stopped : t.noAccount}</p>
             <Link to="/verification" className={buttonVariants({ size: "sm" })}>

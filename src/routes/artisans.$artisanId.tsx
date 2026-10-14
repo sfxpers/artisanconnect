@@ -15,13 +15,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Field, FieldLabel } from "@/components/ui/field";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Choose } from "@/components/choose";
 import { EmptyState, Page, Refusal } from "@/components/page";
 import { ReportAction } from "@/components/report";
 import { copy } from "@/web/copy";
@@ -101,7 +95,10 @@ function ArtisanProfilePage() {
             {visitor && (
               <p className="text-center text-sm text-muted-foreground">
                 {t.inviteLead}{" "}
-                <Link to="/sign-in" className="font-medium text-primary hover:underline">
+                <Link
+                  to="/sign-in"
+                  className="font-medium text-primary underline underline-offset-4"
+                >
                   {t.signIn}
                 </Link>
               </p>
@@ -176,25 +173,16 @@ function InviteDialog({
         ) : (
           <Field>
             <FieldLabel htmlFor="invite-job">{t.job}</FieldLabel>
-            <Select
-              items={jobs.map((job) => ({
+            <Choose
+              id="invite-job"
+              value={jobId ?? ""}
+              onChange={(value) => setJobId(value || null)}
+              placeholder={t.chooseJob}
+              options={jobs.map((job) => ({
                 value: job.jobId,
                 label: job.title ?? copy.jobs.untitled,
               }))}
-              value={jobId}
-              onValueChange={(value) => setJobId(value as string | null)}
-            >
-              <SelectTrigger id="invite-job" className="w-full">
-                <SelectValue placeholder={t.chooseJob} />
-              </SelectTrigger>
-              <SelectContent>
-                {jobs.map((job) => (
-                  <SelectItem key={job.jobId} value={job.jobId}>
-                    {job.title ?? copy.jobs.untitled}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            />
           </Field>
         )}
         <Refusal message={refusal} />

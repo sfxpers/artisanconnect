@@ -115,7 +115,7 @@ export function QuoteForm({
           )}
         </form.Subscribe>
         <form.AppField name="startOn">
-          {(field) => <field.TextField label={t.startOn} type="date" className="w-auto" />}
+          {(field) => <field.DateField label={t.startOn} />}
         </form.AppField>
         <form.AppField name="durationDays">
           {(field) => (

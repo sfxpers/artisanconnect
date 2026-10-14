@@ -5,13 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Choose } from "@/components/choose";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { EmptyState, Page } from "@/components/page";
 import { Pager } from "@/components/pager";
@@ -115,7 +109,7 @@ function Browse() {
       {!me && !admin && (
         <p className="text-sm">
           {t.signUpPrompt}{" "}
-          <Link to="/sign-up" className="font-medium text-primary hover:underline">
+          <Link to="/sign-up" className="font-medium text-primary underline underline-offset-4">
             {t.signUp}
           </Link>
         </p>
@@ -149,24 +143,15 @@ function Browse() {
               <FieldLabel htmlFor="sort" className="shrink-0">
                 {t.sort}
               </FieldLabel>
-              <Select
-                items={SORTS.map((each) => ({ value: each, label: t.sorts[each] }))}
+              <Choose
+                id="sort"
+                className="w-auto"
                 value={search.sort ?? "recommended"}
-                onValueChange={(value) =>
-                  go({ sort: value === "recommended" ? undefined : (value as Sort) })
+                onChange={(value) =>
+                  go({ sort: value === "recommended" || !value ? undefined : value })
                 }
-              >
-                <SelectTrigger id="sort">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {SORTS.map((each) => (
-                    <SelectItem key={each} value={each}>
-                      {t.sorts[each]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                options={SORTS.map((each) => ({ value: each, label: t.sorts[each] }))}
+              />
             </div>
           </div>
           {!search.category || !listed ? (
@@ -227,50 +212,28 @@ function Filters({
     <FieldGroup className="gap-4">
       <Field>
         <FieldLabel htmlFor="trade">{t.trade}</FieldLabel>
-        <Select
-          items={SERVICE_CATEGORIES.map((each) => ({
+        <Choose
+          id="trade"
+          value={search.category ?? ""}
+          onChange={(value) => go({ category: value || undefined })}
+          placeholder={t.anyTrade}
+          options={SERVICE_CATEGORIES.map((each) => ({
             value: each,
             label: SERVICE_CATEGORY_NAMES[each],
           }))}
-          value={search.category ?? null}
-          onValueChange={(value) =>
-            go({ category: (value as ServiceCategory | null) ?? undefined })
-          }
-        >
-          <SelectTrigger id="trade" className="w-full">
-            <SelectValue placeholder={t.anyTrade} />
-          </SelectTrigger>
-          <SelectContent>
-            {SERVICE_CATEGORIES.map((each) => (
-              <SelectItem key={each} value={each}>
-                {SERVICE_CATEGORY_NAMES[each]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        />
       </Field>
       <Field>
         <FieldLabel htmlFor="region">{t.region}</FieldLabel>
-        <Select
-          items={[
+        <Choose
+          id="region"
+          value={search.region ?? ""}
+          onChange={(value) => go({ region: value || undefined })}
+          options={[
             { value: "", label: t.allRegions },
             ...regions.map((each) => ({ value: each.id, label: each.name })),
           ]}
-          value={search.region ?? ""}
-          onValueChange={(value) => go({ region: (value as string) || undefined })}
-        >
-          <SelectTrigger id="region" className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">{t.allRegions}</SelectItem>
-            {regions.map((each) => (
-              <SelectItem key={each.id} value={each.id}>
-                {each.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        />
       </Field>
       <Field orientation="horizontal">
         <Checkbox

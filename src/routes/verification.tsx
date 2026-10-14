@@ -27,7 +27,7 @@ import type { VerificationSlot } from "@/domain/verification";
 import { copy } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
 import { getMyVerification, submitCheck } from "@/web/verification";
-import { NativeSelect } from "@/components/ui/native-select";
+import { Choose } from "@/components/choose";
 
 export const Route = createFileRoute("/verification")({
   beforeLoad: ({ context }) => {
@@ -122,7 +122,7 @@ function Group({
   return (
     <section className="space-y-3">
       <div>
-        <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
+        <h2 className="text-lg font-semibold">{title}</h2>
         <p className="text-sm text-muted-foreground">{lead}</p>
       </div>
       {children}
@@ -294,19 +294,16 @@ function CheckForm({
                     {(field) => (
                       <Field>
                         <FieldLabel htmlFor={`${kind}-country`}>{t.fields.country}</FieldLabel>
-                        <NativeSelect
+                        <Choose
                           id={`${kind}-country`}
-                          className="w-full"
                           value={field.state.value ?? ""}
-                          onChange={(event) => field.handleChange(event.target.value)}
-                        >
-                          <option value="">{t.fields.chooseCountry}</option>
-                          {sortedCountries().map(({ code, name }) => (
-                            <option key={code} value={code}>
-                              {name}
-                            </option>
-                          ))}
-                        </NativeSelect>
+                          onChange={field.handleChange}
+                          placeholder={t.fields.chooseCountry}
+                          options={sortedCountries().map(({ code, name }) => ({
+                            value: code,
+                            label: name,
+                          }))}
+                        />
                       </Field>
                     )}
                   </form.Field>
@@ -327,8 +324,7 @@ function CheckForm({
                 {shown.includes("expiresOn") && (
                   <form.AppField name="expiresOn">
                     {(field) => (
-                      <field.TextField
-                        type="date"
+                      <field.DateField
                         label={
                           definition.expiresOn === "optional"
                             ? t.fields.expiresOnOptional
@@ -340,7 +336,7 @@ function CheckForm({
                 )}
                 {shown.includes("issuedOn") && (
                   <form.AppField name="issuedOn">
-                    {(field) => <field.TextField type="date" label={t.fields.issuedOn} />}
+                    {(field) => <field.DateField label={t.fields.issuedOn} />}
                   </form.AppField>
                 )}
               </>

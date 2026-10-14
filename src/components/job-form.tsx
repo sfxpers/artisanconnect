@@ -26,7 +26,7 @@ import { SERVICE_CATEGORIES, SERVICE_CATEGORY_NAMES } from "@/domain/service-cat
 import { copy } from "@/web/copy";
 import type { getJob } from "@/web/jobs";
 import { searchSuburbs } from "@/web/regions";
-import { NativeSelect } from "@/components/ui/native-select";
+import { Choose } from "@/components/choose";
 
 const t = copy.job;
 
@@ -109,19 +109,16 @@ export function DraftForm({
         {(field) => (
           <Field>
             <FieldLabel htmlFor="category">{t.category}</FieldLabel>
-            <NativeSelect
+            <Choose
               id="category"
-              className="w-full"
               value={field.state.value}
-              onChange={(event) => field.handleChange(event.target.value)}
-            >
-              <option value="">{t.chooseCategory}</option>
-              {SERVICE_CATEGORIES.map((category) => (
-                <option key={category} value={category}>
-                  {SERVICE_CATEGORY_NAMES[category]}
-                </option>
-              ))}
-            </NativeSelect>
+              onChange={field.handleChange}
+              placeholder={t.chooseCategory}
+              options={SERVICE_CATEGORIES.map((category) => ({
+                value: category,
+                label: SERVICE_CATEGORY_NAMES[category],
+              }))}
+            />
           </Field>
         )}
       </form.Field>
@@ -169,7 +166,7 @@ export function DraftForm({
         max={JOB_PHOTOS_MAX}
       />
       <form.AppField name="preferredStart">
-        {(field) => <field.TextField {...preferredStart} />}
+        {(field) => <field.DateField {...preferredStart} />}
       </form.AppField>
       {/* A Job opened by Hire Again is Invite-only, inviting only that Artisan (#139). */}
       {!job?.hireAgain && (
@@ -258,7 +255,7 @@ export function EditForm({
         {(field) => <field.ChoiceField {...siteTypes} />}
       </form.AppField>
       <form.AppField name="preferredStart">
-        {(field) => <field.TextField {...preferredStart} />}
+        {(field) => <field.DateField {...preferredStart} />}
       </form.AppField>
       <Refusal message={refusal} />
       <div className="flex gap-2">
@@ -285,7 +282,7 @@ const siteTypes = {
   label: t.siteType,
   options: SITE_TYPES.map((siteType) => ({ value: siteType, label: t.siteTypes[siteType] })),
 };
-const preferredStart = { label: t.preferredStart, type: "date", className: "w-auto" };
+const preferredStart = { label: t.preferredStart };
 
 /** The form's values as the server function takes them, leaving out none given. */
 function asFormData(values: Record<string, string | undefined>) {

@@ -39,7 +39,7 @@ function MoneyHistory() {
       </nav>
       <div className="space-y-1">
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{history.name}</h1>
+          <h1 className="text-2xl font-semibold">{history.name}</h1>
           {history.held && <Badge variant="destructive">{copy.admin.payouts.held}</Badge>}
         </div>
         <p className="text-sm text-muted-foreground">{history.email}</p>

@@ -5,13 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldLabel } from "@/components/ui/field";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Choose } from "@/components/choose";
 import { Pager } from "@/components/pager";
 import { EmptyState, Refusal } from "@/components/page";
 import { copy } from "@/web/copy";
@@ -78,33 +72,22 @@ export function InviteList({
         {!hireAgain && (
           <Field className="max-w-xs">
             <FieldLabel htmlFor="invite-region">{t.region}</FieldLabel>
-            <Select
-              items={[
-                { value: "", label: t.allRegions },
-                ...list.regions.map((each) => ({ value: each.id, label: each.name })),
-              ]}
+            <Choose
+              id="invite-region"
               value={list.region ?? ""}
-              onValueChange={(value) =>
+              onChange={(value) =>
                 void navigate({
                   to: "/jobs/$jobId",
                   params: { jobId },
-                  search: { region: (value as string) || undefined },
+                  search: { region: value || undefined },
                   replace: true,
                 })
               }
-            >
-              <SelectTrigger id="invite-region" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">{t.allRegions}</SelectItem>
-                {list.regions.map((each) => (
-                  <SelectItem key={each.id} value={each.id}>
-                    {each.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              options={[
+                { value: "", label: t.allRegions },
+                ...list.regions.map((each) => ({ value: each.id, label: each.name })),
+              ]}
+            />
           </Field>
         )}
         <Refusal message={refusal} />
