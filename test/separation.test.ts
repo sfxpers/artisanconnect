@@ -25,6 +25,8 @@ const config = parse(wranglerConfig) as WorkerConfig;
 
 /** Every key a Worker environment may have; anything else could be a path out. */
 const ENVIRONMENT_KEYS = [
+  // Production's custom domain.
+  "routes",
   "vars",
   "secrets",
   "ai",
@@ -43,6 +45,8 @@ const TOP_LEVEL_KEYS = [
   "observability",
   "upload_source_maps",
   "triggers",
+  // The account that holds staging and production.
+  "account_id",
   "env",
   ...ENVIRONMENT_KEYS,
 ];
