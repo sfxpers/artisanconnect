@@ -14,7 +14,10 @@ export function TradeTiles({ region }: { region?: string }) {
             className="group block space-y-2 rounded-lg"
           >
             <img
+              // A half-size copy where the tile is small, so a phone loads a quarter of the bytes.
               src={`/trades/${category}.jpg`}
+              srcSet={`/trades/${category}-480.jpg 480w, /trades/${category}.jpg 960w`}
+              sizes="(min-width: 640px) 25vw, 50vw"
               alt={copy.landing.tradePhoto(SERVICE_CATEGORY_NAMES[category])}
               loading="lazy"
               width={960}

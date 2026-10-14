@@ -3,6 +3,7 @@ import { ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { HowAJobGoes } from "@/components/how-a-job-goes";
 import { NextStepCard, Page } from "@/components/page";
 import { copy, formatDeadline, pageTitle } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
@@ -52,6 +53,7 @@ function MyJobs() {
           </Link>
         </NextStepCard>
       )}
+      {none && <HowAJobGoes />}
       {!none && (
         <>
           <Group title={t.groups.needsYou} jobs={mine.needsYou} />

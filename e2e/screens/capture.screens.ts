@@ -63,6 +63,7 @@ test("capture every designed screen", async ({ browser }) => {
   };
   if (all) {
     screens.visitor.push(
+      { name: "browse-no-trade", path: "/artisans" },
       { name: "rules", path: "/rules" },
       { name: "recover", path: "/recover" },
       { name: "reopen", path: "/reopen" },

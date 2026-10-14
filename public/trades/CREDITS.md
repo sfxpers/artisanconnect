@@ -1,6 +1,6 @@
 # Trade photos
 
-From Unsplash, under the Unsplash Licence (free to use, no attribution required; credited here anyway). Shrunk to 960 px.
+From Unsplash, under the Unsplash Licence (free to use, no attribution required; credited here anyway). Shrunk to 960 px, with a 480 px copy (`-480`) for small tiles.
 
 | Trade      | Photographer      | Photo                                   |
 | ---------- | ----------------- | --------------------------------------- |

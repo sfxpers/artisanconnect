@@ -74,7 +74,7 @@ function QueueItemPage() {
           {item.rows && <RowsCard itemId={item.id} rows={item.rows} highlighted={!item.decided} />}
           {item.tabs.length > 0 && (
             <Tabs defaultValue={item.tabs[0]!.key}>
-              <TabsList variant="line">
+              <TabsList variant="line" className="max-w-full justify-start overflow-x-auto">
                 {item.tabs.map((tab) => (
                   <TabsTrigger key={tab.key} value={tab.key}>
                     {tab.label}

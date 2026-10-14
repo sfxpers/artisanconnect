@@ -90,8 +90,9 @@ export function Blocks({ blocks }: { blocks: Block[] }) {
               <dl key={index} className="space-y-1">
                 {block.facts.map((fact) => (
                   <div key={fact.label} className="flex justify-between gap-3">
-                    <dt className="text-muted-foreground">{fact.label}</dt>
-                    <dd className="text-right tabular-nums">{fact.value}</dd>
+                    <dt className="shrink-0 text-muted-foreground">{fact.label}</dt>
+                    {/* A long value, such as an Email, breaks rather than widening the page. */}
+                    <dd className="min-w-0 text-right tabular-nums wrap-anywhere">{fact.value}</dd>
                   </div>
                 ))}
               </dl>

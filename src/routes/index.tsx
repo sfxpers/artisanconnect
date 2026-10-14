@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Choose } from "@/components/choose";
 import { SuburbPicker, type Suburb } from "@/components/job-form";
+import { HowAJobGoes } from "@/components/how-a-job-goes";
 import { TradeTiles } from "@/components/trade-tiles";
 import {
   SERVICE_CATEGORIES,
@@ -72,20 +73,7 @@ function Landing() {
           <TradeTiles />
         </section>
 
-        <section aria-labelledby="how" className="space-y-4">
-          <h2 id="how" className="text-xl font-semibold">
-            {t.howTitle}
-          </h2>
-          <ol className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {t.how.map((step, index) => (
-              <li key={step.title} className="space-y-1.5 border-t pt-4">
-                <p className="text-sm font-medium text-primary">{t.step(index + 1)}</p>
-                <h3 className="font-semibold">{step.title}</h3>
-                <p className="text-sm text-muted-foreground">{step.text}</p>
-              </li>
-            ))}
-          </ol>
-        </section>
+        <HowAJobGoes />
 
         <section aria-labelledby="trust" className="space-y-4">
           <h2 id="trust" className="text-xl font-semibold">
