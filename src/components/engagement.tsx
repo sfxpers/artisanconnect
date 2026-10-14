@@ -17,10 +17,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Fact } from "@/components/job-details";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { useAppForm } from "@/components/form";
+import { FilePicker } from "@/components/file-picker";
 import { Deadline, NextStepCard, Refusal } from "@/components/page";
 import { useAction } from "@/components/use-action";
 import {
@@ -466,17 +465,14 @@ function DisputeForm({
         <form.AppField name="reason">
           {(field) => <field.TextareaField label={d.why} rows={3} maxLength={DISPUTE_REASON_MAX} />}
         </form.AppField>
-        <Field>
-          <FieldLabel htmlFor="dispute-photos">{d.photos}</FieldLabel>
-          <Input
-            id="dispute-photos"
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/heic"
-            multiple
-            onChange={(event) => setPhotos([...(event.target.files ?? [])])}
-          />
-          <FieldDescription>{d.photosHint(DISPUTE_PHOTOS_MAX)}</FieldDescription>
-        </Field>
+        <FilePicker
+          id="dispute-photos"
+          label={d.photos}
+          hint={d.photosHint(DISPUTE_PHOTOS_MAX)}
+          accept="image/jpeg,image/png,image/webp,image/heic"
+          files={photos}
+          onFiles={setPhotos}
+        />
         <Refusal message={action.refusal} />
         <div className="flex flex-wrap gap-2">
           <form.Subscribe
@@ -1024,20 +1020,19 @@ function CompletionForm({ engagement }: { engagement: ArtisanEngagement }) {
     label: string,
     hint: string,
     accept: string,
+    chosen: File[],
     onFiles: (chosen: File[]) => void,
     multiple = true,
   ) => (
-    <Field>
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
-      <Input
-        id={id}
-        type="file"
-        accept={accept}
-        multiple={multiple}
-        onChange={(event) => onFiles([...(event.target.files ?? [])])}
-      />
-      <FieldDescription>{hint}</FieldDescription>
-    </Field>
+    <FilePicker
+      id={id}
+      label={label}
+      hint={hint}
+      accept={accept}
+      multiple={multiple}
+      files={chosen}
+      onFiles={onFiles}
+    />
   );
   const anyDocument = "application/pdf,image/jpeg,image/png,image/webp,image/heic";
   return (
@@ -1058,6 +1053,7 @@ function CompletionForm({ engagement }: { engagement: ArtisanEngagement }) {
           t.afterPhotos,
           t.afterPhotosHint(COMPLETION_PHOTOS_MAX),
           "image/jpeg,image/png,image/webp,image/heic",
+          photos,
           setPhotos,
         )}
         {needed &&
@@ -1066,6 +1062,7 @@ function CompletionForm({ engagement }: { engagement: ArtisanEngagement }) {
             t.certificate(needed.name),
             t.certificateHint(needed.name, needed.neededOn),
             anyDocument,
+            certificate ? [certificate] : [],
             (chosen) => setCertificate(chosen[0] ?? null),
             false,
           )}
@@ -1074,6 +1071,7 @@ function CompletionForm({ engagement }: { engagement: ArtisanEngagement }) {
           t.documents,
           t.documentsHint(COMPLETION_DOCUMENTS_MAX),
           anyDocument,
+          documents,
           setDocuments,
         )}
         <Refusal message={action.refusal} />

@@ -3,8 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import { Field, FieldLabel } from "@/components/ui/field";
 import { issuesOf, useAppForm } from "@/components/form";
 import { NextStepCard, Page, Refusal } from "@/components/page";
 import { useAction } from "@/components/use-action";
@@ -28,6 +27,7 @@ import { copy, pageTitle } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
 import { getMyVerification, submitCheck } from "@/web/verification";
 import { Choose } from "@/components/choose";
+import { FilePicker } from "@/components/file-picker";
 
 export const Route = createFileRoute("/verification")({
   beforeLoad: ({ context }) => {
@@ -345,26 +345,20 @@ function CheckForm({
           }}
         </form.Subscribe>
         {definition.files.map((part) => (
-          <Field key={part.part}>
-            <FieldLabel htmlFor={`${kind}-${part.part}`}>{part.label}</FieldLabel>
-            <Input
-              id={`${kind}-${part.part}`}
-              type="file"
-              multiple={part.max > 1}
-              accept={
-                part.photosOnly
-                  ? "image/jpeg,image/png,image/webp"
-                  : "image/jpeg,image/png,image/webp,application/pdf"
-              }
-              onChange={(event) =>
-                setFiles((current) => ({
-                  ...current,
-                  [part.part]: Array.from(event.target.files ?? []),
-                }))
-              }
-            />
-            <FieldDescription>{part.photosOnly ? t.photosOnly : t.photosOrPdf}</FieldDescription>
-          </Field>
+          <FilePicker
+            key={part.part}
+            id={`${kind}-${part.part}`}
+            label={part.label}
+            hint={part.photosOnly ? t.photosOnly : t.photosOrPdf}
+            multiple={part.max > 1}
+            accept={
+              part.photosOnly
+                ? "image/jpeg,image/png,image/webp"
+                : "image/jpeg,image/png,image/webp,application/pdf"
+            }
+            files={files[part.part] ?? []}
+            onFiles={(chosen) => setFiles((current) => ({ ...current, [part.part]: chosen }))}
+          />
         ))}
         <Refusal message={refusal} />
         <div className="flex gap-2">

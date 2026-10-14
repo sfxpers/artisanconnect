@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ArtisanProfileView, PhotoGrid } from "@/components/artisan-profile";
 import { Badge } from "@/components/ui/badge";
@@ -31,7 +32,6 @@ type Mine = NonNullable<Awaited<ReturnType<typeof getMyProfile>>>;
 function MyProfile() {
   const mine = Route.useLoaderData();
   const { me } = Route.useRouteContext();
-  const [done, setDone] = useState<string | null>(null);
   if (!mine) return null;
   return (
     <Page title={t.title} lead={t.lead}>
@@ -49,11 +49,10 @@ function MyProfile() {
 
       {mine.outOfView && <Refusal message={t.outOfView(mine.outOfView.reason)} />}
       {mine.refused && <Refusal message={t.refused(mine.refused.reason)} />}
-      {done && <p className="text-sm text-muted-foreground">{done}</p>}
       {mine.beingChecked ? (
-        <BeingChecked edit={mine.beingChecked} onWithdrawn={() => setDone(null)} />
+        <BeingChecked edit={mine.beingChecked} onWithdrawn={() => undefined} />
       ) : (
-        <Editor mine={mine} onSent={() => setDone(t.sent)} />
+        <Editor mine={mine} onSent={() => toast.success(t.sent)} />
       )}
 
       <section className="space-y-3">

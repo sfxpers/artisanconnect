@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { toast } from "sonner";
 import { Link, createFileRoute, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useConfirm } from "@/components/confirm";
 import { ShieldCheck } from "lucide-react";
@@ -215,17 +216,15 @@ function Draft({ job }: { job: JobView }) {
   const navigate = useNavigate();
   const postRefusal = useRouterState({ select: (state) => state.location.state.postRefusal });
   const action = useAction();
-  const [notice, setNotice] = useState<string | null>(null);
   // A new form after each save, so photos added are not sent twice.
   const [saves, setSaves] = useState(0);
 
   async function save(form: FormData, post: boolean) {
-    setNotice(null);
     const saved = await action.run(() => saveJobDraft({ data: form }));
     if (!saved) return;
     setSaves((count) => count + 1);
     if (post) await action.run(() => postJob({ data: { jobId: job.jobId } }));
-    else setNotice(t.saved);
+    else toast.success(t.saved);
   }
 
   return (
@@ -237,7 +236,6 @@ function Draft({ job }: { job: JobView }) {
           job={job}
           busy={action.busy}
           refusal={action.refusal ?? (saves === 0 ? (postRefusal ?? null) : null)}
-          notice={notice}
           onSave={(form) => void save(form, false)}
           onPost={(form) => void save(form, true)}
           extra={
@@ -279,7 +277,6 @@ function Posted({
   const confirm = useConfirm();
   const action = useAction();
   const [editing, setEditing] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
   const { editable } = job;
   const { beingChecked, refused } = job.edit;
   const sent = quotes.filter((quote) => quote.state === "sent").length;
@@ -308,7 +305,6 @@ function Posted({
         {job.state !== "held" && (
           <ClientQuotes jobId={job.jobId} quotes={quotes} conversations={conversations} />
         )}
-        {notice && <p className="text-sm text-muted-foreground">{notice}</p>}
         {refused && !beingChecked && <Refusal message={t.editRefused(refused.reason)} />}
         {!editing && <Refusal message={action.refusal} />}
         <div className="flex flex-wrap gap-2">
@@ -334,7 +330,6 @@ function Posted({
               variant="outline"
               disabled={action.busy}
               onClick={() => {
-                setNotice(null);
                 action.setRefusal(null);
                 setEditing(true);
               }}
@@ -405,7 +400,8 @@ function Posted({
                       async () => {
                         const edited = await editJob({ data: form });
                         // One being checked shows in its own card.
-                        if (edited.ok && edited.value.edit === "applied") setNotice(t.editApplied);
+                        if (edited.ok && edited.value.edit === "applied")
+                          toast.success(t.editApplied);
                         return edited;
                       },
                       () => setEditing(false),
@@ -493,6 +489,10 @@ function Hired({
           />
           <HireAgainAction engagement={engagement} />
         </EngagementNextStep>
+        {/* On a phone what it costs comes next; on a wide screen it is in the sidebar. */}
+        <div className="lg:hidden">
+          <MoneyCard engagement={engagement} />
+        </div>
         <EngagementReviewsCard reviews={engagement.reviews} asClient />
         <UpdatedQuoteCard engagement={engagement} asClient />
         <DisputeCard engagement={engagement} asClient />
@@ -530,7 +530,9 @@ function Hired({
             )}
           </CardContent>
         </Card>
-        <MoneyCard engagement={engagement} />
+        <div className="hidden lg:block">
+          <MoneyCard engagement={engagement} />
+        </div>
         <HiredQuoteCard engagement={engagement} />
         <SiteCard job={job} />
       </aside>

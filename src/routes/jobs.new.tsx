@@ -56,7 +56,6 @@ function NewJob() {
             job={null}
             busy={busy}
             refusal={refusal}
-            notice={null}
             onSave={(form) => void save(form, false)}
             onPost={(form) => void save(form, true)}
           />

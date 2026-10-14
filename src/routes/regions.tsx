@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -32,12 +33,10 @@ function Regions() {
   const [open, setOpen] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);
-  const [done, setDone] = useState(false);
   const full = chosen.length >= REGIONS_MAX;
   const unchanged = chosen.length === saved.length && chosen.every((id) => saved.includes(id));
 
   function toggle(regionId: string, checked: boolean) {
-    setDone(false);
     setChosen((now) => (checked ? [...now, regionId] : now.filter((id) => id !== regionId)));
   }
 
@@ -47,7 +46,7 @@ function Regions() {
     const result = await chooseRegions({ data: { regionIds: chosen } });
     setBusy(false);
     if (!result.ok) return setRefusal(result.refusal.message);
-    setDone(true);
+    toast.success(t.saved);
     await router.invalidate();
   }
 
@@ -112,7 +111,6 @@ function Regions() {
         <span className="text-sm text-muted-foreground">
           {t.chosen(chosen.length, REGIONS_MAX)}
         </span>
-        {done && <span className="text-sm text-muted-foreground">{t.saved}</span>}
       </div>
       <Refusal message={refusal} />
       <FindSuburb />

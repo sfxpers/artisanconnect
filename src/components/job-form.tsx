@@ -63,7 +63,6 @@ export function DraftForm({
   job,
   busy,
   refusal,
-  notice,
   onSave,
   onPost,
   extra,
@@ -71,7 +70,6 @@ export function DraftForm({
   job: JobView | null;
   busy: boolean;
   refusal: string | null;
-  notice: string | null;
   onSave: (form: FormData) => void;
   onPost: (form: FormData) => void;
   extra?: ReactNode;
@@ -185,7 +183,6 @@ export function DraftForm({
       )}
 
       <Refusal message={refusal} />
-      {notice && <p className="text-sm text-muted-foreground">{notice}</p>}
       <div className="flex flex-wrap gap-2">
         <Button type="submit" disabled={busy}>
           {t.postJob}

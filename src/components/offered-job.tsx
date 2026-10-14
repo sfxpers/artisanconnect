@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { useNavigate } from "@tanstack/react-router";
 import { useConfirm } from "@/components/confirm";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -115,6 +116,10 @@ export function OfferedJob({
                       asClient={false}
                     />
                   </EngagementNextStep>
+                  {/* On a phone what it pays comes next; on a wide screen it is in the sidebar. */}
+                  <div className="lg:hidden">
+                    <MoneyCard engagement={engagement} />
+                  </div>
                   <EngagementReviewsCard reviews={engagement.reviews} asClient={false} />
                   <UpdatedQuoteCard engagement={engagement} asClient={false} />
                   <DisputeCard engagement={engagement} asClient={false} />
@@ -180,7 +185,9 @@ export function OfferedJob({
               </Card>
               {engagement && (
                 <>
-                  <MoneyCard engagement={engagement} />
+                  <div className="hidden lg:block">
+                    <MoneyCard engagement={engagement} />
+                  </div>
                   <HiredQuoteCard engagement={engagement} />
                 </>
               )}
@@ -263,7 +270,6 @@ function QuoteStep({
   const confirm = useConfirm();
   const action = useAction();
   const [revising, setRevising] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
   const { beingChecked, refused } = quote.revision;
   const jobId = job.jobId;
 
@@ -278,7 +284,6 @@ function QuoteStep({
       {quote.state !== "held" && quote.state !== "sent" && quote.state !== "refused" && (
         <p className="text-sm text-muted-foreground">{tq.endedLead[quote.state]}</p>
       )}
-      {notice && <p className="text-sm text-muted-foreground">{notice}</p>}
       {beingChecked && (
         <div className="space-y-3 rounded-lg border p-4">
           <Badge variant="warning">{copy.job.beingChecked}</Badge>
@@ -299,7 +304,7 @@ function QuoteStep({
             void action.run(
               async () => {
                 const revised = await reviseQuote({ data: { jobId, ...fields } });
-                if (revised.ok && revised.value.revision === "applied") setNotice(tq.revised);
+                if (revised.ok && revised.value.revision === "applied") toast.success(tq.revised);
                 return revised;
               },
               () => setRevising(false),
@@ -332,7 +337,6 @@ function QuoteStep({
                 variant="outline"
                 disabled={action.busy}
                 onClick={() => {
-                  setNotice(null);
                   action.setRefusal(null);
                   setRevising(true);
                 }}

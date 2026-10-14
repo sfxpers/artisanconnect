@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { toast } from "sonner";
 import { Link, createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
 import { useConfirm } from "@/components/confirm";
 import { Badge } from "@/components/ui/badge";
@@ -146,7 +147,6 @@ function StandingRows({ standing }: { standing: Me["standing"] }) {
 function NamesRow({ me }: { me: Me }) {
   const { names } = me;
   const [editing, setEditing] = useState(false);
-  const [done, setDone] = useState<string | null>(null);
   const { busy, refusal, run } = useAction();
   const form = useAppForm({
     defaultValues: { name: me.name, tradingName: me.tradingName ?? "" },
@@ -155,7 +155,7 @@ function NamesRow({ me }: { me: Me }) {
         () => changeNames({ data: value }),
         (saved) => {
           setEditing(false);
-          setDone(saved.names === "shown" ? t.names.saved : t.names.held);
+          toast.success(saved.names === "shown" ? t.names.saved : t.names.held);
         },
       ),
   });
@@ -177,7 +177,7 @@ function NamesRow({ me }: { me: Me }) {
               variant="outline"
               size="sm"
               disabled={busy}
-              onClick={() => void run(withdrawNames, () => setDone(null))}
+              onClick={() => void run(withdrawNames)}
             >
               {t.names.withdraw}
             </Button>
@@ -187,7 +187,6 @@ function NamesRow({ me }: { me: Me }) {
         {!names.shown && !names.beingChecked && (
           <p className="text-sm text-muted-foreground">{t.names.notShown}</p>
         )}
-        {done && <p className="text-sm text-muted-foreground">{done}</p>}
         {editing ? (
           <form.AppForm>
             <form.Form className="space-y-3">

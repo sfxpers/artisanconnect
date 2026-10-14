@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { createFileRoute } from "@tanstack/react-router";
 import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -93,7 +94,6 @@ function RegionRow({ region }: { region: Region }) {
 function AddCard({ regions }: { regions: Region[] }) {
   const action = useAction();
   const [alike, setAlike] = useState(false);
-  const [added, setAdded] = useState<string | null>(null);
   const form = useAppForm({
     defaultValues: { name: "", regionId: "" },
     listeners: { onChange: () => setAlike(false) },
@@ -101,7 +101,6 @@ function AddCard({ regions }: { regions: Region[] }) {
   });
 
   function add({ name, regionId }: typeof form.state.values, despiteAlike: boolean) {
-    setAdded(null);
     const region = regions.find((each) => each.id === regionId)?.name ?? "";
     return action.run(
       async () => {
@@ -111,7 +110,7 @@ function AddCard({ regions }: { regions: Region[] }) {
         return result;
       },
       () => {
-        setAdded(t.added(name.trim().replace(/\s+/g, " "), region));
+        toast.success(t.added(name.trim().replace(/\s+/g, " "), region));
         form.setFieldValue("name", "");
       },
     );
@@ -151,7 +150,6 @@ function AddCard({ regions }: { regions: Region[] }) {
               )}
             </form.Field>
             <Refusal message={action.refusal} />
-            {added && <p className="text-sm text-muted-foreground">{added}</p>}
           </CardContent>
           <CardFooter className="flex-wrap gap-2 pt-4">
             <form.Subscribe

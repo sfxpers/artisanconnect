@@ -1,6 +1,7 @@
-import { Fragment, type ReactNode } from "react";
+import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useRouter } from "@tanstack/react-router";
 import { CircleAlert, CloudOff, Inbox } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { buttonVariants, Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -117,7 +118,11 @@ function Crumbs({ crumbs, current }: { crumbs: Crumb[]; current: string | null }
 /** A page's main column and its sidebar, which goes under it on a phone. */
 export const withSidebar = "grid items-start gap-6 lg:grid-cols-3 lg:*:first:col-span-2";
 
-/** The card for what the viewer can do now (#107): one per page, outlined in the brand. */
+/**
+ * The card for what the viewer can do now (#107): one per page, outlined in
+ * the brand. On a phone, once it is scrolled out of view, a bar at the foot
+ * names it and brings it back, so the next step stays in reach.
+ */
 export function NextStepCard({
   label,
   title,
@@ -127,14 +132,39 @@ export function NextStepCard({
   title: string;
   children: ReactNode;
 }) {
+  const card = useRef<HTMLDivElement>(null);
+  const [away, setAway] = useState(false);
+  const phone = useIsMobile();
+  useEffect(() => {
+    if (!card.current) return;
+    // Only once it has gone above the top: a card still below the fold is on its way.
+    const watch = new IntersectionObserver(([entry]) =>
+      setAway(!entry!.isIntersecting && entry!.boundingClientRect.top < 0),
+    );
+    watch.observe(card.current);
+    return () => watch.disconnect();
+  }, []);
   return (
-    <Card className="ring-primary">
-      <CardHeader>
-        <CardDescription className="text-xs font-medium text-primary">{label}</CardDescription>
-        <CardTitle className="text-lg font-semibold">{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">{children}</CardContent>
-    </Card>
+    <>
+      <Card ref={card} className="scroll-mt-20 ring-primary">
+        <CardHeader>
+          <CardDescription className="text-xs font-medium text-primary">{label}</CardDescription>
+          <CardTitle className="text-lg font-semibold">{title}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">{children}</CardContent>
+      </Card>
+      {phone && away && (
+        <div className="fixed inset-x-0 bottom-0 z-30 flex items-center gap-3 border-t bg-background p-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-medium text-primary">{label}</p>
+            <p className="truncate text-sm font-semibold">{title}</p>
+          </div>
+          <Button onClick={() => card.current?.scrollIntoView({ block: "start" })}>
+            {copy.nextStepBack}
+          </Button>
+        </div>
+      )}
+    </>
   );
 }
 

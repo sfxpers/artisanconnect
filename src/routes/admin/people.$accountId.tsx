@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { Link, createFileRoute, useRouter } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -79,7 +80,6 @@ function Actions({ person }: { person: Person }) {
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);
-  const [done, setDone] = useState<string | null>(null);
   const acts: Act[] = person.suspended ? ["warn", "lift"] : ["warn", "suspend"];
 
   async function record() {
@@ -95,7 +95,7 @@ function Actions({ person }: { person: Person }) {
           : await liftSuspension({ data });
     setBusy(false);
     if (!result.ok) return setRefusal(result.refusal.message);
-    setDone(t.done[act]);
+    toast.success(t.done[act]);
     setAct(null);
     setReason("");
     await router.invalidate();
@@ -118,7 +118,6 @@ function Actions({ person }: { person: Person }) {
               aria-pressed={act === each}
               onClick={() => {
                 setAct(each);
-                setDone(null);
               }}
             >
               {t.acts[each]}
@@ -137,7 +136,6 @@ function Actions({ person }: { person: Person }) {
           </div>
         )}
         <Refusal message={refusal} />
-        {done && <p className="text-sm text-muted-foreground">{done}</p>}
         {act && (
           <Button
             disabled={busy || (act !== "lift" && !reason.trim())}
