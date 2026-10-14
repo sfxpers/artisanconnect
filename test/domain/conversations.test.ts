@@ -637,6 +637,7 @@ describe("the Engagement's Conversation", () => {
     ["the Job's street", "I'm at 12 Main Road"],
     ["the Job's suburb", "Right here in sea point"],
     ["the Client's surname", "Mrs Mokoena will let you in"],
+    ["a link that is not a payment's", "This tap: www.builders.co.za/tap-123"],
   ])("takes %s, read as after Payment", async (_, text) => {
     const { domain, given, contentReader } = await createHarness();
     const { artisan, client, conversationId, engagementId } = await engaged(given, domain);
@@ -656,7 +657,6 @@ describe("the Engagement's Conversation", () => {
   test.each([
     ["a bank account number", "Pay to account 62812345678", "Take out the bank account number."],
     ["a card number", "Use card 4111 1111 1111 1111", "Take out the bank account number."],
-    ["a payment link", "Pay at pay.example.com/sipho", "Take out the link."],
   ])("still refuses %s", async (_, text, message) => {
     const { domain, given } = await createHarness();
     const { client, conversationId } = await engaged(given, domain);

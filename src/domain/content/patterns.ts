@@ -11,12 +11,16 @@ export type PatternHit = "phone" | "email" | "link" | "bank-account";
 const MESSAGES: Record<PatternHit, string> = {
   phone: "Take out the phone number. Contact details can only be shared after Payment.",
   email: "Take out the email address. Contact details can only be shared after Payment.",
-  link: "Take out the link. Links cannot be sent on ArtisanConnect.",
+  link: "Take out the link. Links can only be shared after Payment.",
   "bank-account": "Take out the bank account number. Pay and be paid only through ArtisanConnect.",
 };
 
-/** After Payment, in that Engagement's Conversation, the parties may swap phone numbers and emails. */
-const ALLOWED_AFTER_PAYMENT: ReadonlySet<PatternHit> = new Set(["phone", "email"]);
+/**
+ * After Payment, in that Engagement's Conversation, the parties may swap phone
+ * numbers, emails, and links; only payment details stay refused (ADR 0011),
+ * and the content reader tells a payment link from any other.
+ */
+const ALLOWED_AFTER_PAYMENT: ReadonlySet<PatternHit> = new Set(["phone", "email", "link"]);
 
 const EMAIL = /[\p{L}\p{N}._%+-]+@[\p{L}\p{N}-]+(?:\.[\p{L}\p{N}-]+)*\.\p{L}{2,}/u;
 
