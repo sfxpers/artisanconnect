@@ -4,21 +4,17 @@ import { notFound } from "@tanstack/react-router";
 import { fakePaymentsFromEnv } from "@/worker/ports";
 import { requestDomain } from "./session";
 
-// The fake payment adapter's checkout page, in local and staging only (#126):
-// it stands in for the provider's, so whoever has the link may pay. Paying
-// or failing sends the event the provider would, to the same entry point as
-// the webhook route, before the page returns to the app.
-
-function checkoutAdapter() {
-  if (env.ENVIRONMENT === "production") throw notFound();
-  return fakePaymentsFromEnv(env);
-}
+// The fake payment adapter's checkout page, in every environment until a real
+// provider replaces the adapter (#111): it stands in for the provider's, so
+// whoever has the link may pay, with fake money. Paying or failing sends the
+// event the provider would, to the same entry point as the webhook route,
+// before the page returns to the app.
 
 /** The collection the checkout is for: its amount and state. */
 export const getFakeCheckout = createServerFn({ method: "GET" })
   .validator((input: { collectionId: string }) => input)
   .handler(async ({ data }) => {
-    const checkout = await checkoutAdapter().checkout(data.collectionId);
+    const checkout = await fakePaymentsFromEnv(env).checkout(data.collectionId);
     if (!checkout) throw notFound();
     return { amountCents: checkout.amountCents, state: checkout.state };
   });
@@ -27,7 +23,7 @@ export const getFakeCheckout = createServerFn({ method: "GET" })
 export const completeFakeCheckout = createServerFn({ method: "POST" })
   .validator((input: { collectionId: string; outcome: "succeed" | "fail" }) => input)
   .handler(async ({ data }) => {
-    const payments = checkoutAdapter();
+    const payments = fakePaymentsFromEnv(env);
     const checkout = await payments.checkout(data.collectionId);
     if (!checkout) throw notFound();
     if (checkout.state === "pending") {

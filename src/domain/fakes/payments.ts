@@ -175,7 +175,7 @@ export function createFakePayments({
           input,
           state: { id: input.id, amountCents: input.amountCents, state: "pending", method: null },
         });
-      // The checkout page is served by the app itself in local and staging.
+      // The checkout page is served by the app itself, in every environment.
       return {
         checkoutUrl: new URL(`/fake-checkout/${encodeURIComponent(input.id)}`, input.returnUrl)
           .href,
