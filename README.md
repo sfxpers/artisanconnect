@@ -109,8 +109,4 @@ If the CLI tries to install dependencies with another package manager, add them 
 nub add <package>
 ```
 
-TanStack Query, Form, and Table are not wired yet — add them when a route needs them:
-
-```sh
-nub add @tanstack/react-query @tanstack/react-form @tanstack/react-table
-```
+Every form is TanStack Form on shadcn's Field (`src/components/form.tsx`). Pages load through route loaders and reload after each action; TanStack Query is not used (ADR 0017).
