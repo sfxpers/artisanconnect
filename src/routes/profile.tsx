@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ActionButton } from "@/components/action-button";
 import { toast } from "sonner";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ArtisanProfileView, PhotoGrid } from "@/components/artisan-profile";
@@ -95,14 +96,14 @@ function BeingChecked({
         <p className="text-sm whitespace-pre-line">{edit.about || copy.profile.noAbout}</p>
         <PhotoGrid photos={edit.photos} empty={copy.profile.noPhotos} />
         <Refusal message={refusal} />
-        <Button
+        <ActionButton
           variant="outline"
           size="sm"
           disabled={busy}
-          onClick={() => void run(withdrawProfileEdit, onWithdrawn)}
+          onClick={() => run(withdrawProfileEdit, onWithdrawn)}
         >
           {t.withdraw}
-        </Button>
+        </ActionButton>
       </CardContent>
     </Card>
   );

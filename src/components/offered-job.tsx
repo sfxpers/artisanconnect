@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ActionButton } from "@/components/action-button";
 import { toast } from "sonner";
 import { useNavigate } from "@tanstack/react-router";
 import { useConfirm } from "@/components/confirm";
@@ -322,15 +323,13 @@ function QuoteStep({
           <Refusal message={action.refusal} />
           <div className="flex flex-wrap gap-2">
             {(quote.state === "held" || beingChecked) && (
-              <Button
+              <ActionButton
                 variant="outline"
                 disabled={action.busy}
-                onClick={() =>
-                  void action.run(() => withdrawQuoteBeingChecked({ data: { jobId } }))
-                }
+                onClick={() => action.run(() => withdrawQuoteBeingChecked({ data: { jobId } }))}
               >
                 {tq.withdrawCheck}
-              </Button>
+              </ActionButton>
             )}
             {quote.state === "sent" && !beingChecked && (
               <Button
@@ -345,16 +344,16 @@ function QuoteStep({
               </Button>
             )}
             {quote.state === "sent" && (
-              <Button
+              <ActionButton
                 variant="ghost"
                 disabled={action.busy}
                 onClick={async () => {
                   if (!(await confirm(tq.withdrawConfirm))) return;
-                  void action.run(() => withdrawQuote({ data: { jobId } }));
+                  await action.run(() => withdrawQuote({ data: { jobId } }));
                 }}
               >
                 {tq.withdraw}
-              </Button>
+              </ActionButton>
             )}
           </div>
         </>

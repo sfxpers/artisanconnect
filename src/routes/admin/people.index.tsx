@@ -3,7 +3,7 @@ import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { UserSearch } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { DataTable, type DataColumn } from "@/components/data-table";
+import { DataTable, rowLink, type DataColumn } from "@/components/data-table";
 import { Input } from "@/components/ui/input";
 import { EmptyState, Page } from "@/components/page";
 import { copy, pageTitle } from "@/web/copy";
@@ -35,7 +35,7 @@ const columns: DataColumn<Person>[] = [
       <Link
         to="/admin/people/$accountId"
         params={{ accountId: row.original.accountId }}
-        className="font-medium text-primary hover:underline"
+        className={rowLink}
       >
         {row.original.name}
       </Link>

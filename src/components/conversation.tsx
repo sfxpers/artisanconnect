@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { ActionButton } from "@/components/action-button";
 import { Link, useRouter } from "@tanstack/react-router";
 import {
   FileText,
@@ -167,16 +168,16 @@ function ItemRow({ item }: { item: Item }) {
           <>
             <Badge variant="warning">{t.beingChecked}</Badge>
             <span>{t.beingCheckedLead}</span>
-            <Button
+            <ActionButton
               size="xs"
               variant="ghost"
               disabled={action.busy}
               onClick={() =>
-                void action.run(() => withdrawMessage({ data: { messageId: item.messageId } }))
+                action.run(() => withdrawMessage({ data: { messageId: item.messageId } }))
               }
             >
               {t.withdraw}
-            </Button>
+            </ActionButton>
           </>
         )}
         {item.state === "refused" && item.refused && (

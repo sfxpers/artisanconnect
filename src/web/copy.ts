@@ -165,7 +165,6 @@ export const copy = {
     noReviews: "No Reviews yet. A Client reviews an Artisan once a Job is Completed.",
     noContact:
       "Work is arranged on ArtisanConnect, so a Profile shows no phone number, email, or address.",
-    inviteTitle: (name: string) => `Want ${name} to Quote?`,
     inviteLead:
       "Sign up as a Client to post a Job and invite Artisans to Quote. You hire by paying through the platform.",
     invite: "Invite to a Job",
@@ -184,7 +183,6 @@ export const copy = {
     previous: "Previous photo",
     next: "Next photo",
     verifiedFor: "Verified for",
-    ratingTitle: "Rating",
     signUp: "Sign up",
     signIn: "Sign in",
     share: "Copy the link to this Profile",
@@ -343,7 +341,6 @@ export const copy = {
       hired: "Hired",
     },
     expires: (when: string) => `Expires ${when}`,
-    open: "View",
   },
   job: {
     breadcrumb: "Jobs",
@@ -518,8 +515,6 @@ export const copy = {
     chooseRegionsLead: "You are offered Jobs only in the Regions you choose.",
     matchesLead: "Quote on a Job Match, or pass. Nobody is told you passed.",
     seeMatches: "See Job Matches",
-    invitationsWaiting: (count: number) =>
-      count === 1 ? "An Invitation is waiting" : `${count} Invitations are waiting`,
     jobsWaiting: (invitations: number, matches: number) =>
       [
         invitations === 1 ? "1 Invitation" : invitations > 1 ? `${invitations} Invitations` : "",
@@ -697,12 +692,9 @@ export const copy = {
     sortTotal: "Total, lowest first",
     noName: "Name being checked",
     payment: "You would pay",
-    paymentLead: (percent: number, fee: string) =>
-      `Includes the ${percent}% Protection Fee of ${fee}, which is not refunded.`,
     decline: "Decline",
     declineConfirm: "Decline this Quote? The Artisan is told.",
     details: "Details",
-    hideDetails: "Hide details",
     ended: "No longer open",
     sent: (when: string) => `Sent ${when}`,
     expires: (when: string) => `Expires ${when}`,
@@ -711,7 +703,6 @@ export const copy = {
     startPassedLead:
       "Ask the Artisan to revise this Quote in your Conversation; then you can Hire it.",
     hireTitle: "Hire by paying for this Quote",
-    hireQuote: "Quote",
     hireFee: (percent: number) => `Protection Fee (${percent}%)`,
     hirePayment: "You pay",
     hireAcknowledge: (fee: string) =>
@@ -851,7 +842,7 @@ export const copy = {
       `The law requires a ${name} on ${neededOn}. A PDF or a photo of it, showing your registration number.`,
     documents: "Other documents (optional)",
     documentsHint: (max: number) =>
-      `PDFs or photos, such as a guarantee or a data sheet. Up to ${max} documents in all.`,
+      `PDFs or photos, such as a manual or a data sheet. Up to ${max} documents in all.`,
     markCompleteConfirm:
       "Mark the work complete? The Client then has seven days to approve it or ask for a fix.",
     completionBeingChecked: "Your Completion is being checked",
@@ -1616,9 +1607,7 @@ export const copy = {
       read: "Read the rules as Accounts see them",
     },
   },
-  notBuilt: "This page is not built yet.",
   devMail: { title: "Local mailbox", empty: "No email sent since the app started." },
-  notAPerson: "Complete the check above first.",
 } as const;
 
 /** A page's title in the browser's tab: the page, then ArtisanConnect (WCAG 2.4.2). */

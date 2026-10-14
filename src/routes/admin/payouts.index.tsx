@@ -4,7 +4,7 @@ import { Link, createFileRoute, useRouter } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { DataTable, type DataColumn } from "@/components/data-table";
+import { DataTable, rowLink, type DataColumn } from "@/components/data-table";
 import { EmptyState, Page } from "@/components/page";
 import { formatRands } from "@/domain/money";
 import { copy, pageTitle } from "@/web/copy";
@@ -34,7 +34,7 @@ const columns: DataColumn<Row>[] = [
         <Link
           to="/admin/payouts/$artisanId"
           params={{ artisanId: row.original.artisanId }}
-          className="font-medium text-primary hover:underline"
+          className={rowLink}
         >
           {row.original.name}
         </Link>
@@ -99,7 +99,14 @@ function HoldToggle({ row }: { row: Row }) {
   }
 
   return (
-    <Button variant="outline" size="sm" disabled={busy} onClick={() => void toggle()}>
+    // Above the row's link, so it can still be pressed.
+    <Button
+      variant="outline"
+      size="sm"
+      className="relative z-10"
+      disabled={busy}
+      onClick={() => void toggle()}
+    >
       {row.held ? t.lift : t.hold}
     </Button>
   );

@@ -31,6 +31,9 @@ const features = tableFeatures({
   sortFns,
 });
 
+/** For the one link of a row: it covers the whole row, so the row is one target. */
+export const rowLink = "font-medium text-primary hover:underline after:absolute after:inset-0";
+
 /** A column of a Data Table: a header, and an accessor or a cell. */
 export type DataColumn<Row extends RowData> = ColumnDef<typeof features, Row>;
 
@@ -95,7 +98,8 @@ export function DataTable<Row extends RowData>({
           </TableHeader>
           <TableBody>
             {table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id}>
+              // Relative, so a cell's link may cover the whole row (`rowLink`).
+              <TableRow key={row.id} className="relative">
                 {row.getAllCells().map((cell) => (
                   <TableCell key={cell.id}>
                     <table.FlexRender cell={cell} />

@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { ActionButton } from "@/components/action-button";
 import { toast } from "sonner";
 import { Link, createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
 import { useConfirm } from "@/components/confirm";
@@ -177,14 +178,14 @@ function NamesRow({ me }: { me: Me }) {
                 .join(" · ")}
             </div>
             <p className="text-xs text-muted-foreground">{t.names.beingCheckedLead}</p>
-            <Button
+            <ActionButton
               variant="outline"
               size="sm"
               disabled={busy}
-              onClick={() => void run(withdrawNames)}
+              onClick={() => run(withdrawNames)}
             >
               {t.names.withdraw}
-            </Button>
+            </ActionButton>
           </div>
         )}
         {names.refused && <Refusal message={t.names.refused(names.refused.reason)} />}

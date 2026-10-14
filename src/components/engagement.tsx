@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { ActionButton } from "@/components/action-button";
 import { useNavigate } from "@tanstack/react-router";
 import { useConfirm } from "@/components/confirm";
 import { FileText } from "lucide-react";
@@ -193,43 +194,43 @@ export function StartActions({
       <div className="flex flex-wrap gap-2">
         {asClient ? (
           <>
-            <Button
+            <ActionButton
               disabled={action.busy}
               onClick={async () => {
                 const shown = materials?.unreleasedCents
                   ? formatRands(materials.unreleasedCents)
                   : null;
                 if (!(await confirm(t.markWorkStartedConfirm(shown)))) return;
-                void action.run(() => markWorkStarted({ data: { engagementId } }));
+                await action.run(() => markWorkStarted({ data: { engagementId } }));
               }}
             >
               {t.markWorkStarted}
-            </Button>
+            </ActionButton>
             {engagement.startClaim && (
-              <Button
+              <ActionButton
                 variant="outline"
                 disabled={action.busy}
                 onClick={async () => {
                   if (!(await confirm(t.notStartedConfirm))) return;
-                  void action.run(() => answerNotStarted({ data: { engagementId } }));
+                  await action.run(() => answerNotStarted({ data: { engagementId } }));
                 }}
               >
                 {t.notStarted}
-              </Button>
+              </ActionButton>
             )}
           </>
         ) : (
           "canClaimStart" in engagement &&
           (engagement.canClaimStart ? (
-            <Button
+            <ActionButton
               disabled={action.busy}
               onClick={async () => {
                 if (!(await confirm(t.claimStartedConfirm))) return;
-                void action.run(() => claimStarted({ data: { engagementId } }));
+                await action.run(() => claimStarted({ data: { engagementId } }));
               }}
             >
               {t.claimStarted}
-            </Button>
+            </ActionButton>
           ) : (
             // Before the start date; once said, the Next step says what follows.
             !engagement.startClaim && (
@@ -363,10 +364,10 @@ export function HireAgainAction({ engagement }: { engagement: ClientEngagement }
     <div className="space-y-2">
       <p className="text-sm text-muted-foreground">{t.hireAgainLead}</p>
       <Refusal message={action.refusal} />
-      <Button
+      <ActionButton
         disabled={action.busy}
         onClick={() =>
-          void action.run(async () => {
+          action.run(async () => {
             const again = await hireAgain({ data: { engagementId } });
             if (again.ok) {
               await navigate({ to: "/jobs/$jobId", params: { jobId: again.value.jobId } });
@@ -376,7 +377,7 @@ export function HireAgainAction({ engagement }: { engagement: ClientEngagement }
         }
       >
         {t.hireAgain}
-      </Button>
+      </ActionButton>
     </div>
   );
 }
@@ -527,15 +528,15 @@ function ReleaseHeld({ engagement, heldCents }: { engagement: Engagement; heldCe
       {!open && (
         <div className="flex flex-wrap gap-2">
           {engagement.approval && (
-            <Button
+            <ActionButton
               disabled={action.busy}
               onClick={async () => {
                 if (!(await confirm(d.approveRestConfirm(formatRands(restCents))))) return;
-                void action.run(() => approveCompletion({ data: { engagementId } }));
+                await action.run(() => approveCompletion({ data: { engagementId } }));
               }}
             >
               {d.approveRest}
-            </Button>
+            </ActionButton>
           )}
           <Button variant="outline" onClick={() => setOpen(true)}>
             {d.release}
@@ -799,16 +800,16 @@ function PayOrReject({ proposed }: { proposed: Extract<Proposed, { payCents: num
         <Button disabled={action.busy || !acknowledged} onClick={pay}>
           {u.pay(formatRands(proposed.payCents))}
         </Button>
-        <Button
+        <ActionButton
           variant="outline"
           disabled={action.busy}
           onClick={async () => {
             if (!(await confirm(u.rejectConfirm))) return;
-            void action.run(() => rejectUpdatedQuote({ data: { updatedQuoteId } }));
+            await action.run(() => rejectUpdatedQuote({ data: { updatedQuoteId } }));
           }}
         >
           {u.reject}
-        </Button>
+        </ActionButton>
       </div>
     </div>
   );
@@ -822,16 +823,16 @@ function Withdraw({ updatedQuoteId }: { updatedQuoteId: string }) {
     <div className="space-y-2">
       <p className="text-xs text-muted-foreground">{u.waiting}</p>
       <Refusal message={action.refusal} />
-      <Button
+      <ActionButton
         variant="outline"
         disabled={action.busy}
         onClick={async () => {
           if (!(await confirm(u.withdrawConfirm))) return;
-          void action.run(() => withdrawUpdatedQuote({ data: { updatedQuoteId } }));
+          await action.run(() => withdrawUpdatedQuote({ data: { updatedQuoteId } }));
         }}
       >
         {u.withdraw}
-      </Button>
+      </ActionButton>
     </div>
   );
 }
@@ -965,14 +966,14 @@ function CompletionCheck({
     <div className="space-y-2 rounded-lg bg-muted/60 p-3 text-sm">
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant="warning">{t.completionBeingChecked}</Badge>
-        <Button
+        <ActionButton
           size="xs"
           variant="ghost"
           disabled={action.busy}
-          onClick={() => void action.run(() => withdrawCompletion({ data: { engagementId } }))}
+          onClick={() => action.run(() => withdrawCompletion({ data: { engagementId } }))}
         >
           {t.withdrawCompletion}
-        </Button>
+        </ActionButton>
       </div>
       <p className="text-xs text-muted-foreground">{t.completionBeingCheckedLead}</p>
       <Refusal message={action.refusal} />
@@ -1144,16 +1145,16 @@ function ApproveOrFix({ engagement }: { engagement: Engagement }) {
     <>
       <Refusal message={action.refusal} />
       <div className="flex flex-wrap gap-2">
-        <Button
+        <ActionButton
           disabled={action.busy}
           onClick={async () => {
             const shown = labour?.unreleasedCents ? formatRands(labour.unreleasedCents) : null;
             if (!(await confirm(t.approveConfirm(shown)))) return;
-            void action.run(() => approveCompletion({ data: { engagementId } }));
+            await action.run(() => approveCompletion({ data: { engagementId } }));
           }}
         >
           {t.approve}
-        </Button>
+        </ActionButton>
         <Button variant="outline" disabled={action.busy} onClick={() => setAsking(true)}>
           {t.askFix}
         </Button>

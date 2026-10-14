@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { ActionButton } from "@/components/action-button";
 import { toast } from "sonner";
 import { Link, createFileRoute, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useConfirm } from "@/components/confirm";
@@ -239,19 +240,19 @@ function Draft({ job }: { job: JobView }) {
           onSave={(form) => void save(form, false)}
           onPost={(form) => void save(form, true)}
           extra={
-            <Button
+            <ActionButton
               type="button"
               variant="ghost"
               disabled={action.busy}
               onClick={() =>
-                void action.run(
+                action.run(
                   () => discardJob({ data: { jobId: job.jobId } }),
                   () => navigate({ to: "/jobs" }),
                 )
               }
             >
               {t.discard}
-            </Button>
+            </ActionButton>
           }
         />
       </CardContent>
@@ -309,21 +310,21 @@ function Posted({
         {!editing && <Refusal message={action.refusal} />}
         <div className="flex flex-wrap gap-2">
           {job.state === "held" && (
-            <Button
+            <ActionButton
               variant="outline"
               disabled={action.busy}
-              onClick={() => void action.run(() => withdrawJob({ data: { jobId: job.jobId } }))}
+              onClick={() => action.run(() => withdrawJob({ data: { jobId: job.jobId } }))}
             >
               {t.withdraw}
-            </Button>
+            </ActionButton>
           )}
           {job.state === "expired" && (
-            <Button
+            <ActionButton
               disabled={action.busy}
-              onClick={() => void action.run(() => renewJob({ data: { jobId: job.jobId } }))}
+              onClick={() => action.run(() => renewJob({ data: { jobId: job.jobId } }))}
             >
               {t.renew}
-            </Button>
+            </ActionButton>
           )}
           {editable && !beingChecked && !editing && (
             <Button
@@ -338,16 +339,16 @@ function Posted({
             </Button>
           )}
           {job.state === "open" && (
-            <Button
+            <ActionButton
               variant="ghost"
               disabled={action.busy}
               onClick={async () => {
                 if (!(await confirm(t.closeConfirm))) return;
-                void action.run(() => closeJob({ data: { jobId: job.jobId } }));
+                await action.run(() => closeJob({ data: { jobId: job.jobId } }));
               }}
             >
               {t.close}
-            </Button>
+            </ActionButton>
           )}
         </div>
       </NextStepCard>
@@ -371,14 +372,14 @@ function Posted({
               </CardHeader>
               <CardContent className="space-y-4">
                 <Details job={{ ...job, ...beingChecked }} />
-                <Button
+                <ActionButton
                   variant="outline"
                   size="sm"
                   disabled={action.busy}
-                  onClick={() => void action.run(() => withdrawJob({ data: { jobId: job.jobId } }))}
+                  onClick={() => action.run(() => withdrawJob({ data: { jobId: job.jobId } }))}
                 >
                   {t.withdraw}
-                </Button>
+                </ActionButton>
               </CardContent>
             </Card>
           )}

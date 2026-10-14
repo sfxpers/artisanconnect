@@ -2,7 +2,7 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import { CheckCheck } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { QueueBadge, QueueCounts } from "@/components/admin";
-import { DataTable, type DataColumn } from "@/components/data-table";
+import { DataTable, rowLink, type DataColumn } from "@/components/data-table";
 import { EmptyState, Page } from "@/components/page";
 import { QUEUE_NAMES, type QueueName } from "@/domain/queue-names";
 import { formatRands } from "@/domain/money";
@@ -42,11 +42,7 @@ const columns: DataColumn<Item>[] = [
     header: t.itemTitle,
     accessorFn: (item) => item.title,
     cell: ({ row }) => (
-      <Link
-        to="/admin/items/$itemId"
-        params={{ itemId: row.original.id }}
-        className="font-medium text-primary hover:underline"
-      >
+      <Link to="/admin/items/$itemId" params={{ itemId: row.original.id }} className={rowLink}>
         {row.original.title}
       </Link>
     ),
