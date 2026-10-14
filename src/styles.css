@@ -159,9 +159,9 @@
   h3 {
     text-wrap: balance;
   }
-  input[type="radio"],
-  input[type="checkbox"] {
-    accent-color: var(--primary);
+  /* A date field's own button opens shadcn's Calendar, so the browser's is hidden. */
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    display: none;
   }
 }
 

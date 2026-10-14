@@ -243,6 +243,28 @@ export async function screens(env: Env) {
     });
   const sipho = await artisan("Sipho Dlamini");
   const themba = await artisan("Themba Nkosi");
+  // Work photos on Sipho's Profile: the landing page's trade photos, from the local app.
+  const photos = await Promise.all(
+    ["painting", "tiling", "carpentry"].map(async (trade) =>
+      (await fetch(`http://localhost:3000/trades/${trade}.jpg`)).blob(),
+    ),
+  );
+  const edited = await domain.profiles.edit(sipho.actor, {
+    about: "Interior and exterior painting across the Atlantic Seaboard since 2012.",
+    keep: [],
+    add: photos,
+  });
+  if (!edited.ok) throw new Error(edited.refusal.message);
+  // Every Profile edit waits for the Admin's Pre-check; the Admin releases it.
+  const held = await env.DB.prepare(
+    "select q.id from queue_items q join profile_edits e on e.id = q.subject_id where e.artisan_id = ? and q.decided_at is null",
+  )
+    .bind(sipho.actor.accountId)
+    .first<{ id: string }>();
+  if (!held) throw new Error("The Profile edit was not held for a Pre-check");
+  const { actor: staff } = await anAdmin(env, domain);
+  const released = await domain.queues.decide(staff, { itemId: held.id, decision: "release" });
+  if (!released.ok) throw new Error(released.refusal.message);
   const invitedJob = async (artisans: (typeof sipho)[], title: string) => {
     const jobId = await make.openJob(client, { matching: "invite-only", title });
     for (const artisan of artisans) {

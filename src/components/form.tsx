@@ -16,10 +16,15 @@ import {
 } from "@/components/ui/field";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import { EMAIL_CODE } from "@/domain/accounts/inputs";
-import { formatDay } from "@/domain/sa-days";
 import { copy } from "@/web/copy";
 
 // Every form is TanStack Form (ADR 0017) on shadcn's Field, with these fields
@@ -75,43 +80,48 @@ const dateOf = (day: string) => {
   return new Date(year!, month! - 1, date);
 };
 
-/** A day, picked on shadcn's Calendar in a Popover (its Date Picker); "" for none. */
+/**
+ * A day: typed, or picked on shadcn's Calendar in a Popover (its date picker
+ * with an input), so typing costs no more clicks than before. "" for none.
+ */
 function DateField({ label, description }: Labelled) {
   const { field, id, invalid, error } = useBound<string>();
   const [open, setOpen] = useState(false);
-  const day = field.state.value ? dateOf(field.state.value) : undefined;
+  const day = /^\d{4}-\d{2}-\d{2}$/.test(field.state.value) ? dateOf(field.state.value) : undefined;
   return (
     <Field data-invalid={invalid}>
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger
-          render={
-            <Button
-              id={id}
-              type="button"
-              variant="outline"
-              className="w-56 justify-between font-normal"
-              aria-invalid={invalid}
-            />
-          }
-        >
-          {field.state.value ? formatDay(field.state.value) : copy.pickDay}
-          <CalendarDays data-icon="inline-end" />
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
-          <Calendar
-            mode="single"
-            selected={day}
-            defaultMonth={day}
-            captionLayout="dropdown"
-            onSelect={(picked) => {
-              field.handleChange(picked ? dayOf(picked) : "");
-              field.handleBlur();
-              setOpen(false);
-            }}
-          />
-        </PopoverContent>
-      </Popover>
+      <InputGroup className="w-56">
+        <InputGroupInput
+          id={id}
+          type="date"
+          name={field.name}
+          value={field.state.value}
+          onBlur={field.handleBlur}
+          onChange={(event) => field.handleChange(event.target.value)}
+          aria-invalid={invalid}
+        />
+        <InputGroupAddon align="inline-end">
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger render={<InputGroupButton size="icon-xs" aria-label={copy.pickDay} />}>
+              <CalendarDays />
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <Calendar
+                mode="single"
+                selected={day}
+                defaultMonth={day}
+                captionLayout="dropdown"
+                onSelect={(picked) => {
+                  field.handleChange(picked ? dayOf(picked) : "");
+                  field.handleBlur();
+                  setOpen(false);
+                }}
+              />
+            </PopoverContent>
+          </Popover>
+        </InputGroupAddon>
+      </InputGroup>
       {description && <FieldDescription>{description}</FieldDescription>}
       {error}
     </Field>

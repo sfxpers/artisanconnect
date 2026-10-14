@@ -68,6 +68,10 @@ test("capture every designed screen", async ({ browser }) => {
         const page = await context.newPage();
         for (const screen of list) {
           await page.goto(screen.path);
+          // The dev server's router devtools button is not part of the design.
+          await page.addStyleTag({
+            content: "[aria-label='Open TanStack Router Devtools'] { display: none !important; }",
+          });
           // Turnstile keeps the network busy, so wait for hydration by time.
           await page.waitForTimeout(1500);
           await screen.act?.(page).catch(() => undefined);
