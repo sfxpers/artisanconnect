@@ -460,6 +460,50 @@ describe("a paused Refund", () => {
     expect((await refundNotices(domain, client.actor))[0]).toMatchObject({ event: "refund.paid" });
   });
 
+  test("raises a Support request that waits beside the Accounts' own, oldest first, and is resolved with a note, telling nobody", async () => {
+    const { domain, given, payments, clock, mailer } = await createHarness();
+    const admin = await given.admin();
+    const { client, artisan, engagementId } = await hiredJob(given);
+    await refunded(domain, artisan, engagementId, { labour: "300" });
+    await receive(domain, await payments.pauseRefund(refundsAsked(payments)[0]!.id));
+    clock.advance({ days: 3 });
+    await domain.system.runDueClocks();
+    clock.advance({ minutes: 1 });
+    await domain.support.send(client.actor, { topic: "payment", message: "Where is my Refund?" });
+
+    const home = await domain.queues.home(admin.actor, { queue: "support" });
+    expect(home?.items.map((item) => item.title)).toEqual([
+      `Paused money: a Refund of ${formatRands(30_000)} to Thandi Mokoena`,
+      "Payment, from Thandi Mokoena",
+    ]);
+    const itemId = home!.items[0]!.id;
+    expect(await domain.queues.item(admin.actor, { itemId })).toMatchObject({
+      decisions: [{ key: "resolve", told: "Nobody", reason: "optional", reasonLabel: "Note" }],
+      tabs: [
+        {
+          blocks: [
+            { kind: "facts", facts: [{ label: "Tag", value: "Paused money" }] },
+            { kind: "text", text: expect.stringContaining("as the float cannot cover it") },
+          ],
+        },
+      ],
+    });
+    const sentBefore = mailer.sent.length;
+
+    expect(
+      await domain.queues.decide(admin.actor, {
+        itemId,
+        decision: "resolve",
+        reason: "Float topped up.",
+      }),
+    ).toEqual({ ok: true, value: { itemId, decision: "resolve" } });
+    expect(mailer.sent).toHaveLength(sentBefore);
+    expect((await domain.queues.item(admin.actor, { itemId }))?.decided).toMatchObject({
+      label: "Resolve",
+      reason: "Float topped up.",
+    });
+  });
+
   test("paid within 3 days raises nothing", async () => {
     const { domain, given, payments, clock } = await createHarness();
     const admin = await given.admin();

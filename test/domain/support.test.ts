@@ -1,7 +1,6 @@
 import { describe, expect, test } from "vitest";
-import { system, visitor, type AdminActor } from "@/domain/actor";
+import { visitor, type AdminActor } from "@/domain/actor";
 import { createHarness, type Harness } from "../support/harness";
-import { createSystemSupportHarness } from "../support/system-support";
 
 // A signed-in Account writes to the Admin under a fixed topic, and the Admin's
 // answer goes back by email (#117). The platform may also raise a Support
@@ -265,93 +264,5 @@ describe("answering a Support request", () => {
       refusal: { reason: "reason-required", message: expect.any(String) },
     });
     expect(mailer.sentTo(client.email)).toHaveLength(1);
-  });
-});
-
-describe("a system Support request", () => {
-  test("waits in the same queue, oldest first, under its tag", async () => {
-    const { domain, given, clock } = await createSystemSupportHarness();
-    const admin = await given.admin();
-    const client = await given.client({ name: "Thandi Mokoena" });
-    await domain.systemSupportProbe.raise(system, {
-      tag: "failed-refund",
-      about: "R1,200.00 owed to Thandi M.",
-      details: "The Refund of the Labour failed at the bank.",
-      accountId: client.actor.accountId,
-    });
-    clock.advance({ minutes: 1 });
-    await domain.support.send(client.actor, { topic: "payment", message: "Where is my Refund?" });
-
-    const home = await domain.queues.home(admin.actor, { queue: "support" });
-
-    expect(home?.items.map((item) => item.title)).toEqual([
-      "Failed Refund: R1,200.00 owed to Thandi M.",
-      "Payment, from Thandi Mokoena",
-    ]);
-    const page = await domain.queues.item(admin.actor, { itemId: home!.items[0]!.id });
-    expect(page).toMatchObject({
-      decisions: [
-        {
-          key: "resolve",
-          label: "Resolve",
-          told: "Nobody",
-          reason: "optional",
-          reasonLabel: "Note",
-        },
-      ],
-      tabs: [
-        {
-          key: "request",
-          label: "Request",
-          blocks: [
-            { kind: "facts", facts: [{ label: "Tag", value: "Failed Refund" }] },
-            { kind: "text", text: "The Refund of the Labour failed at the bank." },
-          ],
-        },
-      ],
-      sidebar: [
-        {
-          title: "Account",
-          blocks: [
-            {
-              kind: "facts",
-              facts: [
-                { label: "Kind", value: "Client" },
-                { label: "Name", value: "Thandi Mokoena" },
-                { label: "Email", value: client.email },
-              ],
-            },
-          ],
-        },
-      ],
-    });
-  });
-
-  test("is resolved with a note, and nobody is told", async () => {
-    const { domain, given, mailer } = await createSystemSupportHarness();
-    const admin = await given.admin();
-    await domain.systemSupportProbe.raise(system, {
-      tag: "paused-money",
-      about: "R800.00 paused for 3 days",
-      details: "The daily run has paused it since Monday.",
-    });
-    const item = await supportItem(domain, admin);
-    const sentBefore = mailer.sent.length;
-
-    const resolved = await domain.queues.decide(admin.actor, {
-      itemId: item.id,
-      decision: "resolve",
-      reason: "Paid by bank transfer.",
-    });
-
-    expect(resolved).toEqual({ ok: true, value: { itemId: item.id, decision: "resolve" } });
-    expect(mailer.sent).toHaveLength(sentBefore);
-    const page = await domain.queues.item(admin.actor, { itemId: item.id });
-    expect(page?.decided).toMatchObject({
-      label: "Resolve",
-      reason: "Paid by bank transfer.",
-      reasonLabel: "Note",
-    });
-    expect(page?.sidebar).toEqual([]);
   });
 });
