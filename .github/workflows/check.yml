@@ -11,6 +11,8 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    # A hung step fails within the hour, not at GitHub's six.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
       # Node and nub, at the versions mise.toml pins.
@@ -27,3 +29,4 @@ jobs:
           sed -i "s|^PAYMENTS_WEBHOOK_SECRET=.*|PAYMENTS_WEBHOOK_SECRET=$(openssl rand -base64 32)|" .dev.vars
       # In the runner's own Chrome, as playwright.config.ts asks.
       - run: nub run test:smoke
+        timeout-minutes: 15

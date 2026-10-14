@@ -10,6 +10,8 @@ export default defineConfig({
   testDir: "e2e",
   workers: 1,
   timeout: 60_000,
+  // A line per test, on CI too, where the default prints only dots.
+  reporter: "list",
   use: {
     baseURL: "http://localhost:3000",
     // The installed Chrome, so no browser download is needed.
