@@ -20,7 +20,7 @@ import {
 import { formatRands } from "../money";
 import type { PaymentEvent } from "../ports";
 import { ok, refuse } from "../result";
-import { formatDay, saDay } from "../sa-days";
+import { DAY_MS, formatDay, saDay } from "../sa-days";
 import { ledgerEntries, payments, refunds } from "../schema";
 import { raiseSupportRequest } from "../support";
 import { emailTells, tellWhile, tellWithEmailWhile } from "../tells";
@@ -49,7 +49,7 @@ import {
 /** The clock that tells the Client a Refund paused for 3 days is delayed, not lost. */
 export const PAUSED_CLOCK = "refund.paused";
 
-const PAUSED_FOR_MS = 3 * 24 * 60 * 60 * 1000;
+const PAUSED_FOR_MS = 3 * DAY_MS;
 
 const PARTS = { materials: "Materials", labour: "Labour" } as const;
 

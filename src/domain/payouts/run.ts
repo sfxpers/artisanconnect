@@ -15,7 +15,7 @@ import { causedBy } from "../errors";
 import { insertWhile } from "../guarded";
 import { LEDGER_KINDS, ledgerWrites } from "../ledger";
 import { formatRands } from "../money";
-import { MINUTE_MS, saDay, saDayStart } from "../sa-days";
+import { HOUR_MS, MINUTE_MS, saDay, saDayStart } from "../sa-days";
 import {
   accounts,
   admins,
@@ -274,7 +274,7 @@ async function createdPayouts(ctx: Context, { held }: { held: boolean }) {
 }
 
 /** How long a created Payout may still be on its way to the adapter, from a run in flight. */
-const ASKING_FOR_MS = 60 * 60 * 1000;
+const ASKING_FOR_MS = HOUR_MS;
 
 /**
  * Each Payout created but never answered whose account is no longer the

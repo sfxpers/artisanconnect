@@ -21,7 +21,7 @@ import { sendDueBatch } from "../matches/batches";
 import { isSuspended, suspendedNow, suspendedRefusal } from "../standing";
 import { emailTells } from "../tells";
 import { engagementAsArtisan, engagementAsClient, notHiredPayments } from "../engagements/views";
-import { expiryClocks } from "./expiry";
+import { jobExpiryClocks } from "./expiry";
 import { hireAgainDraft, hireAgainProblem, hireAgainView, hireAgainWrites } from "./hire-again";
 import { heldJob, holdWrites, refusalOf, stillDraft, withdrawHeldJob } from "./held";
 import {
@@ -64,7 +64,7 @@ type PhotosInput = { keep?: string[]; add?: Blob[] };
 export const jobsSection = defineSection({
   name: "jobs",
   queueItems: [heldJob, heldJobEdit],
-  clocks: expiryClocks,
+  clocks: jobExpiryClocks,
   api: (ctx) => ({
     /**
      * Saves a new Draft, or the Client's Draft by id, whole: anything may be

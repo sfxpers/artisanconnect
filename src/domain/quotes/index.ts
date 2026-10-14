@@ -18,7 +18,7 @@ import { emailTells, tellWhile } from "../tells";
 import { startClock } from "../clocks";
 import { alreadyChecked, isAlreadyDecided } from "../content/held";
 import { quoteSentWrites } from "../conversations/rows";
-import { endWrites, expiryClocks } from "./ends";
+import { endWrites, quoteExpiryClocks } from "./ends";
 import { heldQuote, holdWrites, withdrawHeldQuote } from "./held";
 import { quoteFields, type ParsedQuote, type QuoteFields } from "./inputs";
 import { problemMessage, sendingProblem, startPassed } from "./rules";
@@ -59,7 +59,7 @@ const ARTISAN_TURNS: readonly string[] = ["paid", "work-started", "fix-requested
 export const quotesSection = defineSection({
   name: "quotes",
   queueItems: [heldQuote, heldRevision],
-  clocks: expiryClocks,
+  clocks: quoteExpiryClocks,
   api: (ctx) => ({
     /** Sends a Quote on an Open Job the Artisan holds a Job Match or an Invitation for. */
     async send(actor: Actor, input: QuoteFields & { jobId: string }) {

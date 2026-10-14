@@ -12,7 +12,7 @@ import {
   releaseRows,
 } from "../ledger";
 import { ok, refuse } from "../result";
-import { formatDay, formatTime, saDay } from "../sa-days";
+import { formatDay, formatTime, HOUR_MS, saDay } from "../sa-days";
 import { engagements, type WORK_STARTED_BY } from "../schema";
 import { emailTells, tellWhile } from "../tells";
 import { engagementRow, type EngagementRow, engagementNotFound } from "./rows";
@@ -27,7 +27,7 @@ import { engagementRow, type EngagementRow, engagementNotFound } from "./rows";
 const START_CLAIM_CLOCK = "engagement.start-claim";
 
 /** How long the Client has to answer "Not started". */
-const ANSWER_MS = 24 * 60 * 60 * 1000;
+const ANSWER_MS = 24 * HOUR_MS;
 
 type StartedBy = (typeof WORK_STARTED_BY)[number];
 

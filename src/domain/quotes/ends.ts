@@ -100,4 +100,4 @@ const expiry: ClockHandler = async (ctx, clock) => {
   ];
 };
 
-export const expiryClocks = { [EXPIRY_CLOCK]: expiry } satisfies Record<string, ClockHandler>;
+export const quoteExpiryClocks = { [EXPIRY_CLOCK]: expiry } satisfies Record<string, ClockHandler>;
