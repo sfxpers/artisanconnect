@@ -1,4 +1,5 @@
 import { createCipheriv, createHash, randomBytes } from "node:crypto";
+import { ascii, concat } from "./files";
 
 // PDFs built byte by byte, for what the fixtures saved by macOS's PDF writer
 // (RC4 and AES-128) do not cover: AES-256 encryption, a script packed into an
@@ -181,21 +182,6 @@ async function deflate(bytes: Uint8Array): Promise<Uint8Array> {
   return new Uint8Array(await new Response(stream).arrayBuffer());
 }
 
-/** One byte per character, as PDF syntax is written. */
-function ascii(text: string): Uint8Array {
-  return Uint8Array.from(text, (c) => c.charCodeAt(0) & 0xff);
-}
-
 function hex(bytes: Uint8Array): string {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
-}
-
-function concat(...parts: Uint8Array[]): Uint8Array<ArrayBuffer> {
-  const out = new Uint8Array(parts.reduce((sum, part) => sum + part.length, 0));
-  let at = 0;
-  for (const part of parts) {
-    out.set(part, at);
-    at += part.length;
-  }
-  return out;
 }

@@ -251,9 +251,9 @@ function le32(value: number): Uint8Array<ArrayBuffer> {
   return be(value, 4).reverse();
 }
 
-function ascii(text: string): Uint8Array<ArrayBuffer>;
-function ascii(bytes: Uint8Array): string;
-function ascii(value: string | Uint8Array): Uint8Array<ArrayBuffer> | string {
+export function ascii(text: string): Uint8Array<ArrayBuffer>;
+export function ascii(bytes: Uint8Array): string;
+export function ascii(value: string | Uint8Array): Uint8Array<ArrayBuffer> | string {
   return typeof value === "string"
     ? Uint8Array.from(value, (c) => c.charCodeAt(0))
     : String.fromCharCode(...value);
