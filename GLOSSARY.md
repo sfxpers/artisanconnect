@@ -182,6 +182,10 @@ _Avoid_: Return, Reversal
 Money sent to the Artisan's Payout account after a Release, in the next daily run. A bank may refuse it, or send it back even days after it arrived; the money is then owed to the Artisan again and waits for a current Payout account.
 _Avoid_: Withdrawal, Settlement
 
+**Float**:
+The platform's own money at the payment provider, from which Payouts and Refunds are paid. It is checked before each daily run; if it cannot cover the run, the Admin is emailed, and paused money waits until it can.
+_Avoid_: Reserve, Wallet, Balance
+
 **Payout account**:
 The bank account in the Artisan's own name, proven by a bank letter, that Payouts are sent to. No two Artisans may hold the same one. A bank refusing or sending back a Payout makes it no longer current, and Payouts wait until the Admin accepts a new one; it still counts for Verification, so the Artisan may still Quote and be Hired.
 _Avoid_: Wallet, Bank details
@@ -243,6 +247,10 @@ _Avoid_: Flag, Alert
 **Report**:
 A signed-in Account's complaint about a Job, Quote, message, Artisan Profile, or Review it can see, once per thing, which goes to the Admin; repeats fold into one queue item. The Admin dismisses it, takes a Job or Profile out of view until an edit the Admin accepts fixes it, or warns or suspends the Account reported, who never learns who reported.
 _Avoid_: Ticket, Flag
+
+**Tell**:
+An in-app notice plus one email naming an event and linking back, with no message text, to the Account whose action the event needs, or whose money, Job, or standing it changes; never to the actor, and never to the Admin.
+_Avoid_: Notification, Alert, Ping
 
 **Support request**:
 A signed-in Account's message to the Admin under a fixed topic, which the Admin answers by email. A suspended Account may send one. The platform also raises one itself, with a tag, for what only the Admin can settle, such as a failed Refund.
