@@ -52,6 +52,8 @@ try {
   if (environment) rmSync(configPath, { force: true });
 }
 
+// Custom until each environment's D1 id is committed to wrangler.jsonc, which
+// waits for production's first deploy to provision it.
 /**
  * A copy of wrangler.jsonc whose D1 for this environment is the remote one.
  * Remote D1 needs its id, which wrangler.jsonc leaves out so the first deploy

@@ -3,6 +3,7 @@ import { useRouter } from "@tanstack/react-router";
 
 type Outcome = { ok: true; value?: unknown } | { ok: false; refusal: { message: string } };
 
+// Custom: TanStack Query's useMutation would add the cache ADR 0017 rejects.
 /**
  * Runs one action at a time, keeping its refusal to show where the person
  * acted. Once it is done, what follows runs and the page loads again.

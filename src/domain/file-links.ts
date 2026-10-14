@@ -6,6 +6,7 @@ import { MINUTE_MS } from "./sa-days";
 // photo in a Conversation) is reached through a link the logged read hands
 // out: signed, so nothing else makes one, and short-lived, so a link kept is
 // not a way round the log. The file itself is served only to an Admin.
+// Custom: R2's presigned URLs need S3 API keys, a secret and a path outside the binding.
 
 /** How long a link works after the read that made it. */
 const LINK_MINUTES = 15;

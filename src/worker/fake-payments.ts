@@ -5,6 +5,7 @@ import { fakePaymentState } from "@/domain/schema";
 
 const ROW = "state";
 
+// Custom: KV and Durable Objects are not on the stack (ADR 0017); D1 is.
 /**
  * Keeps the fake payment adapter's state in one D1 row, so its collections
  * outlive the isolate that opened them (#126). Each save names the version
