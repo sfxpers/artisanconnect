@@ -130,14 +130,6 @@ export function OfferedJob({
               ) : (
                 holding && <QuoteOrPass job={job} invited={invited} vatNumber={vatNumber} />
               )}
-              <Card>
-                <CardHeader>
-                  <CardTitle>{copy.job.details}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Details job={job} />
-                </CardContent>
-              </Card>
             </div>
             <aside className="space-y-6">
               <Card size="sm">
@@ -201,6 +193,7 @@ export function OfferedJob({
         messages={
           <Messages jobId={job.jobId} conversations={conversations} open={open} asClient={false} />
         }
+        details={<Details job={job} />}
       />
     </Page>
   );

@@ -30,6 +30,9 @@ test("a Client Hires a Sent Quote through the fake checkout", async ({ page }) =
   await expect(page.getByText("Paid. Next: Work started")).toBeVisible();
   await expect(page.getByText("Hired", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("Payments", { exact: true })).toBeVisible();
+  // The Job's details have a tab of their own (#107).
+  await page.getByRole("tab", { name: "Job details" }).click();
+  await expect(page.getByText("Two walls, about 20 square metres.")).toBeVisible();
 });
 
 test("a Client compares Quotes in the order sent, or by total, lowest first", async ({ page }) => {

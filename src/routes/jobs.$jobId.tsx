@@ -34,7 +34,7 @@ import {
   type ConversationSummary,
   type ConversationView,
 } from "@/components/conversation";
-import { JobTabs, type JobTab } from "@/components/job-tabs";
+import { JOB_TABS, JobTabs, type JobTab } from "@/components/job-tabs";
 import { copy, formatDate } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
 import { getConversation, getConversations } from "@/web/conversations";
@@ -59,7 +59,7 @@ export const Route = createFileRoute("/jobs/$jobId")({
     search: Record<string, unknown>,
   ): { region?: string; tab?: JobTab; conversation?: string } => ({
     region: typeof search.region === "string" && search.region ? search.region : undefined,
-    tab: search.tab === "overview" || search.tab === "messages" ? search.tab : undefined,
+    tab: JOB_TABS.find((tab) => tab === search.tab),
     conversation:
       typeof search.conversation === "string" && search.conversation
         ? search.conversation
@@ -205,6 +205,7 @@ function ClientJob({
           messages={
             <Messages jobId={job.jobId} conversations={conversations} open={open} asClient />
           }
+          details={<Details job={job} />}
         />
       )}
     </Page>
@@ -388,7 +389,7 @@ function Posted({
           </Card>
         )}
 
-        {editing ? (
+        {editing && (
           <Card>
             <CardHeader>
               <CardTitle>{t.editTitle}</CardTitle>
@@ -412,15 +413,6 @@ function Posted({
                   )
                 }
               />
-            </CardContent>
-          </Card>
-        ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle>{t.details}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Details job={job} />
             </CardContent>
           </Card>
         )}
@@ -507,15 +499,7 @@ function Hired({
         <CompletionCard engagement={engagement} />
         <PaymentsCard engagement={engagement} />
         <ActivityCard engagement={engagement} />
-        <Card>
-          <CardHeader>
-            <CardTitle>{t.details}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Details job={job} />
-            <ClientQuotes jobId={job.jobId} quotes={quotes} conversations={conversations} />
-          </CardContent>
-        </Card>
+        <ClientQuotes jobId={job.jobId} quotes={quotes} conversations={conversations} />
       </div>
       <aside className="space-y-6">
         <Card size="sm">

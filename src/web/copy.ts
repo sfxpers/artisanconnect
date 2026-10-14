@@ -355,7 +355,6 @@ export const copy = {
     editRefused: (reason: string) => `Your last edit was refused: ${reason}`,
     outOfView: (reason: string) =>
       `The Admin took this Job out of view until you fix it: ${reason} Edit it; Artisans see it again once the Admin accepts the edit.`,
-    details: "Job details",
     none: "None given",
   },
   invite: {
@@ -988,6 +987,7 @@ export const copy = {
     tabs: {
       overview: "Overview",
       messages: (unread: number) => (unread > 0 ? `Messages (${unread})` : "Messages"),
+      details: "Job details",
     },
     none: "No Conversations yet. One opens with an Invitation or the first Quote.",
     noneArtisan: "No Conversation yet. One opens when you are invited or your Quote is Sent.",
