@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { ActionButton } from "@/components/action-button";
 import { Link, useRouter } from "@tanstack/react-router";
 import {
   FileText,
@@ -88,7 +89,7 @@ export function Messages({
 /** One Conversation: what was said, oldest first, and the composer while it takes messages. */
 function Thread({ view, unread }: { view: ConversationView; unread: number }) {
   const router = useRouter();
-  const end = useRef<HTMLDivElement>(null);
+  const end = useRef<HTMLLIElement>(null);
 
   // Opening it reads what was delivered; the unread mark then goes on the next load.
   useEffect(() => {
@@ -111,7 +112,7 @@ function Thread({ view, unread }: { view: ConversationView; unread: number }) {
               <ItemRow item={item} />
             </li>
           ))}
-          <div ref={end} />
+          <li ref={end} aria-hidden />
         </ol>
         {view.takesMessages ? (
           <Composer view={view} />
@@ -141,14 +142,14 @@ function ItemRow({ item }: { item: Item }) {
     <div className={cn("flex flex-col gap-1", item.mine ? "items-end" : "items-start")}>
       <div
         className={cn(
-          "max-w-5/6 space-y-2 rounded-2xl px-3 py-2 text-sm",
+          "max-w-5/6 space-y-2 rounded-lg px-3 py-2 text-sm",
           item.mine ? "bg-primary text-primary-foreground" : "bg-muted",
           item.state !== "delivered" && "opacity-70",
         )}
       >
         {item.text && <p className="whitespace-pre-line break-words">{item.text}</p>}
         {item.photos.length > 0 && (
-          <div className="grid grid-cols-2 gap-1.5">
+          <div className="grid grid-cols-2 gap-2">
             {item.photos.map((photo, index) => (
               <a key={photo.id} href={photo.href} target="_blank" rel="noreferrer">
                 <img
@@ -167,16 +168,16 @@ function ItemRow({ item }: { item: Item }) {
           <>
             <Badge variant="warning">{t.beingChecked}</Badge>
             <span>{t.beingCheckedLead}</span>
-            <Button
+            <ActionButton
               size="xs"
               variant="ghost"
               disabled={action.busy}
               onClick={() =>
-                void action.run(() => withdrawMessage({ data: { messageId: item.messageId } }))
+                action.run(() => withdrawMessage({ data: { messageId: item.messageId } }))
               }
             >
               {t.withdraw}
-            </Button>
+            </ActionButton>
           </>
         )}
         {item.state === "refused" && item.refused && (
@@ -268,7 +269,7 @@ function Composer({ view }: { view: ConversationView }) {
       }}
     >
       {view.firstMessage && (
-        <p className="flex gap-2 rounded-lg bg-muted/60 p-3 text-xs text-muted-foreground">
+        <p className="flex gap-2 rounded-lg bg-muted p-4 text-xs text-muted-foreground">
           <ShieldAlert className="size-4 shrink-0" />
           {view.afterPayment ? t.adminMayReadAfterPayment : t.adminMayRead}
         </p>
@@ -286,6 +287,7 @@ function Composer({ view }: { view: ConversationView }) {
         type="file"
         accept={view.afterPayment ? `${PHOTO_TYPES},application/pdf,audio/*` : PHOTO_TYPES}
         multiple
+        aria-label={t.attach}
         className="sr-only"
         onChange={(event) => {
           // Added to what is chosen or recorded already; the input empties to take the same file again.

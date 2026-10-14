@@ -1,15 +1,8 @@
 import { useState } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Link, createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import {
@@ -31,7 +24,7 @@ import { splitOf } from "@/domain/queue-names";
 import type { Block, DecisionField, ItemRow } from "@/domain/queues";
 import { cn } from "@/lib/utils";
 import { decideQueueItem, decideQueueRow, getQueueItem, openLoggedRead } from "@/web/admin";
-import { copy, formatDate } from "@/web/copy";
+import { copy, formatDate, pageTitle } from "@/web/copy";
 import { onlyForAdmins } from "@/web/guards";
 
 export const Route = createFileRoute("/admin/items/$itemId")({
@@ -39,6 +32,9 @@ export const Route = createFileRoute("/admin/items/$itemId")({
     onlyForAdmins(context);
   },
   loader: ({ params }) => getQueueItem({ data: { itemId: params.itemId } }),
+  head: ({ loaderData }) => ({
+    meta: [{ title: pageTitle(loaderData?.title ?? copy.admin.home.title) }],
+  }),
   component: QueueItemPage,
 });
 
@@ -47,33 +43,26 @@ const t = copy.admin.item;
 type Item = Awaited<ReturnType<typeof getQueueItem>>;
 
 /**
- * A queue item in the Contract look (#107): breadcrumb with queue counts, a
+ * A queue item (#107): breadcrumb with queue counts, a
  * highlighted Decision card, tabs, and a sidebar. Each kind of item fills the
  * tabs and sidebar; a recorded decision is shown and never reopened.
  */
 function QueueItemPage() {
   const item = Route.useLoaderData();
   return (
-    <Page>
-      <div className="space-y-3">
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink render={<Link to="/admin" />}>{t.queues}</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbLink render={<Link to="/admin" search={{ queue: item.queue }} />}>
-                {copy.admin.queues[item.queue]}
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
+    <Page
+      crumbs={[
+        { to: "/admin", label: t.queues },
+        { to: "/admin", search: { queue: item.queue }, label: copy.admin.queues[item.queue] },
+      ]}
+      title={item.title}
+      status={
+        item.decided ? <Badge variant="secondary">{t.decided}</Badge> : <Badge>{t.open}</Badge>
+      }
+    >
+      {/* On a phone the crumbs and the Sidebar's menu say where the Admin is. */}
+      <div className="hidden md:block">
         <QueueCounts counts={item.counts} current={item.queue} />
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{item.title}</h1>
-          {item.decided ? <Badge variant="secondary">{t.decided}</Badge> : <Badge>{t.open}</Badge>}
-        </div>
       </div>
       <div className={withSidebar}>
         <div className="min-w-0 space-y-6">
@@ -85,7 +74,7 @@ function QueueItemPage() {
           {item.rows && <RowsCard itemId={item.id} rows={item.rows} highlighted={!item.decided} />}
           {item.tabs.length > 0 && (
             <Tabs defaultValue={item.tabs[0]!.key}>
-              <TabsList variant="line">
+              <TabsList variant="line" className="max-w-full justify-start overflow-x-auto">
                 {item.tabs.map((tab) => (
                   <TabsTrigger key={tab.key} value={tab.key}>
                     {tab.label}
@@ -127,7 +116,7 @@ function QueueItemPage() {
               <ol className="space-y-2 text-sm">
                 {item.timeline.map((entry, index) => (
                   <li key={index} className="flex gap-2">
-                    <div className="mt-1.5 size-2 shrink-0 rounded-full bg-primary" />
+                    <div className="mt-2 size-2 shrink-0 rounded-full bg-primary" aria-hidden />
                     <div>
                       <div>{entry.text}</div>
                       <div className="text-xs text-muted-foreground">{formatDate(entry.at)}</div>
@@ -182,10 +171,10 @@ function DecisionCard({ item }: { item: Item }) {
   }
 
   return (
-    <Card className="ring-2 ring-primary">
+    <Card className="ring-primary">
       <CardHeader>
-        <CardDescription>{t.decision}</CardDescription>
-        <CardTitle className="text-lg">{option?.label ?? t.choose}</CardTitle>
+        <CardDescription className="text-xs font-medium text-primary">{t.decision}</CardDescription>
+        <CardTitle className="text-lg font-semibold">{option?.label ?? t.choose}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {item.decisions.length === 0 ? (
@@ -214,7 +203,7 @@ function DecisionCard({ item }: { item: Item }) {
           />
         ))}
         {option && option.reason !== "none" && (
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label htmlFor="reason">
               {option.reason === "required"
                 ? (option.reasonLabel ?? t.reason)
@@ -255,10 +244,10 @@ function DecisionCard({ item }: { item: Item }) {
 
 function DecidedCard({ decided }: { decided: NonNullable<Item["decided"]> }) {
   return (
-    <Card className="ring-2 ring-primary">
+    <Card className="ring-primary">
       <CardHeader>
-        <CardDescription>{t.decision}</CardDescription>
-        <CardTitle className="text-lg">{t.recorded(decided.label)}</CardTitle>
+        <CardDescription className="text-xs font-medium text-primary">{t.decision}</CardDescription>
+        <CardTitle className="text-lg font-semibold">{t.recorded(decided.label)}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-2 text-sm">
         {decided.reason && (
@@ -291,10 +280,12 @@ function RowsCard({
   highlighted: boolean;
 }) {
   return (
-    <Card className={cn(highlighted && "ring-2 ring-primary")}>
+    <Card className={cn(highlighted && "ring-primary")}>
       <CardHeader>
-        <CardDescription>{t.decision}</CardDescription>
-        <CardTitle className="text-lg">{highlighted ? t.eachRow : t.rowsNow}</CardTitle>
+        <CardDescription className="text-xs font-medium text-primary">{t.decision}</CardDescription>
+        <CardTitle className="text-lg font-semibold">
+          {highlighted ? t.eachRow : t.rowsNow}
+        </CardTitle>
       </CardHeader>
       <CardContent className="divide-y">
         {rows.length === 0 && <p className="text-sm text-muted-foreground">{t.noRows}</p>}
@@ -364,7 +355,7 @@ function RowDecision({ itemId, row }: { itemId: string; row: ItemRow }) {
         />
       ))}
       {row.decisions.length > 0 && (
-        <div className="space-y-3 rounded-lg border bg-muted/30 p-3">
+        <div className="space-y-4 rounded-lg border bg-muted p-4">
           <div className="flex flex-wrap gap-2">
             {row.decisions.map((decision) => (
               <Button
@@ -388,7 +379,7 @@ function RowDecision({ itemId, row }: { itemId: string; row: ItemRow }) {
             />
           ))}
           {option && option.reason !== "none" && (
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label htmlFor={`${row.id}-reason`}>
                 {option.reason === "required"
                   ? (option.reasonLabel ?? t.reason)
@@ -463,7 +454,7 @@ function DecisionFieldInput({
   }
   if (field.type === "choice") {
     return (
-      <div className="space-y-1.5">
+      <div className="space-y-2">
         <Label id={id}>{label}</Label>
         <RadioGroup
           aria-labelledby={id}
@@ -482,7 +473,7 @@ function DecisionFieldInput({
     );
   }
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-2">
       <Label htmlFor={id}>{label}</Label>
       <Input
         id={id}

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { createFileRoute } from "@tanstack/react-router";
 import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,15 +17,16 @@ import { Page, Refusal, withSidebar } from "@/components/page";
 import { useAction } from "@/components/use-action";
 import { cn } from "@/lib/utils";
 import { addSuburb, getAdminSuburbs } from "@/web/admin";
-import { copy } from "@/web/copy";
+import { copy, pageTitle } from "@/web/copy";
 import { onlyForAdmins } from "@/web/guards";
-import { NativeSelect } from "@/components/ui/native-select";
+import { Choose } from "@/components/choose";
 
 export const Route = createFileRoute("/admin/suburbs")({
   beforeLoad: ({ context }) => {
     onlyForAdmins(context);
   },
   loader: () => getAdminSuburbs(),
+  head: () => ({ meta: [{ title: pageTitle(t.title) }] }),
   component: Suburbs,
 });
 
@@ -66,10 +68,10 @@ function RegionRow({ region }: { region: Region }) {
           size="sm"
           aria-expanded={open}
           aria-controls={`suburbs-${region.id}`}
-          aria-label={open ? t.close(region.name) : t.open(region.name)}
           onClick={() => setOpen(!open)}
         >
           <span className="text-muted-foreground">{t.count(region.suburbs.length)}</span>
+          <span className="sr-only">{t.inRegion(region.name)}</span>
           <ChevronDown className={cn("transition-transform", open && "rotate-180")} />
         </Button>
       </div>
@@ -79,7 +81,7 @@ function RegionRow({ region }: { region: Region }) {
           className="mt-3 columns-2 gap-4 text-xs text-muted-foreground sm:columns-3"
         >
           {region.suburbs.map((suburb) => (
-            <li key={suburb.id} className="break-inside-avoid py-0.5">
+            <li key={suburb.id} className="break-inside-avoid py-1">
               {suburb.name}
             </li>
           ))}
@@ -92,7 +94,6 @@ function RegionRow({ region }: { region: Region }) {
 function AddCard({ regions }: { regions: Region[] }) {
   const action = useAction();
   const [alike, setAlike] = useState(false);
-  const [added, setAdded] = useState<string | null>(null);
   const form = useAppForm({
     defaultValues: { name: "", regionId: "" },
     listeners: { onChange: () => setAlike(false) },
@@ -100,7 +101,6 @@ function AddCard({ regions }: { regions: Region[] }) {
   });
 
   function add({ name, regionId }: typeof form.state.values, despiteAlike: boolean) {
-    setAdded(null);
     const region = regions.find((each) => each.id === regionId)?.name ?? "";
     return action.run(
       async () => {
@@ -110,7 +110,7 @@ function AddCard({ regions }: { regions: Region[] }) {
         return result;
       },
       () => {
-        setAdded(t.added(name.trim().replace(/\s+/g, " "), region));
+        toast.success(t.added(name.trim().replace(/\s+/g, " "), region));
         form.setFieldValue("name", "");
       },
     );
@@ -123,7 +123,8 @@ function AddCard({ regions }: { regions: Region[] }) {
         <CardDescription>{t.addLead}</CardDescription>
       </CardHeader>
       <form.AppForm>
-        <form.Form>
+        {/* The form holds the content and the footer, so it keeps the card's gap between them. */}
+        <form.Form className="space-y-4">
           <CardContent className="space-y-3">
             <form.AppField name="name">
               {(field) => (
@@ -138,24 +139,17 @@ function AddCard({ regions }: { regions: Region[] }) {
               {(field) => (
                 <Field>
                   <FieldLabel htmlFor="suburb-region">{t.region}</FieldLabel>
-                  <NativeSelect
+                  <Choose
                     id="suburb-region"
-                    className="w-full"
                     value={field.state.value}
-                    onChange={(event) => field.handleChange(event.target.value)}
-                  >
-                    <option value="">{t.chooseRegion}</option>
-                    {regions.map((region) => (
-                      <option key={region.id} value={region.id}>
-                        {region.name}
-                      </option>
-                    ))}
-                  </NativeSelect>
+                    onChange={field.handleChange}
+                    placeholder={t.chooseRegion}
+                    options={regions.map((region) => ({ value: region.id, label: region.name }))}
+                  />
                 </Field>
               )}
             </form.Field>
             <Refusal message={action.refusal} />
-            {added && <p className="text-sm text-muted-foreground">{added}</p>}
           </CardContent>
           <CardFooter className="flex-wrap gap-2 pt-4">
             <form.Subscribe

@@ -6,7 +6,7 @@ import { AuthCard, Refusal } from "@/components/page";
 import { useTurnstile } from "@/components/turnstile";
 import { confirmEmail, resendCode } from "@/web/accounts";
 import { EMAIL_CODE } from "@/domain/accounts/inputs";
-import { copy } from "@/web/copy";
+import { copy, pageTitle } from "@/web/copy";
 import { onlyForVisitors } from "@/web/guards";
 import { landingFor } from "@/web/me";
 
@@ -15,6 +15,7 @@ export const Route = createFileRoute("/confirm-email")({
     email: typeof search.email === "string" ? search.email : "",
   }),
   beforeLoad: ({ context }) => onlyForVisitors(context),
+  head: () => ({ meta: [{ title: pageTitle(t.title) }] }),
   component: ConfirmEmail,
 });
 
@@ -64,7 +65,7 @@ function ConfirmEmail() {
             selector={(state) => state.values.code.trim().length === EMAIL_CODE.length}
           >
             {(whole) => (
-              <form.Submit size="lg" disabled={!whole}>
+              <form.Submit size="lg" className="w-full" disabled={!whole}>
                 {t.submit}
               </form.Submit>
             )}

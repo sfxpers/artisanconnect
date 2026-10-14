@@ -1,0 +1,1 @@
+ALTER TABLE `accounts` ADD `notices_seen_at` integer;

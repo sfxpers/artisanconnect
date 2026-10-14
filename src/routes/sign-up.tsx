@@ -4,17 +4,26 @@ import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldLabel,
+  FieldTitle,
+} from "@/components/ui/field";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useAppForm } from "@/components/form";
 import { Page, Refusal } from "@/components/page";
 import { useTurnstile } from "@/components/turnstile";
 import { email, name, password, tradingNameText } from "@/domain/accounts/inputs";
 import { getCurrentRules, signUp } from "@/web/accounts";
-import { copy } from "@/web/copy";
+import { copy, pageTitle } from "@/web/copy";
 import { onlyForVisitors } from "@/web/guards";
 
 export const Route = createFileRoute("/sign-up")({
   beforeLoad: ({ context }) => onlyForVisitors(context),
   loader: () => getCurrentRules(),
+  head: () => ({ meta: [{ title: pageTitle(t.title) }] }),
   component: SignUp,
 });
 
@@ -85,28 +94,29 @@ function SignUp() {
                 <form.Field name="kind">
                   {(field) => (
                     <div className="space-y-3">
-                      <div className="grid gap-3 sm:grid-cols-2">
+                      <RadioGroup
+                        aria-label={t.kind.step}
+                        value={field.state.value}
+                        onValueChange={(kind) => {
+                          field.handleChange(kind as "client" | "artisan");
+                          setStep("names");
+                        }}
+                        className="grid gap-3 sm:grid-cols-2"
+                      >
                         {(["client", "artisan"] as const).map((kind) => (
-                          <button
-                            key={kind}
-                            type="button"
-                            className={cn(
-                              "rounded-xl border p-4 text-left transition-colors hover:border-primary hover:bg-secondary/50",
-                              field.state.value === kind &&
-                                "border-primary bg-secondary/50 ring-1 ring-primary",
-                            )}
-                            onClick={() => {
-                              field.handleChange(kind);
-                              setStep("names");
-                            }}
-                          >
-                            <div className="font-medium">{t.kind[kind]}</div>
-                            <div className="text-sm text-muted-foreground">
-                              {kind === "client" ? t.kind.clientHint : t.kind.artisanHint}
-                            </div>
-                          </button>
+                          <FieldLabel key={kind} htmlFor={`kind-${kind}`}>
+                            <Field orientation="horizontal">
+                              <FieldContent>
+                                <FieldTitle>{t.kind[kind]}</FieldTitle>
+                                <FieldDescription>
+                                  {kind === "client" ? t.kind.clientHint : t.kind.artisanHint}
+                                </FieldDescription>
+                              </FieldContent>
+                              <RadioGroupItem value={kind} id={`kind-${kind}`} />
+                            </Field>
+                          </FieldLabel>
                         ))}
-                      </div>
+                      </RadioGroup>
                       <p className="text-xs text-muted-foreground">{t.kind.fixed}</p>
                     </div>
                   )}
@@ -247,7 +257,7 @@ function Row({
   const done = index < at;
   const open = index === at;
   return (
-    <Card className={cn(open && "ring-2 ring-primary", index > at && "bg-muted shadow-none")}>
+    <Card className={cn(open && "ring-primary", index > at && "bg-muted shadow-none")}>
       <CardContent className="space-y-3">
         <div className="flex items-center gap-3">
           <span
@@ -257,7 +267,7 @@ function Row({
               open && "border-primary text-primary",
             )}
           >
-            {done ? <Check className="size-3.5" /> : index + 1}
+            {done ? <Check className="size-4" /> : index + 1}
           </span>
           <span className="font-semibold">{title}</span>
           {done && (

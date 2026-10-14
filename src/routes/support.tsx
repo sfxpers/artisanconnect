@@ -11,7 +11,7 @@ import {
   SUPPORT_TOPICS,
   type SupportTopic,
 } from "@/domain/support/topics";
-import { copy, formatDate } from "@/web/copy";
+import { copy, formatDate, pageTitle } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
 import { getMySupport, sendSupport } from "@/web/support";
 
@@ -21,6 +21,7 @@ export const Route = createFileRoute("/support")({
     onlyFor("account", context);
   },
   loader: () => getMySupport(),
+  head: () => ({ meta: [{ title: pageTitle(t.title) }] }),
   component: Support,
 });
 

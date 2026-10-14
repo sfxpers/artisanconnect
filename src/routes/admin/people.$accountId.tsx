@@ -1,6 +1,6 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { Link, createFileRoute, useRouter } from "@tanstack/react-router";
-import { ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Page, Refusal, withSidebar } from "@/components/page";
 import { formatRands } from "@/domain/money";
-import { copy, formatDate } from "@/web/copy";
+import { copy, formatDate, pageTitle } from "@/web/copy";
 import { onlyForAdmins } from "@/web/guards";
 import { holdPayouts, liftPayoutHold } from "@/web/payouts";
 import { getPerson, liftSuspension, suspendPerson, warnPerson } from "@/web/people";
@@ -18,6 +18,9 @@ export const Route = createFileRoute("/admin/people/$accountId")({
     onlyForAdmins(context);
   },
   loader: ({ params }) => getPerson({ data: { accountId: params.accountId } }),
+  head: ({ loaderData }) => ({
+    meta: [{ title: pageTitle(loaderData?.name ?? copy.admin.people.title) }],
+  }),
   component: Person,
 });
 
@@ -36,26 +39,19 @@ type Act = "warn" | "suspend" | "lift";
 function Person() {
   const person = Route.useLoaderData();
   return (
-    <Page>
-      <nav className="flex items-center gap-1 text-sm text-muted-foreground">
-        <Link to="/admin/people" className="hover:text-foreground">
-          {t.title}
-        </Link>
-        <ChevronRight className="size-4" />
-        <span className="text-foreground">{person.name}</span>
-      </nav>
-      <div className="space-y-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{person.name}</h1>
+    <Page
+      crumbs={[{ to: "/admin/people", label: t.title }]}
+      title={person.name}
+      status={
+        <>
           <Badge variant="secondary">{copy.signUp.kind.chosen[person.kind]}</Badge>
           {person.suspended && <Badge variant="destructive">{t.suspended}</Badge>}
           {person.closed && <Badge variant="outline">{t.closed[person.closed]}</Badge>}
           {person.payoutsHeld && <Badge variant="destructive">{t.payoutsHeld}</Badge>}
-        </div>
-        <p className="text-sm text-muted-foreground">
-          {person.email} · {t.signedUp(formatDate(person.signedUpAt))}
-        </p>
-      </div>
+        </>
+      }
+      meta={`${person.email} · ${t.signedUp(formatDate(person.signedUpAt))}`}
+    >
       <div className={withSidebar}>
         <div className="min-w-0 space-y-6">
           <Actions person={person} />
@@ -84,7 +80,6 @@ function Actions({ person }: { person: Person }) {
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);
-  const [done, setDone] = useState<string | null>(null);
   const acts: Act[] = person.suspended ? ["warn", "lift"] : ["warn", "suspend"];
 
   async function record() {
@@ -100,14 +95,14 @@ function Actions({ person }: { person: Person }) {
           : await liftSuspension({ data });
     setBusy(false);
     if (!result.ok) return setRefusal(result.refusal.message);
-    setDone(t.done[act]);
+    toast.success(t.done[act]);
     setAct(null);
     setReason("");
     await router.invalidate();
   }
 
   return (
-    <Card className="ring-2 ring-primary">
+    <Card className="ring-primary">
       <CardHeader>
         <CardTitle>
           {person.suspended ? t.suspendedSince(formatDate(person.suspended.since)) : t.act}
@@ -123,7 +118,6 @@ function Actions({ person }: { person: Person }) {
               aria-pressed={act === each}
               onClick={() => {
                 setAct(each);
-                setDone(null);
               }}
             >
               {t.acts[each]}
@@ -131,7 +125,7 @@ function Actions({ person }: { person: Person }) {
           ))}
         </div>
         {act && (
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label htmlFor="reason">{act === "lift" ? t.liftNote : t.reason}</Label>
             <Textarea
               id="reason"
@@ -142,7 +136,6 @@ function Actions({ person }: { person: Person }) {
           </div>
         )}
         <Refusal message={refusal} />
-        {done && <p className="text-sm text-muted-foreground">{done}</p>}
         {act && (
           <Button
             disabled={busy || (act !== "lift" && !reason.trim())}

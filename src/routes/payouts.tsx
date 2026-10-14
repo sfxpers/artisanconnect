@@ -1,11 +1,12 @@
-import { Banknote } from "lucide-react";
+import { Banknote, CircleAlert } from "lucide-react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertAction, AlertDescription } from "@/components/ui/alert";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState, Page } from "@/components/page";
 import { formatRands } from "@/domain/money";
-import { copy, formatDate } from "@/web/copy";
+import { copy, formatDate, pageTitle } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
 import { getMyPayouts, isStopped } from "@/web/payouts";
 
@@ -14,6 +15,7 @@ export const Route = createFileRoute("/payouts")({
     onlyFor("artisan", context);
   },
   loader: () => getMyPayouts(),
+  head: () => ({ meta: [{ title: pageTitle(t.title) }] }),
   component: Payouts,
 });
 
@@ -37,21 +39,21 @@ function Payouts() {
         <Total label={t.paid} cents={payouts.paidCents} />
       </div>
       {payouts.held && (
-        <Card size="sm" className="ring-2 ring-primary">
-          <CardContent>
-            <p className="text-sm">{t.held}</p>
-          </CardContent>
-        </Card>
+        <Alert>
+          <CircleAlert />
+          <AlertDescription>{t.held}</AlertDescription>
+        </Alert>
       )}
       {noAccount && !payouts.held && (
-        <Card size="sm" className="ring-2 ring-primary">
-          <CardContent className="flex flex-wrap items-center gap-3">
-            <p className="flex-1 text-sm">{stopped ? t.stopped : t.noAccount}</p>
+        <Alert>
+          <CircleAlert />
+          <AlertDescription>{stopped ? t.stopped : t.noAccount}</AlertDescription>
+          <AlertAction>
             <Link to="/verification" className={buttonVariants({ size: "sm" })}>
               {t.openVerification}
             </Link>
-          </CardContent>
-        </Card>
+          </AlertAction>
+        </Alert>
       )}
       {payouts.releases.length === 0 ? (
         <EmptyState icon={<Banknote />}>{t.empty}</EmptyState>
@@ -70,7 +72,7 @@ function Payouts() {
 
 function Total({ label, cents }: { label: string; cents: number }) {
   return (
-    <Card size="sm">
+    <Card>
       <CardHeader>
         <CardDescription>{label}</CardDescription>
         <CardTitle className="text-2xl tabular-nums">{formatRands(cents)}</CardTitle>
@@ -132,7 +134,7 @@ function EarlierPayouts({ release }: { release: Release }) {
   );
   if (shown.length === 0) return null;
   return (
-    <ul className="space-y-0.5 text-xs text-destructive">
+    <ul className="space-y-1 text-xs text-destructive">
       {shown.map((payout) => (
         <li key={payout.reference}>
           {t.earlier(payout.reference, t.earlierStates[payout.state], formatDate(payout.stoppedAt))}
@@ -144,7 +146,7 @@ function EarlierPayouts({ release }: { release: Release }) {
 
 function Amount({ label, cents, strong }: { label: string; cents: number; strong?: boolean }) {
   return (
-    <div className="space-y-0.5">
+    <div className="space-y-1">
       <dt className="text-xs text-muted-foreground">{label}</dt>
       <dd className={strong ? "font-medium tabular-nums" : "tabular-nums"}>{formatRands(cents)}</dd>
     </div>

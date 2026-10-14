@@ -1,4 +1,4 @@
-import { expect, seed, signIn, signInAdmin, signOut, test } from "./support/helpers";
+import { clickUntil, expect, seed, signIn, signInAdmin, signOut, test } from "./support/helpers";
 
 test("a Client Hires an Artisan who signed in on the same browser, and the Admin holds the Artisan's Payouts from the Signal", async ({
   browser,
@@ -16,18 +16,15 @@ test("a Client Hires an Artisan who signed in on the same browser, and the Admin
   await signOut(shared);
   await signIn(shared, { email, password });
   await shared.goto(`/jobs/${jobId}`);
-  // A click before the page hydrates does nothing, so try until the Hire panel opens.
-  await expect(async () => {
-    await shared.getByRole("button", { name: "Hire", exact: true }).click();
-    await expect(shared.getByText("Hire by paying for this Quote")).toBeVisible({ timeout: 1000 });
-  }).toPass();
+  await clickUntil(shared.getByRole("button", { name: "Hire", exact: true }), () =>
+    expect(shared.getByText("Hire by paying for this Quote")).toBeVisible({ timeout: 1000 }),
+  );
   await shared.getByRole("checkbox", { name: /Protection Fee .* is not refunded/ }).click();
   await shared.getByRole("button", { name: /^Pay R/ }).click();
   await expect(shared).toHaveURL(/\/fake-checkout\//);
-  await expect(async () => {
-    await shared.getByRole("button", { name: "Pay", exact: true }).click();
-    await expect(shared).toHaveURL(new RegExp(`/jobs/${jobId}$`), { timeout: 2000 });
-  }).toPass();
+  await clickUntil(shared.getByRole("button", { name: "Pay", exact: true }), () =>
+    expect(shared).toHaveURL(new RegExp(`/jobs/${jobId}$`), { timeout: 2000 }),
+  );
   await expect(shared.getByText("Paid. Next: Work started")).toBeVisible();
   // Nobody is told of a Signal.
   await shared.goto("/notices");
@@ -41,12 +38,9 @@ test("a Client Hires an Artisan who signed in on the same browser, and the Admin
   await expect(asAdmin.getByRole("heading", { name: /share a device/ })).toBeVisible();
   await expect(asAdmin.getByText(/Both were seen on the device/)).toBeVisible();
   await expect(asAdmin.getByRole("link", { name: "Open on the People page" })).toHaveCount(2);
-  await expect(async () => {
-    await asAdmin.getByRole("button", { name: "Hold Payouts" }).click({ timeout: 2000 });
-    await expect(asAdmin.getByRole("radio", { name: /\(Artisan\)/ })).toBeVisible({
-      timeout: 2000,
-    });
-  }).toPass();
+  await clickUntil(asAdmin.getByRole("button", { name: "Hold Payouts" }), () =>
+    expect(asAdmin.getByRole("radio", { name: /\(Artisan\)/ })).toBeVisible({ timeout: 2000 }),
+  );
   await expect(asAdmin.getByRole("radio", { name: /\(Artisan\)/ })).toHaveAttribute(
     "aria-checked",
     "true",

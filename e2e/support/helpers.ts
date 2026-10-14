@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { expect, test as base, type Page } from "@playwright/test";
+import { expect, test as base, type Locator, type Page } from "@playwright/test";
 
 export { expect };
 
@@ -48,7 +48,7 @@ export async function codeSentTo(page: Page, email: string): Promise<string> {
 }
 
 /** Fills in the sign-in form and submits it, whatever the answer. */
-export async function submitSignIn(page: Page, account: { email: string; password: string }) {
+async function submitSignIn(page: Page, account: { email: string; password: string }) {
   await page.goto("/sign-in");
   const button = page.getByRole("button", { name: "Sign in" });
   // Enabled once the page has hydrated and Turnstile has passed; filled sooner, it is emptied.
@@ -56,6 +56,17 @@ export async function submitSignIn(page: Page, account: { email: string; passwor
   await page.getByLabel("Email", { exact: true }).fill(account.email);
   await page.getByLabel("Password", { exact: true }).fill(account.password);
   await button.click();
+}
+
+/**
+ * Clicks until what the click should show is shown: a click before the page
+ * hydrates does nothing, so it is tried again.
+ */
+export async function clickUntil(target: Locator, shown: () => Promise<void>) {
+  await expect(async () => {
+    await target.click({ timeout: 2000 });
+    await shown();
+  }).toPass();
 }
 
 /** Confirms an act the page asks about in its Alert Dialog. */

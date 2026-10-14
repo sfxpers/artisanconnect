@@ -8,8 +8,8 @@ export function AppFooter({ signedIn }: { signedIn: boolean }) {
   const link = "rounded-sm text-muted-foreground hover:text-foreground";
   return (
     <footer className="mt-16 border-t bg-card">
-      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-10 sm:flex-row sm:items-start sm:justify-between sm:px-6">
-        <div className="max-w-xs space-y-3">
+      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 sm:flex-row sm:items-start sm:justify-between sm:px-6">
+        <div className="max-w-xs space-y-2">
           <Wordmark />
           <p className="text-sm text-muted-foreground">{t.tagline}</p>
         </div>

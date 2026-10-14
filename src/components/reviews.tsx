@@ -1,17 +1,19 @@
 import { useState } from "react";
 import { Radio } from "@base-ui/react/radio";
-import { RadioGroup } from "@/components/ui/radio-group";
 import { Star } from "lucide-react";
+import { RadioGroup } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAppForm } from "@/components/form";
 import { Refusal } from "@/components/page";
+import { Stars } from "@/components/rating";
+import { cn } from "@/lib/utils";
 import { ReportAction } from "@/components/report";
 import { useAction } from "@/components/use-action";
 import type { Domain } from "@/domain";
 import { REVIEW_COMMENT_MAX } from "@/domain/reviews/inputs";
-import { copy, formatDate } from "@/web/copy";
+import { copy, formatDate, formatDeadline } from "@/web/copy";
 import { writeReview } from "@/web/reviews";
 
 // Reviews (#138): the party's own Review and the other's on the Job page,
@@ -25,21 +27,6 @@ type ReviewsShown = NonNullable<Awaited<ReturnType<Domain["reviews"]["ofArtisan"
 type EngagementReviewsView = NonNullable<
   NonNullable<Awaited<ReturnType<Domain["jobs"]["view"]>>>["engagement"]
 >["reviews"];
-
-/** A rating as five stars, read out as "4 out of 5". */
-function Stars({ rating }: { rating: number }) {
-  return (
-    <span role="img" aria-label={t.outOf(rating)} className="inline-flex gap-0.5">
-      {[1, 2, 3, 4, 5].map((n) => (
-        <Star
-          key={n}
-          aria-hidden
-          className={`size-4 ${n <= rating ? "fill-current text-accent-foreground" : "text-muted-foreground/40"}`}
-        />
-      ))}
-    </span>
-  );
-}
 
 /**
  * Reviews shown, newest first, each with its rating, the reviewer's shown
@@ -65,7 +52,7 @@ export function ReviewList({
     <div className="space-y-3">
       <ul className="divide-y">
         {items.map((review) => (
-          <li key={review.reviewId} className="space-y-1.5 py-3 first:pt-0">
+          <li key={review.reviewId} className="space-y-2 py-3 first:pt-0">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
               <Stars rating={review.rating} />
               <span className="text-xs text-muted-foreground">
@@ -120,16 +107,16 @@ export function WriteReview({
   const of = asClient ? t.theArtisan : t.theClient;
   return (
     <form.AppForm>
-      <form.Form className="space-y-3 rounded-lg border p-4">
+      <form.Form className="space-y-4 rounded-lg border p-4">
         <div className="space-y-1">
           <h3 className="font-semibold">{t.write(of)}</h3>
           <p className="text-xs text-muted-foreground">
-            {t.writeLead(formatDate(reviews.closesAt))}
+            {t.writeLead(formatDeadline(reviews.closesAt))}
           </p>
         </div>
         <form.Field name="rating">
           {(field) => (
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <span id="review-rating" className="text-sm font-medium">
                 {t.rating}
               </span>
@@ -150,7 +137,12 @@ export function WriteReview({
                   >
                     <Star
                       aria-hidden
-                      className={`size-7 ${field.state.value !== null && n <= field.state.value ? "fill-current text-accent-foreground" : "text-muted-foreground/50"}`}
+                      className={cn(
+                        "size-7",
+                        field.state.value !== null && n <= field.state.value
+                          ? "fill-rating text-rating"
+                          : "text-muted-foreground",
+                      )}
                     />
                   </Radio.Root>
                 ))}
@@ -191,11 +183,11 @@ export function EngagementReviewsCard({
       <CardHeader>
         <CardTitle>{t.title}</CardTitle>
         <CardDescription>
-          {reviews.open ? t.openUntil(formatDate(reviews.closesAt)) : t.closed}
+          {reviews.open ? t.openUntil(formatDeadline(reviews.closesAt)) : t.closed}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
-        <section className="space-y-1.5">
+        <section className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-sm font-medium">{t.yours}</h3>
             {mine && <Badge variant="secondary">{t.states[mine.state]}</Badge>}
@@ -215,7 +207,7 @@ export function EngagementReviewsCard({
             </p>
           )}
         </section>
-        <section className="space-y-1.5">
+        <section className="space-y-2">
           <h3 className="text-sm font-medium">{t.theirs(of)}</h3>
           {theirs ? (
             <>
@@ -226,7 +218,9 @@ export function EngagementReviewsCard({
             </>
           ) : (
             <p className="text-sm text-muted-foreground">
-              {reviews.open ? t.theirsWaiting(of, formatDate(reviews.closesAt)) : t.theirsNone(of)}
+              {reviews.open
+                ? t.theirsWaiting(of, formatDeadline(reviews.closesAt))
+                : t.theirsNone(of)}
             </p>
           )}
         </section>

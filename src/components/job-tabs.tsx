@@ -41,7 +41,7 @@ export function JobTabs({
         })
       }
     >
-      <TabsList variant="line">
+      <TabsList variant="line" className="max-w-full justify-start overflow-x-auto">
         <TabsTrigger value="overview">{t.tabs.overview}</TabsTrigger>
         <TabsTrigger value="messages">{t.tabs.messages(unread)}</TabsTrigger>
         <TabsTrigger value="details">{t.tabs.details}</TabsTrigger>

@@ -1,126 +1,152 @@
-import type { ReactNode } from "react";
-import { Link, createFileRoute } from "@tanstack/react-router";
-import { ArrowRight, BadgeCheck, MapPin, Receipt } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
-import { TRADE_ICONS } from "@/components/trade-icon";
-import { SERVICE_CATEGORIES, SERVICE_CATEGORY_NAMES } from "@/domain/service-categories";
-import { copy } from "@/web/copy";
+import { useState } from "react";
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
+import { BadgeCheck, HandCoins, Receipt, Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
+import { Choose } from "@/components/choose";
+import { SuburbPicker, type Suburb } from "@/components/job-form";
+import { HowAJobGoes } from "@/components/how-a-job-goes";
+import { TradeTiles } from "@/components/trade-tiles";
+import {
+  SERVICE_CATEGORIES,
+  SERVICE_CATEGORY_NAMES,
+  type ServiceCategory,
+} from "@/domain/service-categories";
+import { copy, pageTitle } from "@/web/copy";
 import { onlyForVisitors } from "@/web/guards";
 
 export const Route = createFileRoute("/")({
   beforeLoad: ({ context }) => onlyForVisitors(context),
+  head: ({ match }) => ({
+    meta: [
+      { title: pageTitle(t.title) },
+      { name: "description", content: t.lead },
+      { property: "og:type", content: "website" },
+      { property: "og:site_name", content: copy.appName },
+      { property: "og:title", content: t.title },
+      { property: "og:description", content: t.lead },
+      { property: "og:url", content: `${match.context.origin}/` },
+      { property: "og:image", content: `${match.context.origin}/trades/carpentry.jpg` },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+    links: [{ rel: "canonical", href: `${match.context.origin}/` }],
+  }),
   component: Landing,
 });
 
 const t = copy.landing;
 
+const TRUST_ICONS = [BadgeCheck, Receipt, HandCoins];
+
 /**
- * The Visitor's landing page: how a Job goes, the eight trades, that fees
- * are shown before paying, and that a badge is a check, not a guarantee.
- * Posting a Job asks the Visitor to sign up.
+ * The Visitor's landing page: search by trade and suburb first, then the
+ * eight trades, how a Job goes, and what a Visitor can count on: a badge is
+ * a check, fees show before paying, and money is released after the work.
  */
 function Landing() {
   return (
     <main>
-      <section className="border-b bg-linear-to-b from-secondary/70 to-background">
-        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-12 sm:px-6 sm:py-20 lg:grid-cols-2">
+      <section className="border-b bg-card">
+        <div className="mx-auto grid max-w-7xl items-center gap-8 px-4 py-8 sm:px-6 lg:grid-cols-2 lg:py-12">
           <div className="space-y-6">
-            <p className="inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1 text-sm font-medium text-accent-foreground">
-              <MapPin className="size-4" aria-hidden="true" />
-              {t.eyebrow}
-            </p>
-            <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">{t.title}</h1>
-            <p className="max-w-xl text-lg text-muted-foreground">{t.lead}</p>
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              <Link to="/sign-up" className={buttonVariants({ size: "lg" })}>
-                {t.postJob}
-                <ArrowRight data-icon="inline-end" />
-              </Link>
-              <Link to="/artisans" className={buttonVariants({ size: "lg", variant: "outline" })}>
-                {t.findArtisans}
-              </Link>
-              <Link to="/sign-in" className={buttonVariants({ size: "lg", variant: "ghost" })}>
-                {t.signIn}
-              </Link>
+            <div className="space-y-3">
+              <h1 className="text-3xl font-semibold sm:text-4xl">{t.title}</h1>
+              <p className="max-w-xl text-muted-foreground">{t.lead}</p>
             </div>
+            <TradeSearch />
+            <Link
+              to="/sign-up"
+              className="inline-block text-sm font-medium text-primary hover:underline"
+            >
+              {t.postJob}
+            </Link>
           </div>
-
-          <section
-            aria-labelledby="how"
-            className="rounded-2xl bg-card p-6 shadow-sm ring-1 ring-border sm:p-8"
-          >
-            <h2 id="how" className="text-lg font-semibold tracking-tight">
-              {t.howTitle}
-            </h2>
-            <ol className="mt-6 space-y-6">
-              {t.how.map((step, index) => (
-                <li key={step.title} className="flex gap-4">
-                  <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary font-semibold text-primary-foreground tabular-nums">
-                    {index + 1}
-                  </span>
-                  <div className="space-y-1">
-                    <h3 className="font-semibold">{step.title}</h3>
-                    <p className="text-sm text-muted-foreground">{step.text}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </section>
+          <img
+            src="/trades/carpentry.jpg"
+            srcSet="/trades/carpentry-480.jpg 480w, /trades/carpentry.jpg 960w"
+            sizes="(min-width: 1024px) 50vw, 100vw"
+            // The largest thing on the page, so it is fetched first.
+            fetchPriority="high"
+            alt={t.tradePhoto(SERVICE_CATEGORY_NAMES.carpentry)}
+            width={960}
+            height={640}
+            className="hidden aspect-4/3 w-full rounded-lg border object-cover lg:block"
+          />
         </div>
       </section>
 
-      <div className="mx-auto max-w-6xl space-y-16 px-4 py-12 sm:px-6 sm:py-16">
-        <section aria-labelledby="trades" className="space-y-6">
-          <div className="space-y-2">
-            <h2 id="trades" className="text-2xl font-semibold tracking-tight">
-              {t.tradesTitle}
-            </h2>
-            <p className="text-muted-foreground">{t.tradesLead}</p>
-          </div>
-          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {SERVICE_CATEGORIES.map((category) => {
-              const Icon = TRADE_ICONS[category];
+      <div className="mx-auto max-w-7xl space-y-12 px-4 py-10 sm:px-6 lg:py-14">
+        <section aria-labelledby="trades" className="space-y-4">
+          <h2 id="trades" className="text-lg font-semibold">
+            {t.tradesTitle}
+          </h2>
+          <TradeTiles />
+        </section>
+
+        <HowAJobGoes />
+
+        <section aria-labelledby="trust" className="space-y-4">
+          <h2 id="trust" className="text-lg font-semibold">
+            {t.trustTitle}
+          </h2>
+          <ul className="divide-y rounded-lg border bg-card lg:grid lg:grid-cols-3 lg:divide-x lg:divide-y-0">
+            {t.trust.map((fact, index) => {
+              const Icon = TRUST_ICONS[index]!;
               return (
-                <li key={category}>
-                  <Link
-                    to="/artisans"
-                    search={{ category }}
-                    className="group flex h-full flex-col gap-3 rounded-xl bg-card p-4 shadow-xs ring-1 ring-border transition hover:-translate-y-0.5 hover:shadow-md hover:ring-primary"
-                  >
-                    <span className="grid size-10 place-items-center rounded-lg bg-secondary text-secondary-foreground transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
-                      <Icon className="size-5" aria-hidden="true" />
-                    </span>
-                    <span className="text-sm font-medium">{SERVICE_CATEGORY_NAMES[category]}</span>
-                  </Link>
+                <li key={fact.title} className="space-y-2 p-5">
+                  <h3 className="flex items-center gap-2 font-semibold">
+                    <Icon className="size-4 text-primary" aria-hidden />
+                    {fact.title}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">{fact.text}</p>
                 </li>
               );
             })}
           </ul>
-        </section>
-
-        <section className="grid gap-4 md:grid-cols-2">
-          <PromiseCard icon={<Receipt className="size-5" />} title={t.feesTitle} text={t.fees} />
-          <PromiseCard
-            icon={<BadgeCheck className="size-5" />}
-            title={t.badgeTitle}
-            text={t.badge}
-          />
         </section>
       </div>
     </main>
   );
 }
 
-function PromiseCard({ icon, title, text }: { icon: ReactNode; title: string; text: string }) {
+/** The trade and the suburb, which opens Browse on the suburb's Region. */
+function TradeSearch() {
+  const navigate = useNavigate();
+  const [category, setCategory] = useState<ServiceCategory | null>(null);
+  const [suburb, setSuburb] = useState<Suburb | null>(null);
+  const [missing, setMissing] = useState(false);
   return (
-    <div className="flex gap-4 rounded-2xl bg-card p-6 ring-1 ring-border">
-      <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-accent text-accent-foreground">
-        {icon}
-      </span>
-      <div className="space-y-1.5">
-        <h2 className="font-semibold tracking-tight">{title}</h2>
-        <p className="text-sm text-muted-foreground">{text}</p>
-      </div>
-    </div>
+    <form
+      aria-label={t.searchLabel}
+      className="grid gap-3 rounded-lg border bg-background p-4 sm:grid-cols-2 sm:items-start"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (!category) return setMissing(true);
+        void navigate({ to: "/artisans", search: { category, region: suburb?.region.id } });
+      }}
+    >
+      <Field data-invalid={missing}>
+        <FieldLabel htmlFor="trade">{t.trade}</FieldLabel>
+        <Choose
+          id="trade"
+          value={category ?? ""}
+          onChange={(value) => {
+            setCategory(value || null);
+            setMissing(false);
+          }}
+          placeholder={t.chooseTrade}
+          options={SERVICE_CATEGORIES.map((each) => ({
+            value: each,
+            label: SERVICE_CATEGORY_NAMES[each],
+          }))}
+        />
+        {missing && <FieldError>{t.searchHint}</FieldError>}
+      </Field>
+      <SuburbPicker value={suburb} onChange={setSuburb} label={t.suburb} hint={null} />
+      <Button type="submit" size="lg" className="sm:col-span-2">
+        <Search data-icon="inline-start" />
+        {t.search}
+      </Button>
+    </form>
   );
 }

@@ -1,9 +1,11 @@
 import { useState, type ReactNode } from "react";
+import { ActionButton } from "@/components/action-button";
+import { toast } from "sonner";
 import { Link, createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
 import { useConfirm } from "@/components/confirm";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTurnstile } from "@/components/turnstile";
 import { CODE_INPUT, useAppForm } from "@/components/form";
 import { useAction } from "@/components/use-action";
@@ -17,7 +19,7 @@ import {
   signOut,
   withdrawNames,
 } from "@/web/accounts";
-import { copy, formatDate } from "@/web/copy";
+import { copy, formatDate, pageTitle } from "@/web/copy";
 import { getMyDataRequests, requestData } from "@/web/data-requests";
 import { onlyFor } from "@/web/guards";
 import type { Me } from "@/web/me";
@@ -25,6 +27,7 @@ import type { Me } from "@/web/me";
 export const Route = createFileRoute("/account")({
   beforeLoad: ({ context }) => ({ me: onlyFor("account", context) }),
   loader: () => getMyDataRequests(),
+  head: () => ({ meta: [{ title: pageTitle(t.title) }] }),
   component: Account,
 });
 
@@ -37,60 +40,64 @@ function Account() {
   const navigate = useNavigate();
   return (
     <Page title={t.title} narrow>
-      <Card className="py-0">
-        <dl className="divide-y">
-          <SettingsRow label={t.kind}>{copy.signUp.kind.chosen[me.kind]}</SettingsRow>
-          <SettingsRow label={t.name}>{me.name}</SettingsRow>
-          <SettingsRow label={t.tradingName}>{me.tradingName ?? t.none}</SettingsRow>
+      <SettingsGroup title={t.groups.you}>
+        <SettingsRow label={t.kind}>{copy.signUp.kind.chosen[me.kind]}</SettingsRow>
+        <SettingsRow label={t.name}>{me.name}</SettingsRow>
+        <SettingsRow label={t.tradingName}>
+          {me.tradingName ?? t.none}
           <NamesRow me={me} />
-          <SettingsRow label={t.email}>
-            <EmailRow email={me.email} />
+        </SettingsRow>
+        <SettingsRow label={t.email}>
+          <EmailRow email={me.email} />
+        </SettingsRow>
+        {me.kind === "artisan" && (
+          <SettingsRow label={t.identityNumber.label}>
+            <div>{me.identityNumber ?? t.identityNumber.none}</div>
+            <p className="text-xs text-muted-foreground">{t.identityNumber.lead}</p>
           </SettingsRow>
-          {me.kind === "artisan" && (
-            <>
-              <SettingsRow label={t.vat.label}>
-                <VatNumber vatNumber={me.vatNumber} />
-              </SettingsRow>
-              <SettingsRow label={t.payoutAccount.label}>
-                <div>
-                  {me.payoutAccount
-                    ? t.payoutAccount.ending(me.payoutAccount.bank, me.payoutAccount.accountEnding)
-                    : t.payoutAccount.none}
-                </div>
-                <Link
-                  to="/verification"
-                  className="font-medium text-primary underline underline-offset-4"
-                >
-                  {t.payoutAccount.change}
-                </Link>
-              </SettingsRow>
-            </>
-          )}
-          <SettingsRow label={t.rules}>
-            <Link to="/rules" className="font-medium text-primary underline underline-offset-4">
-              {t.accepted(me.rules.version, formatDate(me.rules.acceptedAt))}
+        )}
+      </SettingsGroup>
+      {me.kind === "artisan" && (
+        <SettingsGroup title={t.groups.money}>
+          <SettingsRow label={t.vat.label}>
+            <VatNumber vatNumber={me.vatNumber} />
+          </SettingsRow>
+          <SettingsRow label={t.payoutAccount.label}>
+            <div>
+              {me.payoutAccount
+                ? t.payoutAccount.ending(me.payoutAccount.bank, me.payoutAccount.accountEnding)
+                : t.payoutAccount.none}
+            </div>
+            <Link
+              to="/verification"
+              className="font-medium text-primary underline underline-offset-4"
+            >
+              {t.payoutAccount.change}
             </Link>
           </SettingsRow>
-          {me.kind === "artisan" && (
-            <SettingsRow label={t.identityNumber.label}>
-              <div>{me.identityNumber ?? t.identityNumber.none}</div>
-              <p className="text-xs text-muted-foreground">{t.identityNumber.lead}</p>
-            </SettingsRow>
-          )}
-          <SettingsRow label={t.support}>
-            <Link to="/support" className="font-medium text-primary underline underline-offset-4">
-              {t.supportLink}
-            </Link>
-          </SettingsRow>
-          <StandingRows standing={me.standing} />
-          <SettingsRow label={t.data.label}>
-            <DataRequests />
-          </SettingsRow>
-          <SettingsRow label={t.close.label}>
-            <CloseAccount />
-          </SettingsRow>
-        </dl>
-      </Card>
+        </SettingsGroup>
+      )}
+      <SettingsGroup title={t.groups.rules}>
+        <SettingsRow label={t.rules}>
+          <Link to="/rules" className="font-medium text-primary underline underline-offset-4">
+            {t.accepted(me.rules.version, formatDate(me.rules.acceptedAt))}
+          </Link>
+        </SettingsRow>
+        <SettingsRow label={t.support}>
+          <Link to="/support" className="font-medium text-primary underline underline-offset-4">
+            {t.supportLink}
+          </Link>
+        </SettingsRow>
+        <StandingRows standing={me.standing} />
+      </SettingsGroup>
+      <SettingsGroup title={t.groups.data}>
+        <SettingsRow label={t.data.label}>
+          <DataRequests />
+        </SettingsRow>
+        <SettingsRow label={t.close.label}>
+          <CloseAccount />
+        </SettingsRow>
+      </SettingsGroup>
       <Button
         variant="outline"
         onClick={async () => {
@@ -145,7 +152,6 @@ function StandingRows({ standing }: { standing: Me["standing"] }) {
 function NamesRow({ me }: { me: Me }) {
   const { names } = me;
   const [editing, setEditing] = useState(false);
-  const [done, setDone] = useState<string | null>(null);
   const { busy, refusal, run } = useAction();
   const form = useAppForm({
     defaultValues: { name: me.name, tradingName: me.tradingName ?? "" },
@@ -154,68 +160,72 @@ function NamesRow({ me }: { me: Me }) {
         () => changeNames({ data: value }),
         (saved) => {
           setEditing(false);
-          setDone(saved.names === "shown" ? t.names.saved : t.names.held);
+          toast.success(saved.names === "shown" ? t.names.saved : t.names.held);
         },
       ),
   });
 
   return (
-    <div className="space-y-3 p-4">
-      {names.beingChecked && (
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-center gap-2 text-sm">
-            <Badge variant="warning">{t.names.beingChecked}</Badge>
-            {[names.beingChecked.name, names.beingChecked.tradingName].filter(Boolean).join(" · ")}
-          </div>
-          <p className="text-xs text-muted-foreground">{t.names.beingCheckedLead}</p>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={busy}
-            onClick={() => void run(withdrawNames, () => setDone(null))}
-          >
-            {t.names.withdraw}
-          </Button>
-        </div>
-      )}
-      {names.refused && <Refusal message={t.names.refused(names.refused.reason)} />}
-      {!names.shown && !names.beingChecked && (
-        <p className="text-sm text-muted-foreground">{t.names.notShown}</p>
-      )}
-      {done && <p className="text-sm text-muted-foreground">{done}</p>}
-      {editing ? (
-        <form.AppForm>
-          <form.Form className="space-y-3">
-            <form.AppField name="name">
-              {(field) => <field.TextField label={copy.signUp.names.name} autoComplete="name" />}
-            </form.AppField>
-            <form.AppField name="tradingName">
-              {(field) => (
-                <field.TextField
-                  label={copy.signUp.names.tradingName}
-                  autoComplete="organization"
-                />
-              )}
-            </form.AppField>
-            <Refusal message={refusal} />
-            <div className="flex gap-2">
-              <form.Submit>{t.names.save}</form.Submit>
-              <Button type="button" variant="ghost" onClick={() => setEditing(false)}>
-                {t.names.cancel}
-              </Button>
+    // Under the names, in their value cell, so changing them reads as part of them.
+    <div className="mt-3 space-y-3">
+      <div className="space-y-3">
+        {names.beingChecked && (
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <Badge variant="warning">{t.names.beingChecked}</Badge>
+              {[names.beingChecked.name, names.beingChecked.tradingName]
+                .filter(Boolean)
+                .join(" · ")}
             </div>
-          </form.Form>
-        </form.AppForm>
-      ) : (
-        <>
-          {!names.beingChecked && (
-            <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
-              {t.names.change}
-            </Button>
-          )}
-          <Refusal message={refusal} />
-        </>
-      )}
+            <p className="text-xs text-muted-foreground">{t.names.beingCheckedLead}</p>
+            <ActionButton
+              variant="outline"
+              size="sm"
+              disabled={busy}
+              onClick={() => run(withdrawNames)}
+            >
+              {t.names.withdraw}
+            </ActionButton>
+          </div>
+        )}
+        {names.refused && <Refusal message={t.names.refused(names.refused.reason)} />}
+        {!names.shown && !names.beingChecked && (
+          <p className="text-sm text-muted-foreground">{t.names.notShown}</p>
+        )}
+        {editing ? (
+          <form.AppForm>
+            <form.Form className="space-y-3">
+              <form.AppField name="name">
+                {(field) => <field.TextField label={copy.signUp.names.name} autoComplete="name" />}
+              </form.AppField>
+              <form.AppField name="tradingName">
+                {(field) => (
+                  <field.TextField
+                    label={copy.signUp.names.tradingName}
+                    autoComplete="organization"
+                  />
+                )}
+              </form.AppField>
+              <Refusal message={refusal} />
+              <div className="flex gap-2">
+                <form.Submit>{t.names.save}</form.Submit>
+                <Button type="button" variant="ghost" onClick={() => setEditing(false)}>
+                  {t.names.cancel}
+                </Button>
+              </div>
+            </form.Form>
+          </form.AppForm>
+        ) : (
+          <>
+            {!names.beingChecked && (
+              <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
+                {t.names.change}
+              </Button>
+            )}
+            <Refusal message={refusal} />
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -346,7 +356,7 @@ function DataRequests() {
       {requests.length > 0 && (
         <ul className="space-y-2">
           {requests.map((request) => (
-            <li key={request.requestId} className="space-y-0.5">
+            <li key={request.requestId} className="space-y-1">
               <div className="flex flex-wrap items-center gap-2">
                 {d.kinds[request.kind]}
                 <Badge variant={request.state === "refused" ? "destructive" : "secondary"}>
@@ -475,6 +485,18 @@ function VatNumber({ vatNumber }: { vatNumber: string | null }) {
         )}
       </div>
     </div>
+  );
+}
+
+/** A group of settings under its heading, one card. */
+function SettingsGroup({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <Card className="gap-0 py-0">
+      <CardHeader className="border-b py-3">
+        <CardTitle>{title}</CardTitle>
+      </CardHeader>
+      <dl className="divide-y">{children}</dl>
+    </Card>
   );
 }
 

@@ -6,11 +6,12 @@ import { AuthCard, Refusal } from "@/components/page";
 import { useTurnstile } from "@/components/turnstile";
 import { EMAIL_CODE } from "@/domain/accounts/inputs";
 import { adminSignIn, requestAdminCode } from "@/web/admin";
-import { copy } from "@/web/copy";
+import { copy, pageTitle } from "@/web/copy";
 import { onlyForVisitors } from "@/web/guards";
 
 export const Route = createFileRoute("/admin/sign-in")({
   beforeLoad: ({ context }) => onlyForVisitors(context),
+  head: () => ({ meta: [{ title: pageTitle(t.title) }] }),
   component: AdminSignIn,
 });
 
@@ -72,7 +73,11 @@ function AdminSignIn() {
               }
             >
               {(ready) => (
-                <form.Submit size="lg" disabled={!ready || (!sentTo && !turnstile.token)}>
+                <form.Submit
+                  size="lg"
+                  className="w-full"
+                  disabled={!ready || (!sentTo && !turnstile.token)}
+                >
                   {sentTo ? t.submit : t.send}
                 </form.Submit>
               )}

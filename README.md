@@ -1,112 +1,75 @@
-# artisanconnect
+# ArtisanConnect
 
-TanStack Start on Cloudflare Workers, with Tailwind CSS v4 and shadcn/ui (Base UI).
+A marketplace for hiring verified Artisans in Cape Town: TanStack Start on Cloudflare Workers, with D1, R2, and shadcn/ui (Base UI). Live at https://artisanconnect.co.za.
 
-## Prerequisites
+Each thing is written down once:
 
-- [mise](https://mise.jdx.dev) — pins Node LTS and nub for this repo
-- [nub](https://nubjs.com) — package manager, script runner, and `nubx`
-
-```sh
-mise install
-```
+| What                      | Where                            |
+| ------------------------- | -------------------------------- |
+| What the product does     | #111 on GitHub, then `docs/adr/` |
+| The words it uses         | `GLOSSARY.md`                    |
+| How code is judged        | `CODING_STANDARDS.md`            |
+| What agents need          | `AGENTS.md`                      |
+| Bindings and environments | `wrangler.jsonc`                 |
+| Secrets                   | `.dev.vars.example`              |
+| Colours, radius, and type | `src/styles.css`                 |
+| Every word the app shows  | `src/web/copy.ts`                |
 
 ## Setup
 
+[mise](https://mise.jdx.dev) installs the Node and [nub](https://nubjs.com) versions `mise.toml` pins; nub installs the rest. `postinstall` writes `worker-configuration.d.ts` from `wrangler.jsonc` (`nub run cf-typegen` after changing it).
+
 ```sh
+mise install
 nub install
+cp .dev.vars.example .dev.vars   # then set BETTER_AUTH_SECRET and PAYMENTS_WEBHOOK_SECRET
+nub run db:migrate:local
+nub run dev                      # http://localhost:3000; mail at /dev/mail
 ```
 
-`postinstall` runs `wrangler types` and writes `worker-configuration.d.ts`. Re-run it after changing `wrangler.jsonc`:
-
-```sh
-nub run cf-typegen
-```
+Workers AI runs only remotely, so locally (`remoteBindings: false` in `vite.config.ts`) the Content check Holds everything its patterns pass for the Admin's Pre-check. After `nubx wrangler login`, set it to `true` for live inference.
 
 ## Scripts
 
 ```sh
-nub run dev                # Vite + Workers runtime on http://localhost:3000
-nub run build              # production client + worker
-nub run preview            # preview the production build locally
-nub run test               # Vitest in the Workers runtime, against local D1 and R2
-nub run test:smoke         # Playwright smoke tests against the local app, in the installed Chrome
+nub run lint               # oxlint, then scripts/check-tokens.mjs
+nub run fmt                # oxfmt (fmt:check in CI)
 nub run typecheck
-nub run lint
-nub run fmt
-nub run fmt:check
-nub run db:generate        # SQL migration from src/domain/schema.ts
-nub run db:migrate:local   # apply migrations to local D1
-nub run deploy:staging     # migrate staging D1, build, and deploy
-nub run deploy:production  # migrate production D1, build, and deploy
-nub run admin:setup -- you@example.com                 # make the first Admin in local D1
-nub run admin:setup -- you@example.com --env staging   # or --env production
+nub run test               # Vitest in the Workers runtime, on local D1 and R2
+nub run test:smoke         # Playwright against the local app, in the installed Chrome
+nub run db:generate        # a migration from src/domain/schema.ts
+nub run deploy:staging     # migrate, build, and deploy (or deploy:production)
+nub run admin:setup -- you@example.com [--env staging|production]   # the first Admin
 ```
 
-## Domain module
+CI (`.github/workflows/check.yml`) runs lint, fmt:check, typecheck, test, and test:smoke on every pull request and push to `main`.
 
-Every rule lives in `src/domain` (ADR 0017). It is built with exactly seven ports, D1, R2, Images, a clock, a content reader, a payment adapter, and a mailer, and nothing else, which is how ADR 0018 (no path to or from another product) is tested. Each section adds its commands and clocks to `sections` in `src/domain/index.ts`. A command takes the acting party first and returns the new state or a typed refusal.
+## Architecture
 
-- **Clocks** are rows in `due_clocks`. The every-minute cron calls `system.runDueClocks`, the scheduled handler's only job. A clock fires once, however late, and does nothing if its condition has lapsed.
-- **Money** is append-only rows in `ledger_entries`. A domain event writes all its rows in one D1 batch.
-- **Payments** use the fake adapter in `src/domain/fakes/payments.ts` in every environment; no money moves at launch.
+Every rule lives in `src/domain`, built from sections with exactly seven ports: D1, R2, Images, a clock, a content reader, a payment adapter, and a mailer (ADR 0017, ADR 0018).
 
-Tests drive the module through `test/support/harness.ts`: real local D1 and R2, with a fake clock, content reader, payment adapter, and mailer. better-auth reads `Date`, so the harness keeps the system time on the fake clock.
+- **Clocks** are rows in `due_clocks`; the every-minute cron runs the due ones, each once, however late.
+- **Money** is append-only `ledger_entries`, written in one D1 batch per event.
+- **Payments** use the fake adapter (`src/domain/fakes/payments.ts`) in every environment: no money moves at launch.
+- **Sign-in** is better-auth inside the `accounts` section, never mounted as HTTP. Server functions check Turnstile and the `IP_LIMIT` rate limit before a command runs.
+- **Admins** sign in with an Email code (ADR 0015); every decision and logged read goes to `audit_log` in the same batch.
+- **Queues** are the Admin's eight, each item kind declared with `defineQueueItemKind` (`src/domain/queues.ts`).
+- **Tells** are `notices` rows written with the event; their email goes after the commit, retried by the cron.
 
-- **Sign-in** is better-auth (ADR 0017) inside the `accounts` section, on D1. Its HTTP handler is never mounted: the web app reaches it only through the module's commands, which add the rules (kinds, Marketplace rules, per-Email limits). Turnstile and a per-network limit (the Workers Rate Limiting binding `IP_LIMIT`) are checked by the server functions before a command runs.
-- **Admins** (ADR 0015) are better-auth identities with `role = "admin"` and no `accounts` row. They sign in with an Email code only (`/admin/sign-in`). The first is made by `nub run admin:setup`, which calls `system.setUpFirstAdmin` through `getPlatformProxy`; it refuses once there is an Admin. Every Admin decision and every logged read is written to `audit_log` in the same batch (`src/domain/audit.ts`).
-- **Queues**: a section raises an item in one of the Admin's eight queues with a kind from `defineQueueItemKind` (`src/domain/queues.ts`), declared in its `queueItems` like its `clocks`. The kind names the decisions it allows and who each tells, the writes a decision makes, its page's tabs and sidebar, and what opens only on a logged click. A recorded decision cannot be reopened.
-- **Tells** are rows in `notices` written with the event; their one email goes after the commit, and the every-minute cron retries one that did not go (`src/domain/tells.ts`).
+Tests drive the module through `test/support/harness.ts`: real local D1 and R2, with a fake clock, content reader, payment adapter, and mailer.
 
-Locally, email is not sent: open http://localhost:3000/dev/mail to read it, Email codes included.
+## Deploying
 
-## Cloudflare
-
-Bindings live in `wrangler.jsonc` and are available in server code via `import { env } from "cloudflare:workers"`. The top level is local; `staging` and `production` each have their own D1, R2, and secrets.
-
-| Binding                | Resource                                              |
-| ---------------------- | ----------------------------------------------------- |
-| `DB`                   | D1 (`artisanconnect`, `-staging`, `-production`)      |
-| `R2`                   | R2 bucket (same names)                                |
-| `AI`                   | Workers AI                                            |
-| `IMAGES`               | Cloudflare Images: draws each photo again             |
-| `SEND_EMAIL`           | Email Sending, outbound only                          |
-| `ENVIRONMENT`          | env var: `local`, `staging`, or `production`          |
-| `MAIL_FROM`            | env var: the sending address                          |
-| `APP_URL`              | env var: the web app's origin, for links in email     |
-| `TURNSTILE_SITE_KEY`   | env var: locally, Cloudflare's always-pass test key   |
-| `BETTER_AUTH_SECRET`   | secret: signs session cookies                         |
-| `TURNSTILE_SECRET_KEY` | secret: locally, Cloudflare's always-pass test secret |
-
-Local secrets go in `.dev.vars` (copy `.dev.vars.example` and set `BETTER_AUTH_SECRET`). Set the others with `nubx wrangler secret put BETTER_AUTH_SECRET --env staging` (or `production`), and the same for `TURNSTILE_SECRET_KEY` and `PAYMENTS_WEBHOOK_SECRET`. Errors go to Workers Logs, and Workers Issues groups them in the dashboard. Replace `APP_URL` and `TURNSTILE_SITE_KEY` in `wrangler.jsonc` for staging and production. Set `MAIL_FROM` to an address on the domain verified for Email Sending.
-
-Custom domain: uncomment `routes` in `wrangler.jsonc` and replace the hostname.
-
-D1 databases are provisioned on first deploy, so the first time an environment is deployed, deploy before migrating, then make its first Admin:
+Both environments are on the account in `wrangler.jsonc`. The first deploy of an environment provisions its D1 and R2, so deploy before migrating, set its secrets, then make its first Admin:
 
 ```sh
 nubx wrangler login
 CLOUDFLARE_ENV=staging nub run build && nubx wrangler deploy
-nubx wrangler d1 migrations apply DB --config wrangler.jsonc --env staging --remote
+nubx wrangler d1 migrations apply DB --env staging --remote
+nubx wrangler secret put BETTER_AUTH_SECRET --env staging   # and each secret in .dev.vars.example
 nub run admin:setup -- you@example.com --env staging
 ```
 
-The setup command looks the environment's D1 up by name and reaches it as a remote binding. The new Admin signs in at `/admin/sign-in` with an Email code; every other Admin is invited from the Admins page.
-
-Workers AI has no local simulation. `vite.config.ts` and the tests set `remoteBindings: false` so `nub run dev` and `nub run test` work offline. Without it the Content check cannot run, so everything sent locally that passes its patterns (names at sign-up included) is Held for the Admin's Pre-check. After `nubx wrangler login`, set `remoteBindings: true` in `vite.config.ts` for live inference.
-
 ## UI
 
-shadcn/ui is initialized as **base-nova** (Base UI, not Radix). Paths in `components.json` match this Start app (`src/styles.css`, `@/components`).
-
-```sh
-nubx -y shadcn@latest add card
-```
-
-If the CLI tries to install dependencies with another package manager, add them here instead:
-
-```sh
-nub add <package>
-```
-
-Every form is TanStack Form on shadcn's Field (`src/components/form.tsx`). Pages load through route loaders and reload after each action; TanStack Query is not used (ADR 0017).
+shadcn/ui is set up as **base-nova** (`components.json`). Add a component with `nubx -y shadcn@latest add <name>`; when its CLI cannot install dependencies with nub, add them with `nub add <package>`. Forms are TanStack Form on shadcn's Field (`src/components/form.tsx`); pages load through route loaders and reload after each action.

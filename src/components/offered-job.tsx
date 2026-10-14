@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { ActionButton } from "@/components/action-button";
+import { toast } from "sonner";
 import { useNavigate } from "@tanstack/react-router";
 import { useConfirm } from "@/components/confirm";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -7,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { initials } from "@/components/app-header";
 import { Details, Fact } from "@/components/job-details";
-import { BackCrumb, NextStepCard, Page, Refusal, withSidebar } from "@/components/page";
+import { NextStepCard, Page, Refusal, withSidebar } from "@/components/page";
 import { useAction } from "@/components/use-action";
 import { QuoteForm } from "@/components/quote-form";
 import { ReportAction } from "@/components/report";
@@ -34,7 +36,7 @@ import {
 } from "@/components/conversation";
 import { JobTabs, type JobTab } from "@/components/job-tabs";
 import type { QuoteFields } from "@/domain/quotes/inputs";
-import { copy, formatDate } from "@/web/copy";
+import { copy, formatDate, formatDeadline } from "@/web/copy";
 import type { getJob } from "@/web/jobs";
 import { passInvitation } from "@/web/invitations";
 import { passMatch } from "@/web/matches";
@@ -75,29 +77,26 @@ export function OfferedJob({
   const holding = job.offeredAt !== null || invited;
   const { quote, engagement } = job;
   return (
-    <Page>
-      <BackCrumb to="/home" label={t.breadcrumb} />
-      <div className="space-y-1">
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{job.title}</h1>
-          <Badge>
-            {engagement
-              ? copy.engagement.states[engagement.state]
-              : quote && quote.state !== "refused"
-                ? tq.states[quote.state]
-                : job.state !== "open"
-                  ? copy.jobs.states[job.state]
-                  : invited
-                    ? t.invitationBadge
-                    : t.badge}
-          </Badge>
-        </div>
-        <p className="text-sm text-muted-foreground">
-          {[job.category?.name, job.region?.name, job.siteType && copy.job.siteTypes[job.siteType]]
-            .filter(Boolean)
-            .join(" · ")}
-        </p>
-      </div>
+    <Page
+      crumbs={[{ to: "/home", label: t.breadcrumb }]}
+      title={job.title}
+      status={
+        <Badge>
+          {engagement
+            ? copy.engagement.states[engagement.state]
+            : quote && quote.state !== "refused"
+              ? tq.states[quote.state]
+              : job.state !== "open"
+                ? copy.jobs.states[job.state]
+                : invited
+                  ? t.invitationBadge
+                  : t.badge}
+        </Badge>
+      }
+      meta={[job.category?.name, job.region?.name, job.siteType && copy.job.siteTypes[job.siteType]]
+        .filter(Boolean)
+        .join(" · ")}
+    >
       <JobTabs
         jobId={job.jobId}
         tab={tab}
@@ -118,6 +117,10 @@ export function OfferedJob({
                       asClient={false}
                     />
                   </EngagementNextStep>
+                  {/* On a phone what it pays comes next; on a wide screen it is in the sidebar. */}
+                  <div className="lg:hidden">
+                    <MoneyCard engagement={engagement} />
+                  </div>
                   <EngagementReviewsCard reviews={engagement.reviews} asClient={false} />
                   <UpdatedQuoteCard engagement={engagement} asClient={false} />
                   <DisputeCard engagement={engagement} asClient={false} />
@@ -183,7 +186,9 @@ export function OfferedJob({
               </Card>
               {engagement && (
                 <>
-                  <MoneyCard engagement={engagement} />
+                  <div className="hidden lg:block">
+                    <MoneyCard engagement={engagement} />
+                  </div>
                   <HiredQuoteCard engagement={engagement} />
                 </>
               )}
@@ -226,7 +231,7 @@ function QuoteOrPass({
       <p className="text-sm text-muted-foreground">{t.lead}</p>
       {refused?.refused && <Refusal message={tq.refusedLead(refused.refused.reason)} />}
       {job.takesQuotes ? (
-        <div className="space-y-3 rounded-lg border p-4">
+        <div className="space-y-4 rounded-lg border p-4">
           <div className="space-y-1">
             <h3 className="font-semibold">{tq.write}</h3>
             <p className="text-xs text-muted-foreground">{tq.writeLead}</p>
@@ -266,7 +271,6 @@ function QuoteStep({
   const confirm = useConfirm();
   const action = useAction();
   const [revising, setRevising] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
   const { beingChecked, refused } = quote.revision;
   const jobId = job.jobId;
 
@@ -274,14 +278,15 @@ function QuoteStep({
     <NextStepCard label={copy.jobs.nextStep} title={tq.yourQuote}>
       {quote.state === "held" && <p className="text-sm text-muted-foreground">{tq.heldLead}</p>}
       {quote.state === "sent" && quote.expiresAt && (
-        <p className="text-sm text-muted-foreground">{tq.sentLead(formatDate(quote.expiresAt))}</p>
+        <p className="text-sm text-muted-foreground">
+          {tq.sentLead(formatDeadline(quote.expiresAt))}
+        </p>
       )}
       {quote.state !== "held" && quote.state !== "sent" && quote.state !== "refused" && (
         <p className="text-sm text-muted-foreground">{tq.endedLead[quote.state]}</p>
       )}
-      {notice && <p className="text-sm text-muted-foreground">{notice}</p>}
       {beingChecked && (
-        <div className="space-y-3 rounded-lg border p-4">
+        <div className="space-y-4 rounded-lg border p-4">
           <Badge variant="warning">{copy.job.beingChecked}</Badge>
           <p className="text-sm text-muted-foreground">{tq.revisionHeld}</p>
           <QuoteFacts quote={beingChecked} />
@@ -300,7 +305,7 @@ function QuoteStep({
             void action.run(
               async () => {
                 const revised = await reviseQuote({ data: { jobId, ...fields } });
-                if (revised.ok && revised.value.revision === "applied") setNotice(tq.revised);
+                if (revised.ok && revised.value.revision === "applied") toast.success(tq.revised);
                 return revised;
               },
               () => setRevising(false),
@@ -318,22 +323,19 @@ function QuoteStep({
           <Refusal message={action.refusal} />
           <div className="flex flex-wrap gap-2">
             {(quote.state === "held" || beingChecked) && (
-              <Button
+              <ActionButton
                 variant="outline"
                 disabled={action.busy}
-                onClick={() =>
-                  void action.run(() => withdrawQuoteBeingChecked({ data: { jobId } }))
-                }
+                onClick={() => action.run(() => withdrawQuoteBeingChecked({ data: { jobId } }))}
               >
                 {tq.withdrawCheck}
-              </Button>
+              </ActionButton>
             )}
             {quote.state === "sent" && !beingChecked && (
               <Button
                 variant="outline"
                 disabled={action.busy}
                 onClick={() => {
-                  setNotice(null);
                   action.setRefusal(null);
                   setRevising(true);
                 }}
@@ -342,16 +344,16 @@ function QuoteStep({
               </Button>
             )}
             {quote.state === "sent" && (
-              <Button
+              <ActionButton
                 variant="ghost"
                 disabled={action.busy}
                 onClick={async () => {
                   if (!(await confirm(tq.withdrawConfirm))) return;
-                  void action.run(() => withdrawQuote({ data: { jobId } }));
+                  await action.run(() => withdrawQuote({ data: { jobId } }));
                 }}
               >
                 {tq.withdraw}
-              </Button>
+              </ActionButton>
             )}
           </div>
         </>

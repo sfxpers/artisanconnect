@@ -1,13 +1,11 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "artisanconnect",
+  // The Work account, which holds staging and production.
+  "account_id": "ab816378ce175deba8768e44d4c9478b",
   "compatibility_date": "2026-10-06",
   "compatibility_flags": ["nodejs_compat"],
   "main": "src/server.ts",
-  // Custom domains: replace the pattern with your hostname, then uncomment.
-  // "routes": [
-  //   { "pattern": "artisanconnect.example.com", "custom_domain": true },
-  // ],
   // Workers Logs, with Issues grouping every failure and logged error (ADR 0017).
   "observability": {
     "enabled": true,
@@ -23,7 +21,7 @@
 
   // The top level is local. Staging and production below repeat every binding
   // with their own D1, R2, and secrets; bindings are not inherited.
-  // MAIL_FROM: replace with an address on the domain verified for Email Sending.
+  // MAIL_FROM: the sending address, on artisanconnect.co.za, the domain onboarded for Email Sending.
   // APP_URL: the web app's origin, which links in emails point to.
   // PAYOUT_RUN_TIME: when the daily Payout run goes, as a South African time of day.
   // TURNSTILE_SITE_KEY: locally, Cloudflare's test key that always passes.
@@ -122,12 +120,14 @@
       ],
     },
     "production": {
+      // Served at the apex as a Workers custom domain; Cloudflare makes its DNS record and certificate.
+      "routes": [{ "pattern": "artisanconnect.co.za", "custom_domain": true }],
       "vars": {
         "ENVIRONMENT": "production",
-        "MAIL_FROM": "ArtisanConnect <no-reply@example.com>",
-        "APP_URL": "https://artisanconnect.example.com",
+        "MAIL_FROM": "ArtisanConnect <no-reply@artisanconnect.co.za>",
+        "APP_URL": "https://artisanconnect.co.za",
         "PAYOUT_RUN_TIME": "09:00",
-        "TURNSTILE_SITE_KEY": "replace-with-the-production-turnstile-site-key",
+        "TURNSTILE_SITE_KEY": "0x4AAAAAAFWwjRc9qeMKE8Jh",
       },
       "secrets": {
         "required": ["BETTER_AUTH_SECRET", "TURNSTILE_SECRET_KEY", "PAYMENTS_WEBHOOK_SECRET"],

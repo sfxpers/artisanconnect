@@ -21,6 +21,16 @@ async function signUp(
 }
 
 describe("signing up", () => {
+  test("takes a password of 15 characters or more, and refuses a shorter one saying so", async () => {
+    const harness = await createHarness();
+
+    expect(await signUp(harness, { password: "fourteen chars" })).toMatchObject({
+      ok: false,
+      refusal: { reason: "invalid", message: "Use at least 15 characters." },
+    });
+    expect(await signUp(harness, { password: "fifteen chars!!" })).toMatchObject({ ok: true });
+  });
+
   test("a Client proves the Email with an Email code and lands ready to post a Job", async () => {
     const harness = await createHarness();
     const { domain, given } = harness;

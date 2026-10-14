@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import { FilePicker } from "@/components/file-picker";
 import { cn } from "@/lib/utils";
 import { copy } from "@/web/copy";
 import { shrinkPhoto } from "@/web/shrink-photo";
@@ -80,16 +80,7 @@ export function PhotosField({
           })}
         </ul>
       )}
-      <Input
-        id="add"
-        type="file"
-        multiple
-        accept="image/*"
-        onChange={(event) => photos.setAdded(Array.from(event.target.files ?? []))}
-      />
-      {photos.added.length > 0 && (
-        <FieldDescription>{t.added(photos.added.length)}</FieldDescription>
-      )}
+      <FilePicker id="add" accept="image/*" files={photos.added} onFiles={photos.setAdded} />
     </Field>
   );
 }

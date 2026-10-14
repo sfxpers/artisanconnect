@@ -486,6 +486,20 @@ export async function verifiedCategoriesOf(
   ctx: Context,
   artisanIds: SQLWrapper | string[],
 ): Promise<Map<string, { category: ServiceCategory; gasWork: boolean }[]>> {
+  const standings = await acceptedStandingsOf(ctx, artisanIds);
+  return new Map(
+    [...standings].map(([artisanId, standing]) => [artisanId, standing.verifiedCategories()]),
+  );
+}
+
+/**
+ * Each Artisan's Standing from their accepted checks only, by id: enough for
+ * what is current now, which is all Browse and badges read.
+ */
+async function acceptedStandingsOf(
+  ctx: Context,
+  artisanIds: SQLWrapper | string[],
+): Promise<Map<string, Standing>> {
   const rows = await ctx.db
     .select()
     .from(verificationChecks)
@@ -500,10 +514,7 @@ export async function verifiedCategoriesOf(
     byArtisan.set(row.artisanId, [...(byArtisan.get(row.artisanId) ?? []), row]);
   const today = saDay(ctx.now());
   return new Map(
-    [...byArtisan].map(([artisanId, checks]) => [
-      artisanId,
-      new Standing(checks, today).verifiedCategories(),
-    ]),
+    [...byArtisan].map(([artisanId, checks]) => [artisanId, new Standing(checks, today)]),
   );
 }
 
@@ -519,7 +530,16 @@ const UNSHOWN_BADGES: readonly CheckKind[] = ["work-permit", "payout-account"];
  * document's expiry date.
  */
 export async function badgesOf(ctx: Context, artisanId: string) {
-  const standing = await standingOf(ctx, artisanId);
+  return badgesFrom(await standingOf(ctx, artisanId));
+}
+
+/** Each Artisan's Verification Badges, by id, for a list of them; none for an Artisan with none. */
+export async function badgesOfEach(ctx: Context, artisanIds: SQLWrapper | string[]) {
+  const standings = await acceptedStandingsOf(ctx, artisanIds);
+  return { get: (id: string) => (standings.has(id) ? badgesFrom(standings.get(id)!) : []) };
+}
+
+function badgesFrom(standing: Standing) {
   return allSlots().flatMap(({ slot, kind, category }) => {
     const current = standing.current(slot);
     if (!current || UNSHOWN_BADGES.includes(kind)) return [];

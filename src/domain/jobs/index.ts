@@ -377,6 +377,7 @@ export const jobsSection = defineSection({
         region: row.regionName,
         updatedAt: row.updatedAt,
         expiresAt: row.expiresAt,
+        sentQuotes: row.sentQuotes,
       }));
       return {
         needsYou: summaries.filter((job) => groupOf(job) === "needsYou"),
@@ -594,11 +595,21 @@ const GROUPS: Record<JobState, "needsYou" | "inProgress" | "finished"> = {
   closed: "finished",
 };
 
-/** Where a Job sits in My Jobs: a Hired one is Finished once its Engagement is Completed or Cancelled. */
-function groupOf(job: { state: JobState; engagementState: EngagementState | null }) {
-  return job.engagementState === "completed" || job.engagementState === "cancelled"
-    ? "finished"
-    : GROUPS[job.state];
+/**
+ * Where a Job sits in My Jobs (#111 story 67): it needs its Client while a
+ * Draft, while Open with a Quote Sent to Hire or Decline, and while its work
+ * awaits Approval; a Hired one is Finished once its Engagement is Completed
+ * or Cancelled.
+ */
+function groupOf(job: {
+  state: JobState;
+  engagementState: EngagementState | null;
+  sentQuotes: number;
+}) {
+  if (job.engagementState === "completed" || job.engagementState === "cancelled") return "finished";
+  if (job.engagementState === "awaiting-approval") return "needsYou";
+  if (job.state === "open" && job.sentQuotes > 0) return "needsYou";
+  return GROUPS[job.state];
 }
 
 function notOpen() {

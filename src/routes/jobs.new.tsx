@@ -2,8 +2,8 @@ import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Card, CardContent } from "@/components/ui/card";
 import { DraftForm } from "@/components/job-form";
-import { BackCrumb, Page } from "@/components/page";
-import { copy } from "@/web/copy";
+import { Page } from "@/components/page";
+import { copy, pageTitle } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
 import { postJob, saveJobDraft } from "@/web/jobs";
 
@@ -11,6 +11,7 @@ export const Route = createFileRoute("/jobs/new")({
   beforeLoad: ({ context }) => {
     onlyFor("client", context);
   },
+  head: () => ({ meta: [{ title: pageTitle(t.newTitle) }] }),
   component: NewJob,
 });
 
@@ -43,17 +44,18 @@ function NewJob() {
   }
 
   return (
-    <Page narrow>
-      <BackCrumb to="/jobs" label={t.breadcrumb} />
-      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t.newTitle}</h1>
-      <p className="text-sm text-muted-foreground">{t.newLead}</p>
+    <Page
+      narrow
+      crumbs={[{ to: "/jobs", label: t.breadcrumb }]}
+      title={t.newTitle}
+      lead={t.newLead}
+    >
       <Card>
         <CardContent>
           <DraftForm
             job={null}
             busy={busy}
             refusal={refusal}
-            notice={null}
             onSave={(form) => void save(form, false)}
             onPost={(form) => void save(form, true)}
           />

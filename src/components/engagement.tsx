@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { ActionButton } from "@/components/action-button";
 import { useNavigate } from "@tanstack/react-router";
 import { useConfirm } from "@/components/confirm";
 import { FileText } from "lucide-react";
@@ -17,11 +18,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Fact } from "@/components/job-details";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { useAppForm } from "@/components/form";
-import { NextStepCard, Refusal } from "@/components/page";
+import { FilePicker } from "@/components/file-picker";
+import { Deadline, NextStepCard, Refusal } from "@/components/page";
 import { useAction } from "@/components/use-action";
 import {
   CANCELLATION_REASON_MAX,
@@ -37,7 +37,7 @@ import {
 } from "@/domain/engagements/inputs";
 import { formatRands, PROTECTION_FEE_PERCENT } from "@/domain/money";
 import { formatDay } from "@/domain/sa-days";
-import { copy, formatDate } from "@/web/copy";
+import { copy, formatDate, formatDeadline } from "@/web/copy";
 import {
   acceptUpdatedQuote,
   answerNotStarted,
@@ -119,7 +119,7 @@ function nextStep(engagement: Engagement, asClient: boolean): [string, string] {
     case "work-started":
       return [t.workStarted, asClient ? t.workStartedClientLead : t.workStartedArtisanLead];
     case "awaiting-approval": {
-      const by = engagement.approval ? formatDate(engagement.approval.dueAt) : "";
+      const by = engagement.approval ? formatDeadline(engagement.approval.dueAt) : "";
       return asClient
         ? [t.awaitingClient, t.awaitingClientLead(by)]
         : [t.awaitingArtisan, t.awaitingArtisanLead(by)];
@@ -153,14 +153,14 @@ function nextStep(engagement: Engagement, asClient: boolean): [string, string] {
           asClient,
           labourRefund: labourRefund && {
             amount: formatRands(labourRefund.amountCents),
-            on: formatDate(labourRefund.dueAt),
+            on: formatDeadline(labourRefund.dueAt),
           },
         }),
       ];
     }
   }
   if (engagement.startClaim) {
-    const answerBy = formatDate(engagement.startClaim.answerBy);
+    const answerBy = formatDeadline(engagement.startClaim.answerBy);
     return asClient
       ? [t.claimedClient, t.claimedClientLead(answerBy)]
       : [t.claimedArtisan, t.claimedArtisanLead(answerBy)];
@@ -194,43 +194,43 @@ export function StartActions({
       <div className="flex flex-wrap gap-2">
         {asClient ? (
           <>
-            <Button
+            <ActionButton
               disabled={action.busy}
               onClick={async () => {
                 const shown = materials?.unreleasedCents
                   ? formatRands(materials.unreleasedCents)
                   : null;
                 if (!(await confirm(t.markWorkStartedConfirm(shown)))) return;
-                void action.run(() => markWorkStarted({ data: { engagementId } }));
+                await action.run(() => markWorkStarted({ data: { engagementId } }));
               }}
             >
               {t.markWorkStarted}
-            </Button>
+            </ActionButton>
             {engagement.startClaim && (
-              <Button
+              <ActionButton
                 variant="outline"
                 disabled={action.busy}
                 onClick={async () => {
                   if (!(await confirm(t.notStartedConfirm))) return;
-                  void action.run(() => answerNotStarted({ data: { engagementId } }));
+                  await action.run(() => answerNotStarted({ data: { engagementId } }));
                 }}
               >
                 {t.notStarted}
-              </Button>
+              </ActionButton>
             )}
           </>
         ) : (
           "canClaimStart" in engagement &&
           (engagement.canClaimStart ? (
-            <Button
+            <ActionButton
               disabled={action.busy}
               onClick={async () => {
                 if (!(await confirm(t.claimStartedConfirm))) return;
-                void action.run(() => claimStarted({ data: { engagementId } }));
+                await action.run(() => claimStarted({ data: { engagementId } }));
               }}
             >
               {t.claimStarted}
-            </Button>
+            </ActionButton>
           ) : (
             // Before the start date; once said, the Next step says what follows.
             !engagement.startClaim && (
@@ -305,7 +305,7 @@ export function CancelAction({
   if (!open) {
     return (
       <div>
-        <Button variant="outline" onClick={() => setOpen(true)}>
+        <Button variant="ghost" className="text-destructive" onClick={() => setOpen(true)}>
           {t.cancelJob}
         </Button>
       </div>
@@ -322,7 +322,7 @@ export function CancelAction({
   });
   return (
     <form.AppForm>
-      <form.Form className="space-y-3 rounded-lg border p-3">
+      <form.Form className="space-y-4 rounded-lg border p-4">
         <p className="text-sm text-muted-foreground">{lead}</p>
         <form.AppField name="reason">
           {(field) => (
@@ -364,10 +364,10 @@ export function HireAgainAction({ engagement }: { engagement: ClientEngagement }
     <div className="space-y-2">
       <p className="text-sm text-muted-foreground">{t.hireAgainLead}</p>
       <Refusal message={action.refusal} />
-      <Button
+      <ActionButton
         disabled={action.busy}
         onClick={() =>
-          void action.run(async () => {
+          action.run(async () => {
             const again = await hireAgain({ data: { engagementId } });
             if (again.ok) {
               await navigate({ to: "/jobs/$jobId", params: { jobId: again.value.jobId } });
@@ -377,7 +377,7 @@ export function HireAgainAction({ engagement }: { engagement: ClientEngagement }
         }
       >
         {t.hireAgain}
-      </Button>
+      </ActionButton>
     </div>
   );
 }
@@ -445,7 +445,7 @@ function DisputeForm({
   if (!open) {
     return (
       <div>
-        <Button variant="outline" onClick={() => setOpen(true)}>
+        <Button variant="ghost" onClick={() => setOpen(true)}>
           {d.open(asClient)}
         </Button>
       </div>
@@ -454,29 +454,26 @@ function DisputeForm({
   const labour = formatRands(labourCents);
   return (
     <form.AppForm>
-      <form.Form className="space-y-3 rounded-lg border p-3">
+      <form.Form className="space-y-4 rounded-lg border p-4">
         <p className="text-sm text-muted-foreground">
-          {asClient ? d.clientLead(labour) : d.artisanLead(labour, until && formatDate(until))}
+          {asClient ? d.clientLead(labour) : d.artisanLead(labour, until && formatDeadline(until))}
         </p>
         {asClient && (
           <form.AppField name="amount">
-            {(field) => <field.TextField label={d.amount} inputMode="decimal" placeholder="0.00" />}
+            {(field) => <field.RandsField label={d.amount} />}
           </form.AppField>
         )}
         <form.AppField name="reason">
           {(field) => <field.TextareaField label={d.why} rows={3} maxLength={DISPUTE_REASON_MAX} />}
         </form.AppField>
-        <Field>
-          <FieldLabel htmlFor="dispute-photos">{d.photos}</FieldLabel>
-          <Input
-            id="dispute-photos"
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/heic"
-            multiple
-            onChange={(event) => setPhotos([...(event.target.files ?? [])])}
-          />
-          <FieldDescription>{d.photosHint(DISPUTE_PHOTOS_MAX)}</FieldDescription>
-        </Field>
+        <FilePicker
+          id="dispute-photos"
+          label={d.photos}
+          hint={d.photosHint(DISPUTE_PHOTOS_MAX)}
+          accept="image/jpeg,image/png,image/webp,image/heic"
+          files={photos}
+          onFiles={setPhotos}
+        />
         <Refusal message={action.refusal} />
         <div className="flex flex-wrap gap-2">
           <form.Subscribe
@@ -531,15 +528,15 @@ function ReleaseHeld({ engagement, heldCents }: { engagement: Engagement; heldCe
       {!open && (
         <div className="flex flex-wrap gap-2">
           {engagement.approval && (
-            <Button
+            <ActionButton
               disabled={action.busy}
               onClick={async () => {
                 if (!(await confirm(d.approveRestConfirm(formatRands(restCents))))) return;
-                void action.run(() => approveCompletion({ data: { engagementId } }));
+                await action.run(() => approveCompletion({ data: { engagementId } }));
               }}
             >
               {d.approveRest}
-            </Button>
+            </ActionButton>
           )}
           <Button variant="outline" onClick={() => setOpen(true)}>
             {d.release}
@@ -548,12 +545,10 @@ function ReleaseHeld({ engagement, heldCents }: { engagement: Engagement; heldCe
       )}
       {open && (
         <form.AppForm>
-          <form.Form className="space-y-3 rounded-lg border p-3">
+          <form.Form className="space-y-4 rounded-lg border p-4">
             <p className="text-sm text-muted-foreground">{d.releaseLead(formatRands(heldCents))}</p>
             <form.AppField name="amount">
-              {(field) => (
-                <field.TextField label={d.releaseAmount} inputMode="decimal" placeholder="0.00" />
-              )}
+              {(field) => <field.RandsField label={d.releaseAmount} />}
             </form.AppField>
             <div className="flex flex-wrap gap-2">
               <form.Subscribe
@@ -643,7 +638,7 @@ export function DisputeCard({
           <p className="text-muted-foreground">{d.settled(formatDate(dispute.closedAt))}</p>
         )}
         {dispute.decision && dispute.closedAt && (
-          <div className="space-y-2 rounded-lg bg-muted/60 p-3">
+          <div className="space-y-2 rounded-lg bg-muted p-4">
             <dl className="space-y-2">
               <Row label={d.releasedTo(asClient)}>
                 {formatRands(dispute.decision.releasedCents)}
@@ -783,7 +778,7 @@ function PayOrReject({ proposed }: { proposed: Extract<Proposed, { payCents: num
 
   return (
     <div className="space-y-3">
-      <dl className="space-y-1 rounded-lg bg-muted/60 p-3 text-sm">
+      <dl className="space-y-1 rounded-lg bg-muted p-4 text-sm">
         <div className="flex justify-between gap-3">
           <dt className="text-muted-foreground">{u.fee(PROTECTION_FEE_PERCENT)}</dt>
           <dd>{fee}</dd>
@@ -803,16 +798,16 @@ function PayOrReject({ proposed }: { proposed: Extract<Proposed, { payCents: num
         <Button disabled={action.busy || !acknowledged} onClick={pay}>
           {u.pay(formatRands(proposed.payCents))}
         </Button>
-        <Button
+        <ActionButton
           variant="outline"
           disabled={action.busy}
           onClick={async () => {
             if (!(await confirm(u.rejectConfirm))) return;
-            void action.run(() => rejectUpdatedQuote({ data: { updatedQuoteId } }));
+            await action.run(() => rejectUpdatedQuote({ data: { updatedQuoteId } }));
           }}
         >
           {u.reject}
-        </Button>
+        </ActionButton>
       </div>
     </div>
   );
@@ -826,16 +821,16 @@ function Withdraw({ updatedQuoteId }: { updatedQuoteId: string }) {
     <div className="space-y-2">
       <p className="text-xs text-muted-foreground">{u.waiting}</p>
       <Refusal message={action.refusal} />
-      <Button
+      <ActionButton
         variant="outline"
         disabled={action.busy}
         onClick={async () => {
           if (!(await confirm(u.withdrawConfirm))) return;
-          void action.run(() => withdrawUpdatedQuote({ data: { updatedQuoteId } }));
+          await action.run(() => withdrawUpdatedQuote({ data: { updatedQuoteId } }));
         }}
       >
         {u.withdraw}
-      </Button>
+      </ActionButton>
     </div>
   );
 }
@@ -889,14 +884,14 @@ function ProposeForm({
           {(["labour", "materials"] as const).map((part) => (
             <form.AppField key={part} name={part}>
               {(field) => (
-                <field.TextField
+                <field.RandsField
                   label={u[part]}
                   description={
                     part === "materials" && clientSupplies
                       ? u.clientSupplies
                       : u.atLeast(formatRands(now[`${part}Cents`]))
                   }
-                  inputMode="decimal"
+
                   disabled={part === "materials" && clientSupplies}
                 />
               )}
@@ -934,7 +929,7 @@ function FixRequestNote({
   asClient: boolean;
 }) {
   return (
-    <div className="space-y-1 rounded-lg bg-muted/60 p-3 text-sm">
+    <div className="space-y-1 rounded-lg bg-muted p-4 text-sm">
       <div className="text-xs text-muted-foreground">
         {t.fixRequestNote} · {formatDate(fixRequest.requestedAt)}
       </div>
@@ -966,17 +961,17 @@ function CompletionCheck({
     return <p className="text-sm text-destructive">{t.completionRefused(check.reason)}</p>;
   }
   return (
-    <div className="space-y-2 rounded-lg bg-muted/60 p-3 text-sm">
+    <div className="space-y-2 rounded-lg bg-muted p-4 text-sm">
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant="warning">{t.completionBeingChecked}</Badge>
-        <Button
+        <ActionButton
           size="xs"
           variant="ghost"
           disabled={action.busy}
-          onClick={() => void action.run(() => withdrawCompletion({ data: { engagementId } }))}
+          onClick={() => action.run(() => withdrawCompletion({ data: { engagementId } }))}
         >
           {t.withdrawCompletion}
-        </Button>
+        </ActionButton>
       </div>
       <p className="text-xs text-muted-foreground">{t.completionBeingCheckedLead}</p>
       <Refusal message={action.refusal} />
@@ -1024,20 +1019,19 @@ function CompletionForm({ engagement }: { engagement: ArtisanEngagement }) {
     label: string,
     hint: string,
     accept: string,
+    chosen: File[],
     onFiles: (chosen: File[]) => void,
     multiple = true,
   ) => (
-    <Field>
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
-      <Input
-        id={id}
-        type="file"
-        accept={accept}
-        multiple={multiple}
-        onChange={(event) => onFiles([...(event.target.files ?? [])])}
-      />
-      <FieldDescription>{hint}</FieldDescription>
-    </Field>
+    <FilePicker
+      id={id}
+      label={label}
+      hint={hint}
+      accept={accept}
+      multiple={multiple}
+      files={chosen}
+      onFiles={onFiles}
+    />
   );
   const anyDocument = "application/pdf,image/jpeg,image/png,image/webp,image/heic";
   return (
@@ -1058,6 +1052,7 @@ function CompletionForm({ engagement }: { engagement: ArtisanEngagement }) {
           t.afterPhotos,
           t.afterPhotosHint(COMPLETION_PHOTOS_MAX),
           "image/jpeg,image/png,image/webp,image/heic",
+          photos,
           setPhotos,
         )}
         {needed &&
@@ -1066,6 +1061,7 @@ function CompletionForm({ engagement }: { engagement: ArtisanEngagement }) {
             t.certificate(needed.name),
             t.certificateHint(needed.name, needed.neededOn),
             anyDocument,
+            certificate ? [certificate] : [],
             (chosen) => setCertificate(chosen[0] ?? null),
             false,
           )}
@@ -1074,6 +1070,7 @@ function CompletionForm({ engagement }: { engagement: ArtisanEngagement }) {
           t.documents,
           t.documentsHint(COMPLETION_DOCUMENTS_MAX),
           anyDocument,
+          documents,
           setDocuments,
         )}
         <Refusal message={action.refusal} />
@@ -1146,16 +1143,16 @@ function ApproveOrFix({ engagement }: { engagement: Engagement }) {
     <>
       <Refusal message={action.refusal} />
       <div className="flex flex-wrap gap-2">
-        <Button
+        <ActionButton
           disabled={action.busy}
           onClick={async () => {
             const shown = labour?.unreleasedCents ? formatRands(labour.unreleasedCents) : null;
             if (!(await confirm(t.approveConfirm(shown)))) return;
-            void action.run(() => approveCompletion({ data: { engagementId } }));
+            await action.run(() => approveCompletion({ data: { engagementId } }));
           }}
         >
           {t.approve}
-        </Button>
+        </ActionButton>
         <Button variant="outline" disabled={action.busy} onClick={() => setAsking(true)}>
           {t.askFix}
         </Button>
@@ -1216,7 +1213,7 @@ export function CompletionCard({ engagement }: { engagement: Engagement }) {
 export function PaymentsCard({ engagement }: { engagement: Engagement }) {
   const { approval } = engagement;
   const barLabel = approval
-    ? (engagement.state === "disputed" ? t.restBar : t.approvalBar)(formatDate(approval.dueAt))
+    ? (engagement.state === "disputed" ? t.restBar : t.approvalBar)(formatDeadline(approval.dueAt))
     : "";
   return (
     <Card>
@@ -1224,11 +1221,11 @@ export function PaymentsCard({ engagement }: { engagement: Engagement }) {
         <CardTitle>{t.payments}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <ol className="divide-y rounded-xl border bg-card">
+        <ol className="divide-y rounded-lg border">
           {engagement.money.payments.map((payment, index) => (
             <li key={payment.part} className="flex flex-wrap items-center gap-3 p-3 text-sm">
-              <span className="flex size-6 items-center justify-center rounded-full bg-muted text-xs font-medium">
-                {index + 1}
+              <span className="text-xs font-medium text-muted-foreground tabular-nums">
+                {index + 1}.
               </span>
               <div className="min-w-0 flex-1">
                 <div className="font-medium">{t.parts[payment.part].title}</div>
@@ -1236,13 +1233,15 @@ export function PaymentsCard({ engagement }: { engagement: Engagement }) {
                   {t.parts[payment.part].released}
                 </div>
               </div>
-              <span className="font-medium">{formatRands(payment.amountCents)}</span>
-              <Badge variant="secondary">{t.partStates[payment.state]}</Badge>
+              <span className="font-medium tabular-nums">{formatRands(payment.amountCents)}</span>
+              <Badge variant={payment.state === "released" ? "success" : "secondary"}>
+                {t.partStates[payment.state]}
+              </Badge>
             </li>
           ))}
         </ol>
         {approval && (
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Progress value={Math.round(approval.elapsed * 100)} aria-label={barLabel} />
             <p className="text-xs text-muted-foreground">{barLabel}</p>
           </div>
@@ -1261,11 +1260,11 @@ function RefundsList({ engagement }: { engagement: Engagement }) {
   return (
     <div className="space-y-2">
       <h3 className="text-sm font-medium">{t.refunds}</h3>
-      <ul className="divide-y rounded-xl border bg-card">
+      <ul className="divide-y rounded-lg border">
         {engagement.refunds.map((each) => (
           <li key={each.refundId} className="flex flex-wrap items-center gap-3 p-3 text-sm">
             <div className="min-w-0 flex-1">
-              <div className="font-medium">{formatRands(each.amountCents)}</div>
+              <div className="font-medium tabular-nums">{formatRands(each.amountCents)}</div>
               <div className="text-xs text-muted-foreground">
                 {[
                   t.refundLine(
@@ -1333,15 +1332,15 @@ function RefundForm({ engagement }: { engagement: ArtisanEngagement }) {
   }
   return (
     <form.AppForm>
-      <form.Form className="space-y-3 rounded-lg border p-3">
+      <form.Form className="space-y-4 rounded-lg border p-4">
         <p className="text-sm text-muted-foreground">{t.refundLead}</p>
         <div className="grid gap-3 sm:grid-cols-2">
           {lines.map((part) => (
             <form.AppField key={part} name={part}>
               {(field) => (
-                <field.TextField
+                <field.RandsField
                   label={t.refundUpTo(t.parts[part].title, formatRands(refundable[`${part}Cents`]))}
-                  inputMode="decimal"
+
                   placeholder="0.00"
                 />
               )}
@@ -1433,7 +1432,7 @@ export function HiredQuoteCard({ engagement }: { engagement: Engagement }) {
             {engagement.warranty ?? copy.quote.noWarranty}
           </Fact>
           <Fact label={t.protectedUntil}>
-            {formatDate(engagement.protectedUntil)}
+            <Deadline at={engagement.protectedUntil} />
             <p className="text-xs font-normal text-muted-foreground">{t.protectedLead}</p>
           </Fact>
         </dl>
@@ -1446,7 +1445,7 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex items-baseline justify-between gap-3">
       <dt className="text-muted-foreground">{label}</dt>
-      <dd className="font-medium">{children}</dd>
+      <dd className="font-medium tabular-nums">{children}</dd>
     </div>
   );
 }

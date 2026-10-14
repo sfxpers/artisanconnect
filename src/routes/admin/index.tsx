@@ -1,13 +1,13 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { CheckCheck, ChevronRight } from "lucide-react";
+import { CheckCheck } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Card } from "@/components/ui/card";
 import { QueueBadge, QueueCounts } from "@/components/admin";
+import { DataTable, rowLink, type DataColumn } from "@/components/data-table";
 import { EmptyState, Page } from "@/components/page";
 import { QUEUE_NAMES, type QueueName } from "@/domain/queue-names";
 import { formatRands } from "@/domain/money";
 import { getAdminHome } from "@/web/admin";
-import { copy, formatDate } from "@/web/copy";
+import { copy, formatDate, pageTitle } from "@/web/copy";
 import { onlyForAdmins } from "@/web/guards";
 import { getFloat } from "@/web/payouts";
 
@@ -22,10 +22,42 @@ export const Route = createFileRoute("/admin/")({
     const [home, float] = await Promise.all([getAdminHome({ data: deps }), getFloat()]);
     return { ...home, float };
   },
+  head: () => ({ meta: [{ title: pageTitle(t.title) }] }),
   component: AdminHome,
 });
 
 const t = copy.admin.home;
+
+type Item = Awaited<ReturnType<typeof getAdminHome>>["items"][number];
+
+const columns: DataColumn<Item>[] = [
+  {
+    id: "queue",
+    header: t.queue,
+    accessorFn: (item) => copy.admin.queues[item.queue],
+    cell: ({ row }) => <QueueBadge queue={row.original.queue} />,
+  },
+  {
+    id: "title",
+    header: t.itemTitle,
+    accessorFn: (item) => item.title,
+    cell: ({ row }) => (
+      <Link to="/admin/items/$itemId" params={{ itemId: row.original.id }} className={rowLink}>
+        {row.original.title}
+      </Link>
+    ),
+  },
+  {
+    id: "raised",
+    header: t.raisedAt,
+    accessorFn: (item) => new Date(item.raisedAt).getTime(),
+    cell: ({ row }) => (
+      <span className="text-muted-foreground tabular-nums">
+        {formatDate(row.original.raisedAt)}
+      </span>
+    ),
+  },
+];
 
 /**
  * The Admin home: a banner while the float cannot cover the Payouts sent,
@@ -34,13 +66,8 @@ const t = copy.admin.home;
 function AdminHome() {
   const { counts, items, float } = Route.useLoaderData();
   const { queue } = Route.useSearch();
-  const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
   return (
-    <Page>
-      <div className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t.title}</h1>
-        <p className="text-sm text-muted-foreground">{t.lead}</p>
-      </div>
+    <Page title={t.title} lead={t.lead}>
       {float.short && (
         <Alert variant="destructive">
           <AlertTitle>{t.floatShort}</AlertTitle>
@@ -53,50 +80,14 @@ function AdminHome() {
           </AlertDescription>
         </Alert>
       )}
-      <div className="flex flex-wrap items-center gap-2">
-        <Link
-          to="/admin"
-          className={
-            queue
-              ? "rounded-full border bg-background px-3 py-1 text-xs text-muted-foreground"
-              : "rounded-full border border-primary bg-background px-3 py-1 text-xs"
-          }
-        >
-          {t.all} <b className="tabular-nums">{total}</b>
-        </Link>
-        <QueueCounts counts={counts} current={queue} />
-      </div>
-      {items.length === 0 ? (
-        <EmptyState icon={<CheckCheck />}>{queue ? t.emptyQueue : t.empty}</EmptyState>
-      ) : (
-        <Card className="py-0">
-          <ul className="divide-y">
-            {items.map((item) => (
-              <li key={item.id}>
-                <Link
-                  to="/admin/items/$itemId"
-                  params={{ itemId: item.id }}
-                  className="flex items-center gap-4 p-4 hover:bg-muted/50"
-                >
-                  <div className="min-w-0 flex-1 space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <QueueBadge queue={item.queue} />
-                      <span className="truncate font-medium">{item.title}</span>
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {t.raised(formatDate(item.raisedAt))}
-                    </div>
-                  </div>
-                  <span className="inline-flex shrink-0 items-center text-sm text-muted-foreground">
-                    {t.open}
-                    <ChevronRight className="size-4" />
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </Card>
-      )}
+      <QueueCounts counts={counts} current={queue} />
+      <DataTable
+        key={queue ?? "all"}
+        label={t.table}
+        columns={columns}
+        data={items}
+        empty={<EmptyState icon={<CheckCheck />}>{queue ? t.emptyQueue : t.empty}</EmptyState>}
+      />
     </Page>
   );
 }

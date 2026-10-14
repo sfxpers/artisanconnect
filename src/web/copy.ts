@@ -3,12 +3,11 @@ import type { MessageEvent } from "@/domain/conversations/inputs";
 import type { ENGAGEMENT_STATES, NOT_HIRED_REASONS } from "@/domain/schema";
 import { formatTime } from "@/domain/sa-days";
 
-// Every word the web app shows, in one place for later translation. Copy is a
-// placeholder until final copy is written (#111).
+// Every word the web app shows, in one place for later translation, in the
+// glossary's words (GLOSSARY.md).
 
 export const copy = {
   appName: "ArtisanConnect",
-  wordmark: ["Artisan", "Connect"],
   header: {
     visitor: { findArtisans: "Find Artisans", signUp: "Sign up", signIn: "Sign in" },
     client: { jobs: "Jobs", findArtisans: "Find Artisans", account: "Account" },
@@ -23,8 +22,15 @@ export const copy = {
       admins: "Admins",
       audit: "Audit log",
       signOut: "Sign out",
+      nav: "Admin",
+      toggle: "Show or hide the menu",
     },
     notices: "Notices",
+    noticesUnread: (count: string) => `Notices, ${count} unread`,
+    accountOf: (initials: string) => `Account, ${initials}`,
+    main: "Main",
+    menu: "Menu",
+    theme: { label: "Theme", light: "Light", dark: "Dark", system: "As the device" },
   },
   footer: {
     tagline: "Verified Artisans in Cape Town, paid through the platform.",
@@ -34,6 +40,15 @@ export const copy = {
     support: "Support",
   },
   loading: "Loading",
+  pickDay: "Pick a day",
+  rand: "R",
+  files: {
+    photos: "Choose photos",
+    files: "Choose files",
+    more: "Add more",
+    remove: (name: string) => `Take out ${name}`,
+  },
+  nextStepBack: "Go to it",
   /** Before an act that cannot be undone. */
   ask: { title: "Are you sure?", yes: "Confirm", no: "Go back" },
   skipToContent: "Skip to content",
@@ -49,55 +64,82 @@ export const copy = {
     home: "Go to ArtisanConnect",
   },
   landing: {
-    eyebrow: "Cape Town",
     title: "Hire a verified Artisan in Cape Town",
-    lead: "Post a Job, compare fixed-price Quotes, and pay through the platform. The money waits with the platform until the work is done.",
-    postJob: "Post a Job",
-    findArtisans: "Find Artisans",
-    signIn: "I have an Account",
+    lead: "Compare fixed-price Quotes from Artisans the Admin has checked. You pay through ArtisanConnect, which holds the money until the work is done.",
+    searchLabel: "Find Artisans by trade and suburb",
+    trade: "Trade",
+    chooseTrade: "Choose a trade",
+    suburb: "Your suburb",
+    search: "Find Artisans",
+    searchHint: "Choose a trade first, then search.",
+    postJob: "Or post a Job and let Artisans come to you",
+    tradesTitle: "Browse by trade",
+    tradePhoto: (trade: string) => `${trade} work`,
     howTitle: "How a Job goes",
+    step: (n: number) => `Step ${n}`,
     how: [
       {
         title: "Post a Job",
-        text: "Describe the work, pick your suburb, and add photos. Your street stays private until you hire.",
+        text: "Describe the work, choose your suburb, and add photos. Your street stays private until you Hire.",
       },
       {
         title: "Compare Quotes",
-        text: "Up to five verified Artisans send a fixed price: Labour, Materials, start date, and any Warranty they offer.",
+        text: "Up to five verified Artisans each send one fixed price: Labour, Materials, start date, and any Warranty.",
       },
       {
         title: "Hire by paying",
-        text: "You pay the Quote through the platform, which holds it. Nobody is paid in cash or off the platform.",
+        text: "You pay the Quote and the 5% Protection Fee through ArtisanConnect, which holds the money. Nobody is paid in cash.",
       },
       {
         title: "Approve the work",
-        text: "The Materials go to the Artisan when work starts on site; the Labour once you approve the work.",
+        text: "The Materials go to the Artisan when work starts on site. The Labour goes at Approval: when you approve the work, or seven days after it is marked complete if you ask for nothing.",
       },
     ],
-    tradesTitle: "Eight trades",
-    tradesLead: "Browse the Artisans verified for each one, by Region.",
-    feesTitle: "Fees shown before you pay",
-    fees: "A Quote is the Artisan's fixed price. When you hire, you see the 5% Protection Fee on top before you pay, and nothing is added after.",
-    badgeTitle: "A badge is a check, not a guarantee",
-    badge:
-      "Each Verification Badge is a document the Admin checked, such as an identity document or a trade registration. It is not a promise that the work will be good: read the Reviews too.",
+    trustTitle: "What you can count on",
+    trust: [
+      {
+        title: "A badge is a check, not a guarantee",
+        text: "Each Verification Badge is a document the Admin checked, such as an identity document or a trade registration. It does not promise good work, so read the Reviews too.",
+      },
+      {
+        title: "Fees are shown before you pay",
+        text: "A Quote is the Artisan's fixed price. At Hire you see the 5% Protection Fee on top before paying, and nothing is added after.",
+      },
+      {
+        title: "Money is released after the work",
+        text: "ArtisanConnect holds your Payment. The Labour goes to the Artisan only at Approval, after the work is marked complete; if you dispute it, the Admin decides.",
+      },
+    ],
   },
   browse: {
     title: "Find Artisans",
-    lead: "Verified Artisans, one trade at a time. Those Available for Jobs come first, then by Review average, then by how many Reviews, then by name. Nobody pays to be higher.",
-    chooseTrade: "Choose a trade",
+    titleFor: (trade: string) => `${trade} Artisans`,
+    lead: "Verified Artisans, one trade at a time. Nobody pays to be listed higher.",
+    chooseTrade: "Choose a trade to see the Artisans verified for it.",
     trade: "Trade",
+    anyTrade: "Choose a trade",
     region: "Region",
     allRegions: "All Regions",
+    filters: "Filters",
+    clear: "Clear filters",
+    availableOnly: "Available for Jobs only",
+    orderLead:
+      "Those Available for Jobs come first, then by Review average, then by how many Reviews, then by name.",
     count: (count: number) => (count === 1 ? "1 Artisan" : `${count} Artisans`),
+    showing: (from: number, to: number, count: number) => `${from}–${to} of ${count} Artisans`,
     empty: "No Artisan is verified for this trade here yet.",
+    emptyFiltered: "No Artisan matches these filters. Try all Regions, or clear the filters.",
     available: "Available for Jobs",
     notAvailable: "Not taking Job Matches now",
     gasWork: "Gas work too",
     noRegions: "No Regions chosen yet",
-    open: "Open Profile",
+    noPhoto: "No work photo yet",
+    morebadges: (count: number) => `+${count} more`,
     signUpPrompt: "To post a Job or invite an Artisan to Quote, sign up as a Client.",
     signUp: "Sign up",
+    previous: "Previous",
+    next: "Next",
+    pages: "Pages",
   },
   profile: {
     about: "About",
@@ -118,14 +160,30 @@ export const copy = {
     rating: (average: number, count: number) =>
       `${average.toFixed(1)} out of 5, from ${count} ${count === 1 ? "Review" : "Reviews"}`,
     noRating: "No Reviews yet",
+    reviewCount: (count: number) => (count === 1 ? "(1 Review)" : `(${count} Reviews)`),
     notVerifiedNow: "Not verified for any trade right now, so cannot Quote.",
     reviews: "Reviews",
     noReviews: "No Reviews yet. A Client reviews an Artisan once a Job is Completed.",
     noContact:
       "Work is arranged on ArtisanConnect, so a Profile shows no phone number, email, or address.",
-    inviteTitle: (name: string) => `Want ${name} to Quote?`,
     inviteLead:
       "Sign up as a Client to post a Job and invite Artisans to Quote. You hire by paying through the platform.",
+    invite: "Invite to a Job",
+    inviteDialog: (name: string) => `Invite ${name} to Quote`,
+    inviteDialogLead:
+      "Choose one of your Open Jobs. The Artisan is told and may Quote or pass; up to five Artisans Quote on a Job.",
+    job: "Job",
+    chooseJob: "Choose a Job",
+    sendInvitation: "Send the Invitation",
+    invited: (name: string) => `${name} is invited.`,
+    noOpenJob: (name: string, trades: string) =>
+      `You have no Open Job in ${trades}, the trades ${name} is verified for. Post one first.`,
+    postJob: "Post a Job",
+    cancel: "Cancel",
+    gallery: "Work photos",
+    previous: "Previous photo",
+    next: "Next photo",
+    verifiedFor: "Verified for",
     signUp: "Sign up",
     signIn: "Sign in",
     share: "Copy the link to this Profile",
@@ -250,6 +308,7 @@ export const copy = {
       "The full rules are being written. They will say how a Job, a Quote, a Hire, and the money work, what may be said, and how your personal data is used.",
   },
   notices: {
+    new: "New",
     title: "Notices",
     empty: "Nothing yet. We tell you here, and by email, when something needs you.",
     open: "Open",
@@ -262,6 +321,10 @@ export const copy = {
       "Describe the work, pick your suburb, and add photos. Verified Artisans near you send fixed-price Quotes.",
     another: "Post a Job",
     anotherLead: "Describe the work, pick your suburb, and add photos.",
+    needYou: (count: number) => (count === 1 ? "A Job needs you" : `${count} Jobs need you`),
+    needYouLead: (title: string) =>
+      `First: ${title}. Quotes to compare, or work to approve, wait on you.`,
+    openJob: "Open it",
     post: "Post a Job",
     groups: {
       needsYou: "Needs you",
@@ -279,7 +342,6 @@ export const copy = {
       hired: "Hired",
     },
     expires: (when: string) => `Expires ${when}`,
-    open: "View",
   },
   job: {
     breadcrumb: "Jobs",
@@ -373,6 +435,7 @@ export const copy = {
     emptyHireAgain: (name: string) => `${name} cannot be invited to this Job now.`,
   },
   verification: {
+    startWith: (check: string) => `Start with: ${check}`,
     title: "Verification",
     nextStep: "Next step",
     lead: "Before you can Quote, the Admin verifies who you are, your Payout account, and each trade you work in. A badge is a check the Admin accepted, not a promise about the work.",
@@ -436,7 +499,16 @@ export const copy = {
     photosOrPdf: "Photos or PDFs, up to 10 MB each",
   },
   home: {
+    title: "Home",
     waiting: "Waiting on you",
+    more: {
+      hired: "Hired work",
+      verification: "Verification",
+      regions: "your Regions",
+      jobs: "Job Matches and Invitations",
+    },
+    moreWaiting: (items: string[]) =>
+      `Also waiting: ${items.join(", ")}. Each comes up here in turn.`,
     verification: "Get verified to start quoting",
     open: "Open Verification",
     verificationLead: "You are offered Jobs only in the Service Categories you are verified for.",
@@ -444,8 +516,6 @@ export const copy = {
     chooseRegionsLead: "You are offered Jobs only in the Regions you choose.",
     matchesLead: "Quote on a Job Match, or pass. Nobody is told you passed.",
     seeMatches: "See Job Matches",
-    invitationsWaiting: (count: number) =>
-      count === 1 ? "An Invitation is waiting" : `${count} Invitations are waiting`,
     jobsWaiting: (invitations: number, matches: number) =>
       [
         invitations === 1 ? "1 Invitation" : invitations > 1 ? `${invitations} Invitations` : "",
@@ -605,16 +675,27 @@ export const copy = {
     title: (count: number) => (count === 1 ? "1 Quote" : `${count} Quotes`),
     none: "No Quotes yet. We tell you when one arrives.",
     lead: "In the order they were sent. Nothing here is ranked.",
+    sortLabel: "Order",
+    compare: "Quotes side by side",
+    artisan: "Artisan",
+    record: "Record",
+    badges: "Verification Badges",
+    noBadges: "None shown",
+    scope: "Scope",
+    expiresRow: "Open until",
+    quoteTotal: "Quote total",
+    protectionFee: (percent: number) => `Protection Fee (${percent}%)`,
+    youPay: "You pay",
+    actions: "Actions",
+    more: "More",
+    checkout: "Checkout",
     sortSent: "Order sent",
     sortTotal: "Total, lowest first",
     noName: "Name being checked",
     payment: "You would pay",
-    paymentLead: (percent: number, fee: string) =>
-      `Includes the ${percent}% Protection Fee of ${fee}, which is not refunded.`,
     decline: "Decline",
     declineConfirm: "Decline this Quote? The Artisan is told.",
     details: "Details",
-    hideDetails: "Hide details",
     ended: "No longer open",
     sent: (when: string) => `Sent ${when}`,
     expires: (when: string) => `Expires ${when}`,
@@ -623,7 +704,6 @@ export const copy = {
     startPassedLead:
       "Ask the Artisan to revise this Quote in your Conversation; then you can Hire it.",
     hireTitle: "Hire by paying for this Quote",
-    hireQuote: "Quote",
     hireFee: (percent: number) => `Protection Fee (${percent}%)`,
     hirePayment: "You pay",
     hireAcknowledge: (fee: string) =>
@@ -763,7 +843,7 @@ export const copy = {
       `The law requires a ${name} on ${neededOn}. A PDF or a photo of it, showing your registration number.`,
     documents: "Other documents (optional)",
     documentsHint: (max: number) =>
-      `PDFs or photos, such as a guarantee or a data sheet. Up to ${max} documents in all.`,
+      `PDFs or photos, such as a manual or a data sheet. Up to ${max} documents in all.`,
     markCompleteConfirm:
       "Mark the work complete? The Client then has seven days to approve it or ask for a fix.",
     completionBeingChecked: "Your Completion is being checked",
@@ -1066,8 +1146,7 @@ export const copy = {
     title: "Regions",
     lead: "Choose one to three Regions you work in. You are offered Jobs only in these. Open a Region to see its suburbs.",
     suburbs: (count: number) => `${count} suburbs`,
-    open: (region: string) => `Show the suburbs of ${region}`,
-    close: (region: string) => `Hide the suburbs of ${region}`,
+    inRegion: (region: string) => ` in ${region}`,
     chosen: (count: number, max: number) => `${count} of ${max} chosen`,
     save: "Save Regions",
     saved: "Your Regions are saved.",
@@ -1077,6 +1156,12 @@ export const copy = {
     noMatch: "No official suburb matches that.",
   },
   account: {
+    groups: {
+      you: "You",
+      money: "Money",
+      rules: "Rules and help",
+      data: "Your data",
+    },
     title: "Account",
     name: "Name",
     tradingName: "Trading name",
@@ -1268,6 +1353,11 @@ export const copy = {
       emptyQueue: "Nothing is waiting in this queue.",
       raised: (when: string) => `Raised ${when}`,
       open: "Open",
+      table: "Waiting items",
+      queue: "Queue",
+      itemTitle: "Item",
+      raisedAt: "Raised",
+      filter: "Show one queue",
     },
     item: {
       queues: "Queues",
@@ -1322,6 +1412,11 @@ export const copy = {
       held: "Held",
       hold: "Hold Payouts",
       lift: "Lift the hold",
+      table: "Artisans owed or held",
+      artisan: "Artisan",
+      standing: "Payouts",
+      flowing: "Sent in the daily run",
+      act: "Act",
       history: "Money history",
     },
     people: {
@@ -1329,7 +1424,12 @@ export const copy = {
       lead: "Find a Client or an Artisan by name or Email, and act on them: warn, suspend, or lift a Suspension; hold or free an Artisan's Payouts. Each is told to the Account and written to the audit log.",
       search: "Name or Email",
       find: "Find",
-      empty: "Nobody matches.",
+      empty: "Nobody matches. Try part of the name, or the whole Email.",
+      table: "People found",
+      name: "Name",
+      kind: "Kind",
+      email: "Email",
+      standing: "Standing",
       suspended: "Suspended",
       closed: { closed: "Closed", erased: "Erased" },
       payoutsHeld: "Payouts held",
@@ -1401,6 +1501,10 @@ export const copy = {
       empty: "Nothing has been logged yet.",
       system: "ArtisanConnect",
       older: "Older",
+      table: "Audit log entries",
+      at: "When",
+      who: "Who",
+      what: "What",
     },
     figures: {
       title: "Figures",
@@ -1416,6 +1520,15 @@ export const copy = {
       allTime: "Since the start",
       jobs: "Jobs",
       hires: "Hires",
+      outcomes: "Where the Hires stand",
+      outcomesLead: "Each Hire of the period, by how it ended, or that it has not.",
+      outcome: {
+        completed: "Completed",
+        byClient: "Cancelled by the Client",
+        byArtisan: "Cancelled by the Artisan",
+        inProgress: "Not ended yet",
+      },
+      count: "Hires",
       money: "Money",
       trust: "Leaving and the Content check",
       jobsPosted: "Jobs posted",
@@ -1469,8 +1582,7 @@ export const copy = {
       added: (name: string, region: string) => `${name} is added to ${region}.`,
       count: (count: number) => (count === 1 ? "1 suburb" : `${count} suburbs`),
       total: (count: number) => `${count} suburbs in all.`,
-      open: (region: string) => `Show the suburbs of ${region}`,
-      close: (region: string) => `Hide the suburbs of ${region}`,
+      inRegion: (region: string) => ` in ${region}`,
     },
     rules: {
       title: "Marketplace rules",
@@ -1496,18 +1608,36 @@ export const copy = {
       read: "Read the rules as Accounts see them",
     },
   },
-  notBuilt: "This page is not built yet.",
   devMail: { title: "Local mailbox", empty: "No email sent since the app started." },
-  notAPerson: "Complete the check above first.",
 } as const;
 
-/** A date as South Africans read it. */
+/** A page's title in the browser's tab: the page, then ArtisanConnect (WCAG 2.4.2). */
+export function pageTitle(page: string): string {
+  return `${page} · ${copy.appName}`;
+}
+
 /** A length of time as minutes and seconds: "4:05". */
 function formatSeconds(seconds: number): string {
   const whole = Math.round(seconds);
   return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, "0")}`;
 }
 
+/** A date as South Africans read it, to the minute: "06 Oct 2026, 08:00". */
 export function formatDate(date: Date | string): string {
   return formatTime(new Date(date));
+}
+
+/** How long until a deadline, in the largest whole unit: "in 3 days", "in 5 hours". */
+export function countdownTo(date: Date | string, now = Date.now()): string {
+  const minutes = Math.floor((new Date(date).getTime() - now) / 60_000);
+  if (minutes < 0) return "passed";
+  if (minutes < 60) return minutes <= 1 ? "in a minute" : `in ${minutes} minutes`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 48) return hours === 1 ? "in 1 hour" : `in ${hours} hours`;
+  return `in ${Math.floor(hours / 24)} days`;
+}
+
+/** A deadline as a date and a countdown: "06 Oct 2026, 08:00 (in 3 days)". */
+export function formatDeadline(date: Date | string): string {
+  return `${formatDate(date)} (${countdownTo(date)})`;
 }

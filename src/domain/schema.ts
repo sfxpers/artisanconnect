@@ -213,6 +213,8 @@ export const accounts = sqliteTable(
      * names, Email, and password gone, and never reopened.
      */
     erasedAt: instant("erased_at"),
+    /** When its person last opened the Notices stream; Notices told since are unread. */
+    noticesSeenAt: instant("notices_seen_at"),
   },
   (table) => [check("accounts_kind", sql`${table.kind} in ('client', 'artisan')`)],
 );

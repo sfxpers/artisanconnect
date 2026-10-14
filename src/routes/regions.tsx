@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Page, Refusal } from "@/components/page";
 import { REGIONS_MAX } from "@/domain/regions/places";
 import { cn } from "@/lib/utils";
-import { copy } from "@/web/copy";
+import { copy, pageTitle } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
 import { chooseRegions, getRegions, searchSuburbs } from "@/web/regions";
 
@@ -18,6 +19,7 @@ export const Route = createFileRoute("/regions")({
     onlyFor("artisan", context);
   },
   loader: () => getRegions(),
+  head: () => ({ meta: [{ title: pageTitle(t.title) }] }),
   component: Regions,
 });
 
@@ -31,12 +33,10 @@ function Regions() {
   const [open, setOpen] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);
-  const [done, setDone] = useState(false);
   const full = chosen.length >= REGIONS_MAX;
   const unchanged = chosen.length === saved.length && chosen.every((id) => saved.includes(id));
 
   function toggle(regionId: string, checked: boolean) {
-    setDone(false);
     setChosen((now) => (checked ? [...now, regionId] : now.filter((id) => id !== regionId)));
   }
 
@@ -46,7 +46,7 @@ function Regions() {
     const result = await chooseRegions({ data: { regionIds: chosen } });
     setBusy(false);
     if (!result.ok) return setRefusal(result.refusal.message);
-    setDone(true);
+    toast.success(t.saved);
     await router.invalidate();
   }
 
@@ -75,12 +75,12 @@ function Regions() {
                       size="sm"
                       aria-expanded={expanded}
                       aria-controls={`suburbs-${region.id}`}
-                      aria-label={expanded ? t.close(region.name) : t.open(region.name)}
                       onClick={() => setOpen(expanded ? null : region.id)}
                     >
                       <span className="text-muted-foreground">
                         {t.suburbs(region.suburbs.length)}
                       </span>
+                      <span className="sr-only">{t.inRegion(region.name)}</span>
                       <ChevronDown
                         className={cn("transition-transform", expanded && "rotate-180")}
                       />
@@ -92,7 +92,7 @@ function Regions() {
                       className="mt-3 columns-2 gap-4 text-xs text-muted-foreground sm:columns-3"
                     >
                       {region.suburbs.map((suburb) => (
-                        <li key={suburb.id} className="break-inside-avoid py-0.5">
+                        <li key={suburb.id} className="break-inside-avoid py-1">
                           {suburb.name}
                         </li>
                       ))}
@@ -111,7 +111,6 @@ function Regions() {
         <span className="text-sm text-muted-foreground">
           {t.chosen(chosen.length, REGIONS_MAX)}
         </span>
-        {done && <span className="text-sm text-muted-foreground">{t.saved}</span>}
       </div>
       <Refusal message={refusal} />
       <FindSuburb />
@@ -149,7 +148,7 @@ function FindSuburb() {
         <CardDescription>{t.findLead}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <Label htmlFor="suburb">{t.findLabel}</Label>
           <Input
             id="suburb"
@@ -166,7 +165,7 @@ function FindSuburb() {
           ) : (
             <ul className="divide-y text-sm" aria-live="polite">
               {found.suburbs.map((suburb) => (
-                <li key={suburb.id} className="flex justify-between gap-3 py-1.5">
+                <li key={suburb.id} className="flex justify-between gap-3 py-2">
                   <span>{suburb.name}</span>
                   <span className="text-muted-foreground">{suburb.region.name}</span>
                 </li>

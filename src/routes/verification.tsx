@@ -3,8 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import { Field, FieldLabel } from "@/components/ui/field";
 import { issuesOf, useAppForm } from "@/components/form";
 import { NextStepCard, Page, Refusal } from "@/components/page";
 import { useAction } from "@/components/use-action";
@@ -24,16 +23,18 @@ import {
   type FilePart,
 } from "@/domain/verification/checks";
 import type { VerificationSlot } from "@/domain/verification";
-import { copy } from "@/web/copy";
+import { copy, pageTitle } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
 import { getMyVerification, submitCheck } from "@/web/verification";
-import { NativeSelect } from "@/components/ui/native-select";
+import { Choose } from "@/components/choose";
+import { FilePicker } from "@/components/file-picker";
 
 export const Route = createFileRoute("/verification")({
   beforeLoad: ({ context }) => {
     onlyFor("artisan", context);
   },
   loader: () => getMyVerification(),
+  head: () => ({ meta: [{ title: pageTitle(t.title) }] }),
   component: Verification,
 });
 
@@ -50,6 +51,8 @@ function Verification() {
         : SERVICE_CATEGORY_NAMES[category],
     )
     .join(", ");
+  // The first check needed once and not yet sent, to begin with.
+  const first = mine.once.find((check) => check.needed === "required" && check.state === "missing");
   return (
     <Page title={t.title}>
       <NextStepCard
@@ -58,6 +61,18 @@ function Verification() {
       >
         <p className="text-sm text-muted-foreground">{t.lead}</p>
         {!verified && <p className="text-sm">{t.notYet}</p>}
+        {first && (
+          <Button
+            className="w-fit"
+            onClick={() => {
+              const row = document.getElementById(`check-${first.slot}`);
+              row?.scrollIntoView({ block: "center" });
+              row?.querySelector("button")?.focus({ preventScroll: true });
+            }}
+          >
+            {t.startWith(first.name)}
+          </Button>
+        )}
       </NextStepCard>
 
       <Group {...t.groups.once}>
@@ -122,7 +137,7 @@ function Group({
   return (
     <section className="space-y-3">
       <div>
-        <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
+        <h2 className="text-lg font-semibold">{title}</h2>
         <p className="text-sm text-muted-foreground">{lead}</p>
       </div>
       {children}
@@ -148,7 +163,7 @@ function CheckRow({ check }: { check: VerificationSlot }) {
   const action =
     check.state === "accepted" ? t.replace : check.state === "missing" ? t.submit : t.submitAgain;
   return (
-    <div className="space-y-3 py-3 first:pt-0 last:pb-0">
+    <div id={`check-${check.slot}`} className="scroll-mt-20 space-y-3 py-3 first:pt-0 last:pb-0">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -194,7 +209,7 @@ function CheckDetailsLine({ check }: { check: VerificationSlot }) {
   }
   if (lines.length === 0) return null;
   return (
-    <div className="space-y-0.5 text-sm">
+    <div className="space-y-1 text-sm">
       {lines.map((line) => (
         <p key={line}>{line}</p>
       ))}
@@ -257,7 +272,7 @@ function CheckForm({
 
   return (
     <form.AppForm>
-      <form.Form className="space-y-3 rounded-lg border bg-muted/30 p-3">
+      <form.Form className="space-y-4 rounded-lg border bg-muted p-4">
         <form.Subscribe selector={(state) => state.values}>
           {(values) => {
             const shown = fieldsOf(kind, values);
@@ -294,19 +309,16 @@ function CheckForm({
                     {(field) => (
                       <Field>
                         <FieldLabel htmlFor={`${kind}-country`}>{t.fields.country}</FieldLabel>
-                        <NativeSelect
+                        <Choose
                           id={`${kind}-country`}
-                          className="w-full"
                           value={field.state.value ?? ""}
-                          onChange={(event) => field.handleChange(event.target.value)}
-                        >
-                          <option value="">{t.fields.chooseCountry}</option>
-                          {sortedCountries().map(({ code, name }) => (
-                            <option key={code} value={code}>
-                              {name}
-                            </option>
-                          ))}
-                        </NativeSelect>
+                          onChange={field.handleChange}
+                          placeholder={t.fields.chooseCountry}
+                          options={sortedCountries().map(({ code, name }) => ({
+                            value: code,
+                            label: name,
+                          }))}
+                        />
                       </Field>
                     )}
                   </form.Field>
@@ -327,8 +339,7 @@ function CheckForm({
                 {shown.includes("expiresOn") && (
                   <form.AppField name="expiresOn">
                     {(field) => (
-                      <field.TextField
-                        type="date"
+                      <field.DateField
                         label={
                           definition.expiresOn === "optional"
                             ? t.fields.expiresOnOptional
@@ -340,7 +351,7 @@ function CheckForm({
                 )}
                 {shown.includes("issuedOn") && (
                   <form.AppField name="issuedOn">
-                    {(field) => <field.TextField type="date" label={t.fields.issuedOn} />}
+                    {(field) => <field.DateField label={t.fields.issuedOn} />}
                   </form.AppField>
                 )}
               </>
@@ -348,26 +359,20 @@ function CheckForm({
           }}
         </form.Subscribe>
         {definition.files.map((part) => (
-          <Field key={part.part}>
-            <FieldLabel htmlFor={`${kind}-${part.part}`}>{part.label}</FieldLabel>
-            <Input
-              id={`${kind}-${part.part}`}
-              type="file"
-              multiple={part.max > 1}
-              accept={
-                part.photosOnly
-                  ? "image/jpeg,image/png,image/webp"
-                  : "image/jpeg,image/png,image/webp,application/pdf"
-              }
-              onChange={(event) =>
-                setFiles((current) => ({
-                  ...current,
-                  [part.part]: Array.from(event.target.files ?? []),
-                }))
-              }
-            />
-            <FieldDescription>{part.photosOnly ? t.photosOnly : t.photosOrPdf}</FieldDescription>
-          </Field>
+          <FilePicker
+            key={part.part}
+            id={`${kind}-${part.part}`}
+            label={part.label}
+            hint={part.photosOnly ? t.photosOnly : t.photosOrPdf}
+            multiple={part.max > 1}
+            accept={
+              part.photosOnly
+                ? "image/jpeg,image/png,image/webp"
+                : "image/jpeg,image/png,image/webp,application/pdf"
+            }
+            files={files[part.part] ?? []}
+            onFiles={(chosen) => setFiles((current) => ({ ...current, [part.part]: chosen }))}
+          />
         ))}
         <Refusal message={refusal} />
         <div className="flex gap-2">

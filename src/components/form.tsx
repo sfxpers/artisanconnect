@@ -1,4 +1,5 @@
-import { useId, type ComponentProps, type ReactNode } from "react";
+import { useId, useState, type ComponentProps, type ReactNode } from "react";
+import { CalendarDays } from "lucide-react";
 import { createFormHook, createFormHookContexts } from "@tanstack/react-form";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -13,9 +14,20 @@ import {
   FieldSet,
   FieldTitle,
 } from "@/components/ui/field";
+import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+  InputGroupText,
+} from "@/components/ui/input-group";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { EMAIL_CODE } from "@/domain/accounts/inputs";
+import { copy } from "@/web/copy";
 
 // Every form is TanStack Form (ADR 0017) on shadcn's Field, with these fields
 // bound once: a form's own code names only its values, schema, and submit.
@@ -54,6 +66,104 @@ function TextField({ label, description, ...input }: Labelled & ComponentProps<t
         aria-invalid={invalid}
         {...input}
       />
+      {description && <FieldDescription>{description}</FieldDescription>}
+      {error}
+    </Field>
+  );
+}
+
+/** An amount in rands, with the R before it, as South Africans write it; typed as 1500.00. */
+function RandsField({ label, description, ...input }: Labelled & ComponentProps<typeof Input>) {
+  const { field, id, invalid, error } = useBound<string>();
+  return (
+    <Field data-invalid={invalid}>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <InputGroup>
+        <InputGroupAddon>
+          <InputGroupText>{copy.rand}</InputGroupText>
+        </InputGroupAddon>
+        <InputGroupInput
+          id={id}
+          name={field.name}
+          inputMode="decimal"
+          placeholder="0.00"
+          className="tabular-nums"
+          value={field.state.value}
+          onBlur={field.handleBlur}
+          onChange={(event) => field.handleChange(event.target.value)}
+          aria-invalid={invalid}
+          {...input}
+        />
+      </InputGroup>
+      {description && <FieldDescription>{description}</FieldDescription>}
+      {error}
+    </Field>
+  );
+}
+
+/** A day as "YYYY-MM-DD", read and written in the browser's own calendar. */
+const dayOf = (date: Date) =>
+  [date.getFullYear(), date.getMonth() + 1, date.getDate()]
+    .map((part, index) => String(part).padStart(index === 0 ? 4 : 2, "0"))
+    .join("-");
+const dateOf = (day: string) => {
+  const [year, month, date] = day.split("-").map(Number);
+  return new Date(year!, month! - 1, date);
+};
+
+/**
+ * A day: typed, or picked on shadcn's Calendar in a Popover (its date picker
+ * with an input), so typing costs no more clicks than before. "" for none.
+ */
+function DateField({
+  label,
+  description,
+  fromToday,
+}: Labelled & {
+  /** A start date: days before today are greyed out, as the module refuses them anyway. */
+  fromToday?: boolean;
+}) {
+  const { field, id, invalid, error } = useBound<string>();
+  // Today as the field first showed, held so the render stays pure.
+  const [today] = useState(() => new Date());
+  const [open, setOpen] = useState(false);
+  const day = /^\d{4}-\d{2}-\d{2}$/.test(field.state.value) ? dateOf(field.state.value) : undefined;
+  return (
+    <Field data-invalid={invalid}>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <InputGroup className="w-56">
+        <InputGroupInput
+          id={id}
+          type="date"
+          min={fromToday ? dayOf(today) : undefined}
+          name={field.name}
+          value={field.state.value}
+          onBlur={field.handleBlur}
+          onChange={(event) => field.handleChange(event.target.value)}
+          aria-invalid={invalid}
+        />
+        <InputGroupAddon align="inline-end">
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger render={<InputGroupButton size="icon-xs" aria-label={copy.pickDay} />}>
+              <CalendarDays />
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <Calendar
+                mode="single"
+                selected={day}
+                defaultMonth={day}
+                captionLayout="dropdown"
+                disabled={fromToday ? { before: today } : undefined}
+                onSelect={(picked) => {
+                  field.handleChange(picked ? dayOf(picked) : "");
+                  field.handleBlur();
+                  setOpen(false);
+                }}
+              />
+            </PopoverContent>
+          </Popover>
+        </InputGroupAddon>
+      </InputGroup>
       {description && <FieldDescription>{description}</FieldDescription>}
       {error}
     </Field>
@@ -107,7 +217,7 @@ function ChoiceField<Option extends string>({
         name={group}
         value={field.state.value}
         onValueChange={(value) => field.handleChange(value as Option)}
-        className={cards ? "sm:grid-cols-2" : "flex flex-wrap gap-4"}
+        className="sm:grid-cols-2"
       >
         {options.map((option) => {
           const id = `${group}-${option.value}`;
@@ -176,25 +286,40 @@ export function issuesOf(result: { success: boolean; error?: { issues: Issue[] }
 type Issue = { path: PropertyKey[]; message: string };
 
 /** The form element, submitting through TanStack Form. */
+/**
+ * The form, which TanStack Form submits; a submit a field refuses moves the
+ * focus to the first field with a problem, where its error is said (WCAG 3.3.1).
+ */
 function Form(props: Omit<ComponentProps<"form">, "onSubmit">) {
   const form = useFormContext();
   return (
     <form
       {...props}
-      onSubmit={(event) => {
+      onSubmit={async (event) => {
         event.preventDefault();
-        void form.handleSubmit();
+        const element = event.currentTarget;
+        await form.handleSubmit();
+        if (form.state.isValid) return;
+        requestAnimationFrame(() =>
+          element.querySelector<HTMLElement>("[aria-invalid=true]")?.focus(),
+        );
       }}
     />
   );
 }
 
 /** The submit button, idle while the form submits. */
-function Submit({ disabled, ...props }: ComponentProps<typeof Button>) {
+/** The form's submit, turning while the form is sent, so a slow answer shows it is on its way. */
+function Submit({ disabled, children, ...props }: ComponentProps<typeof Button>) {
   const form = useFormContext();
   return (
     <form.Subscribe selector={(state) => state.isSubmitting}>
-      {(submitting) => <Button type="submit" disabled={submitting || disabled} {...props} />}
+      {(submitting) => (
+        <Button type="submit" disabled={submitting || disabled} {...props}>
+          {submitting && <Spinner data-icon="inline-start" />}
+          {children}
+        </Button>
+      )}
     </form.Subscribe>
   );
 }
@@ -202,6 +327,6 @@ function Submit({ disabled, ...props }: ComponentProps<typeof Button>) {
 export const { useAppForm } = createFormHook({
   fieldContext,
   formContext,
-  fieldComponents: { TextField, TextareaField, ChoiceField, CheckboxField },
+  fieldComponents: { TextField, RandsField, DateField, TextareaField, ChoiceField, CheckboxField },
   formComponents: { Form, Submit },
 });

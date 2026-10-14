@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { ActionButton } from "@/components/action-button";
+import { toast } from "sonner";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ArtisanProfileView, PhotoGrid } from "@/components/artisan-profile";
 import { Badge } from "@/components/ui/badge";
@@ -9,13 +11,14 @@ import { Page, Refusal } from "@/components/page";
 import { PhotosField, usePhotos } from "@/components/photos-field";
 import { useAction } from "@/components/use-action";
 import { ABOUT_MAX, PROFILE_PHOTOS_MAX } from "@/domain/profiles/inputs";
-import { copy } from "@/web/copy";
+import { copy, pageTitle } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
 import { editProfile, getMyProfile, withdrawProfileEdit } from "@/web/profiles";
 
 export const Route = createFileRoute("/profile")({
   beforeLoad: ({ context }) => ({ me: onlyFor("artisan", context) }),
   loader: () => getMyProfile(),
+  head: () => ({ meta: [{ title: pageTitle(t.title) }] }),
   component: MyProfile,
 });
 
@@ -30,7 +33,6 @@ type Mine = NonNullable<Awaited<ReturnType<typeof getMyProfile>>>;
 function MyProfile() {
   const mine = Route.useLoaderData();
   const { me } = Route.useRouteContext();
-  const [done, setDone] = useState<string | null>(null);
   if (!mine) return null;
   return (
     <Page title={t.title} lead={t.lead}>
@@ -48,15 +50,14 @@ function MyProfile() {
 
       {mine.outOfView && <Refusal message={t.outOfView(mine.outOfView.reason)} />}
       {mine.refused && <Refusal message={t.refused(mine.refused.reason)} />}
-      {done && <p className="text-sm text-muted-foreground">{done}</p>}
       {mine.beingChecked ? (
-        <BeingChecked edit={mine.beingChecked} onWithdrawn={() => setDone(null)} />
+        <BeingChecked edit={mine.beingChecked} onWithdrawn={() => undefined} />
       ) : (
-        <Editor mine={mine} onSent={() => setDone(t.sent)} />
+        <Editor mine={mine} onSent={() => toast.success(t.sent)} />
       )}
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold tracking-tight">{t.preview}</h2>
+        <h2 className="text-lg font-semibold">{t.preview}</h2>
         {mine.profile ? (
           <ArtisanProfileView profile={mine.profile} />
         ) : (
@@ -95,14 +96,14 @@ function BeingChecked({
         <p className="text-sm whitespace-pre-line">{edit.about || copy.profile.noAbout}</p>
         <PhotoGrid photos={edit.photos} empty={copy.profile.noPhotos} />
         <Refusal message={refusal} />
-        <Button
+        <ActionButton
           variant="outline"
           size="sm"
           disabled={busy}
-          onClick={() => void run(withdrawProfileEdit, onWithdrawn)}
+          onClick={() => run(withdrawProfileEdit, onWithdrawn)}
         >
           {t.withdraw}
-        </Button>
+        </ActionButton>
       </CardContent>
     </Card>
   );

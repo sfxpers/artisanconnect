@@ -26,13 +26,13 @@ import { SERVICE_CATEGORIES, SERVICE_CATEGORY_NAMES } from "@/domain/service-cat
 import { copy } from "@/web/copy";
 import type { getJob } from "@/web/jobs";
 import { searchSuburbs } from "@/web/regions";
-import { NativeSelect } from "@/components/ui/native-select";
+import { Choose } from "@/components/choose";
 
 const t = copy.job;
 
 /** A Job as its Client sees it. */
 export type JobView = Extract<Awaited<ReturnType<typeof getJob>>, { as: "client" }>;
-type Suburb = { id: string; name: string; region: { id: string; name: string } };
+export type Suburb = { id: string; name: string; region: { id: string; name: string } };
 
 /** A Draft's form as last saved, or empty for a new Job. */
 function draftValuesOf(job: JobView | null) {
@@ -63,7 +63,6 @@ export function DraftForm({
   job,
   busy,
   refusal,
-  notice,
   onSave,
   onPost,
   extra,
@@ -71,7 +70,6 @@ export function DraftForm({
   job: JobView | null;
   busy: boolean;
   refusal: string | null;
-  notice: string | null;
   onSave: (form: FormData) => void;
   onPost: (form: FormData) => void;
   extra?: ReactNode;
@@ -90,120 +88,112 @@ export function DraftForm({
   }
 
   return (
-    <form
-      className="space-y-5"
-      onSubmit={(event) => {
-        event.preventDefault();
-        void form.handleSubmit();
-      }}
-    >
-      {job?.hireAgain && (
-        <div className="space-y-1 rounded-lg border bg-muted/40 p-3 text-sm">
-          <p className="font-medium">{t.hireAgain}</p>
-          <p className="text-muted-foreground">
-            {t.hireAgainDraftLead(job.hireAgain.publicName ?? copy.quotes.noName)}
-          </p>
-        </div>
-      )}
-      <form.Field name="category">
-        {(field) => (
-          <Field>
-            <FieldLabel htmlFor="category">{t.category}</FieldLabel>
-            <NativeSelect
-              id="category"
-              className="w-full"
-              value={field.state.value}
-              onChange={(event) => field.handleChange(event.target.value)}
-            >
-              <option value="">{t.chooseCategory}</option>
-              {SERVICE_CATEGORIES.map((category) => (
-                <option key={category} value={category}>
-                  {SERVICE_CATEGORY_NAMES[category]}
-                </option>
-              ))}
-            </NativeSelect>
-          </Field>
+    <form.AppForm>
+      <form.Form className="space-y-5">
+        {job?.hireAgain && (
+          <div className="space-y-1 rounded-lg border bg-muted p-4 text-sm">
+            <p className="font-medium">{t.hireAgain}</p>
+            <p className="text-muted-foreground">
+              {t.hireAgainDraftLead(job.hireAgain.publicName ?? copy.quotes.noName)}
+            </p>
+          </div>
         )}
-      </form.Field>
-      <form.Subscribe selector={(state) => state.values.category === "plumbing"}>
-        {(plumbing) =>
-          plumbing && (
-            <form.AppField name="gasWork">
-              {(field) => (
-                <field.ChoiceField
-                  label={t.gasWork}
-                  options={[
-                    { value: "yes", label: t.yes },
-                    { value: "no", label: t.no },
-                  ]}
-                />
-              )}
-            </form.AppField>
-          )
-        }
-      </form.Subscribe>
-      <form.AppField name="siteType">
-        {(field) => <field.ChoiceField {...siteTypes} />}
-      </form.AppField>
-      <form.Field name="suburb">
-        {(field) => <SuburbPicker value={field.state.value} onChange={field.handleChange} />}
-      </form.Field>
-      <form.AppField name="street">
-        {(field) => (
-          <field.TextField
-            label={t.street}
-            description={t.streetHint}
-            autoComplete="street-address"
-            maxLength={STREET_MAX}
-          />
-        )}
-      </form.AppField>
-      <form.AppField name="title">{(field) => <field.TextField {...title} />}</form.AppField>
-      <form.AppField name="description">
-        {(field) => <field.TextareaField {...description} />}
-      </form.AppField>
-      <PhotosField
-        photos={photos}
-        label={t.photos}
-        hint={t.photosHint(JOB_PHOTOS_MAX)}
-        max={JOB_PHOTOS_MAX}
-      />
-      <form.AppField name="preferredStart">
-        {(field) => <field.TextField {...preferredStart} />}
-      </form.AppField>
-      {/* A Job opened by Hire Again is Invite-only, inviting only that Artisan (#139). */}
-      {!job?.hireAgain && (
-        <form.AppField name="matching">
+        <form.Field name="category">
           {(field) => (
-            <field.ChoiceField
-              label={t.matching}
-              options={MATCHINGS.map((matching) => ({
-                value: matching,
-                label: t.matchings[matching],
-                hint: t.matchingHints[matching],
-              }))}
+            <Field>
+              <FieldLabel htmlFor="category">{t.category}</FieldLabel>
+              <Choose
+                id="category"
+                value={field.state.value}
+                onChange={field.handleChange}
+                placeholder={t.chooseCategory}
+                options={SERVICE_CATEGORIES.map((category) => ({
+                  value: category,
+                  label: SERVICE_CATEGORY_NAMES[category],
+                }))}
+              />
+            </Field>
+          )}
+        </form.Field>
+        <form.Subscribe selector={(state) => state.values.category === "plumbing"}>
+          {(plumbing) =>
+            plumbing && (
+              <form.AppField name="gasWork">
+                {(field) => (
+                  <field.ChoiceField
+                    label={t.gasWork}
+                    options={[
+                      { value: "yes", label: t.yes },
+                      { value: "no", label: t.no },
+                    ]}
+                  />
+                )}
+              </form.AppField>
+            )
+          }
+        </form.Subscribe>
+        <form.AppField name="siteType">
+          {(field) => <field.ChoiceField {...siteTypes} />}
+        </form.AppField>
+        <form.Field name="suburb">
+          {(field) => <SuburbPicker value={field.state.value} onChange={field.handleChange} />}
+        </form.Field>
+        <form.AppField name="street">
+          {(field) => (
+            <field.TextField
+              label={t.street}
+              description={t.streetHint}
+              autoComplete="street-address"
+              maxLength={STREET_MAX}
             />
           )}
         </form.AppField>
-      )}
+        <form.AppField name="title">{(field) => <field.TextField {...title} />}</form.AppField>
+        <form.AppField name="description">
+          {(field) => <field.TextareaField {...description} />}
+        </form.AppField>
+        <PhotosField
+          photos={photos}
+          label={t.photos}
+          hint={t.photosHint(JOB_PHOTOS_MAX)}
+          max={JOB_PHOTOS_MAX}
+        />
+        <form.AppField name="preferredStart">
+          {(field) => <field.DateField {...preferredStart} />}
+        </form.AppField>
+        {/* A Job opened by Hire Again is Invite-only, inviting only that Artisan (#139). */}
+        {!job?.hireAgain && (
+          <form.AppField name="matching">
+            {(field) => (
+              <field.ChoiceField
+                label={t.matching}
+                options={MATCHINGS.map((matching) => ({
+                  value: matching,
+                  label: t.matchings[matching],
+                  hint: t.matchingHints[matching],
+                }))}
+              />
+            )}
+          </form.AppField>
+        )}
 
-      <Refusal message={refusal} />
-      {notice && <p className="text-sm text-muted-foreground">{notice}</p>}
-      <div className="flex flex-wrap gap-2">
-        <Button type="submit" disabled={busy}>
-          {t.postJob}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={busy}
-          onClick={() => void formData(form.state.values).then(onSave)}
-        >
-          {t.saveDraft}
-        </Button>
-        {extra}
-      </div>
-    </form>
+        <Refusal message={refusal} />
+        <div className="flex flex-wrap gap-2">
+          <Button type="submit" disabled={busy}>
+            {t.postJob}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={busy}
+            onClick={() => void formData(form.state.values).then(onSave)}
+          >
+            {t.saveDraft}
+          </Button>
+          {extra}
+        </div>
+      </form.Form>
+    </form.AppForm>
   );
 }
 
@@ -237,39 +227,35 @@ export function EditForm({
   });
 
   return (
-    <form
-      className="space-y-5"
-      onSubmit={(event) => {
-        event.preventDefault();
-        void form.handleSubmit();
-      }}
-    >
-      <form.AppField name="title">{(field) => <field.TextField {...title} />}</form.AppField>
-      <form.AppField name="description">
-        {(field) => <field.TextareaField {...description} />}
-      </form.AppField>
-      <PhotosField
-        photos={photos}
-        label={t.photos}
-        hint={t.photosHint(JOB_PHOTOS_MAX)}
-        max={JOB_PHOTOS_MAX}
-      />
-      <form.AppField name="siteType">
-        {(field) => <field.ChoiceField {...siteTypes} />}
-      </form.AppField>
-      <form.AppField name="preferredStart">
-        {(field) => <field.TextField {...preferredStart} />}
-      </form.AppField>
-      <Refusal message={refusal} />
-      <div className="flex gap-2">
-        <Button type="submit" disabled={busy}>
-          {t.sendEdit}
-        </Button>
-        <Button type="button" variant="ghost" disabled={busy} onClick={onCancel}>
-          {t.cancel}
-        </Button>
-      </div>
-    </form>
+    <form.AppForm>
+      <form.Form className="space-y-5">
+        <form.AppField name="title">{(field) => <field.TextField {...title} />}</form.AppField>
+        <form.AppField name="description">
+          {(field) => <field.TextareaField {...description} />}
+        </form.AppField>
+        <PhotosField
+          photos={photos}
+          label={t.photos}
+          hint={t.photosHint(JOB_PHOTOS_MAX)}
+          max={JOB_PHOTOS_MAX}
+        />
+        <form.AppField name="siteType">
+          {(field) => <field.ChoiceField {...siteTypes} />}
+        </form.AppField>
+        <form.AppField name="preferredStart">
+          {(field) => <field.DateField {...preferredStart} />}
+        </form.AppField>
+        <Refusal message={refusal} />
+        <div className="flex gap-2">
+          <Button type="submit" disabled={busy}>
+            {t.sendEdit}
+          </Button>
+          <Button type="button" variant="ghost" disabled={busy} onClick={onCancel}>
+            {t.cancel}
+          </Button>
+        </div>
+      </form.Form>
+    </form.AppForm>
   );
 }
 
@@ -285,7 +271,7 @@ const siteTypes = {
   label: t.siteType,
   options: SITE_TYPES.map((siteType) => ({ value: siteType, label: t.siteTypes[siteType] })),
 };
-const preferredStart = { label: t.preferredStart, type: "date", className: "w-auto" };
+const preferredStart = { label: t.preferredStart, fromToday: true };
 
 /** The form's values as the server function takes them, leaving out none given. */
 function asFormData(values: Record<string, string | undefined>) {
@@ -298,12 +284,16 @@ function asFormData(values: Record<string, string | undefined>) {
  * The suburb, searched as the City publishes it, each with its Region beside
  * it: two pairs of official names read alike (GOEDE HOOP and GOEDEHOOP).
  */
-function SuburbPicker({
+export function SuburbPicker({
   value,
   onChange,
+  label = t.suburb,
+  hint = t.suburbHint,
 }: {
   value: Suburb | null;
   onChange: (suburb: Suburb | null) => void;
+  label?: string;
+  hint?: string | null;
 }) {
   const [query, setQuery] = useState("");
   // What was found, and for which query, so an older answer never shows under a newer query.
@@ -326,7 +316,7 @@ function SuburbPicker({
 
   return (
     <Field>
-      <FieldLabel htmlFor="suburb">{t.suburb}</FieldLabel>
+      <FieldLabel htmlFor="suburb">{label}</FieldLabel>
       <Combobox
         items={found?.suburbs ?? []}
         filter={null}
@@ -349,7 +339,7 @@ function SuburbPicker({
           </ComboboxList>
         </ComboboxContent>
       </Combobox>
-      <FieldDescription>{t.suburbHint}</FieldDescription>
+      {hint && <FieldDescription>{hint}</FieldDescription>}
     </Field>
   );
 }
