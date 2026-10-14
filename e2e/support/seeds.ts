@@ -223,3 +223,75 @@ export async function freshRateLimits(env: Env) {
   await env.DB.prepare("DELETE FROM rate_limit_hits").run();
   return {};
 }
+
+/**
+ * Every state the design screenshots show (docs/review/screens): a Client
+ * with a Job holding two Sent Quotes, a Job awaiting their approval, a
+ * Completed Job they reviewed, and a Disputed Job the Admin decides.
+ */
+export async function screens(env: Env) {
+  const { domain, make } = await world(env);
+  const stamp = Date.now();
+  const client = await make.client({
+    email: `client-${stamp}@example.test`,
+    name: "Lindiwe Mokoena",
+  });
+  const artisan = (name: string) =>
+    make.matchableArtisan({
+      name,
+      email: `${name.split(" ")[0]!.toLowerCase()}-${stamp}@example.test`,
+    });
+  const sipho = await artisan("Sipho Dlamini");
+  const themba = await artisan("Themba Nkosi");
+  const invitedJob = async (artisans: (typeof sipho)[], title: string) => {
+    const jobId = await make.openJob(client, { matching: "invite-only", title });
+    for (const artisan of artisans) {
+      const invited = await domain.invitations.invite(client.actor, {
+        jobId,
+        artisanId: artisan.actor.accountId,
+      });
+      if (!invited.ok) throw new Error(invited.refusal.message);
+    }
+    return jobId;
+  };
+  const startOn = saDay(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
+
+  const quotedJobId = await invitedJob([sipho, themba], "Paint the lounge");
+  await make.sentQuote(sipho, quotedJobId, { labour: "1500", materials: "500", startOn });
+  await make.sentQuote(themba, quotedJobId, { labour: "600", materials: "300", startOn });
+
+  const done = async (artisan: typeof sipho, title: string) => {
+    const jobId = await invitedJob([artisan], title);
+    const quoteId = await make.sentQuote(artisan, jobId, { startOn });
+    await make.hired(client, quoteId);
+    const engagementId = await make.engagementOf(client, jobId);
+    await make.workStarted(client, engagementId);
+    await make.markedComplete(artisan, engagementId);
+    return { jobId, engagementId };
+  };
+  const reviewed = await done(sipho, "Paint the bedroom");
+  await make.approved(client, reviewed.engagementId);
+  const review = await domain.reviews.write(client.actor, {
+    engagementId: reviewed.engagementId,
+    rating: 5,
+    comment: "Careful, tidy, and finished a day early.",
+  });
+  if (!review.ok) throw new Error(review.refusal.message);
+  const awaiting = await done(sipho, "Paint the kitchen");
+  const disputed = await done(themba, "Paint the garage door");
+  const opened = await domain.engagements.dispute(client.actor, {
+    engagementId: disputed.engagementId,
+    amount: "600",
+    reason: "The second coat is missing on the east wall.",
+  });
+  if (!opened.ok) throw new Error(opened.refusal.message);
+
+  return {
+    client: { email: client.email, password: client.password },
+    artisan: { email: sipho.email, password: sipho.password, id: sipho.actor.accountId },
+    quotedJobId,
+    awaitingJobId: awaiting.jobId,
+    disputeItemId: (await disputeItem(env, disputed.engagementId)).itemId,
+    admin: (await admin(env)).email,
+  };
+}
