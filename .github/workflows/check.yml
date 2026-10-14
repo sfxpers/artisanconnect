@@ -1,0 +1,27 @@
+# Every push and pull request runs the checks AGENTS.md names, so a commit
+# that breaks one is seen without anyone running them by hand.
+name: Check
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      # Node and nub, at the versions mise.toml pins.
+      - uses: jdx/mise-action@v2
+      - run: nub install --frozen-lockfile
+      - run: nub run lint
+      - run: nub run fmt:check
+      - run: nub run typecheck
+      - run: nub run test
+      # The smoke tests run the local app, which needs its secrets.
+      - run: |
+          cp .dev.vars.example .dev.vars
+          sed -i "s|^BETTER_AUTH_SECRET=.*|BETTER_AUTH_SECRET=$(openssl rand -base64 32)|" .dev.vars
+          sed -i "s|^PAYMENTS_WEBHOOK_SECRET=.*|PAYMENTS_WEBHOOK_SECRET=$(openssl rand -base64 32)|" .dev.vars
+      # In the runner's own Chrome, as playwright.config.ts asks.
+      - run: nub run test:smoke
