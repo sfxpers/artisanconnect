@@ -3,8 +3,10 @@
 // A date a person enters (an expiry, an issue date) is a South African
 // calendar day, written YYYY-MM-DD. South Africa keeps UTC+2 all year.
 
-const SA_OFFSET_MS = 2 * 60 * 60 * 1000;
-const DAY_MS = 24 * 60 * 60 * 1000;
+export const MINUTE_MS = 60 * 1000;
+export const HOUR_MS = 60 * MINUTE_MS;
+export const DAY_MS = 24 * HOUR_MS;
+const SA_OFFSET_MS = 2 * HOUR_MS;
 
 /** The South African calendar day an instant falls on. */
 export function saDay(at: Date): string {

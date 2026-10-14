@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { keepDevice, requestActor, requestDomain, requestSeen } from "./session";
+import { filesOf, textOf } from "./form-data";
 
 // Engagements: thin adapters onto the domain module, which decides who may
 // set Work started, mark the work complete, approve it, refund, cancel,
@@ -32,9 +33,6 @@ export const answerNotStarted = createServerFn({ method: "POST" })
     return domain.engagements.notStarted(await requestActor(domain), data);
   });
 
-const files = (form: FormData, name: string) =>
-  form.getAll(name).filter((value): value is File => value instanceof File && value.size > 0);
-
 /**
  * The Artisan marks the work complete: "engagementId", "note", "photos",
  * "documents", and a "certificate" where the Job needs one.
@@ -42,13 +40,12 @@ const files = (form: FormData, name: string) =>
 export const markComplete = createServerFn({ method: "POST" })
   .validator((input: FormData) => {
     if (!(input instanceof FormData)) throw new Error("Expected a form");
-    const note = input.get("note");
-    const [certificate] = files(input, "certificate");
+    const [certificate] = filesOf(input, "certificate");
     return {
-      engagementId: String(input.get("engagementId") ?? ""),
-      note: typeof note === "string" ? note : "",
-      photos: files(input, "photos"),
-      documents: files(input, "documents"),
+      engagementId: textOf(input, "engagementId") ?? "",
+      note: textOf(input, "note") ?? "",
+      photos: filesOf(input, "photos"),
+      documents: filesOf(input, "documents"),
       ...(certificate ? { certificate } : {}),
     };
   })
@@ -144,13 +141,12 @@ export const acceptUpdatedQuote = createServerFn({ method: "POST" })
 export const openDispute = createServerFn({ method: "POST" })
   .validator((input: FormData) => {
     if (!(input instanceof FormData)) throw new Error("Expected a form");
-    const reason = input.get("reason");
-    const amount = input.get("amount");
+    const amount = textOf(input, "amount");
     return {
-      engagementId: String(input.get("engagementId") ?? ""),
-      reason: typeof reason === "string" ? reason : "",
-      photos: files(input, "photos"),
-      ...(typeof amount === "string" ? { amount } : {}),
+      engagementId: textOf(input, "engagementId") ?? "",
+      reason: textOf(input, "reason") ?? "",
+      photos: filesOf(input, "photos"),
+      ...(amount === undefined ? {} : { amount }),
     };
   })
   .handler(async ({ data }) => {

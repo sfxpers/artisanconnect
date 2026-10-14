@@ -1,90 +1,31 @@
-import decodeWebp, { init as initWebpDecode } from "@jsquash/webp/decode";
-import encodeJpeg, { init as initJpegEncode } from "@jsquash/jpeg/encode";
-import encodePng, { init as initPngEncode } from "@jsquash/png/encode";
-import encodeWebp, { init as initWebpEncode } from "@jsquash/webp/encode";
-import JPEG_ENCODER from "@jsquash/jpeg/codec/enc/mozjpeg_enc.wasm?module";
-import PNG_CODEC from "@jsquash/png/codec/pkg/squoosh_png_bg.wasm?module";
-import WEBP_DECODER from "@jsquash/webp/codec/dec/webp_dec.wasm?module";
-import WEBP_ENCODER from "@jsquash/webp/codec/enc/webp_enc_simd.wasm?module";
+import cameraPhoto from "../fixtures/camera.jpg?inline";
+import animatedWebp from "../fixtures/animated.webp?inline";
+import jpegPhoto from "../fixtures/photo.jpg?inline";
+import pngPhoto from "../fixtures/photo.png?inline";
+import webpPhoto from "../fixtures/photo.webp?inline";
 
-// Files as a party's device would send them. Photos are drawn and encoded
-// here; voice notes, videos, and PDFs that only a real recorder or printer
-// makes are in test/fixtures, and the containers whose length a test needs to
-// set are built byte by byte.
-
-const ready = Promise.all([
-  initJpegEncode(JPEG_ENCODER),
-  initPngEncode(PNG_CODEC),
-  initWebpEncode(WEBP_ENCODER),
-  initWebpDecode(WEBP_DECODER),
-]);
-
-type Colour = [number, number, number];
-export const RED: Colour = [220, 30, 30];
-export const BLUE: Colour = [30, 30, 220];
-
-/** An image whose left half is one colour and right half another. */
-export function picture(width: number, height: number, left = RED, right = BLUE): ImageData {
-  const pixels = new Uint8ClampedArray(width * height * 4);
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const [r, g, b] = x < width / 2 ? left : right;
-      pixels.set([r, g, b, 255], (y * width + x) * 4);
-    }
-  }
-  return new ImageData(pixels, width, height);
-}
+// Files as a party's device would send them. Photos, voice notes, videos, and
+// PDFs that only a real camera, recorder, or printer makes are in
+// test/fixtures; the containers whose length a test needs to set are built
+// byte by byte.
 
 /**
- * A JPEG as a phone camera saves it: with EXIF holding where it was taken
- * (Cape Town City Hall) and, optionally, how the camera was held.
+ * Photos as a device sends them. The JPEGs (64×48, and 3000×1500 from a
+ * camera) hold EXIF with where they were taken; the PNG and WebP are 640×480.
  */
-export async function cameraJpeg(
-  width: number,
-  height: number,
-  { orientation = 1 }: { orientation?: number } = {},
-): Promise<Uint8Array<ArrayBuffer>> {
-  await ready;
-  const jpeg = new Uint8Array(await encodeJpeg(picture(width, height), { quality: 90 }));
-  const app1 = exifSegment(orientation);
-  // The EXIF segment goes straight after the start-of-image marker.
-  return concat(jpeg.subarray(0, 2), app1, jpeg.subarray(2));
-}
-
-export async function png(width: number, height: number): Promise<Uint8Array<ArrayBuffer>> {
-  await ready;
-  return new Uint8Array(await encodePng(picture(width, height)));
-}
-
-export async function webp(width: number, height: number): Promise<Uint8Array<ArrayBuffer>> {
-  await ready;
-  return new Uint8Array(await encodeWebp(picture(width, height), { quality: 90 }));
-}
-
-/** A PNG header claiming a size, with no image behind it. */
-export function pngHeader(width: number, height: number): Uint8Array<ArrayBuffer> {
-  const ihdr = new Uint8Array(13);
-  const view = new DataView(ihdr.buffer);
-  view.setUint32(0, width);
-  view.setUint32(4, height);
-  ihdr.set([8, 6, 0, 0, 0], 8);
-  return concat(
-    new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
-    pngChunk("IHDR", ihdr),
-    pngChunk("IEND", new Uint8Array()),
-  );
-}
+export const photos = {
+  jpeg: () => fixture(jpegPhoto),
+  camera: () => fixture(cameraPhoto),
+  png: () => fixture(pngPhoto),
+  webp: () => fixture(webpPhoto),
+  animated: () => fixture(animatedWebp),
+};
 
 /** The same bytes followed by zeros, to make a file of an exact size. */
 export function paddedTo(bytes: Uint8Array, size: number): Uint8Array<ArrayBuffer> {
   const padded = new Uint8Array(size);
   padded.set(bytes);
   return padded;
-}
-
-export async function decodeStoredWebp(bytes: ArrayBuffer): Promise<ImageData> {
-  await ready;
-  return decodeWebp(bytes);
 }
 
 /** The four-letter chunk names of a RIFF (WebP) file, in order. */
@@ -96,11 +37,6 @@ export function riffChunks(bytes: Uint8Array): string[] {
     at += 8 + view.getUint32(at + 4, true) + (view.getUint32(at + 4, true) % 2);
   }
   return chunks;
-}
-
-export function pixelAt(image: ImageData, x: number, y: number): Colour {
-  const i = (y * image.width + x) * 4;
-  return [image.data[i]!, image.data[i + 1]!, image.data[i + 2]!];
 }
 
 export function fixture(dataUrl: string): Uint8Array<ArrayBuffer> {
@@ -261,31 +197,6 @@ export async function pdf({
 
 // Bytes
 
-function exifSegment(orientation: number): Uint8Array<ArrayBuffer> {
-  // A big-endian TIFF: IFD0 holds the orientation and a pointer to the GPS IFD.
-  const gpsIfdOffset = 8 + 2 + 2 * 12 + 4;
-  const ifd0 = concat(
-    be(2, 2),
-    concat(be(0x0112, 2), be(3, 2), be(1, 4), be(orientation, 2), be(0, 2)),
-    concat(be(0x8825, 2), be(4, 2), be(1, 4), be(gpsIfdOffset, 4)),
-    be(0, 4),
-  );
-  const gps = concat(
-    be(2, 2),
-    concat(be(0x0001, 2), be(2, 2), be(2, 4), ascii("S\0\0\0")),
-    concat(be(0x0003, 2), be(2, 2), be(2, 4), ascii("E\0\0\0")),
-    be(0, 4),
-  );
-  const tiff = concat(ascii("MM"), be(42, 2), be(8, 4), ifd0, gps);
-  const data = concat(ascii("Exif\0\0"), tiff);
-  return concat(new Uint8Array([0xff, 0xe1]), be(data.length + 2, 2), data);
-}
-
-function pngChunk(type: string, data: Uint8Array): Uint8Array<ArrayBuffer> {
-  // Decoders this test feeds a header to stop before checking a CRC.
-  return concat(be(data.length, 4), ascii(type), data, new Uint8Array(4));
-}
-
 function oggPage(
   serial: number,
   sequence: number,
@@ -340,9 +251,9 @@ function le32(value: number): Uint8Array<ArrayBuffer> {
   return be(value, 4).reverse();
 }
 
-function ascii(text: string): Uint8Array<ArrayBuffer>;
-function ascii(bytes: Uint8Array): string;
-function ascii(value: string | Uint8Array): Uint8Array<ArrayBuffer> | string {
+export function ascii(text: string): Uint8Array<ArrayBuffer>;
+export function ascii(bytes: Uint8Array): string;
+export function ascii(value: string | Uint8Array): Uint8Array<ArrayBuffer> | string {
   return typeof value === "string"
     ? Uint8Array.from(value, (c) => c.charCodeAt(0))
     : String.fromCharCode(...value);
@@ -356,31 +267,6 @@ export function concat(...parts: Uint8Array[]): Uint8Array<ArrayBuffer> {
     at += part.length;
   }
   return out;
-}
-
-/** The start of an animated WebP: a VP8X chunk with its animation flag set. */
-export function animatedWebpHeader(): Uint8Array<ArrayBuffer> {
-  const vp8x = new Uint8Array(10);
-  vp8x[0] = 0x02;
-  vp8x.set([31, 0, 0, 31, 0, 0], 4);
-  const chunk = concat(ascii("VP8X"), le32(vp8x.length), vp8x);
-  return concat(ascii("RIFF"), le32(4 + chunk.length), ascii("WEBP"), chunk);
-}
-
-/** A WebP whose extended header claims a 1×1 canvas over a 16000×16000 lossless image. */
-export function webpUnderstatingItsSize(): Uint8Array<ArrayBuffer> {
-  const vp8x = new Uint8Array(10);
-  const bits = (16_000 - 1) | ((16_000 - 1) << 14);
-  const vp8l = concat(new Uint8Array([0x2f]), le32(bits >>> 0), new Uint8Array(11));
-  const chunks = concat(
-    ascii("VP8X"),
-    le32(vp8x.length),
-    vp8x,
-    ascii("VP8L"),
-    le32(vp8l.length),
-    vp8l,
-  );
-  return concat(ascii("RIFF"), le32(4 + chunks.length), ascii("WEBP"), chunks);
 }
 
 /**
@@ -427,9 +313,4 @@ export function fragmentedM4a(samples: number, sampleDuration = 1024): Uint8Arra
     ),
     box("mdat", new Uint8Array(16)),
   );
-}
-
-/** A JPEG with a fill byte before its first marker, as some cameras write. */
-export function withFillByte(jpeg: Uint8Array): Uint8Array<ArrayBuffer> {
-  return concat(jpeg.subarray(0, 2), new Uint8Array([0xff]), jpeg.subarray(2));
 }

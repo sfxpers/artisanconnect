@@ -1,19 +1,20 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "artisanconnect",
-  "compatibility_date": "2026-09-14",
+  "compatibility_date": "2026-10-06",
   "compatibility_flags": ["nodejs_compat"],
   "main": "src/server.ts",
-  "workers_dev": true,
   // Custom domains: replace the pattern with your hostname, then uncomment.
   // "routes": [
   //   { "pattern": "artisanconnect.example.com", "custom_domain": true },
   // ],
-  // Workers Logs. Errors also go to Sentry (SENTRY_DSN).
+  // Workers Logs, with Issues grouping every failure and logged error (ADR 0017).
   "observability": {
     "enabled": true,
-    "head_sampling_rate": 1,
+    "issues": { "enabled": true },
   },
+  // So an Issue's stack names the source lines, not the bundle's.
+  "upload_source_maps": true,
   // Every clock is a row with a due time; this cron runs the due ones (ADR 0017),
   // and the daily Payout run once its time of day comes.
   "triggers": {
@@ -27,7 +28,6 @@
   // PAYOUT_RUN_TIME: when the daily Payout run goes, as a South African time of day.
   // TURNSTILE_SITE_KEY: locally, Cloudflare's test key that always passes.
   "vars": {
-    "APP_NAME": "artisanconnect",
     "ENVIRONMENT": "local",
     "MAIL_FROM": "ArtisanConnect <no-reply@example.com>",
     "APP_URL": "http://localhost:3000",
@@ -35,16 +35,27 @@
     "TURNSTILE_SITE_KEY": "1x00000000000000000000AA",
   },
   "secrets": {
-    "required": ["SENTRY_DSN", "BETTER_AUTH_SECRET", "TURNSTILE_SECRET_KEY"],
+    "required": ["BETTER_AUTH_SECRET", "TURNSTILE_SECRET_KEY", "PAYMENTS_WEBHOOK_SECRET"],
   },
-  // Workers Assets: the Vite plugin injects the client build directory.
-  "assets": {
-    "binding": "ASSETS",
-  },
+  // Workers AI is always remote; saying so quiets Wrangler's warning locally.
   "ai": {
     "binding": "AI",
     "remote": true,
   },
+  // Cloudflare Images draws each photo again before it is stored (ADR 0017).
+  "images": {
+    "binding": "IMAGES",
+  },
+  // Stops a flood of sign-ups, sign-ins, and code requests or entries from one
+  // network before the domain module (ADR 0017). Locally loose, for the smoke
+  // tests' many sign-ins; each environment counts in its own namespace.
+  "ratelimits": [
+    {
+      "name": "IP_LIMIT",
+      "namespace_id": "1001",
+      "simple": { "limit": 100, "period": 60 },
+    },
+  ],
   // D1: omit database_id so Wrangler can auto-provision on first deploy.
   "d1_databases": [
     {
@@ -69,23 +80,28 @@
   "env": {
     "staging": {
       "vars": {
-        "APP_NAME": "artisanconnect",
         "ENVIRONMENT": "staging",
-        "MAIL_FROM": "ArtisanConnect <no-reply@example.com>",
-        "APP_URL": "https://staging.artisanconnect.example.com",
+        "MAIL_FROM": "ArtisanConnect <no-reply@artisanconnect.co.za>",
+        "APP_URL": "https://artisanconnect-staging.weathered-shadow-5138.workers.dev",
         "PAYOUT_RUN_TIME": "09:00",
-        "TURNSTILE_SITE_KEY": "replace-with-the-staging-turnstile-site-key",
+        "TURNSTILE_SITE_KEY": "0x4AAAAAAFU7PtdnwZ5hBIB7",
       },
       "secrets": {
-        "required": ["SENTRY_DSN", "BETTER_AUTH_SECRET", "TURNSTILE_SECRET_KEY"],
-      },
-      "assets": {
-        "binding": "ASSETS",
+        "required": ["BETTER_AUTH_SECRET", "TURNSTILE_SECRET_KEY", "PAYMENTS_WEBHOOK_SECRET"],
       },
       "ai": {
         "binding": "AI",
-        "remote": true,
       },
+      "images": {
+        "binding": "IMAGES",
+      },
+      "ratelimits": [
+        {
+          "name": "IP_LIMIT",
+          "namespace_id": "1002",
+          "simple": { "limit": 20, "period": 60 },
+        },
+      ],
       "d1_databases": [
         {
           "binding": "DB",
@@ -107,7 +123,6 @@
     },
     "production": {
       "vars": {
-        "APP_NAME": "artisanconnect",
         "ENVIRONMENT": "production",
         "MAIL_FROM": "ArtisanConnect <no-reply@example.com>",
         "APP_URL": "https://artisanconnect.example.com",
@@ -115,15 +130,21 @@
         "TURNSTILE_SITE_KEY": "replace-with-the-production-turnstile-site-key",
       },
       "secrets": {
-        "required": ["SENTRY_DSN", "BETTER_AUTH_SECRET", "TURNSTILE_SECRET_KEY"],
-      },
-      "assets": {
-        "binding": "ASSETS",
+        "required": ["BETTER_AUTH_SECRET", "TURNSTILE_SECRET_KEY", "PAYMENTS_WEBHOOK_SECRET"],
       },
       "ai": {
         "binding": "AI",
-        "remote": true,
       },
+      "images": {
+        "binding": "IMAGES",
+      },
+      "ratelimits": [
+        {
+          "name": "IP_LIMIT",
+          "namespace_id": "1003",
+          "simple": { "limit": 20, "period": 60 },
+        },
+      ],
       "d1_databases": [
         {
           "binding": "DB",

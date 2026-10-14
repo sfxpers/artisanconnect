@@ -11,6 +11,8 @@ export default defineConfig({
   resolve: {
     tsconfigPaths: true,
   },
+  // The Worker's source maps, which Wrangler uploads (upload_source_maps).
+  environments: { ssr: { build: { sourcemap: true } } },
   plugins: [
     tailwindcss(),
     cloudflare({

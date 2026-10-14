@@ -39,7 +39,6 @@ export function createAuth(ctx: Context) {
         verification: authVerifications,
       },
     }),
-    telemetry: { enabled: false },
     // The module's own limits apply (rate-limits.ts), on the fake clock.
     rateLimit: { enabled: false },
     advanced: {
@@ -60,9 +59,8 @@ export function createAuth(ctx: Context) {
         otpLength: EMAIL_CODE.length,
         expiresIn: EMAIL_CODE.minutes * 60,
         allowedAttempts: EMAIL_CODE.wrongTries,
+        // Hashed, so a new code always replaces the old one, which stops working.
         storeOTP: "hashed",
-        // A new code replaces the old one, which stops working.
-        resendStrategy: "rotate",
         disableSignUp: true,
         // A new Email is proven by a code sent to it; the old one signs in until then.
         changeEmail: { enabled: true },

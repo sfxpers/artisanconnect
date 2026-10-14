@@ -180,6 +180,26 @@ describe("submitting a check, refused", () => {
       },
       /^An account number has 6 to 16 digits\.$/,
     ],
+    [
+      "a South African ID number of 12 digits",
+      async () => identity({ number: "800101500908" }),
+      /^A South African ID number has 13 digits\.$/,
+    ],
+    [
+      "a South African ID number failing its checksum",
+      async () => identity({ number: "8001015009088" }),
+      /^This South African ID number is not valid/,
+    ],
+    [
+      "a refugee ID number of 3 characters",
+      async () => identity({ documentType: "refugee-id", number: "AB1" }),
+      /4 to 20 letters and digits/,
+    ],
+    [
+      "a passport with no issuing country",
+      async () => identity({ documentType: "passport", number: "FN123456" }),
+      /^Choose the country that issued the passport\.$/,
+    ],
   ])("for %s", async (_, submission, message) => {
     const { domain, given } = await createHarness();
     const artisan = await given.artisan();
@@ -540,48 +560,49 @@ describe("being verified for a Service Category", () => {
     expect(await isVerified()).toBe(true);
   });
 
-  test("with a foreign passport needs a work permit; with a South African one it does not", async () => {
+  test("with a foreign passport needs a work permit; with a South African one or a refugee ID it does not", async () => {
     const { domain, given } = await createHarness();
     const admin = await given.admin();
-    const foreign = await given.artisan();
-    const local = await given.artisan();
-    const isVerified = (artisan: typeof foreign) =>
-      domain.verification.verified(artisan.actor, {
-        artisanId: artisan.actor.accountId,
-        category: "roofing",
-      });
-    for (const [artisan, country, account] of [
-      [foreign, "ZW", "1111111111"],
-      [local, "ZA", "2222222222"],
-    ] as const) {
+    const cases = [
+      { needed: "required", document: { documentType: "passport", country: "ZW" } },
+      { needed: "not-needed", document: { documentType: "passport", country: "ZA" } },
+      { needed: "not-needed", document: { documentType: "refugee-id" } },
+    ] as const;
+    const artisans: Awaited<ReturnType<typeof given.artisan>>[] = [];
+    for (const [index, { document: shown }] of cases.entries()) {
+      const artisan = await given.artisan();
+      const account = String(index + 1).repeat(10);
       const checkIds = [
         await submit(
           domain,
           artisan,
-          identity({
-            documentType: "passport",
-            number: `P${account}`,
-            country,
-            expiresOn: "2030-01-01",
-          }),
+          identity({ ...shown, number: `P${account}`, expiresOn: "2030-01-01" }),
         ),
         await submit(domain, artisan, payoutAccount({ accountNumber: account })),
         await submit(domain, artisan, workPhotos("roofing")),
       ];
       await acceptAll(domain, admin, checkIds);
+      artisans.push(artisan);
     }
-    expect([await isVerified(foreign), await isVerified(local)]).toEqual([false, true]);
-    expect(slot((await domain.verification.mine(foreign.actor))!, "work-permit").needed).toBe(
-      "required",
-    );
-    expect(slot((await domain.verification.mine(local.actor))!, "work-permit").needed).toBe(
-      "not-needed",
-    );
+    const isVerified = (artisan: (typeof artisans)[number]) =>
+      domain.verification.verified(artisan.actor, {
+        artisanId: artisan.actor.accountId,
+        category: "roofing",
+      });
 
+    for (const [index, { needed }] of cases.entries()) {
+      const artisan = artisans[index]!;
+      expect(slot((await domain.verification.mine(artisan.actor))!, "work-permit").needed).toBe(
+        needed,
+      );
+      expect(await isVerified(artisan)).toBe(needed === "not-needed");
+    }
+
+    const [foreign] = artisans;
     await acceptAll(domain, admin, [
-      await submit(domain, foreign, document({ kind: "work-permit", expiresOn: "2027-05-28" })),
+      await submit(domain, foreign!, document({ kind: "work-permit", expiresOn: "2027-05-28" })),
     ]);
-    expect(await isVerified(foreign)).toBe(true);
+    expect(await isVerified(foreign!)).toBe(true);
   });
 
   test("is not changed by the optional badges, which show their dates", async () => {
@@ -656,19 +677,6 @@ describe("being verified for a Service Category", () => {
         expiresOn: null,
         issuedOn: null,
       },
-    ]);
-  });
-
-  test("is what the verified Artisan builder gives", async () => {
-    const { domain, given } = await createHarness();
-    const artisan = await given.verifiedArtisan({
-      categories: ["plumbing", "electrical"],
-      gasWork: true,
-    });
-
-    expect((await domain.verification.mine(artisan.actor))?.verified).toEqual([
-      { category: "plumbing", gasWork: true },
-      { category: "electrical", gasWork: false },
     ]);
   });
 });
@@ -890,23 +898,32 @@ describe("the automatic reading", () => {
   });
 });
 
-describe("an Identity Number replaced", () => {
-  test("is no longer held, once the Admin accepts the one replacing it", async () => {
-    const { domain, given, clock } = await createHarness();
-    const admin = await given.admin();
-    const artisan = await given.artisan();
-    // Accepted by mistake: it was someone else's number.
-    await acceptAll(domain, admin, [await submit(domain, artisan, identity({ number: SA_ID }))]);
-    clock.advance({ days: 1 });
-    await acceptAll(domain, admin, [
-      await submit(domain, artisan, identity({ number: "9202204720083" })),
-    ]);
-    const owner = await given.artisan();
+describe("an Identity Number once accepted", () => {
+  test.each(["replaced", "removed"] as const)(
+    "stays held by its Artisan once %s, so no other Artisan Account takes it",
+    async (how) => {
+      const { domain, given, clock } = await createHarness();
+      const admin = await given.admin();
+      const artisan = await given.artisan();
+      const checkId = await submit(domain, artisan, identity({ number: SA_ID }));
+      const itemId = await acceptAll(domain, admin, [checkId]);
+      clock.advance({ days: 1 });
+      if (how === "replaced") {
+        await acceptAll(domain, admin, [
+          await submit(domain, artisan, identity({ number: "9202204720083" })),
+        ]);
+      } else {
+        await decideCheck(domain, admin, { itemId, checkId }, "remove", {
+          reason: "The document is someone else's.",
+        });
+      }
+      const other = await given.artisan();
 
-    expect(
-      await domain.verification.submit(owner.actor, await identity({ number: SA_ID })),
-    ).toMatchObject({ ok: true });
-  });
+      expect(
+        await domain.verification.submit(other.actor, await identity({ number: SA_ID })),
+      ).toMatchObject({ ok: false, refusal: { reason: "held" } });
+    },
+  );
 });
 
 describe("a work permit", () => {

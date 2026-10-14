@@ -4,7 +4,7 @@ import { Unreadable } from "../bytes";
 // references to other objects. Content streams use the same syntax, with
 // operators between the operands.
 
-export class PdfName {
+class PdfName {
   constructor(readonly name: string) {}
 }
 

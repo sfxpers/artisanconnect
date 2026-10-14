@@ -7,7 +7,7 @@ import { verifiedFor } from "../verification";
 // What a Quote needs at the moment it is Sent, whether at once or when the
 // Admin releases a Held one, beyond its Job taking it (ADR 0002).
 
-export type SendingProblem = "start-passed" | "not-verified" | "suspended";
+type SendingProblem = "start-passed" | "not-verified" | "suspended";
 
 /**
  * Why the Artisan may not Send this Quote on the Job now: its start date has

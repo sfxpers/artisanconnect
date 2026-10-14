@@ -1,8 +1,8 @@
-import { env } from "cloudflare:test";
 import { describe, expect, test } from "vitest";
 import type { Actor, AdminActor } from "@/domain/actor";
 import { createHarness, type Harness } from "../support/harness";
-import { m4a, paddedTo, webmOpus } from "../support/files";
+import certificatePdf from "../fixtures/certificate.pdf?inline";
+import { fixture, m4a, paddedTo, webmOpus } from "../support/files";
 import { textPdf } from "../support/pdfs";
 import { photo } from "../support/verification";
 
@@ -221,31 +221,21 @@ describe("a message", () => {
       items: [{ kind: "event" }],
     });
   });
-
-  test("cannot be edited or removed once delivered", async () => {
-    const { domain, given } = await createHarness();
-    const { client, conversationId } = await talking(given, domain);
-    await domain.conversations.send(client.actor, { conversationId, text: "See you Monday." });
-
-    // There is no command that could change one, so this checks the database
-    // itself refuses: the record holds even against a bug.
-    await expect(env.DB.prepare("UPDATE messages SET text = 'Changed'").run()).rejects.toThrow(
-      /a delivered message is never changed/,
-    );
-    await expect(env.DB.prepare("DELETE FROM messages").run()).rejects.toThrow(
-      /a message is never removed/,
-    );
-    expect(await domain.conversations.view(client.actor, { conversationId })).toMatchObject({
-      items: [{ kind: "event" }, { text: "See you Monday." }],
-    });
-  });
 });
 
 describe("the Content check of a message", () => {
   test.each([
     ["a phone number", "Call me on 082 555 1234", "Take out the phone number."],
+    ["a phone number with the country code", "WhatsApp +27 82 555 0123", "phone number"],
+    ["a phone number broken up", "0 8 2 - 5 5 5 - 0 1 2 3", "phone number"],
+    ["a phone number after a word in capitals", "CALL MY NUMBER 082 555 0123", "phone number"],
+    ["a phone number after an abbreviation", "TEL NR 0825550123", "phone number"],
     ["an email address", "Mail thandi@example.com", "Take out the email address."],
     ["a link", "See www.example.com", "Take out the link."],
+    ["a bare web address", "My work is on thandisplumbing.co.za", "Take out the link."],
+    ["a bank account number", "Pay into 6281 2345 678", "Take out the bank account number."],
+    ["an account number said to be one", "FNB acc no 1234567", "bank account number"],
+    ["a card number", "Card 4111 1111 1111 1111", "bank account number"],
     ["the Job's street", "I'm at 12 Main Road", "Take out the street address."],
     [
       "the Job's street, shortened",
@@ -254,21 +244,41 @@ describe("the Content check of a message", () => {
     ],
     ["the Job's suburb", "Right here in sea point", "Take out the suburb."],
     ["the Client's surname", "Mrs Mokoena will let you in", "Take out the surname."],
-  ])("refuses %s, says why, and delivers nothing", async (_, text, message) => {
-    const { domain, given } = await createHarness();
-    const { client, artisan, conversationId } = await talking(given, domain);
+  ])(
+    "refuses %s, says why without the content reader, and delivers nothing",
+    async (_, text, message) => {
+      const { domain, given, contentReader } = await createHarness();
+      const { client, artisan, conversationId } = await talking(given, domain);
+      const reads = contentReader.reads.length;
 
-    const sent = await domain.conversations.send(artisan.actor, { conversationId, text });
+      const sent = await domain.conversations.send(artisan.actor, { conversationId, text });
 
-    expect(sent).toMatchObject({
-      ok: false,
-      refusal: { reason: "content", message: expect.stringContaining(message) },
-    });
-    for (const party of [client, artisan]) {
-      expect(await domain.conversations.view(party.actor, { conversationId })).toMatchObject({
-        items: [{ kind: "event" }],
+      expect(sent).toMatchObject({
+        ok: false,
+        refusal: { reason: "content", message: expect.stringContaining(message) },
       });
-    }
+      expect(contentReader.reads).toHaveLength(reads);
+      for (const party of [client, artisan]) {
+        expect(await domain.conversations.view(party.actor, { conversationId })).toMatchObject({
+          items: [{ kind: "event" }],
+        });
+      }
+    },
+  );
+
+  test.each([
+    "Labour R4 500, Materials R1 250 000.50",
+    "Start 2026-10-05 at 08:00, done in 3 days",
+    "Tiles 600 x 600, 12 boxes, registration 12345",
+    "Email me here on ArtisanConnect.",
+  ])("lets amounts, dates, and sizes through the patterns: %s", async (text) => {
+    const { domain, given } = await createHarness();
+    const { client, conversationId } = await talking(given, domain);
+
+    expect(await domain.conversations.send(client.actor, { conversationId, text })).toMatchObject({
+      ok: true,
+      value: { state: "delivered" },
+    });
   });
 
   test("reads a photo's text, and refuses what it finds", async () => {
@@ -627,6 +637,7 @@ describe("the Engagement's Conversation", () => {
     ["the Job's street", "I'm at 12 Main Road"],
     ["the Job's suburb", "Right here in sea point"],
     ["the Client's surname", "Mrs Mokoena will let you in"],
+    ["a link that is not a payment's", "This tap: www.builders.co.za/tap-123"],
   ])("takes %s, read as after Payment", async (_, text) => {
     const { domain, given, contentReader } = await createHarness();
     const { artisan, client, conversationId, engagementId } = await engaged(given, domain);
@@ -646,7 +657,8 @@ describe("the Engagement's Conversation", () => {
   test.each([
     ["a bank account number", "Pay to account 62812345678", "Take out the bank account number."],
     ["a card number", "Use card 4111 1111 1111 1111", "Take out the bank account number."],
-    ["a payment link", "Pay at pay.example.com/sipho", "Take out the link."],
+    ["a payment link", "Pay at paypal.me/sipho", "Take out the payment link."],
+    ["a payment service's link", "https://pay.yoco.com/r/abc", "Take out the payment link."],
   ])("still refuses %s", async (_, text, message) => {
     const { domain, given } = await createHarness();
     const { client, conversationId } = await engaged(given, domain);
@@ -783,6 +795,51 @@ describe("the Engagement's Conversation", () => {
       }),
     ).toEqual({ ok: false, refusal: { reason: "video", message: "Video cannot be sent." } });
   });
+
+  test.each([
+    ["the content reader cannot run", "cannot-run", [], "Workers AI is busy."],
+    ["the content reader does not answer", "breaks", [], "The content reader did not answer."],
+    ["a photo cannot be read", "breaks", ["photo"], "A photo could not be read."],
+    ["a PDF has scanned pages", null, ["scanned"], "A PDF with scanned pages cannot be read."],
+    [
+      "a PDF has a scanned page",
+      null,
+      ["scanned-page"],
+      "A PDF with scanned pages cannot be read.",
+    ],
+    ["a PDF cannot be read", null, ["unread"], "A PDF could not be read."],
+  ] as const)(
+    "Holds a message when %s, saying so to the Admin",
+    async (_, reader, files, reason) => {
+      const harness = await createHarness();
+      const { domain, given, contentReader } = harness;
+      const admin = await given.admin();
+      const { client, conversationId } = await engaged(given, domain);
+      if (reader === "cannot-run") contentReader.force({ kind: "cannot-run", reason });
+      if (reader === "breaks") contentReader.breaks();
+      const made = {
+        photo: () => photo(),
+        scanned: async () => new Blob([await textPdf({ scanned: true })]),
+        "scanned-page": async () =>
+          new Blob([await textPdf({ lines: ["Proof of payment"], scannedSecondPage: true })]),
+        // The fake reads only PDFs the tests wrote, as Workers AI may fail to read one.
+        unread: async () => new Blob([fixture(certificatePdf)]),
+      };
+
+      const sent = await domain.conversations.send(client.actor, {
+        conversationId,
+        text: "Have a look",
+        files: await Promise.all(files.map((kind) => made[kind]())),
+      });
+
+      expect(sent).toMatchObject({ ok: true, value: { state: "held" } });
+      const { id: itemId } = await preCheck(harness, admin);
+      expect((await domain.queues.item(admin.actor, { itemId }))?.tabs.at(-1)).toMatchObject({
+        label: "Content check",
+        blocks: expect.arrayContaining([{ kind: "text", text: reason }]),
+      });
+    },
+  );
 
   test("shows the Admin a Held voice note or PDF to decide it, with what was read from them", async () => {
     const harness = await createHarness();

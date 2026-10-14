@@ -254,7 +254,7 @@ describe("erasing an Account", () => {
     ).toMatchObject({ ok: false, refusal: { reason: "wrong-credentials" } });
     clock.advance({ minutes: 1 });
     const sentBefore = mailer.sentTo("thandi@example.com").length;
-    await domain.accounts.requestReopenCode(visitor, { email: "thandi@example.com", ip: IP });
+    await domain.accounts.requestReopenCode(visitor, { email: "thandi@example.com" });
     expect(mailer.sentTo("thandi@example.com")).toHaveLength(sentBefore);
     // The Email may hold a new Account.
     clock.advance({ minutes: 1 });
@@ -378,7 +378,7 @@ describe("erasing an Account", () => {
     const client = await given.client();
     await domain.dataRequests.request(client.actor, { kind: "erasure" });
     clock.advance({ minutes: 1 });
-    await domain.accounts.requestReopenCode(visitor, { email: client.email, ip: IP });
+    await domain.accounts.requestReopenCode(visitor, { email: client.email });
 
     await domain.accounts.reopen(visitor, {
       email: client.email,

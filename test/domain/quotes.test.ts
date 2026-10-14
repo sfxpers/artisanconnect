@@ -579,6 +579,19 @@ describe("a Sent Quote", () => {
     ]);
   });
 
+  test("Expires once, and its Artisan is told once, when two runs overlap", async () => {
+    const { domain, given, clock } = await createHarness();
+    const { artisan, jobId } = await quoted(given);
+
+    clock.advance({ days: 14 });
+    await Promise.all([domain.system.runDueClocks(), domain.system.runDueClocks()]);
+
+    expect(await ownQuote(domain, artisan, jobId)).toMatchObject({ state: "expired" });
+    expect(
+      (await toldOf(domain, artisan, jobId)).filter((notice) => /expired/.test(notice.title)),
+    ).toHaveLength(1);
+  });
+
   test("does not Expire once Withdrawn", async () => {
     const { domain, given, clock } = await createHarness();
     const { artisan, jobId } = await quoted(given);

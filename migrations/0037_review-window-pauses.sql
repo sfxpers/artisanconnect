@@ -1,0 +1,1 @@
+ALTER TABLE `engagements` ADD `review_window_closes_at` integer;

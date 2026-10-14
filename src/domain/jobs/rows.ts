@@ -6,6 +6,8 @@ import { engagements, jobs, regions, suburbs } from "../schema";
 import { SERVICE_CATEGORY_NAMES, type ServiceCategory } from "../service-categories";
 import type { StoredFile } from "../uploads";
 import { OPEN_DAYS } from "./inputs";
+import { refuse } from "../result";
+import { DAY_MS, HOUR_MS } from "../sa-days";
 
 // Reading a Job, and what more than one part of the Jobs section says of one.
 
@@ -83,9 +85,6 @@ export async function jobsOf(ctx: Context, clientId: string) {
 export function jobText(job: { title: string; description: string }) {
   return `${job.title}\n\n${job.description}`;
 }
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-const HOUR_MS = 60 * 60 * 1000;
 
 /** How long before a Job Expires its Client is reminded. */
 export const REMINDER_LEAD_MS = 24 * HOUR_MS;
@@ -191,4 +190,8 @@ export function jobAsArtisanView<
 export async function jobPhotoById(ctx: Context, jobId: string, photoId: string) {
   const [job] = await ctx.db.select({ photos: jobs.photos }).from(jobs).where(eq(jobs.id, jobId));
   return job?.photos.find((each) => each.id === photoId) ?? null;
+}
+
+export function noJob() {
+  return refuse("not-found", "That Job does not exist.");
 }

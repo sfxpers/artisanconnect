@@ -16,13 +16,13 @@ import { ok, refuse, type Result } from "../result";
 import { Locked, startsWith, Unreadable } from "./bytes";
 import { mediaContainer, readMedia, type MediaContainer } from "./media";
 import { hasActiveContent, isPdf } from "./pdf";
-import { drawPhoto, MAX_PHOTO_PIXELS, photoFormat, readPhotoHeader } from "./photos";
+import { drawPhoto, photoFormat } from "./photos";
 
 /** The most bytes any file may have: 10 MB (MiB, so a file a phone shows as "10 MB" fits). */
-export const MAX_FILE_BYTES = 10 * 1024 * 1024;
+const MAX_FILE_BYTES = 10 * 1024 * 1024;
 export const MAX_VOICE_NOTE_SECONDS = 5 * 60;
 
-export type FileKind = "photo" | "pdf" | "voice-note";
+type FileKind = "photo" | "pdf" | "voice-note";
 
 /** Which kinds of file the place the file is going takes; the caller knows. */
 export type UploadContext = { takes: readonly FileKind[] };
@@ -55,7 +55,7 @@ export type StoredFile =
   | { kind: "pdf"; id: string; key: string }
   | { kind: "voice-note"; id: string; key: string; seconds: number };
 
-export type UploadRefusal =
+type UploadRefusal =
   | "too-large"
   | "too-long"
   | "video"
@@ -99,15 +99,9 @@ async function upload(
   bytes: Uint8Array<ArrayBuffer>,
   where: UploadContext,
 ): Promise<Result<StoredFile, UploadRefusal>> {
-  const photo = photoFormat(bytes);
-  if (photo) {
-    const header = readPhotoHeader(bytes, photo);
-    if (header.animated) return refuseVideo();
+  if (photoFormat(bytes)) {
     if (!where.takes.includes("photo")) return refuseHere(where);
-    if (header.width * header.height > MAX_PHOTO_PIXELS) {
-      return refuse("too-large", "A photo can be at most 12 megapixels.");
-    }
-    const drawn = await drawPhoto(bytes, photo);
+    const drawn = await drawPhoto(ctx.ports.images, bytes);
     const id = ctx.newId();
     const stored = {
       kind: "photo" as const,
@@ -234,7 +228,7 @@ function isMarkup(bytes: Uint8Array): boolean {
 // How many files one thing may hold
 
 /** The caller counts what the thing holds, plus what it is adding, and checks before uploading. */
-export const FILE_COUNT_LIMITS = {
+const FILE_COUNT_LIMITS = {
   jobPhotos: { max: 10, message: "A Job has at most 10 photos." },
   completionPhotos: {
     max: COMPLETION_PHOTOS_MAX,
@@ -258,10 +252,8 @@ export const FILE_COUNT_LIMITS = {
   },
 } as const;
 
-export type FileCountLimit = keyof typeof FILE_COUNT_LIMITS;
-
 export function checkFileCount(
-  limit: FileCountLimit,
+  limit: keyof typeof FILE_COUNT_LIMITS,
   count: number,
 ): Result<null, "too-many-files"> {
   const { max, message } = FILE_COUNT_LIMITS[limit];

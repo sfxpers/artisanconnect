@@ -1,12 +1,13 @@
 import { useState } from "react";
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { issuesOf, useAppForm } from "@/components/form";
 import { NextStepCard, Page, Refusal } from "@/components/page";
-import { firstProblem } from "@/domain/accounts/inputs";
+import { useAction } from "@/components/use-action";
 import { formatDay } from "@/domain/sa-days";
 import { SERVICE_CATEGORY_NAMES, type ServiceCategory } from "@/domain/service-categories";
 import {
@@ -23,10 +24,10 @@ import {
   type FilePart,
 } from "@/domain/verification/checks";
 import type { VerificationSlot } from "@/domain/verification";
-import { cn } from "@/lib/utils";
 import { copy } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
 import { getMyVerification, submitCheck } from "@/web/verification";
+import { NativeSelect } from "@/components/ui/native-select";
 
 export const Route = createFileRoute("/verification")({
   beforeLoad: ({ context }) => {
@@ -77,7 +78,7 @@ function Verification() {
                 <div className="flex items-center justify-between gap-2">
                   <CardTitle>{group.name}</CardTitle>
                   {group.verified ? (
-                    <Badge>
+                    <Badge variant="success">
                       {t.verified}
                       {group.gasWork && `, ${t.gasWork}`}
                     </Badge>
@@ -121,7 +122,7 @@ function Group({
   return (
     <section className="space-y-3">
       <div>
-        <h2 className="font-medium">{title}</h2>
+        <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
         <p className="text-sm text-muted-foreground">{lead}</p>
       </div>
       {children}
@@ -131,8 +132,8 @@ function Group({
 
 const STATE_VARIANTS = {
   missing: "outline",
-  waiting: "secondary",
-  accepted: "default",
+  waiting: "warning",
+  accepted: "success",
   expired: "destructive",
   stopped: "destructive",
   rejected: "destructive",
@@ -203,6 +204,14 @@ function CheckDetailsLine({ check }: { check: VerificationSlot }) {
 
 type Values = Record<string, string>;
 
+const TEXT_FIELDS = [
+  "accountHolder",
+  "bank",
+  "branchCode",
+  "accountNumber",
+  "registrationNumber",
+] as const;
+
 /** Sends one check: what its kind asks for, and its files. */
 function CheckForm({
   kind,
@@ -213,179 +222,162 @@ function CheckForm({
   category: ServiceCategory | null;
   onDone: () => void;
 }) {
-  const router = useRouter();
   const definition = CHECKS[kind];
-  const [values, setValues] = useState<Values>({ documentType: "sa-id" });
   const [files, setFiles] = useState<Partial<Record<FilePart["part"], File[]>>>({});
-  const [busy, setBusy] = useState(false);
-  const [refusal, setRefusal] = useState<string | null>(null);
-  const set = (key: string) => (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-    setValues((current) => ({ ...current, [key]: event.target.value }));
-
-  function details(): CheckDetailsInput {
-    const fields = Object.fromEntries(
-      Object.entries(values).filter(([key]) => fieldsOf(kind, values).includes(key)),
-    );
-    return {
+  const { refusal, run } = useAction();
+  const details = (values: Values) =>
+    ({
       kind,
       ...(kind === "work-photos" ? { category } : {}),
-      ...fields,
-    } as CheckDetailsInput;
-  }
-
-  async function send() {
-    setRefusal(null);
+      ...Object.fromEntries(
+        Object.entries(values).filter(([key]) => fieldsOf(kind, values).includes(key)),
+      ),
+    }) as CheckDetailsInput;
+  const form = useAppForm({
+    defaultValues: { documentType: "sa-id" } as Values,
     // Refused here the same way the domain refuses it, before any file goes.
-    const given = details();
-    const parsed = checkDetails.safeParse(given);
-    if (!parsed.success) return setRefusal(firstProblem(parsed.error));
-    if (given.kind === "identity") {
-      const number = identityNumber.safeParse(given);
-      if (!number.success) return setRefusal(firstProblem(number.error));
-    }
-    const form = new FormData();
-    form.set("details", JSON.stringify(given));
-    for (const [part, chosen] of Object.entries(files)) {
-      for (const file of chosen ?? []) form.append(part, file);
-    }
-    setBusy(true);
-    const result = await submitCheck({ data: form });
-    setBusy(false);
-    if (!result.ok) return setRefusal(result.refusal.message);
-    onDone();
-    await router.invalidate();
-  }
+    validators: {
+      onSubmit: ({ value }) => {
+        const given = details(value);
+        return (
+          issuesOf(checkDetails.safeParse(given)) ??
+          (given.kind === "identity" ? issuesOf(identityNumber.safeParse(given)) : undefined)
+        );
+      },
+    },
+    onSubmit: ({ value }) => {
+      const sent = new FormData();
+      sent.set("details", JSON.stringify(details(value)));
+      for (const [part, chosen] of Object.entries(files)) {
+        for (const file of chosen ?? []) sent.append(part, file);
+      }
+      return run(() => submitCheck({ data: sent }), onDone);
+    },
+  });
 
-  const shown = fieldsOf(kind, values);
   return (
-    <form
-      className="space-y-3 rounded-lg border bg-muted/30 p-3"
-      onSubmit={(event) => {
-        event.preventDefault();
-        void send();
-      }}
-    >
-      {shown.includes("documentType") && (
-        <fieldset className="space-y-1.5">
-          <legend className="mb-1.5 text-sm font-medium">{t.fields.documentType}</legend>
-          <div className="flex flex-wrap gap-2">
-            {DOCUMENT_TYPES.map((type) => (
-              <Choice
-                key={type}
-                name="documentType"
-                checked={values.documentType === type}
-                onChange={() => setValues((current) => ({ ...current, documentType: type }))}
-              >
-                {DOCUMENT_TYPE_NAMES[type]}
-              </Choice>
-            ))}
-          </div>
-        </fieldset>
-      )}
-      {shown.includes("number") && (
-        <Field
-          id={`${kind}-number`}
-          label={values.documentType === "sa-id" ? t.fields.saIdNumber : t.fields.number}
-        >
-          <Input
-            id={`${kind}-number`}
-            inputMode={values.documentType === "sa-id" ? "numeric" : "text"}
-            autoComplete="off"
-            value={values.number ?? ""}
-            onChange={set("number")}
-          />
-        </Field>
-      )}
-      {shown.includes("country") && (
-        <Field id={`${kind}-country`} label={t.fields.country}>
-          <select
-            id={`${kind}-country`}
-            className="h-8 w-full rounded-lg border border-input bg-transparent px-2 text-sm"
-            value={values.country ?? ""}
-            onChange={set("country")}
-          >
-            <option value="">{t.fields.chooseCountry}</option>
-            {sortedCountries().map(({ code, name }) => (
-              <option key={code} value={code}>
-                {name}
-              </option>
-            ))}
-          </select>
-        </Field>
-      )}
-      {(["accountHolder", "bank", "branchCode", "accountNumber", "registrationNumber"] as const)
-        .filter((key) => shown.includes(key))
-        .map((key) => (
-          <Field key={key} id={`${kind}-${key}`} label={t.fields[key]}>
+    <form.AppForm>
+      <form.Form className="space-y-3 rounded-lg border bg-muted/30 p-3">
+        <form.Subscribe selector={(state) => state.values}>
+          {(values) => {
+            const shown = fieldsOf(kind, values);
+            return (
+              <>
+                {shown.includes("documentType") && (
+                  <form.AppField name="documentType">
+                    {(field) => (
+                      <field.ChoiceField
+                        label={t.fields.documentType}
+                        options={DOCUMENT_TYPES.map((value) => ({
+                          value,
+                          label: DOCUMENT_TYPE_NAMES[value],
+                        }))}
+                      />
+                    )}
+                  </form.AppField>
+                )}
+                {shown.includes("number") && (
+                  <form.AppField name="number">
+                    {(field) => (
+                      <field.TextField
+                        label={
+                          values.documentType === "sa-id" ? t.fields.saIdNumber : t.fields.number
+                        }
+                        inputMode={values.documentType === "sa-id" ? "numeric" : "text"}
+                        autoComplete="off"
+                      />
+                    )}
+                  </form.AppField>
+                )}
+                {shown.includes("country") && (
+                  <form.Field name="country">
+                    {(field) => (
+                      <Field>
+                        <FieldLabel htmlFor={`${kind}-country`}>{t.fields.country}</FieldLabel>
+                        <NativeSelect
+                          id={`${kind}-country`}
+                          className="w-full"
+                          value={field.state.value ?? ""}
+                          onChange={(event) => field.handleChange(event.target.value)}
+                        >
+                          <option value="">{t.fields.chooseCountry}</option>
+                          {sortedCountries().map(({ code, name }) => (
+                            <option key={code} value={code}>
+                              {name}
+                            </option>
+                          ))}
+                        </NativeSelect>
+                      </Field>
+                    )}
+                  </form.Field>
+                )}
+                {TEXT_FIELDS.filter((key) => shown.includes(key)).map((key) => (
+                  <form.AppField key={key} name={key}>
+                    {(field) => (
+                      <field.TextField
+                        label={t.fields[key]}
+                        inputMode={
+                          key === "branchCode" || key === "accountNumber" ? "numeric" : "text"
+                        }
+                        autoComplete="off"
+                      />
+                    )}
+                  </form.AppField>
+                ))}
+                {shown.includes("expiresOn") && (
+                  <form.AppField name="expiresOn">
+                    {(field) => (
+                      <field.TextField
+                        type="date"
+                        label={
+                          definition.expiresOn === "optional"
+                            ? t.fields.expiresOnOptional
+                            : t.fields.expiresOn
+                        }
+                      />
+                    )}
+                  </form.AppField>
+                )}
+                {shown.includes("issuedOn") && (
+                  <form.AppField name="issuedOn">
+                    {(field) => <field.TextField type="date" label={t.fields.issuedOn} />}
+                  </form.AppField>
+                )}
+              </>
+            );
+          }}
+        </form.Subscribe>
+        {definition.files.map((part) => (
+          <Field key={part.part}>
+            <FieldLabel htmlFor={`${kind}-${part.part}`}>{part.label}</FieldLabel>
             <Input
-              id={`${kind}-${key}`}
-              inputMode={key === "branchCode" || key === "accountNumber" ? "numeric" : "text"}
-              autoComplete="off"
-              value={values[key] ?? ""}
-              onChange={set(key)}
+              id={`${kind}-${part.part}`}
+              type="file"
+              multiple={part.max > 1}
+              accept={
+                part.photosOnly
+                  ? "image/jpeg,image/png,image/webp"
+                  : "image/jpeg,image/png,image/webp,application/pdf"
+              }
+              onChange={(event) =>
+                setFiles((current) => ({
+                  ...current,
+                  [part.part]: Array.from(event.target.files ?? []),
+                }))
+              }
             />
+            <FieldDescription>{part.photosOnly ? t.photosOnly : t.photosOrPdf}</FieldDescription>
           </Field>
         ))}
-      {shown.includes("expiresOn") && (
-        <Field
-          id={`${kind}-expiresOn`}
-          label={
-            definition.expiresOn === "optional" ? t.fields.expiresOnOptional : t.fields.expiresOn
-          }
-        >
-          <Input
-            id={`${kind}-expiresOn`}
-            type="date"
-            value={values.expiresOn ?? ""}
-            onChange={set("expiresOn")}
-          />
-        </Field>
-      )}
-      {shown.includes("issuedOn") && (
-        <Field id={`${kind}-issuedOn`} label={t.fields.issuedOn}>
-          <Input
-            id={`${kind}-issuedOn`}
-            type="date"
-            value={values.issuedOn ?? ""}
-            onChange={set("issuedOn")}
-          />
-        </Field>
-      )}
-      {definition.files.map((part) => (
-        <Field
-          key={part.part}
-          id={`${kind}-${part.part}`}
-          label={part.label}
-          hint={part.photosOnly ? t.photosOnly : t.photosOrPdf}
-        >
-          <Input
-            id={`${kind}-${part.part}`}
-            type="file"
-            multiple={part.max > 1}
-            accept={
-              part.photosOnly
-                ? "image/jpeg,image/png,image/webp"
-                : "image/jpeg,image/png,image/webp,application/pdf"
-            }
-            onChange={(event) =>
-              setFiles((current) => ({
-                ...current,
-                [part.part]: Array.from(event.target.files ?? []),
-              }))
-            }
-          />
-        </Field>
-      ))}
-      <Refusal message={refusal} />
-      <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={busy}>
-          {t.send}
-        </Button>
-        <Button type="button" size="sm" variant="ghost" disabled={busy} onClick={onDone}>
-          {t.cancel}
-        </Button>
-      </div>
-    </form>
+        <Refusal message={refusal} />
+        <div className="flex gap-2">
+          <form.Submit size="sm">{t.send}</form.Submit>
+          <Button type="button" size="sm" variant="ghost" onClick={onDone}>
+            {t.cancel}
+          </Button>
+        </div>
+      </form.Form>
+    </form.AppForm>
   );
 }
 
@@ -411,48 +403,4 @@ function sortedCountries() {
   return (countries ??= passportCountries()
     .map((code) => ({ code, name: countryName(code) }))
     .sort((a, b) => a.name.localeCompare(b.name, "en")));
-}
-
-function Field({
-  id,
-  label,
-  hint,
-  children,
-}: {
-  id: string;
-  label: string;
-  hint?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-1.5">
-      <Label htmlFor={id}>{label}</Label>
-      {children}
-      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
-    </div>
-  );
-}
-
-function Choice({
-  name,
-  checked,
-  onChange,
-  children,
-}: {
-  name: string;
-  checked: boolean;
-  onChange: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <label
-      className={cn(
-        "cursor-pointer rounded-full border px-3 py-1 text-sm hover:border-primary has-focus-visible:ring-2 has-focus-visible:ring-ring",
-        checked && "border-primary bg-primary text-primary-foreground",
-      )}
-    >
-      <input type="radio" name={name} className="sr-only" checked={checked} onChange={onChange} />
-      {children}
-    </label>
-  );
 }

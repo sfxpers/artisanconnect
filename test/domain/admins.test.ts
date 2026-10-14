@@ -18,11 +18,10 @@ describe("setting up the first Admin", () => {
       ok: true,
       value: { email: "naledi@example.com" },
     });
-    await domain.admins.requestSignInCode(visitor, { email: "naledi@example.com", ip: IP });
+    await domain.admins.requestSignInCode(visitor, { email: "naledi@example.com" });
     const signedIn = await domain.admins.signIn(visitor, {
       email: "naledi@example.com",
       code: given.codeSentTo("naledi@example.com"),
-      ip: IP,
     });
 
     if (!signedIn.ok) throw new Error(signedIn.refusal.message);
@@ -72,7 +71,7 @@ describe("an Admin", () => {
     const sentBefore = mailer.sentTo(email).length;
     clock.advance({ minutes: 1 });
 
-    const recovery = await domain.accounts.requestRecovery(visitor, { email, ip: IP });
+    const recovery = await domain.accounts.requestRecovery(visitor, { email });
     const withPassword = await domain.accounts.signIn(visitor, {
       email,
       password: "anything at all",
@@ -88,20 +87,20 @@ describe("an Admin", () => {
   test("whose Email code is wrong is not signed in", async () => {
     const { domain } = await createHarness();
     await domain.system.setUpFirstAdmin({ email: "naledi@example.com" });
-    await domain.admins.requestSignInCode(visitor, { email: "naledi@example.com", ip: IP });
+    await domain.admins.requestSignInCode(visitor, { email: "naledi@example.com" });
 
     expect(
-      await domain.admins.signIn(visitor, { email: "naledi@example.com", code: "000000", ip: IP }),
+      await domain.admins.signIn(visitor, { email: "naledi@example.com", code: "000000" }),
     ).toMatchObject({ ok: false, refusal: { reason: "wrong-code" } });
   });
 
   test("is asked to wait 60 seconds before a new code", async () => {
     const { domain } = await createHarness();
     await domain.system.setUpFirstAdmin({ email: "naledi@example.com" });
-    await domain.admins.requestSignInCode(visitor, { email: "naledi@example.com", ip: IP });
+    await domain.admins.requestSignInCode(visitor, { email: "naledi@example.com" });
 
     expect(
-      await domain.admins.requestSignInCode(visitor, { email: "naledi@example.com", ip: IP }),
+      await domain.admins.requestSignInCode(visitor, { email: "naledi@example.com" }),
     ).toMatchObject({ ok: false, refusal: { reason: "wait" } });
   });
 });
@@ -116,11 +115,9 @@ describe("an Admin sign-in code", () => {
 
     const toClient = await domain.admins.requestSignInCode(visitor, {
       email: client.email,
-      ip: IP,
     });
     const toNobody = await domain.admins.requestSignInCode(visitor, {
       email: "nobody@example.com",
-      ip: IP,
     });
 
     expect(toClient).toEqual({ ok: true, value: { email: "thandi@example.com" } });
@@ -135,7 +132,7 @@ describe("an Admin sign-in code", () => {
 
     // Only an Admin is sent one, so an Account has no code to enter.
     expect(
-      await domain.admins.signIn(visitor, { email: client.email, code: "123456", ip: IP }),
+      await domain.admins.signIn(visitor, { email: client.email, code: "123456" }),
     ).toMatchObject({ ok: false, refusal: { reason: "wrong-code" } });
   });
 });
@@ -199,7 +196,6 @@ describe("inviting an Admin", () => {
       password: "correct horse battery",
       rulesVersion: rules.version,
       consentsToDataUse: true,
-      ip: IP,
     });
 
     expect(mailer.sentTo("lerato@example.com").at(-1)!.subject).toBe(
@@ -238,7 +234,7 @@ describe("removing an Admin", () => {
     expect(await whoIs(harness, second.cookies)).toEqual(visitor);
     expect(await domain.admins.me(second.actor)).toBeNull();
     harness.clock.advance({ minutes: 1 });
-    await domain.admins.requestSignInCode(visitor, { email: second.email, ip: IP });
+    await domain.admins.requestSignInCode(visitor, { email: second.email });
     expect(
       harness.mailer.sentTo(second.email).filter((sent) => /sign-in code/.test(sent.subject)),
     ).toHaveLength(1); // only the one it signed in with before

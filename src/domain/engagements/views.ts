@@ -24,6 +24,7 @@ import { canCancel, labourRefundAt } from "./cancellation";
 import { disputeOf, disputeView } from "./dispute";
 import { addsOf, updatedQuotesOf } from "./updated-quote";
 import { isBeforeCompletion, priceNow } from "./updated-quote-rows";
+import { protectedUntil } from "./relationships";
 import { answerBy, startDayCome } from "./work-started";
 
 // An Engagement as each party sees it on the Job page (#107): the Client
@@ -228,7 +229,9 @@ async function engagementOf(ctx: Context, jobId: string) {
     .innerJoin(quotes, eq(quotes.id, engagements.quoteId))
     .innerJoin(jobs, eq(jobs.id, engagements.jobId))
     .where(eq(engagements.jobId, jobId));
-  return row ?? null;
+  if (!row) return null;
+  const { clientId, artisanId } = row.engagement;
+  return { ...row, protectedUntil: await protectedUntil(ctx, clientId, artisanId) };
 }
 
 type Found = NonNullable<Awaited<ReturnType<typeof engagementOf>>>;
@@ -275,7 +278,7 @@ const UPDATED_QUOTE_EVENTS = {
  */
 function common(
   ctx: Context,
-  { engagement, quote }: Found,
+  { engagement, quote, protectedUntil }: Found,
   completions: CompletionRow[],
   refunded: Refunded,
   money: Money,
@@ -293,6 +296,11 @@ function common(
     startOn: quote.startOn,
     durationDays: quote.durationDays,
     warranty: quote.warranty,
+    /**
+     * When the pair's Protected Relationship Period ends: until then, work
+     * arranged between them off the platform is Leaving (ADR 0014).
+     */
+    protectedUntil,
     startClaim:
       engagement.state === "paid" && startClaimedAt
         ? { claimedAt: startClaimedAt, answerBy: answerBy(startClaimedAt) }

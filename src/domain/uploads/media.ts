@@ -4,6 +4,7 @@ import { ascii, need, startsWith, Unreadable, viewOf } from "./bytes";
 // them with only sound in it; anything with a picture track is video. Only the
 // container is read, never the sound itself: enough to know what is in it and
 // how long it plays.
+// Custom: no Cloudflare feature tells video from sound, or a length, before a file is stored.
 
 export type MediaContainer = "webm" | "ogg" | "mp4";
 

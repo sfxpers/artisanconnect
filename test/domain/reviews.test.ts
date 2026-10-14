@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import type { Actor } from "@/domain/actor";
+import type { Actor, AdminActor } from "@/domain/actor";
 import { createHarness, type Harness } from "../support/harness";
 
 type Account = Awaited<ReturnType<Harness["given"]["client"]>>;
@@ -125,22 +125,7 @@ describe("the Review window, Completed otherwise", () => {
     const admin = await given.admin();
     await given.chargedBack(collectionId);
     await given.chargebackClosed(collectionId, { outcome: "lost", reversedCents: 210_000 });
-    const [open] = (await domain.queues.home(admin.actor, { queue: "chargebacks" }))!.items;
-    const item = await domain.queues.item(admin.actor, { itemId: open!.id });
-    const fields = Object.fromEntries(
-      item!.decisions[0]!.fields.flatMap((field) => [
-        [field.key, String(field.totalCents)],
-        [`${field.key}.of`, String(field.totalCents)],
-      ]),
-    );
-    expect(
-      await domain.queues.decide(admin.actor, {
-        itemId: item!.id,
-        decision: "decide",
-        reason: "The work was done.",
-        fields,
-      }),
-    ).toMatchObject({ ok: true });
+    expect(await decideChargeback(domain, admin)).toMatchObject({ ok: true });
 
     expect((await domain.jobs.view(client.actor, { jobId }))?.engagement?.state).toBe("completed");
     for (const party of [client, artisan]) {
@@ -189,19 +174,39 @@ describe("the Review window's clocks", () => {
     }
   });
 
-  test("do nothing while a Chargeback freezes the Engagement, as every clock on it", async () => {
+  test("wait while a Chargeback freezes the Engagement, then run on for the time left", async () => {
     const { domain, given, clock } = await createHarness();
-    const { client, artisan, collectionId } = await completedJob(given);
+    const admin = await given.admin();
+    const { client, artisan, engagementId, collectionId } = await completedJob(given);
+    const events = async () => (await reviewNotices(domain, client)).map((notice) => notice.event);
+    clock.advance({ days: 3 });
     await given.chargedBack(collectionId);
 
-    clock.advance({ days: 8 });
+    // Frozen for ten days: nothing fires, nothing is written, nothing is read.
+    clock.advance({ days: 10 });
     await domain.system.runDueClocks();
+    expect(await events()).toEqual(["review.window-opened"]);
+    expect(await domain.reviews.write(client.actor, { engagementId, rating: 4 })).toMatchObject({
+      ok: false,
+      refusal: { reason: "frozen" },
+    });
+    await given.chargebackClosed(collectionId, { outcome: "won", reversedCents: 0 });
+    await decideChargeback(domain, admin);
 
-    for (const party of [client, artisan]) {
-      expect((await reviewNotices(domain, party)).map((notice) => notice.event)).toEqual([
-        "review.window-opened",
-      ]);
-    }
+    // Four days were left: the reminder 48 hours before they end, then the close.
+    clock.advance({ days: 2 });
+    await domain.system.runDueClocks();
+    expect(await events()).toEqual(["review.window-opened", "review.reminder"]);
+    expect(await domain.reviews.write(artisan.actor, { engagementId, rating: 5 })).toMatchObject({
+      ok: true,
+    });
+    clock.advance({ days: 2 });
+    await domain.system.runDueClocks();
+    expect(await events()).toEqual([
+      "review.window-opened",
+      "review.reminder",
+      "review.window-closed",
+    ]);
   });
 
   test("remind neither side that has written", async () => {
@@ -878,4 +883,22 @@ async function theirs(domain: Harness["domain"], party: { actor: Actor }, jobId:
       ? await domain.jobs.view(party.actor, { jobId })
       : await domain.jobs.viewAsArtisan(party.actor, { jobId });
   return job?.engagement?.reviews?.theirs;
+}
+
+/** The Admin decides the one closed Chargeback, with what is unreleased left as it is. */
+async function decideChargeback(domain: Harness["domain"], admin: { actor: AdminActor }) {
+  const [open] = (await domain.queues.home(admin.actor, { queue: "chargebacks" }))!.items;
+  const item = await domain.queues.item(admin.actor, { itemId: open!.id });
+  const fields = Object.fromEntries(
+    item!.decisions[0]!.fields.flatMap((field) => [
+      [field.key, String(field.totalCents)],
+      [`${field.key}.of`, String(field.totalCents)],
+    ]),
+  );
+  return domain.queues.decide(admin.actor, {
+    itemId: item!.id,
+    decision: "decide",
+    reason: "The work was done.",
+    fields,
+  });
 }

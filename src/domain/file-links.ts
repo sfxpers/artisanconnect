@@ -1,9 +1,12 @@
+import { Buffer } from "node:buffer";
 import type { Context } from "./context";
+import { MINUTE_MS } from "./sa-days";
 
 // A stored file the Admin opens on a logged click (an identity document, a
 // photo in a Conversation) is reached through a link the logged read hands
 // out: signed, so nothing else makes one, and short-lived, so a link kept is
 // not a way round the log. The file itself is served only to an Admin.
+// Custom: R2's presigned URLs need S3 API keys, a secret and a path outside the binding.
 
 /** How long a link works after the read that made it. */
 const LINK_MINUTES = 15;
@@ -12,7 +15,7 @@ const encoder = new TextEncoder();
 
 /** The web app's path to a stored file, for an Admin, for a while. */
 export async function fileLink(ctx: Context, key: string): Promise<string> {
-  const until = ctx.now().getTime() + LINK_MINUTES * 60_000;
+  const until = ctx.now().getTime() + LINK_MINUTES * MINUTE_MS;
   const payload = base64Url(encoder.encode(JSON.stringify({ key, until })));
   const signature = await crypto.subtle.sign(
     "HMAC",
@@ -56,13 +59,9 @@ function signingKey(ctx: Context) {
 }
 
 function base64Url(bytes: Uint8Array): string {
-  return btoa(String.fromCharCode(...bytes))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
+  return Buffer.from(bytes).toString("base64url");
 }
 
 function fromBase64Url(text: string): Uint8Array<ArrayBuffer> {
-  const binary = atob(text.replace(/-/g, "+").replace(/_/g, "/"));
-  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  return Uint8Array.from(Buffer.from(text, "base64url"));
 }

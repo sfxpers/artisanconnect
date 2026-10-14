@@ -20,7 +20,6 @@ async function reopened(harness: Harness, address: string) {
   harness.clock.advance({ minutes: 1 });
   const asked = await harness.domain.accounts.requestReopenCode(visitor, {
     email: address,
-    ip: IP,
   });
   if (!asked.ok) throw new Error(asked.refusal.message);
   return harness.domain.accounts.reopen(visitor, {
@@ -220,7 +219,7 @@ describe("reopening a Closed Account", () => {
     const sentBefore = mailer.sent.length;
 
     for (const address of [open.email, "nobody@example.com"]) {
-      expect(await domain.accounts.requestReopenCode(visitor, { email: address, ip: IP })).toEqual({
+      expect(await domain.accounts.requestReopenCode(visitor, { email: address })).toEqual({
         ok: true,
         value: { email: address },
       });
@@ -234,7 +233,7 @@ describe("reopening a Closed Account", () => {
     const client = await given.client();
     await domain.accounts.close(client.actor);
     clock.advance({ minutes: 1 });
-    await domain.accounts.requestReopenCode(visitor, { email: client.email, ip: IP });
+    await domain.accounts.requestReopenCode(visitor, { email: client.email });
     const right = given.codeSentTo(client.email);
 
     const opened = await domain.accounts.reopen(visitor, {
@@ -261,7 +260,7 @@ describe("reopening a Closed Account", () => {
     await domain.accounts.close(client.actor);
     await domain.marketplaceRules.publish(admin.actor, { summary: "New rules." });
     harness.clock.advance({ minutes: 1 });
-    await domain.accounts.requestReopenCode(visitor, { email: client.email, ip: IP });
+    await domain.accounts.requestReopenCode(visitor, { email: client.email });
     const code = given.codeSentTo(client.email);
 
     expect(

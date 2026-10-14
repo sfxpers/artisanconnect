@@ -1,15 +1,14 @@
 import { useState } from "react";
-import { Link, createFileRoute, useRouter } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { ArtisanProfileView, PhotoGrid } from "@/components/artisan-profile";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { useAppForm } from "@/components/form";
 import { Page, Refusal } from "@/components/page";
+import { PhotosField, usePhotos } from "@/components/photos-field";
+import { useAction } from "@/components/use-action";
 import { ABOUT_MAX, PROFILE_PHOTOS_MAX } from "@/domain/profiles/inputs";
-import { cn } from "@/lib/utils";
 import { copy } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
 import { editProfile, getMyProfile, withdrawProfileEdit } from "@/web/profiles";
@@ -34,8 +33,7 @@ function MyProfile() {
   const [done, setDone] = useState<string | null>(null);
   if (!mine) return null;
   return (
-    <Page title={t.title}>
-      <p className="max-w-2xl text-sm text-muted-foreground">{t.lead}</p>
+    <Page title={t.title} lead={t.lead}>
       {mine.profile ? (
         <Link
           to="/artisans/$artisanId"
@@ -49,11 +47,7 @@ function MyProfile() {
       )}
 
       {mine.outOfView && <Refusal message={t.outOfView(mine.outOfView.reason)} />}
-      {mine.refused && (
-        <p role="alert" className="text-sm text-destructive">
-          {t.refused(mine.refused.reason)}
-        </p>
-      )}
+      {mine.refused && <Refusal message={t.refused(mine.refused.reason)} />}
       {done && <p className="text-sm text-muted-foreground">{done}</p>}
       {mine.beingChecked ? (
         <BeingChecked edit={mine.beingChecked} onWithdrawn={() => setDone(null)} />
@@ -62,7 +56,7 @@ function MyProfile() {
       )}
 
       <section className="space-y-3">
-        <h2 className="font-medium">{t.preview}</h2>
+        <h2 className="text-lg font-semibold tracking-tight">{t.preview}</h2>
         {mine.profile ? (
           <ArtisanProfileView profile={mine.profile} />
         ) : (
@@ -88,25 +82,12 @@ function BeingChecked({
   edit: NonNullable<Mine["beingChecked"]>;
   onWithdrawn: () => void;
 }) {
-  const router = useRouter();
-  const [busy, setBusy] = useState(false);
-  const [refusal, setRefusal] = useState<string | null>(null);
-
-  async function withdraw() {
-    setBusy(true);
-    setRefusal(null);
-    const result = await withdrawProfileEdit();
-    setBusy(false);
-    if (!result.ok) return setRefusal(result.refusal.message);
-    onWithdrawn();
-    await router.invalidate();
-  }
-
+  const { busy, refusal, run } = useAction();
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center gap-2">
-          <Badge variant="secondary">{t.beingChecked}</Badge>
+          <Badge variant="warning">{t.beingChecked}</Badge>
         </div>
         <p className="text-sm text-muted-foreground">{t.beingCheckedLead}</p>
       </CardHeader>
@@ -114,7 +95,12 @@ function BeingChecked({
         <p className="text-sm whitespace-pre-line">{edit.about || copy.profile.noAbout}</p>
         <PhotoGrid photos={edit.photos} empty={copy.profile.noPhotos} />
         <Refusal message={refusal} />
-        <Button variant="outline" size="sm" disabled={busy} onClick={() => void withdraw()}>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={busy}
+          onClick={() => void run(withdrawProfileEdit, onWithdrawn)}
+        >
           {t.withdraw}
         </Button>
       </CardContent>
@@ -127,41 +113,24 @@ function BeingChecked({
  * photos to add. A refusal keeps the draft, so it can be fixed at once.
  */
 function Editor({ mine, onSent }: { mine: Mine; onSent: () => void }) {
-  const router = useRouter();
   const [editing, setEditing] = useState(false);
-  const [about, setAbout] = useState(mine.shown.about);
-  const [removed, setRemoved] = useState<Set<string>>(new Set());
-  const [added, setAdded] = useState<File[]>([]);
-  const [busy, setBusy] = useState(false);
-  const [refusal, setRefusal] = useState<string | null>(null);
-
-  const kept = mine.shown.photos.filter((photo) => !removed.has(photo.id));
-  const count = kept.length + added.length;
-
-  function toggle(id: string) {
-    setRemoved((current) => {
-      const next = new Set(current);
-      if (!next.delete(id)) next.add(id);
-      return next;
-    });
-  }
-
-  async function send() {
-    setBusy(true);
-    setRefusal(null);
-    const form = new FormData();
-    form.set("about", about);
-    for (const photo of kept) form.append("keep", photo.id);
-    for (const file of added) form.append("add", file);
-    const result = await editProfile({ data: form });
-    setBusy(false);
-    if (!result.ok) return setRefusal(result.refusal.message);
-    setEditing(false);
-    setRemoved(new Set());
-    setAdded([]);
-    onSent();
-    await router.invalidate();
-  }
+  const photos = usePhotos(mine.shown.photos);
+  const { refusal, run } = useAction();
+  const form = useAppForm({
+    defaultValues: { about: mine.shown.about },
+    onSubmit: async ({ value }) => {
+      const sent = new FormData();
+      sent.set("about", value.about);
+      await photos.appendTo(sent);
+      await run(
+        () => editProfile({ data: sent }),
+        () => {
+          setEditing(false);
+          onSent();
+        },
+      );
+    },
+  });
 
   if (!editing) {
     return (
@@ -176,78 +145,33 @@ function Editor({ mine, onSent }: { mine: Mine; onSent: () => void }) {
         <CardTitle>{t.edit}</CardTitle>
       </CardHeader>
       <CardContent>
-        <form
-          className="space-y-5"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void send();
-          }}
-        >
-          <div className="space-y-1.5">
-            <Label htmlFor="about">{t.about}</Label>
-            <Textarea
-              id="about"
-              rows={6}
-              maxLength={ABOUT_MAX}
-              value={about}
-              onChange={(event) => setAbout(event.target.value)}
+        <form.AppForm>
+          <form.Form className="space-y-5">
+            <form.AppField name="about">
+              {(field) => (
+                <field.TextareaField
+                  label={t.about}
+                  description={t.aboutHint(ABOUT_MAX)}
+                  rows={6}
+                  maxLength={ABOUT_MAX}
+                />
+              )}
+            </form.AppField>
+            <PhotosField
+              photos={photos}
+              label={t.photos}
+              hint={t.photosHint(PROFILE_PHOTOS_MAX)}
+              max={PROFILE_PHOTOS_MAX}
             />
-            <p className="text-xs text-muted-foreground">
-              {t.aboutHint(ABOUT_MAX)} {about.length}/{ABOUT_MAX}
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="add">{t.photos}</Label>
-            <p className="text-xs text-muted-foreground">
-              {t.photosHint(PROFILE_PHOTOS_MAX)} {count}/{PROFILE_PHOTOS_MAX}
-            </p>
-            {mine.shown.photos.length > 0 && (
-              <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {mine.shown.photos.map((photo, index) => {
-                  const gone = removed.has(photo.id);
-                  return (
-                    <li key={photo.id} className="space-y-1">
-                      <img
-                        src={photo.thumbnailHref}
-                        alt={copy.profile.photo(index + 1)}
-                        className={cn(
-                          "aspect-[4/3] w-full rounded-lg border object-cover",
-                          gone && "opacity-30",
-                        )}
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="xs"
-                        onClick={() => toggle(photo.id)}
-                      >
-                        {gone ? t.restore : t.remove}
-                      </Button>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-            <Input
-              id="add"
-              type="file"
-              multiple
-              accept="image/jpeg,image/png,image/webp"
-              onChange={(event) => setAdded(Array.from(event.target.files ?? []))}
-            />
-          </div>
-
-          <Refusal message={refusal} />
-          <div className="flex gap-2">
-            <Button type="submit" disabled={busy}>
-              {t.send}
-            </Button>
-            <Button type="button" variant="ghost" disabled={busy} onClick={() => setEditing(false)}>
-              {t.cancel}
-            </Button>
-          </div>
-        </form>
+            <Refusal message={refusal} />
+            <div className="flex gap-2">
+              <form.Submit>{t.send}</form.Submit>
+              <Button type="button" variant="ghost" onClick={() => setEditing(false)}>
+                {t.cancel}
+              </Button>
+            </div>
+          </form.Form>
+        </form.AppForm>
       </CardContent>
     </Card>
   );

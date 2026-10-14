@@ -279,26 +279,17 @@ describe("repeated trouble", () => {
     expect(await toldOfSignals(domain, [artisan, third.client])).toEqual([]);
   });
 
-  test("a Client's Cancellations before the start date raise nothing", async () => {
-    const { domain, given } = await createHarness();
-    const admin = await given.admin();
-    const artisan = await given.matchableArtisan();
-    for (const _ of [1, 2, 3]) {
-      const job = await hiredJob(given, { artisan });
-      await cancel(domain, job.client, job.engagementId);
-    }
-
-    expect(await signalTitles(domain, admin)).toEqual([]);
-  });
-
-  test("Cancellations spread over more than 90 days raise nothing", async () => {
+  test.each([
+    ["a Client's Cancellations before the start date", "client", 0],
+    ["Cancellations spread over more than 90 days", "artisan", 46],
+  ] as const)("%s raise nothing", async (_, by, daysApart) => {
     const { domain, given, clock } = await createHarness();
     const admin = await given.admin();
     const artisan = await given.matchableArtisan();
     for (const _ of [1, 2, 3]) {
       const job = await hiredJob(given, { artisan });
-      await cancel(domain, job.artisan, job.engagementId);
-      clock.advance({ days: 46 });
+      await cancel(domain, job[by], job.engagementId);
+      clock.advance({ days: daysApart });
     }
 
     expect(await signalTitles(domain, admin)).toEqual([]);

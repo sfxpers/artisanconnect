@@ -1,6 +1,6 @@
 import type { Domain } from "@/domain";
 import type { Actor, AdminActor } from "@/domain/actor";
-import type { FakeMailer } from "@/domain/fakes/mailer";
+import type { FakeMailer } from "./fakes/mailer";
 import type { FakePayments } from "@/domain/fakes/payments";
 import type { ServiceCategory } from "@/domain/service-categories";
 import {
@@ -65,7 +65,6 @@ export function given({
         password,
         rulesVersion: rules.version,
         consentsToDataUse: true,
-        ip: ipOf(count),
       },
     );
     if (!signedUp.ok) throw new Error(signedUp.refusal.message);
@@ -79,12 +78,10 @@ export function given({
 
   /** Signs an Admin in with an Email code. */
   async function signedInAdmin(email: string) {
-    count += 1;
-    const ip = ipOf(count);
-    await domain.admins.requestSignInCode({ kind: "visitor" }, { email, ip });
+    await domain.admins.requestSignInCode({ kind: "visitor" }, { email });
     const signedIn = await domain.admins.signIn(
       { kind: "visitor" },
-      { email, code: codeSentTo(email), ip },
+      { email, code: codeSentTo(email) },
     );
     if (!signedIn.ok) throw new Error(signedIn.refusal.message);
     return { ...signedIn.value, email };

@@ -1,7 +1,7 @@
 import type { AdminActor } from "@/domain/actor";
 import type { Domain } from "@/domain";
 import { passesIdChecksum, type CheckDetailsInput } from "@/domain/verification/checks";
-import { cameraJpeg } from "./files";
+import { photos } from "./files";
 import { textPdf } from "./pdfs";
 
 // What an Artisan sends for Verification, as their device would send it.
@@ -9,9 +9,11 @@ import { textPdf } from "./pdfs";
 /** A valid South African ID number (it passes its checksum). */
 export const SA_ID = "8001015009087";
 
-/** A different valid South African ID number for each seed. */
+/** A different valid South African ID number for each seed, up to 3,360,000. */
 export function saIdNumber(seed: number): string {
-  const body = `800101${String(seed % 10000).padStart(4, "0")}08`;
+  const day = String((Math.floor(seed / 10000) % 28) + 1).padStart(2, "0");
+  const month = String((Math.floor(seed / 280000) % 12) + 1).padStart(2, "0");
+  const body = `80${month}${day}${String(seed % 10000).padStart(4, "0")}08`;
   for (let check = 0; check < 10; check++) {
     if (passesIdChecksum(`${body}${check}`)) return `${body}${check}`;
   }
@@ -19,7 +21,7 @@ export function saIdNumber(seed: number): string {
 }
 
 export async function photo(): Promise<Blob> {
-  return new Blob([await cameraJpeg(64, 48)], { type: "image/jpeg" });
+  return new Blob([photos.jpeg()], { type: "image/jpeg" });
 }
 
 export async function letter(lines: string[] = ["Sipho Dlamini"]): Promise<Blob> {

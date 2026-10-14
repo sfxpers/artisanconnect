@@ -8,12 +8,12 @@ import { engagementMoney, isOverdrawn, paidInIs } from "../ledger";
 import { formatRands } from "../money";
 import { refundWrites, sendEngagementRefunds } from "../refunds";
 import { ok, refuse, type Result } from "../result";
-import { formatTime } from "../sa-days";
+import { HOUR_MS, formatTime } from "../sa-days";
 import { engagements, type CANCELLED_BY, type ENGAGEMENT_STATES } from "../schema";
 import { signalIfCancelling } from "../signals";
 import { emailTells, tellWhile } from "../tells";
 import { CANCELLATION_REASON_MAX } from "./inputs";
-import { engagementRow, type EngagementRow } from "./rows";
+import { engagementRow, type EngagementRow, partyOf, engagementNotFound } from "./rows";
 import { endProposedWrite } from "./updated-quote";
 
 // Cancellation (#133, ADR 0007): either party ends an Engagement before
@@ -29,11 +29,10 @@ import { endProposedWrite } from "./updated-quote";
 // refund (#135).
 
 /** The clock that refunds a Cancellation's unreleased Labour. Its subject is the Engagement. */
-export const CANCELLATION_REFUND_CLOCK = "engagement.cancellation-refund";
+const CANCELLATION_REFUND_CLOCK = "engagement.cancellation-refund";
 /** The clock that reminds the Artisan 24 hours before that refund. */
-export const CANCELLATION_REMINDER_CLOCK = "engagement.cancellation-reminder";
+const CANCELLATION_REMINDER_CLOCK = "engagement.cancellation-reminder";
 
-const HOUR_MS = 60 * 60 * 1000;
 /** How long after a Cancellation after Work started its unreleased Labour is refunded. */
 const REFUND_AFTER_MS = 72 * HOUR_MS;
 const REMIND_BEFORE_MS = 24 * HOUR_MS;
@@ -61,7 +60,7 @@ export async function cancel(
 ) {
   const engagement = await engagementRow(ctx, input.engagementId);
   const by = engagement && partyOf(actor, engagement);
-  if (!engagement || !by) return refuse("not-found", "That Engagement does not exist.");
+  if (!engagement || !by) return engagementNotFound();
   const reason = input.reason?.trim() || null;
   if (reason && reason.length > CANCELLATION_REASON_MAX) {
     return refuse("invalid", `A reason is at most ${CANCELLATION_REASON_MAX} characters.`);
@@ -308,11 +307,4 @@ export function canCancel(engagement: { state: EngagementState }): Result<null> 
     default:
       return refuse("not-cancellable", "This Engagement is Disputed: the Admin decides it.");
   }
-}
-
-/** Which party of the Engagement the actor is; null for anyone else. */
-function partyOf(actor: Actor, engagement: EngagementRow): CancelledBy | null {
-  if (actor.kind === "client" && actor.accountId === engagement.clientId) return "client";
-  if (actor.kind === "artisan" && actor.accountId === engagement.artisanId) return "artisan";
-  return null;
 }

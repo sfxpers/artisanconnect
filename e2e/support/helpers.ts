@@ -1,5 +1,24 @@
 import { execFileSync } from "node:child_process";
-import { expect, type Page } from "@playwright/test";
+import { expect, test as base, type Page } from "@playwright/test";
+
+export { expect };
+
+/**
+ * Each test starts with the rate limits cleared: every request comes from
+ * localhost, and a whole run's sign-ins and code requests would add up past
+ * them.
+ */
+export const test = base.extend<{ freshRateLimits: void }>({
+  freshRateLimits: [
+    // Playwright reads a fixture's dependencies from this pattern, so it stays.
+    // oxlint-disable-next-line no-empty-pattern
+    async ({}, use) => {
+      seed("freshRateLimits");
+      await use();
+    },
+    { auto: true },
+  ],
+});
 
 // What the smoke specs share: seeds, the local mailbox, and signing in. A
 // dev server Playwright has just started is slow on its first requests, so
@@ -37,6 +56,13 @@ export async function submitSignIn(page: Page, account: { email: string; passwor
   await page.getByLabel("Email", { exact: true }).fill(account.email);
   await page.getByLabel("Password", { exact: true }).fill(account.password);
   await button.click();
+}
+
+/** Confirms an act the page asks about in its Alert Dialog. */
+export async function confirm(page: Page) {
+  await page.getByRole("alertdialog").getByRole("button", { name: "Confirm" }).click({
+    timeout: 2000,
+  });
 }
 
 /** Signs an Account in with its Email and password. */

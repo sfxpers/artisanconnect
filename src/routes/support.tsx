@@ -1,18 +1,16 @@
 import { useState } from "react";
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { useAppForm } from "@/components/form";
 import { Page, Refusal } from "@/components/page";
+import { useAction } from "@/components/use-action";
 import {
   SUPPORT_MESSAGE_MAX,
   SUPPORT_TOPIC_NAMES,
   SUPPORT_TOPICS,
   type SupportTopic,
 } from "@/domain/support/topics";
-import { cn } from "@/lib/utils";
 import { copy, formatDate } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
 import { getMySupport, sendSupport } from "@/web/support";
@@ -32,8 +30,7 @@ const t = copy.support;
 function Support() {
   const requests = Route.useLoaderData();
   return (
-    <Page title={t.title} narrow>
-      <p className="text-sm text-muted-foreground">{t.lead}</p>
+    <Page title={t.title} lead={t.lead} narrow>
       <SupportForm />
       <Card size="sm">
         <CardHeader>
@@ -73,77 +70,52 @@ function Support() {
 }
 
 function SupportForm() {
-  const router = useRouter();
-  const [topic, setTopic] = useState<SupportTopic | null>(null);
-  const [message, setMessage] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [refusal, setRefusal] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
-
-  async function send() {
-    if (!topic) return;
-    setBusy(true);
-    setRefusal(null);
-    setSent(false);
-    const result = await sendSupport({ data: { topic, message } });
-    setBusy(false);
-    if (!result.ok) return setRefusal(result.refusal.message);
-    setTopic(null);
-    setMessage("");
-    setSent(true);
-    await router.invalidate();
-  }
+  const { refusal, run } = useAction();
+  const form = useAppForm({
+    defaultValues: { topic: "" as SupportTopic | "", message: "" },
+    onSubmit: ({ value, formApi }) => {
+      setSent(false);
+      return run(
+        () => sendSupport({ data: { ...value, topic: value.topic as SupportTopic } }),
+        () => {
+          formApi.reset();
+          setSent(true);
+        },
+      );
+    },
+  });
 
   return (
     <Card>
       <CardContent>
-        <form
-          className="space-y-4"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void send();
-          }}
-        >
-          <fieldset className="space-y-1.5">
-            <legend className="mb-1.5 text-sm font-medium">{t.topic}</legend>
-            <div className="flex flex-wrap gap-2">
-              {SUPPORT_TOPICS.map((key) => (
-                <label
-                  key={key}
-                  className={cn(
-                    "cursor-pointer rounded-full border px-3 py-1 text-sm hover:border-primary has-focus-visible:ring-2 has-focus-visible:ring-ring",
-                    topic === key && "border-primary bg-primary text-primary-foreground",
-                  )}
-                >
-                  <input
-                    type="radio"
-                    name="topic"
-                    value={key}
-                    className="sr-only"
-                    checked={topic === key}
-                    onChange={() => setTopic(key)}
-                  />
-                  {SUPPORT_TOPIC_NAMES[key]}
-                </label>
-              ))}
-            </div>
-          </fieldset>
-          <div className="space-y-1.5">
-            <Label htmlFor="message">{t.message}</Label>
-            <Textarea
-              id="message"
-              rows={6}
-              maxLength={SUPPORT_MESSAGE_MAX}
-              value={message}
-              onChange={(event) => setMessage(event.target.value)}
-            />
-          </div>
-          <Refusal message={refusal} />
-          {sent && <p className="text-sm text-muted-foreground">{t.sent}</p>}
-          <Button type="submit" disabled={busy || !topic || !message.trim()}>
-            {t.send}
-          </Button>
-        </form>
+        <form.AppForm>
+          <form.Form className="space-y-4">
+            <form.AppField name="topic">
+              {(field) => (
+                <field.ChoiceField
+                  label={t.topic}
+                  options={SUPPORT_TOPICS.map((value) => ({
+                    value,
+                    label: SUPPORT_TOPIC_NAMES[value],
+                  }))}
+                />
+              )}
+            </form.AppField>
+            <form.AppField name="message">
+              {(field) => (
+                <field.TextareaField label={t.message} rows={6} maxLength={SUPPORT_MESSAGE_MAX} />
+              )}
+            </form.AppField>
+            <Refusal message={refusal} />
+            {sent && <p className="text-sm text-muted-foreground">{t.sent}</p>}
+            <form.Subscribe
+              selector={(state) => !!state.values.topic && !!state.values.message.trim()}
+            >
+              {(ready) => <form.Submit disabled={!ready}>{t.send}</form.Submit>}
+            </form.Subscribe>
+          </form.Form>
+        </form.AppForm>
       </CardContent>
     </Card>
   );

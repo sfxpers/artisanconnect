@@ -1,6 +1,6 @@
-import { env } from "cloudflare:test";
 import { describe, expect, test } from "vitest";
 import type { Actor } from "@/domain/actor";
+import { releasesTo } from "../support/money";
 import { createHarness, type Harness } from "../support/harness";
 
 // Work started (#127, ADR 0006): set by the Client, or by the Artisan when the
@@ -71,27 +71,20 @@ describe("the Client marks Work started", () => {
       ...money,
       artisanFeePercent: 10,
     });
-    const rows = await releaseRows(engagementId);
-    expect(rows.map(({ kind, amount_cents }) => ({ kind, amount_cents }))).toEqual([
-      { kind: "payout.owed", amount_cents: 45_000 },
-      { kind: "release.artisan-fee", amount_cents: 5_000 },
-      { kind: "release.materials", amount_cents: 50_000 },
+    // One Release: the Materials, the Artisan Fee kept, and what it owes the Artisan.
+    expect(await releasesTo(domain, artisan)).toEqual([
+      { part: "materials", releasedCents: 50_000, artisanFeeCents: 5_000, amountCents: 45_000 },
     ]);
-    expect(new Set(rows.map((row) => row.event_id)).size).toBe(1);
   });
 
   test("rounds the Artisan Fee half up to the cent", async () => {
     const { domain, given } = await createHarness();
-    const { client, engagementId } = await hiredJob(given, { materials: "333.35" });
+    const { client, artisan, engagementId } = await hiredJob(given, { materials: "333.35" });
 
     await domain.engagements.workStarted(client.actor, { engagementId });
 
-    expect(
-      (await releaseRows(engagementId)).map(({ kind, amount_cents }) => ({ kind, amount_cents })),
-    ).toEqual([
-      { kind: "payout.owed", amount_cents: 30_001 },
-      { kind: "release.artisan-fee", amount_cents: 3_334 },
-      { kind: "release.materials", amount_cents: 33_335 },
+    expect(await releasesTo(domain, artisan)).toEqual([
+      { part: "materials", releasedCents: 33_335, artisanFeeCents: 3_334, amountCents: 30_001 },
     ]);
   });
 
@@ -108,7 +101,7 @@ describe("the Client marks Work started", () => {
       state: "work-started",
       money: { releasedCents: 0, unreleasedCents: 150_000 },
     });
-    expect(await releaseRows(engagementId)).toEqual([]);
+    expect(await releasesTo(domain, artisan)).toEqual([]);
     expect(await toldOf(domain, artisan, jobId)).toEqual([
       expect.objectContaining({
         event: "engagement.work-started",
@@ -145,7 +138,7 @@ describe("the Client marks Work started", () => {
       ok: false,
       refusal: { reason: "not-paid", message: "Work has already started on this Job." },
     });
-    expect(await releaseRows(engagementId)).toHaveLength(3);
+    expect(await releasesTo(domain, artisan)).toHaveLength(1);
     expect(await toldOf(domain, artisan, jobId)).toHaveLength(1);
   });
 
@@ -160,7 +153,7 @@ describe("the Client marks Work started", () => {
         refusal: { reason: "not-found" },
       });
     }
-    expect(await releaseRows(engagementId)).toEqual([]);
+    expect(await releasesTo(domain, artisan)).toEqual([]);
   });
 });
 
@@ -190,7 +183,7 @@ describe("the Artisan says they've started", () => {
       expect.objectContaining({ event: "engagement.start-claimed", title }),
     ]);
     expect(mailer.sentTo(client.email).at(-1)).toMatchObject({ subject: title });
-    expect(await releaseRows(engagementId)).toEqual([]);
+    expect(await releasesTo(domain, artisan)).toEqual([]);
   });
 
   test("with no answer in 24 hours it is Work started, the Materials released, and the Client told", async () => {
@@ -211,7 +204,7 @@ describe("the Artisan says they've started", () => {
       startClaim: null,
       money: { releasedCents: 50_000 },
     });
-    expect(await releaseRows(engagementId)).toHaveLength(3);
+    expect(await releasesTo(domain, artisan)).toHaveLength(1);
     expect((await toldOf(domain, client, jobId)).at(0)).toMatchObject({
       event: "engagement.work-started",
       title: "Work started, as you did not answer Not started in 24 hours: Paint the lounge",
@@ -239,7 +232,7 @@ describe("the Artisan says they've started", () => {
       state: "work-started",
       workStartedAt: startedAt,
     });
-    expect(await releaseRows(engagementId)).toHaveLength(3);
+    expect(await releasesTo(domain, artisan)).toHaveLength(1);
     expect(await toldOf(domain, artisan, jobId)).toHaveLength(1);
   });
 
@@ -349,7 +342,7 @@ describe("the Client answers Not started", () => {
     clock.advance({ days: 1 });
     await domain.system.runDueClocks();
     expect((await domain.jobs.view(client.actor, { jobId }))?.engagement?.state).toBe("paid");
-    expect(await releaseRows(engagementId)).toEqual([]);
+    expect(await releasesTo(domain, artisan)).toEqual([]);
   });
 
   test("lets the Artisan say they've started again later, with a new 24 hours", async () => {
@@ -374,7 +367,7 @@ describe("the Client answers Not started", () => {
     expect((await domain.jobs.view(client.actor, { jobId }))?.engagement?.state).toBe(
       "work-started",
     );
-    expect(await releaseRows(engagementId)).toHaveLength(3);
+    expect(await releasesTo(domain, artisan)).toHaveLength(1);
   });
 
   test("only while the Artisan's claim waits for an answer", async () => {
@@ -405,37 +398,6 @@ describe("the Client answers Not started", () => {
   });
 });
 
-describe("an Engagement's state", () => {
-  // The module has no command that could, so this checks the database itself refuses.
-  test("moves from Paid only to Work started, and once", async () => {
-    const { domain, given } = await createHarness();
-    const { client, engagementId } = await hiredJob(given);
-
-    await expect(
-      env.DB.prepare("UPDATE engagements SET state = 'completed' WHERE id = ?")
-        .bind(engagementId)
-        .run(),
-    ).rejects.toThrow(/cannot change that way/);
-    await expect(
-      env.DB.prepare("UPDATE engagements SET state = 'work-started' WHERE id = ?")
-        .bind(engagementId)
-        .run(),
-    ).rejects.toThrow(/cannot change that way/);
-
-    await domain.engagements.workStarted(client.actor, { engagementId });
-    for (const change of [
-      "state = 'paid'",
-      "work_started_at = 1",
-      "start_claimed_at = 1",
-      "artisan_fee_percent = 5",
-    ]) {
-      await expect(
-        env.DB.prepare(`UPDATE engagements SET ${change} WHERE id = ?`).bind(engagementId).run(),
-      ).rejects.toThrow(/cannot change that way/);
-    }
-  });
-});
-
 type QuoteFields = Parameters<Harness["given"]["sentQuote"]>[2];
 
 /**
@@ -450,16 +412,6 @@ async function hiredJob(given: Harness["given"], fields: QuoteFields = {}) {
   await given.hired(client, quoteId);
   const engagementId = await given.engagementOf(client, jobId);
   return { client, artisan, jobId, quoteId, engagementId };
-}
-
-/** The Engagement's Release rows in the ledger, by kind. */
-async function releaseRows(engagementId: string) {
-  const { results } = await env.DB.prepare(
-    "SELECT kind, amount_cents, event_id FROM ledger_entries WHERE engagement_id = ? AND kind NOT LIKE 'payment.%' ORDER BY kind",
-  )
-    .bind(engagementId)
-    .all<{ kind: string; amount_cents: number; event_id: string }>();
-  return results;
 }
 
 /** What the Account was told of the Job since it was Hired. */

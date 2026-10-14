@@ -3,6 +3,7 @@ import { inArray } from "drizzle-orm";
 import { accountIdOf, type Actor } from "../actor";
 import { firstProblem } from "../accounts/inputs";
 import { publicName } from "../accounts/names";
+import { frozenRefusal, isFrozen } from "../chargebacks/frozen";
 import { checkContent } from "../content/check";
 import { causedBy } from "../errors";
 import { engagementRow } from "../engagements/rows";
@@ -68,9 +69,12 @@ export const reviewsSection = defineSection({
       if (engagement.state !== "completed" || !engagement.completedAt) {
         return refuse("not-completed", "A Review is written once the Job is Completed.");
       }
+      // While a Chargeback freezes it, nothing is done on it, and its window waits (#137).
+      if (await isFrozen(ctx, engagement.id)) return frozenRefusal();
       // Read once, so a Review let in before the close is written before it.
       const now = ctx.now();
-      if (now.getTime() >= windowClosesAt(engagement.completedAt).getTime()) {
+      const completedAt = engagement.completedAt;
+      if (now.getTime() >= windowClosesAt({ ...engagement, completedAt }).getTime()) {
         return refuse("window-closed", "The seven days to write a Review have passed.");
       }
       const written = await reviewsOn(ctx, engagement.id);

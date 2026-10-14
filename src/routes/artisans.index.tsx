@@ -1,10 +1,10 @@
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
-import { MapPin, Star } from "lucide-react";
+import { MapPin, Search, Star, UserSearch } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Page } from "@/components/page";
+import { EmptyState, Page } from "@/components/page";
 import {
   isServiceCategory,
   SERVICE_CATEGORIES,
@@ -14,6 +14,9 @@ import {
 import { cn } from "@/lib/utils";
 import { copy } from "@/web/copy";
 import { getBrowse, getRegionNames } from "@/web/profiles";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { initials } from "@/components/app-header";
 
 type Search = { category?: ServiceCategory; region?: string };
 
@@ -46,12 +49,11 @@ function Browse() {
   const { me, admin } = Route.useRouteContext();
   const navigate = useNavigate({ from: Route.fullPath });
   return (
-    <Page title={t.title}>
-      <p className="max-w-2xl text-sm text-muted-foreground">{t.lead}</p>
+    <Page title={t.title} lead={t.lead}>
       {!me && !admin && (
         <p className="text-sm">
           {t.signUpPrompt}{" "}
-          <Link to="/sign-up" className="underline">
+          <Link to="/sign-up" className="font-medium text-primary underline underline-offset-4">
             {t.signUp}
           </Link>
         </p>
@@ -76,9 +78,8 @@ function Browse() {
       <div className="flex flex-wrap items-end gap-3">
         <div className="space-y-1.5">
           <Label htmlFor="region">{t.region}</Label>
-          <select
+          <NativeSelect
             id="region"
-            className="h-8 rounded-lg border border-input bg-background px-2 text-sm"
             value={region ?? ""}
             onChange={(event) =>
               void navigate({
@@ -92,32 +93,39 @@ function Browse() {
                 {each.name}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </div>
         {artisans && <p className="text-sm text-muted-foreground">{t.count(artisans.length)}</p>}
       </div>
 
       {!category || !artisans ? (
-        <p className="text-sm text-muted-foreground">{t.chooseTrade}</p>
+        <EmptyState icon={<Search />}>{t.chooseTrade}</EmptyState>
       ) : artisans.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t.empty}</p>
+        <EmptyState icon={<UserSearch />}>{t.empty}</EmptyState>
       ) : (
         <ul className="grid gap-3 md:grid-cols-2">
           {artisans.map((artisan) => (
             <li key={artisan.artisanId}>
-              <Card size="sm">
-                <CardContent className="space-y-2">
-                  <div className="flex items-start justify-between gap-3">
-                    <Link
-                      to="/artisans/$artisanId"
-                      params={{ artisanId: artisan.artisanId }}
-                      className="font-medium hover:underline"
-                    >
-                      {artisan.publicName}
-                    </Link>
-                    <Badge variant={artisan.availableForJobs ? "default" : "outline"}>
-                      {artisan.availableForJobs ? t.available : t.notAvailable}
-                    </Badge>
+              <Card size="sm" className="h-full transition-shadow hover:shadow-md">
+                <CardContent className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <Avatar size="lg">
+                      <AvatarFallback className="bg-accent font-semibold text-accent-foreground">
+                        {initials(artisan.publicName)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <Link
+                        to="/artisans/$artisanId"
+                        params={{ artisanId: artisan.artisanId }}
+                        className="block truncate text-base font-semibold hover:underline"
+                      >
+                        {artisan.publicName}
+                      </Link>
+                      <Badge variant={artisan.availableForJobs ? "success" : "outline"}>
+                        {artisan.availableForJobs ? t.available : t.notAvailable}
+                      </Badge>
+                    </div>
                   </div>
                   <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
                     <Star className="size-4" />

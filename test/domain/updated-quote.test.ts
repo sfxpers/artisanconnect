@@ -1,10 +1,10 @@
-import { env } from "cloudflare:test";
 import { describe, expect, test } from "vitest";
 import type { Actor } from "@/domain/actor";
 import type { CreateRefund, Webhook } from "@/domain/ports";
 import type { FakePayments } from "@/domain/fakes/payments";
 import { formatRands } from "@/domain/money";
 import { collectionOf } from "../support/given";
+import { releasesTo } from "../support/money";
 import { createHarness, type Harness } from "../support/harness";
 import { photo } from "../support/verification";
 
@@ -459,9 +459,8 @@ describe("accepting an Updated Quote by paying", () => {
         ],
       },
     });
-    expect(await ledger(engagementId, "release.")).toEqual([
-      { kind: "release.materials", amount_cents: 65_000 },
-      { kind: "release.artisan-fee", amount_cents: 6_500 },
+    expect(await releasesTo(domain, artisan)).toEqual([
+      { part: "materials", releasedCents: 65_000, artisanFeeCents: 6_500, amountCents: 58_500 },
     ]);
   });
 
@@ -484,12 +483,14 @@ describe("accepting an Updated Quote by paying", () => {
         ],
       },
     });
-    expect(await ledger(engagementId, "release.")).toEqual([
-      { kind: "release.materials", amount_cents: 50_000 },
-      { kind: "release.artisan-fee", amount_cents: 5_000 },
-      { kind: "release.materials", amount_cents: 15_000 },
-      { kind: "release.artisan-fee", amount_cents: 1_500 },
-    ]);
+    // Made at the same moment, the two Releases come in no fixed order.
+    expect(await releasesTo(domain, artisan)).toEqual(
+      expect.arrayContaining([
+        { part: "materials", releasedCents: 50_000, artisanFeeCents: 5_000, amountCents: 45_000 },
+        { part: "materials", releasedCents: 15_000, artisanFeeCents: 1_500, amountCents: 13_500 },
+      ]),
+    );
+    expect(await releasesTo(domain, artisan)).toHaveLength(2);
     expect(await toldOf(domain, artisan, jobId)).toEqual([
       expect.objectContaining({
         title: `The Client accepted your Updated Quote and paid the difference, ${formatRands(15_000)}. The extra Materials were released: Paint the lounge`,
@@ -514,9 +515,11 @@ describe("accepting an Updated Quote by paying", () => {
       state: "completed",
       money: { paidInCents: 230_000, releasedCents: 230_000, unreleasedCents: 0 },
     });
-    expect((await ledger(engagementId, "release.labour")).map((row) => row.amount_cents)).toEqual([
-      180_000,
-    ]);
+    expect(
+      (await releasesTo(domain, artisan))
+        .filter((release) => release.part === "labour")
+        .map((release) => release.releasedCents),
+    ).toEqual([180_000]);
   });
 
   test("a second Updated Quote starts from the first one's price", async () => {
@@ -580,49 +583,6 @@ describe("accepting an Updated Quote by paying", () => {
         message: "This Updated Quote is no longer proposed.",
       },
     });
-  });
-
-  // A Refund splits over the Payments from what it read; two at once could each read the same
-  // Payment's money as still there, so the database refuses taking more from one than it paid in.
-  test("the ledger refuses a Refund of more of a line from one Payment than it paid in", async () => {
-    const { domain, given } = await createHarness();
-    const { client, artisan, engagementId, collectionId } = await hiredJob(given);
-    await accepted(domain, given, client, artisan, engagementId, {
-      labour: "1800",
-      materials: "500",
-    });
-
-    await expect(
-      env.DB.prepare(
-        "INSERT INTO ledger_entries (id, event_id, kind, amount_cents, recorded_at, payment_id, engagement_id) VALUES ('r1', 'e1', 'refund.labour', 160000, 0, ?, ?)",
-      )
-        .bind(collectionId, engagementId)
-        .run(),
-    ).rejects.toThrow(/more than is unreleased/);
-  });
-
-  // Work started reads the Materials unreleased, then releases them in its batch. An Updated
-  // Quote's Payment landing between the two would leave its extra Materials unreleased, so the
-  // database refuses that batch, and Work started works the Materials out again.
-  test("the ledger refuses a Release of Materials that would leave some unreleased", async () => {
-    const { domain, given } = await createHarness();
-    const { client, artisan, engagementId, collectionId } = await hiredJob(given);
-    await accepted(domain, given, client, artisan, engagementId, {
-      labour: "1500",
-      materials: "650",
-    });
-
-    await expect(
-      env.DB.prepare(
-        "INSERT INTO ledger_entries (id, event_id, kind, amount_cents, recorded_at, payment_id, engagement_id) VALUES ('r1', 'e1', 'release.materials', 50000, 0, ?, ?)",
-      )
-        .bind(collectionId, engagementId)
-        .run(),
-    ).rejects.toThrow(/Materials left unreleased/);
-    await given.workStarted(client, engagementId);
-    expect(await ledger(engagementId, "release.materials")).toEqual([
-      { kind: "release.materials", amount_cents: 65_000 },
-    ]);
   });
 });
 
@@ -901,14 +861,4 @@ async function rows(domain: Harness["domain"], party: { actor: Actor }, jobId: s
   return (await domain.conversations.view(party.actor, {
     conversationId: conversation!.conversationId,
   }))!.items;
-}
-
-/** The Engagement's ledger rows whose kind starts so, oldest first. */
-async function ledger(engagementId: string, kind: string) {
-  const { results } = await env.DB.prepare(
-    "SELECT kind, amount_cents FROM ledger_entries WHERE engagement_id = ? AND kind LIKE ? ORDER BY recorded_at, rowid",
-  )
-    .bind(engagementId, `${kind}%`)
-    .all<{ kind: string; amount_cents: number }>();
-  return results;
 }

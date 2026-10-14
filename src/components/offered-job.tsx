@@ -1,13 +1,13 @@
 import { useState } from "react";
-import { Link, useNavigate } from "@tanstack/react-router";
-import { ChevronRight } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
+import { useConfirm } from "@/components/confirm";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { initials } from "@/components/app-header";
 import { Details, Fact } from "@/components/job-details";
-import { NextStepCard, Page, Refusal } from "@/components/page";
+import { BackCrumb, NextStepCard, Page, Refusal, withSidebar } from "@/components/page";
 import { useAction } from "@/components/use-action";
 import { QuoteForm } from "@/components/quote-form";
 import { ReportAction } from "@/components/report";
@@ -42,7 +42,7 @@ import { reviseQuote, sendQuote, withdrawQuoteBeingChecked, withdrawQuote } from
 import { getClientReviews } from "@/web/reviews";
 
 /** A Job as an Artisan offered it sees it. */
-export type OfferedJobView = Extract<Awaited<ReturnType<typeof getJob>>, { as: "artisan" }>;
+type OfferedJobView = Extract<Awaited<ReturnType<typeof getJob>>, { as: "artisan" }>;
 type OwnQuote = NonNullable<OfferedJobView["quote"]>;
 const t = copy.match;
 const tq = copy.quote;
@@ -76,15 +76,10 @@ export function OfferedJob({
   const { quote, engagement } = job;
   return (
     <Page>
-      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-        <Link to="/home" className="hover:text-foreground">
-          {t.breadcrumb}
-        </Link>
-        <ChevronRight className="size-3" />
-      </div>
+      <BackCrumb to="/home" label={t.breadcrumb} />
       <div className="space-y-1">
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight">{job.title}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{job.title}</h1>
           <Badge>
             {engagement
               ? copy.engagement.states[engagement.state]
@@ -108,7 +103,7 @@ export function OfferedJob({
         tab={tab}
         conversations={conversations}
         overview={
-          <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
+          <div className={withSidebar}>
             <div className="min-w-0 space-y-6">
               {engagement ? (
                 <>
@@ -135,14 +130,6 @@ export function OfferedJob({
               ) : (
                 holding && <QuoteOrPass job={job} invited={invited} vatNumber={vatNumber} />
               )}
-              <Card>
-                <CardHeader>
-                  <CardTitle>{copy.job.details}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Details job={job} />
-                </CardContent>
-              </Card>
             </div>
             <aside className="space-y-6">
               <Card size="sm">
@@ -206,6 +193,7 @@ export function OfferedJob({
         messages={
           <Messages jobId={job.jobId} conversations={conversations} open={open} asClient={false} />
         }
+        details={<Details job={job} />}
       />
     </Page>
   );
@@ -240,7 +228,7 @@ function QuoteOrPass({
       {job.takesQuotes ? (
         <div className="space-y-3 rounded-lg border p-4">
           <div className="space-y-1">
-            <h3 className="font-medium">{tq.write}</h3>
+            <h3 className="font-semibold">{tq.write}</h3>
             <p className="text-xs text-muted-foreground">{tq.writeLead}</p>
           </div>
           <QuoteForm
@@ -275,6 +263,7 @@ function QuoteStep({
   quote: OwnQuote;
   vatNumber: string | null;
 }) {
+  const confirm = useConfirm();
   const action = useAction();
   const [revising, setRevising] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -293,7 +282,7 @@ function QuoteStep({
       {notice && <p className="text-sm text-muted-foreground">{notice}</p>}
       {beingChecked && (
         <div className="space-y-3 rounded-lg border p-4">
-          <Badge variant="secondary">{copy.job.beingChecked}</Badge>
+          <Badge variant="warning">{copy.job.beingChecked}</Badge>
           <p className="text-sm text-muted-foreground">{tq.revisionHeld}</p>
           <QuoteFacts quote={beingChecked} />
         </div>
@@ -356,8 +345,8 @@ function QuoteStep({
               <Button
                 variant="ghost"
                 disabled={action.busy}
-                onClick={() => {
-                  if (!window.confirm(tq.withdrawConfirm)) return;
+                onClick={async () => {
+                  if (!(await confirm(tq.withdrawConfirm))) return;
                   void action.run(() => withdrawQuote({ data: { jobId } }));
                 }}
               >

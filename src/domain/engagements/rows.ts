@@ -1,5 +1,7 @@
 import { and, eq, inArray, sql, type SQLWrapper } from "drizzle-orm";
+import type { Actor } from "../actor";
 import type { Context } from "../context";
+import { refuse } from "../result";
 import { engagements, jobs, quotes } from "../schema";
 
 // Reading an Engagement, as each step of its work reads it.
@@ -26,6 +28,21 @@ export async function engagementRow(ctx: Context, engagementId: string) {
   if (!row) return null;
   const { engagement, ...rest } = row;
   return { ...engagement, ...rest };
+}
+
+/** Which party of the Engagement the actor is; null for anyone else. */
+export function partyOf(
+  actor: Actor,
+  engagement: { clientId: string; artisanId: string },
+): "client" | "artisan" | null {
+  if (actor.kind === "client" && actor.accountId === engagement.clientId) return "client";
+  if (actor.kind === "artisan" && actor.accountId === engagement.artisanId) return "artisan";
+  return null;
+}
+
+/** The refusal of a command on an Engagement that is not there, or not the actor's. */
+export function engagementNotFound() {
+  return refuse("not-found", "That Engagement does not exist.");
 }
 
 /** How many Engagements each of these Accounts has Completed, as Client or Artisan, by id. */

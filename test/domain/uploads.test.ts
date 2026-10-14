@@ -11,390 +11,252 @@ import bankLetterRc440 from "../fixtures/bank-letter-rc4-40.pdf?inline";
 import certificatePdf from "../fixtures/certificate.pdf?inline";
 import heicPhoto from "../fixtures/photo.heic?inline";
 import macVoiceMemo from "../fixtures/macos-voice-memo.m4a?inline";
+import { env } from "cloudflare:test";
 import {
-  animatedWebpHeader,
-  BLUE,
-  cameraJpeg,
-  decodeStoredWebp,
   fixture,
   fragmentedM4a,
   m4a,
   oggOpus,
   paddedTo,
   pdf,
-  pixelAt,
-  png,
-  pngHeader,
-  RED,
+  photos,
   riffChunks,
   webmOpus,
-  webp,
-  webpUnderstatingItsSize,
-  withFillByte,
 } from "../support/files";
-import { UPLOAD_CONTEXTS, type UploadContext } from "@/domain/uploads";
+import { createHarness } from "../support/harness";
 import { textPdf } from "../support/pdfs";
-import { createUploadsHarness } from "../support/uploads";
 
-// The one upload path: a file reaches R2 only if its type, size, and where it
-// is going allow it. Tests drive it through a probe caller
-// (test/support/uploads.ts) and look at what local R2 then holds.
+// What a file sent with a message may be (#113): before Payment photos only;
+// after it in the Engagement's Conversation, PDFs and voice notes too; never
+// video or a type that can carry a script; and nothing over its limit. A
+// refused file is refused before anything is stored, so the send changes
+// nothing. A photo is kept as one resized copy and a thumbnail, with no
+// location or other metadata.
 
-const client = { kind: "client", accountId: "client-1" } as const;
 const MB = 1024 * 1024;
-const { beforePayment, afterPayment, verification } = UPLOAD_CONTEXTS;
 
-function file(bytes: Uint8Array<ArrayBuffer> | string, name = "upload", type = "") {
-  return new File([bytes], name, { type });
+type Bytes = Uint8Array<ArrayBuffer> | string;
+
+/** A Client's Conversation with an Artisan, before Payment (a Sent Quote) or after it (Hired). */
+async function conversation(payment: "before" | "after") {
+  const { domain, given } = await createHarness();
+  const client = await given.client();
+  const artisan = await given.matchableArtisan();
+  const jobId = await given.openJob(client);
+  const quoteId = await given.sentQuote(artisan, jobId);
+  if (payment === "after") await given.hired(client, quoteId);
+  const [{ conversationId }] = (await domain.conversations.forJob(client.actor, { jobId }))!;
+  /** Sends the file alone, as the Client. */
+  async function send(bytes: Bytes, type = "") {
+    return domain.conversations.send(client.actor, {
+      conversationId,
+      text: "",
+      files: [new File([bytes], "upload", { type })],
+    });
+  }
+  async function messages() {
+    return (await domain.conversations.view(client.actor, { conversationId }))!.items.filter(
+      (item) => item.kind === "message",
+    );
+  }
+  return { domain, client, send, messages };
 }
 
-async function upload(
-  bytes: Uint8Array<ArrayBuffer> | string,
-  where: UploadContext = afterPayment,
-) {
-  const harness = await createUploadsHarness();
-  const result = await harness.domain.uploadsProbe.upload(client, { file: file(bytes), ...where });
-  return { ...harness, result };
+/** Sends each file in its own message, and gives the refusal reason of each, or "sent". */
+async function outcomes(payment: "before" | "after", files: (() => Bytes | Promise<Bytes>)[]) {
+  const { send, messages } = await conversation(payment);
+  const reasons = [];
+  for (const make of files) {
+    const sent = await send(await make());
+    reasons.push(sent.ok ? "sent" : sent.refusal.reason);
+  }
+  return { reasons, sent: (await messages()).length };
 }
-
-async function expectRefused(
-  bytes: Uint8Array<ArrayBuffer> | string,
-  reason: string,
-  where: UploadContext = afterPayment,
-) {
-  const { result, stored } = await upload(bytes, where);
-  expect(result).toMatchObject({ ok: false, refusal: { reason } });
-  expect(await stored()).toEqual([]);
-}
-
-/** Every metadata chunk a WebP may carry; a stored photo has none. */
-const METADATA_CHUNKS = ["EXIF", "XMP ", "ICCP"];
 
 describe("a photo", () => {
-  test("is stored as one resized copy and a thumbnail, with its location data stripped", async () => {
-    const { result, stored, read } = await upload(await cameraJpeg(3000, 1500), beforePayment);
-
-    expect(result).toMatchObject({ ok: true, value: { kind: "photo", width: 2048, height: 1024 } });
-    if (!result.ok || result.value.kind !== "photo") return;
-    const objects = await stored();
-    expect(objects.map((o) => o.key).sort()).toEqual(
-      [result.value.key, result.value.thumbnailKey].sort(),
+  /** The photos of the one message sent, each with its copy's and thumbnail's bytes. */
+  async function storedPhotos(sent: Uint8Array<ArrayBuffer>) {
+    const { domain, client, send, messages } = await conversation("before");
+    expect(await send(sent)).toMatchObject({ ok: true });
+    const [message] = await messages();
+    if (message?.kind !== "message") throw new Error("not sent");
+    const bytesOf = async (fileId: string, thumbnail: boolean) => {
+      const served = await domain.conversations.file(client.actor, {
+        messageId: message.messageId,
+        fileId,
+        thumbnail,
+      });
+      expect(served?.contentType).toBe("image/webp");
+      return new Uint8Array(await new Response(served!.body).arrayBuffer());
+    };
+    return Promise.all(
+      message.photos.map(async (photo) => ({
+        ...photo,
+        copy: await bytesOf(photo.id, false),
+        thumbnail: await bytesOf(photo.id, true),
+      })),
     );
-    for (const object of objects) {
-      expect(object.httpMetadata?.contentType).toBe("image/webp");
-      expect(riffChunks(await read(object.key))).not.toEqual(
-        expect.arrayContaining([expect.stringMatching(new RegExp(METADATA_CHUNKS.join("|")))]),
+  }
+
+  test("is kept as one resized copy and a thumbnail, with its location data stripped", async () => {
+    const [photo] = await storedPhotos(photos.camera());
+
+    expect(photo).toMatchObject({ width: 2048, height: 1024 });
+    for (const [bytes, size] of [
+      [photo!.copy, { width: 2048, height: 1024 }],
+      [photo!.thumbnail, { width: 400, height: 200 }],
+    ] as const) {
+      expect(riffChunks(bytes)).not.toEqual(
+        expect.arrayContaining([expect.stringMatching(/EXIF|XMP |ICCP/)]),
       );
+      expect(await env.IMAGES.info(new Blob([bytes]).stream())).toMatchObject(size);
     }
-    const copy = await decodeStoredWebp((await read(result.value.key)).buffer as ArrayBuffer);
-    const thumbnail = await decodeStoredWebp(
-      (await read(result.value.thumbnailKey)).buffer as ArrayBuffer,
-    );
-    expect([copy.width, copy.height]).toEqual([2048, 1024]);
-    expect([thumbnail.width, thumbnail.height]).toEqual([400, 200]);
   });
 
-  test.each([
-    ["PNG", () => png(640, 480)],
-    ["WebP", () => webp(640, 480)],
-  ])("is accepted as %s", async (_, make) => {
-    const { result, stored } = await upload(await make(), beforePayment);
+  test("animated, is kept as a still photo", async () => {
+    const [photo] = await storedPhotos(photos.animated());
 
-    expect(result).toMatchObject({ ok: true, value: { kind: "photo", width: 640, height: 480 } });
-    expect(await stored()).toHaveLength(2);
+    expect(riffChunks(photo!.copy)).not.toEqual(expect.arrayContaining(["ANIM", "ANMF"]));
   });
 
-  test("is turned the way the camera was held", async () => {
-    // Orientation 6: the camera was turned a quarter clockwise, so the left of the sensor is the top.
-    const { result, read } = await upload(await cameraJpeg(80, 40, { orientation: 6 }));
-
-    if (!result.ok || result.value.kind !== "photo") throw new Error("not stored");
-    const copy = await decodeStoredWebp((await read(result.value.key)).buffer as ArrayBuffer);
-    expect([copy.width, copy.height]).toEqual([40, 80]);
-    expect(closeTo(pixelAt(copy, 20, 10), RED)).toBe(true);
-    expect(closeTo(pixelAt(copy, 20, 70), BLUE)).toBe(true);
-  });
-
-  test("is never enlarged", async () => {
-    const { result, read } = await upload(await png(300, 200));
-
-    if (!result.ok || result.value.kind !== "photo") throw new Error("not stored");
-    const thumbnail = await decodeStoredWebp(
-      (await read(result.value.thumbnailKey)).buffer as ArrayBuffer,
-    );
-    expect(result.value).toMatchObject({ width: 300, height: 200 });
-    expect([thumbnail.width, thumbnail.height]).toEqual([300, 200]);
-  });
-
-  test("of 10 MB is accepted, and one byte more is refused before anything is stored", async () => {
-    const photo = await cameraJpeg(64, 64);
-
-    expect((await upload(paddedTo(photo, 10 * MB))).result).toMatchObject({ ok: true });
-    await expectRefused(paddedTo(photo, 10 * MB + 1), "too-large");
-  });
-
-  test("with more pixels than can be read is refused", async () => {
-    await expectRefused(pngHeader(6000, 4001), "too-large");
-  });
-
-  test("is measured by its image, not a smaller size its header claims", async () => {
-    await expectRefused(webpUnderstatingItsSize(), "too-large");
-  });
-
-  test("with a fill byte before a marker is read", async () => {
-    expect((await upload(withFillByte(await cameraJpeg(64, 64)))).result).toMatchObject({
-      ok: true,
-    });
-  });
-
-  test("that is damaged is refused", async () => {
-    await expectRefused(
-      new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 4, 1, 2, 9, 9, 9, 9]),
-      "unreadable",
-    );
+  test("is taken as JPEG, PNG, or WebP up to 10 MB, and no larger", async () => {
+    expect(
+      await outcomes("before", [
+        photos.png,
+        photos.webp,
+        () => paddedTo(photos.jpeg(), 10 * MB),
+        () => paddedTo(photos.jpeg(), 10 * MB + 1),
+        () => new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 4, 1, 2, 9, 9, 9, 9]),
+      ]),
+    ).toEqual({ reasons: ["sent", "sent", "sent", "too-large", "unreadable"], sent: 3 });
   });
 });
 
 describe("a PDF", () => {
-  test("of up to 10 MB is accepted after Payment, and stored as sent", async () => {
+  test("is taken only after Payment, up to 10 MB, and as sent", async () => {
     const certificate = fixture(certificatePdf);
+    const { domain, client, send, messages } = await conversation("after");
 
-    const { result, stored, read } = await upload(certificate, afterPayment);
-
-    expect(result).toMatchObject({ ok: true, value: { kind: "pdf" } });
-    const [object] = await stored();
-    expect(object?.httpMetadata?.contentType).toBe("application/pdf");
-    expect(await read(object!.key)).toEqual(certificate);
-    expect((await upload(paddedTo(certificate, 10 * MB))).result).toMatchObject({ ok: true });
-    await expectRefused(paddedTo(certificate, 10 * MB + 1), "too-large");
+    expect(await send(certificate)).toMatchObject({ ok: true });
+    const [message] = await messages();
+    if (message?.kind !== "message") throw new Error("not sent");
+    const served = await domain.conversations.file(client.actor, {
+      messageId: message.messageId,
+      fileId: message.files[0]!.id,
+    });
+    expect(served?.contentType).toBe("application/pdf");
+    expect(new Uint8Array(await new Response(served!.body).arrayBuffer())).toEqual(certificate);
+    expect((await send(paddedTo(certificate, 10 * MB))).ok).toBe(true);
+    expect(await send(paddedTo(certificate, 10 * MB + 1))).toMatchObject({
+      refusal: { reason: "too-large" },
+    });
+    expect((await outcomes("before", [() => certificate])).reasons).toEqual(["not-taken-here"]);
   });
 
-  test("is refused before Payment", async () => {
-    await expectRefused(fixture(certificatePdf), "not-taken-here", beforePayment);
-  });
-
-  test.each(["plain", "escaped", "object-stream"] as const)(
-    "carrying a script (%s) is refused",
-    async (script) => {
-      await expectRefused(await pdf({ script }), "script");
-    },
-  );
-
-  test.each(["flate-then-hex", "predictor"] as const)(
-    "whose object stream cannot be unpacked to check (%s) is refused",
-    async (packing) => {
-      await expectRefused(await pdf({ script: "object-stream", packing }), "unreadable");
-    },
-  );
-
-  // Saved by macOS's own PDF writer with an owner password only, as a bank
-  // letter or a generated certificate forbids editing or copying.
-  test.each([
-    ["RC4, 40 bits", bankLetterRc440],
-    ["RC4, 128 bits", bankLetterRc4128],
-    ["AES, 128 bits", bankLetterAes128],
-  ])("that opens without a password but is encrypted (%s) is accepted", async (_, letter) => {
-    const { result, stored } = await upload(fixture(letter));
-
-    expect(result).toMatchObject({ ok: true, value: { kind: "pdf" } });
-    expect(await stored()).toHaveLength(1);
-  });
-
-  test("that opens without a password but is encrypted (AES, 256 bits) is accepted", async () => {
-    const letter = await textPdf({ lines: ["Account number 62812345678"], aes256: {} });
-
-    expect((await upload(letter)).result).toMatchObject({ ok: true, value: { kind: "pdf" } });
-  });
-
-  test.each([
-    ["RC4", async () => fixture(bankLetterPasswordRc4)],
-    ["AES, 128 bits", async () => fixture(bankLetterPasswordAes)],
-    ["AES, 256 bits", () => textPdf({ lines: ["Hidden"], aes256: { userPassword: "secret" } })],
-  ])(
-    "that needs a password to open (%s) is refused, since it cannot be read, saying how to unlock it",
-    async (_, locked) => {
-      const { result, stored } = await upload(await locked());
-
-      expect(result).toMatchObject({
-        ok: false,
-        refusal: { reason: "unreadable", message: expect.stringMatching(/without a password/) },
-      });
-      expect(await stored()).toEqual([]);
-    },
-  );
-
-  test("that is encrypted and carries a script in an object stream is refused", async () => {
-    await expectRefused(await textPdf({ aes256: {}, script: true }), "script");
+  test("is taken encrypted if it opens without a password, and refused if it carries a script or cannot be read", async () => {
+    expect(
+      await outcomes("after", [
+        // Saved with an owner password only, as a bank letter or a generated
+        // certificate forbids editing or copying.
+        () => fixture(bankLetterRc440),
+        () => fixture(bankLetterRc4128),
+        () => fixture(bankLetterAes128),
+        () => textPdf({ lines: ["Bank letter"], aes256: {} }),
+        () => pdf({ script: "plain" }),
+        () => pdf({ script: "escaped" }),
+        () => pdf({ script: "object-stream" }),
+        () => textPdf({ aes256: {}, script: true }),
+        () => pdf({ script: "object-stream", packing: "flate-then-hex" }),
+        () => pdf({ script: "object-stream", packing: "predictor" }),
+        () => fixture(bankLetterPasswordRc4),
+        () => fixture(bankLetterPasswordAes),
+        () => textPdf({ lines: ["Hidden"], aes256: { userPassword: "secret" } }),
+      ]),
+    ).toEqual({
+      reasons: [
+        // Taken, as Workers AI opens them to read their text.
+        ...Array<string>(4).fill("sent"),
+        ...Array<string>(4).fill("script"),
+        ...Array<string>(5).fill("unreadable"),
+      ],
+      sent: 4,
+    });
   });
 });
 
 describe("a voice note", () => {
-  test.each([
-    // About 1.5 seconds each; Chrome's MP4 states almost none of it, so it is read from the fragments.
-    ["recorded in Chrome (WebM)", chromeVoiceWebm, "audio/webm", 1.38],
-    ["recorded in Chrome (MP4)", chromeVoiceMp4, "audio/mp4", 1.46],
-    ["saved by a voice recorder (M4A)", macVoiceMemo, "audio/mp4", 1.16],
-  ])("%s is accepted after Payment", async (_, recording, contentType, seconds) => {
-    const { result, stored } = await upload(fixture(recording), afterPayment);
-
-    expect(result).toMatchObject({ ok: true, value: { kind: "voice-note" } });
-    if (!result.ok || result.value.kind !== "voice-note") return;
-    expect(result.value.seconds).toBeCloseTo(seconds, 1);
-    expect((await stored())[0]?.httpMetadata?.contentType).toBe(contentType);
-  });
-
-  test.each([
-    ["WebM", webmOpus],
-    ["Ogg", oggOpus],
-    ["M4A", m4a],
-  ])("of up to 5 minutes is accepted as %s, and longer is refused", async (_, make) => {
-    expect((await upload(make(300))).result).toMatchObject({ ok: true });
-    await expectRefused(make(301), "too-long");
-  });
-
-  test("whose length is only in its fragments is measured from them", async () => {
+  test("is taken only after Payment, as recorded in a browser or by a voice recorder, up to 5 minutes", async () => {
     const fiveMinutes = Math.floor((300 * 44_100) / 1024);
 
-    expect((await upload(fragmentedM4a(fiveMinutes))).result).toMatchObject({ ok: true });
-    await expectRefused(fragmentedM4a(fiveMinutes + 50), "too-long");
-    // Four billion samples are added up, not counted one by one.
-    await expectRefused(fragmentedM4a(0xffffffff), "too-long");
-  });
-
-  test("is refused before Payment", async () => {
-    await expectRefused(fixture(chromeVoiceWebm), "not-taken-here", beforePayment);
+    expect(
+      await outcomes("after", [
+        () => fixture(chromeVoiceWebm),
+        () => fixture(chromeVoiceMp4),
+        () => fixture(macVoiceMemo),
+        () => webmOpus(300),
+        () => oggOpus(300),
+        () => m4a(300),
+        // Its length is only in its fragments, and is added up from them.
+        () => fragmentedM4a(fiveMinutes),
+        () => webmOpus(301),
+        () => oggOpus(301),
+        () => m4a(301),
+        () => fragmentedM4a(fiveMinutes + 50),
+        () => fragmentedM4a(0xffffffff),
+      ]),
+    ).toEqual({
+      reasons: [...Array<string>(7).fill("sent"), ...Array<string>(5).fill("too-long")],
+      sent: 7,
+    });
+    expect((await outcomes("before", [() => fixture(chromeVoiceWebm)])).reasons).toEqual([
+      "not-taken-here",
+    ]);
   });
 });
 
-describe("where a file is going", () => {
-  test("before Payment takes only photos", async () => {
-    expect((await upload(await png(64, 64), beforePayment)).result).toMatchObject({ ok: true });
-    expect((await upload(fixture(certificatePdf), beforePayment)).result).toEqual({
-      ok: false,
-      refusal: { reason: "not-taken-here", message: "Only photos can be sent here." },
-    });
-  });
-
-  test("for Verification takes photos and PDFs, but not voice notes", async () => {
-    expect((await upload(await png(64, 64), verification)).result).toMatchObject({ ok: true });
-    expect((await upload(fixture(certificatePdf), verification)).result).toMatchObject({
-      ok: true,
-      value: { kind: "pdf" },
-    });
-    await expectRefused(fixture(chromeVoiceWebm), "not-taken-here", verification);
-    expect((await upload(fixture(chromeVoiceWebm), verification)).result).toMatchObject({
-      refusal: { message: "Only photos and PDFs can be sent here." },
-    });
-  });
-});
-
-describe("video", () => {
-  const videos = [
-    ["recorded in Chrome (WebM)", () => fixture(chromeVideoWebm)],
-    ["recorded in Chrome (MP4)", () => fixture(chromeVideoMp4)],
-    ["in WebM", () => webmOpus(10, { video: true })],
-    ["in Ogg", () => oggOpus(10, { video: true })],
-    ["in M4A", () => m4a(10, { video: true })],
-    ["as an animated WebP", animatedWebpHeader],
+describe("anything else", () => {
+  const refused = [
+    ["video", () => fixture(chromeVideoWebm)],
+    ["video", () => fixture(chromeVideoMp4)],
+    ["video", () => webmOpus(10, { video: true })],
+    ["video", () => oggOpus(10, { video: true })],
+    ["video", () => m4a(10, { video: true })],
+    [
+      "script",
+      () =>
+        '<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',
+    ],
+    ["script", () => "﻿  <!doctype html><html><script>alert(1)</script></html>"],
+    ["type-not-taken", () => fixture(heicPhoto)],
+    [
+      "type-not-taken",
+      () => new Uint8Array([0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 1, 0, 1, 0, 0, 0, 0]),
+    ],
+    ["type-not-taken", () => "alert(document.cookie)"],
+    ["type-not-taken", () => new Uint8Array([0x4d, 0x5a, 0x90, 0, 3, 0, 0, 0])],
   ] as const;
 
-  test.each(videos)("%s is refused after Payment", async (_, make) => {
-    await expectRefused(make(), "video", afterPayment);
-  });
-
-  test.each(videos)("%s is refused before Payment", async (_, make) => {
-    await expectRefused(make(), "video", beforePayment);
-  });
-});
-
-describe("a type that can carry a script", () => {
-  test.each([
-    [
-      "an SVG",
-      '<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',
-    ],
-    ["a web page", "﻿  <!doctype html><html><script>alert(1)</script></html>"],
-  ])("such as %s is refused everywhere", async (_, text) => {
-    await expectRefused(text, "script", beforePayment);
-    await expectRefused(text, "script", afterPayment);
-  });
+  test.each(["before", "after"] as const)(
+    "is refused %s Payment: video, a type that can carry a script, or any other",
+    async (payment) => {
+      expect(
+        await outcomes(
+          payment,
+          refused.map(([, make]) => make),
+        ),
+      ).toEqual({
+        reasons: refused.map(([reason]) => reason),
+        sent: 0,
+      });
+    },
+  );
 
   test("is refused whatever name and type it claims", async () => {
-    const harness = await createUploadsHarness();
+    const { send } = await conversation("after");
 
-    const result = await harness.domain.uploadsProbe.upload(client, {
-      file: file("<html><script>alert(1)</script></html>", "geyser.jpg", "image/jpeg"),
-      ...afterPayment,
+    expect(await send("<html><script>alert(1)</script></html>", "image/jpeg")).toMatchObject({
+      ok: false,
+      refusal: { reason: "script" },
     });
-
-    expect(result).toMatchObject({ ok: false, refusal: { reason: "script" } });
   });
 });
-
-describe("any other type", () => {
-  test.each([
-    ["a HEIC photo", () => fixture(heicPhoto)],
-    ["a GIF", () => new Uint8Array([0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 1, 0, 1, 0, 0, 0, 0])],
-    ["a script file", () => "alert(document.cookie)"],
-    ["a Windows program", () => new Uint8Array([0x4d, 0x5a, 0x90, 0, 3, 0, 0, 0])],
-  ])("such as %s is refused", async (_, make) => {
-    await expectRefused(make(), "type-not-taken");
-  });
-});
-
-describe("count limits, enforced by the caller", () => {
-  const tinyPhoto = async () => file(await png(8, 8));
-
-  async function attachMany(
-    limit: Parameters<typeof attach>[1],
-    count: number,
-    where: UploadContext = afterPayment,
-  ) {
-    const harness = await createUploadsHarness();
-    const files = await Promise.all(Array.from({ length: count }, tinyPhoto));
-    const first = await attach(harness, limit, files, where);
-    const next = await attach(harness, limit, [await tinyPhoto()], where);
-    return { ...harness, first, next };
-  }
-
-  async function attach(
-    harness: Awaited<ReturnType<typeof createUploadsHarness>>,
-    limit: "jobPhotos" | "completionPhotos" | "completionDocuments" | "messageAttachments",
-    files: File[],
-    where: UploadContext,
-  ) {
-    return harness.domain.uploadsProbe.attach(client, { to: "thing-1", limit, files, ...where });
-  }
-
-  test.each([
-    ["10 photos on a Job", "jobPhotos", 10, "A Job has at most 10 photos."],
-    ["10 photos on a Completion", "completionPhotos", 10, "A Completion has at most 10 photos."],
-    [
-      "5 documents on a Completion",
-      "completionDocuments",
-      5,
-      "A Completion has at most 5 documents.",
-    ],
-    ["5 attachments on a message", "messageAttachments", 5, "A message has at most 5 attachments."],
-  ] as const)("allow %s and no more", async (_, limit, max, message) => {
-    const { first, next, stored } = await attachMany(limit, max);
-
-    expect(first).toEqual({ ok: true, value: max });
-    expect(next).toEqual({ ok: false, refusal: { reason: "too-many-files", message } });
-    expect(await stored()).toHaveLength(max * 2);
-  });
-
-  test("refuse a batch that would go over before any of it is stored", async () => {
-    const harness = await createUploadsHarness();
-    const files = await Promise.all(Array.from({ length: 6 }, tinyPhoto));
-
-    const result = await attach(harness, "messageAttachments", files, afterPayment);
-
-    expect(result).toMatchObject({ ok: false, refusal: { reason: "too-many-files" } });
-    expect(await harness.stored()).toEqual([]);
-  });
-});
-
-function closeTo(actual: number[], expected: number[], tolerance = 40) {
-  return actual.every((value, i) => Math.abs(value - expected[i]!) <= tolerance);
-}

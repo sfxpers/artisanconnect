@@ -15,7 +15,7 @@ import { causedBy } from "../errors";
 import { insertWhile } from "../guarded";
 import { LEDGER_KINDS, ledgerWrites } from "../ledger";
 import { formatRands } from "../money";
-import { saDay, saDayStart } from "../sa-days";
+import { HOUR_MS, MINUTE_MS, saDay, saDayStart } from "../sa-days";
 import {
   accounts,
   admins,
@@ -107,7 +107,7 @@ function runTimeOn(day: string, time: string): Date {
   const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(time);
   if (!match) throw new Error(`The Payout run time "${time}" is not a time of day like 10:00`);
   const minutes = Number(match[1]) * 60 + Number(match[2]);
-  return new Date(saDayStart(day).getTime() + minutes * 60_000);
+  return new Date(saDayStart(day).getTime() + minutes * MINUTE_MS);
 }
 
 async function runOn(ctx: Context, day: string) {
@@ -274,7 +274,7 @@ async function createdPayouts(ctx: Context, { held }: { held: boolean }) {
 }
 
 /** How long a created Payout may still be on its way to the adapter, from a run in flight. */
-const ASKING_FOR_MS = 60 * 60 * 1000;
+const ASKING_FOR_MS = HOUR_MS;
 
 /**
  * Each Payout created but never answered whose account is no longer the

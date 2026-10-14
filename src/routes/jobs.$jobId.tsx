@@ -1,11 +1,12 @@
 import { useState, type ReactNode } from "react";
 import { Link, createFileRoute, useNavigate, useRouterState } from "@tanstack/react-router";
-import { ChevronRight, ShieldCheck } from "lucide-react";
+import { useConfirm } from "@/components/confirm";
+import { ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DraftForm, EditForm, type JobView } from "@/components/job-form";
-import { NextStepCard, Page, Refusal } from "@/components/page";
+import { BackCrumb, NextStepCard, Page, Refusal, withSidebar } from "@/components/page";
 import { useAction } from "@/components/use-action";
 import { Details, Fact } from "@/components/job-details";
 import { InviteList, type InviteListView } from "@/components/invite-list";
@@ -33,7 +34,7 @@ import {
   type ConversationSummary,
   type ConversationView,
 } from "@/components/conversation";
-import { JobTabs, type JobTab } from "@/components/job-tabs";
+import { JOB_TABS, JobTabs, type JobTab } from "@/components/job-tabs";
 import { copy, formatDate } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
 import { getConversation, getConversations } from "@/web/conversations";
@@ -58,7 +59,7 @@ export const Route = createFileRoute("/jobs/$jobId")({
     search: Record<string, unknown>,
   ): { region?: string; tab?: JobTab; conversation?: string } => ({
     region: typeof search.region === "string" && search.region ? search.region : undefined,
-    tab: search.tab === "overview" || search.tab === "messages" ? search.tab : undefined,
+    tab: JOB_TABS.find((tab) => tab === search.tab),
     conversation:
       typeof search.conversation === "string" && search.conversation
         ? search.conversation
@@ -164,15 +165,10 @@ function ClientJob({
 }) {
   return (
     <Page>
-      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-        <Link to="/jobs" className="hover:text-foreground">
-          {t.breadcrumb}
-        </Link>
-        <ChevronRight className="size-3" />
-      </div>
+      <BackCrumb to="/jobs" label={t.breadcrumb} />
       <div className="space-y-1">
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             {job.title || copy.jobs.untitled}
           </h1>
           <Badge variant={job.state === "open" ? "default" : "secondary"}>
@@ -209,6 +205,7 @@ function ClientJob({
           messages={
             <Messages jobId={job.jobId} conversations={conversations} open={open} asClient />
           }
+          details={<Details job={job} />}
         />
       )}
     </Page>
@@ -281,6 +278,7 @@ function Posted({
   quotes: ClientQuote[];
   conversations: ConversationSummary[];
 }) {
+  const confirm = useConfirm();
   const action = useAction();
   const [editing, setEditing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -289,7 +287,7 @@ function Posted({
   const sent = quotes.filter((quote) => quote.state === "sent").length;
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
+    <div className={withSidebar}>
       <div className="min-w-0 space-y-6">
         <NextStepCard
           label={copy.jobs.nextStep}
@@ -351,8 +349,8 @@ function Posted({
               <Button
                 variant="ghost"
                 disabled={action.busy}
-                onClick={() => {
-                  if (!window.confirm(t.closeConfirm)) return;
+                onClick={async () => {
+                  if (!(await confirm(t.closeConfirm))) return;
                   void action.run(() => closeJob({ data: { jobId: job.jobId } }));
                 }}
               >
@@ -374,7 +372,7 @@ function Posted({
         {beingChecked && (
           <Card>
             <CardHeader>
-              <Badge variant="secondary">{t.beingChecked}</Badge>
+              <Badge variant="warning">{t.beingChecked}</Badge>
               <p className="text-sm text-muted-foreground">{t.editBeingChecked}</p>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -391,7 +389,7 @@ function Posted({
           </Card>
         )}
 
-        {editing ? (
+        {editing && (
           <Card>
             <CardHeader>
               <CardTitle>{t.editTitle}</CardTitle>
@@ -415,15 +413,6 @@ function Posted({
                   )
                 }
               />
-            </CardContent>
-          </Card>
-        ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle>{t.details}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Details job={job} />
             </CardContent>
           </Card>
         )}
@@ -489,7 +478,7 @@ function Hired({
 }) {
   const { artisan } = engagement;
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
+    <div className={withSidebar}>
       <div className="min-w-0 space-y-6">
         <EngagementNextStep engagement={engagement} asClient>
           <NotHired job={job} />
@@ -510,15 +499,7 @@ function Hired({
         <CompletionCard engagement={engagement} />
         <PaymentsCard engagement={engagement} />
         <ActivityCard engagement={engagement} />
-        <Card>
-          <CardHeader>
-            <CardTitle>{t.details}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Details job={job} />
-            <ClientQuotes jobId={job.jobId} quotes={quotes} conversations={conversations} />
-          </CardContent>
-        </Card>
+        <ClientQuotes jobId={job.jobId} quotes={quotes} conversations={conversations} />
       </div>
       <aside className="space-y-6">
         <Card size="sm">

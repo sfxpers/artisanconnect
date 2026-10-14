@@ -2,9 +2,8 @@ import { latin1, startsWith, Unreadable } from "../bytes";
 import { inflate, MAX_DECODED_BYTES, PdfDocument } from "./document";
 import { nameOf } from "./syntax";
 
-export { pdfText, type PdfText } from "./text";
-
-// A PDF may carry a script or a whole other file. Either is named by a key in
+// Custom because Workers AI's toMarkdown reads a PDF's text, but nothing on the
+// stack says whether a PDF carries a script. A PDF may carry a script or a whole other file. Either is named by a key in
 // a dictionary, and a dictionary is either in plain sight or packed into a
 // compressed object stream, so the plain text and every inflated object
 // stream are searched for those names. Streams that are not object streams

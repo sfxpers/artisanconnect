@@ -26,7 +26,7 @@ export const CHECK_KINDS = [
 
 export type CheckKind = (typeof CHECK_KINDS)[number];
 
-export type CheckGroup = "once" | "category" | "optional";
+type CheckGroup = "once" | "category" | "optional";
 
 /** One part of what a check's files are, such as the document or the selfie. */
 export type FilePart = {
@@ -245,7 +245,7 @@ const registrationNumber = text("Give the registration number.").pipe(
 );
 
 /** A two-letter country code a passport may be issued by. */
-export const passportCountry = z
+const passportCountry = z
   .string()
   .trim()
   .toUpperCase()
@@ -264,34 +264,20 @@ export const identityNumber = z
     number: text("Give the document number.").transform(compact),
     country: z.string().optional(),
   })
-  .superRefine((value, check) => {
-    if (value.documentType === "sa-id") {
-      if (!/^\d{13}$/.test(value.number)) {
-        check.addIssue({
-          code: "custom",
-          path: ["number"],
-          message: "A South African ID number has 13 digits.",
-        });
-      } else if (!passesIdChecksum(value.number)) {
-        check.addIssue({
-          code: "custom",
-          path: ["number"],
-          message: "This South African ID number is not valid. Check each digit.",
-        });
+  .check((check) => {
+    const { documentType, number, country } = check.value;
+    const issue = (field: "number" | "country", message: string) =>
+      check.issues.push({ code: "custom", path: [field], message, input: check.value });
+    if (documentType === "sa-id") {
+      if (!/^\d{13}$/.test(number)) issue("number", "A South African ID number has 13 digits.");
+      else if (!passesIdChecksum(number)) {
+        issue("number", "This South African ID number is not valid. Check each digit.");
       }
-    } else if (!/^[A-Z0-9]{4,20}$/.test(value.number)) {
-      check.addIssue({
-        code: "custom",
-        path: ["number"],
-        message: "Give the document number: 4 to 20 letters and digits.",
-      });
+    } else if (!/^[A-Z0-9]{4,20}$/.test(number)) {
+      issue("number", "Give the document number: 4 to 20 letters and digits.");
     }
-    if (value.documentType === "passport" && !passportCountry.safeParse(value.country).success) {
-      check.addIssue({
-        code: "custom",
-        path: ["country"],
-        message: "Choose the country that issued the passport.",
-      });
+    if (documentType === "passport" && !passportCountry.safeParse(country).success) {
+      issue("country", "Choose the country that issued the passport.");
     }
   })
   .transform((value) => ({

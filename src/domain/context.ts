@@ -1,9 +1,7 @@
 import type { BatchItem } from "drizzle-orm/batch";
 import { drizzle, type DrizzleD1Database } from "drizzle-orm/d1";
 import type { DomainConfig, Ports } from "./ports";
-import * as schema from "./schema";
-
-export type Db = DrizzleD1Database<typeof schema>;
+type Db = DrizzleD1Database;
 
 /** One statement of a domain event's batch. */
 export type Write = BatchItem<"sqlite">;
@@ -23,7 +21,7 @@ export type Context = {
 };
 
 export function createContext(ports: Ports, config: DomainConfig): Context {
-  const db = drizzle(ports.db, { schema });
+  const db = drizzle(ports.db);
   return {
     db,
     ports,

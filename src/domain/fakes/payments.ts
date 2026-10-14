@@ -81,16 +81,17 @@ const BENEFICIARY_REFERENCE_MAX = 20;
 
 export function createFakePayments({
   clock = { now: () => new Date() },
-  webhookSecret = "fake-webhook-secret",
+  webhookSecret,
   floatCents = 100_000_000,
   state: kept,
 }: {
   clock?: Clock;
-  webhookSecret?: string;
+  /** Signs every event; a webhook signed with any other is refused. */
+  webhookSecret: string;
   floatCents?: number;
   /** A snapshot to carry on from, instead of starting empty. */
   state?: FakePaymentsState;
-} = {}): FakePayments {
+}): FakePayments {
   const calls: FakePayments["calls"] = [];
   const restored = kept && structuredClone(kept);
   const collections = new Map(restored?.collections);
@@ -174,7 +175,7 @@ export function createFakePayments({
           input,
           state: { id: input.id, amountCents: input.amountCents, state: "pending", method: null },
         });
-      // The checkout page is served by the app itself in local and staging.
+      // The checkout page is served by the app itself, in every environment.
       return {
         checkoutUrl: new URL(`/fake-checkout/${encodeURIComponent(input.id)}`, input.returnUrl)
           .href,
@@ -415,7 +416,7 @@ export type FakePaymentsStore = {
  * controls, and the bank paying a Payout or a Refund, or opening and closing
  * a Chargeback, for a seed of the local app.
  */
-export type StoredFakePayments = PaymentAdapter &
+type StoredFakePayments = PaymentAdapter &
   Pick<
     FakePayments,
     | "succeedCollection"
@@ -439,7 +440,7 @@ export function createStoredFakePayments({
 }: {
   store: FakePaymentsStore;
   clock?: Clock;
-  webhookSecret?: string;
+  webhookSecret: string;
 }): StoredFakePayments {
   async function run<T>(operation: (fake: FakePayments) => Promise<T>): Promise<T> {
     for (let attempt = 0; attempt < 5; attempt += 1) {

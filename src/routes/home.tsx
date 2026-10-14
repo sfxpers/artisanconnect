@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { initials } from "@/components/app-header";
 import { NoticeList } from "@/components/notice-list";
-import { NextStepCard, Page, Refusal } from "@/components/page";
+import { EmptyState, NextStepCard, Page, Refusal, withSidebar } from "@/components/page";
 import { REGIONS_MAX } from "@/domain/regions/places";
 import { formatRands } from "@/domain/money";
 import { getNotices } from "@/web/accounts";
@@ -53,7 +53,7 @@ function Home() {
   const [tab, setTab] = useState<Tab>("matches");
   return (
     <Page>
-      <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
+      <div className={withSidebar}>
         <div className="min-w-0 space-y-6">
           <Waiting work={work} onSee={setTab} />
           <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)}>
@@ -90,13 +90,24 @@ function Home() {
 }
 
 /**
- * What waits on the Artisan, first things first: Verification, Regions, then
- * Invitations and Job Matches. An Invitation may come before the rest is done.
+ * What waits on the Artisan, first things first: Hired work to start,
+ * complete, or fix, then Verification, Regions, Invitations, and Job Matches.
  */
 function Waiting({ work, onSee }: { work: Work; onSee: (tab: Tab) => void }) {
   const { invitations, matches } = work;
   const jobs = invitations.length > 0 || matches.length > 0;
+  const hired = work.quotes.filter((quote) => quote.waitsOnArtisan).length;
   const cards = [
+    hired > 0 && (
+      <NextStepCard key="hired" label={t.waiting} title={t.hiredWaiting(hired)}>
+        <p className="text-sm text-muted-foreground">{t.hiredLead}</p>
+        <div className="flex flex-wrap gap-2">
+          <Button size="lg" onClick={() => onSee("active")}>
+            {t.seeActive}
+          </Button>
+        </div>
+      </NextStepCard>
+    ),
     !work.verified && (
       <NextStepCard key="verification" label={t.waiting} title={t.verification}>
         <p className="text-sm text-muted-foreground">{t.verificationLead}</p>
@@ -153,7 +164,7 @@ function Waiting({ work, onSee }: { work: Work; onSee: (tab: Tab) => void }) {
 
 function Matches({ matches, available }: { matches: Match[]; available: boolean }) {
   if (matches.length === 0) {
-    return <Empty>{available ? t.noMatches : t.noMatchesUnavailable}</Empty>;
+    return <EmptyState>{available ? t.noMatches : t.noMatchesUnavailable}</EmptyState>;
   }
   return (
     <Card className="py-0">
@@ -172,7 +183,7 @@ function Matches({ matches, available }: { matches: Match[]; available: boolean 
 }
 
 function Invitations({ invitations }: { invitations: Invitation[] }) {
-  if (invitations.length === 0) return <Empty>{t.noInvitations}</Empty>;
+  if (invitations.length === 0) return <EmptyState>{t.noInvitations}</EmptyState>;
   return (
     <Card className="py-0">
       <ul className="divide-y">
@@ -194,7 +205,7 @@ function Invitations({ invitations }: { invitations: Invitation[] }) {
  * newest first; a Hired one shows where its Engagement stands.
  */
 function Active({ quotes }: { quotes: Quoted[] }) {
-  if (quotes.length === 0) return <Empty>{t.noActive}</Empty>;
+  if (quotes.length === 0) return <EmptyState>{t.noActive}</EmptyState>;
   return (
     <Card className="py-0">
       <ul className="divide-y">
@@ -270,7 +281,7 @@ function JobListRow({
           width={job.photo.width}
           height={job.photo.height}
           loading="lazy"
-          className="hidden aspect-[4/3] w-28 shrink-0 rounded-lg border object-cover sm:block"
+          className="hidden aspect-4/3 w-28 shrink-0 rounded-lg border object-cover sm:block"
         />
       )}
       <div className="min-w-0 flex-1 space-y-2">
@@ -304,16 +315,6 @@ function JobListRow({
         </div>
       </div>
     </li>
-  );
-}
-
-function Empty({ children }: { children: React.ReactNode }) {
-  return (
-    <Card>
-      <CardContent>
-        <p className="text-sm text-muted-foreground">{children}</p>
-      </CardContent>
-    </Card>
   );
 }
 

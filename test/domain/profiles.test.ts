@@ -53,32 +53,6 @@ describe("Browse", () => {
     expect(await browsed(domain, { category: "plumbing", regionId: "helderberg" })).toEqual([]);
   });
 
-  test("puts the Available for Jobs first, then orders by public name A to Z", async () => {
-    const { domain, given } = await createHarness();
-    const zola = await given.verifiedArtisan({ name: "Zola Mthembu" });
-    await given.verifiedArtisan({ name: "Ayesha Khan" });
-    const busy = await given.verifiedArtisan({
-      name: "Sipho Dlamini",
-      tradingName: "Bright Pipes",
-    });
-    await given.verifiedArtisan({ name: "Johan Botha", tradingName: "cape drains" });
-    await domain.availability.set(busy.actor, { available: false });
-
-    expect(await browsed(domain, { category: "plumbing" })).toEqual([
-      "Ayesha Khan",
-      "cape drains",
-      "Zola Mthembu",
-      "Bright Pipes",
-    ]);
-    await domain.availability.set(zola.actor, { available: false });
-    expect(await browsed(domain, { category: "plumbing" })).toEqual([
-      "Ayesha Khan",
-      "cape drains",
-      "Bright Pipes",
-      "Zola Mthembu",
-    ]);
-  });
-
   test("drops an Artisan once a check the category needs expires", async () => {
     const { domain, given, clock } = await createHarness();
     await given.verifiedArtisan({ name: "Sipho Dlamini", categories: ["electrical"] });

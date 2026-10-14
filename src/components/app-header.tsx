@@ -1,7 +1,8 @@
 import { Link, useNavigate, useRouter } from "@tanstack/react-router";
-import { Bell, Hammer } from "lucide-react";
+import { Bell } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Wordmark } from "@/components/wordmark";
 import { signOut } from "@/web/accounts";
 import type { AdminMe, Me } from "@/web/me";
 import { copy } from "@/web/copy";
@@ -58,40 +59,50 @@ export function initials(name: string) {
 
 /** The header in the Contract look (#107): Visitor, Client, Artisan, or Admin. */
 export function AppHeader({ me, admin }: { me: Me | null; admin: AdminMe | null }) {
-  return (
-    <header className="border-b bg-background">
-      <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4 sm:gap-6">
-        <Link to="/" className="inline-flex shrink-0 items-center gap-2 font-semibold">
-          <Hammer className="size-5" />
-          <span className="hidden sm:inline">{copy.appName}</span>
+  const nav = (
+    <nav className="flex min-w-0 gap-1 overflow-x-auto p-1 text-sm" aria-label="Main">
+      {navFor(me, admin).map((item) => (
+        <Link
+          key={item.to}
+          to={item.to}
+          activeOptions={{ exact: item.to === "/admin" }}
+          className="shrink-0 rounded-full px-3 py-1.5 font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          activeProps={{ className: "bg-secondary text-secondary-foreground" }}
+        >
+          {item.label}
         </Link>
-        <nav className="flex min-w-0 gap-4 overflow-x-auto text-sm sm:gap-5" aria-label="Main">
-          {navFor(me, admin).map((item) => (
-            <Link
-              key={item.to}
-              to={item.to}
-              activeOptions={{ exact: item.to === "/admin" }}
-              className="shrink-0 text-muted-foreground hover:text-foreground"
-              activeProps={{ className: "text-foreground font-medium" }}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+      ))}
+    </nav>
+  );
+  return (
+    <header className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur supports-backdrop-filter:bg-background/75">
+      <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4 sm:px-6">
+        <Link to="/" aria-label={copy.appName} className="shrink-0 rounded-lg">
+          <Wordmark />
+        </Link>
+        <div className="hidden min-w-0 md:block">{nav}</div>
         {admin && <AdminCorner admin={admin} />}
         {me && (
-          <div className="ml-auto flex shrink-0 items-center gap-3">
-            <Link to="/notices" aria-label={copy.header.notices} className="text-muted-foreground">
-              <Bell className="size-4" />
+          <div className="ml-auto flex shrink-0 items-center gap-1">
+            <Link
+              to="/notices"
+              aria-label={copy.header.notices}
+              className={buttonVariants({ variant: "ghost", size: "icon" })}
+              activeProps={{ className: "bg-secondary text-secondary-foreground" }}
+            >
+              <Bell />
             </Link>
-            <Link to="/account" aria-label={copy.header.client.account}>
-              <Avatar size="sm">
-                <AvatarFallback>{initials(me.publicName)}</AvatarFallback>
+            <Link to="/account" aria-label={copy.header.client.account} className="rounded-full">
+              <Avatar>
+                <AvatarFallback className="bg-accent font-medium text-accent-foreground">
+                  {initials(me.publicName)}
+                </AvatarFallback>
               </Avatar>
             </Link>
           </div>
         )}
       </div>
+      <div className="border-t px-2 py-0.5 md:hidden">{nav}</div>
     </header>
   );
 }
@@ -101,8 +112,10 @@ function AdminCorner({ admin }: { admin: AdminMe }) {
   const navigate = useNavigate();
   return (
     <div className="ml-auto flex shrink-0 items-center gap-3">
-      <Avatar size="sm" aria-label={admin.email} title={admin.email}>
-        <AvatarFallback>{initials(admin.email)}</AvatarFallback>
+      <Avatar aria-label={admin.email} title={admin.email}>
+        <AvatarFallback className="bg-accent font-medium text-accent-foreground">
+          {initials(admin.email)}
+        </AvatarFallback>
       </Avatar>
       <Button
         variant="ghost"

@@ -1,10 +1,10 @@
 import { describe, expect, test } from "vitest";
 import { visitor } from "@/domain/actor";
-import { createProbeHarness } from "../support/probe";
+import { createHarness, type Harness } from "../support/harness";
 
 // The Admin works from one home stream of eight queues, and decides each item
-// on its page. Real kinds (Disputes, Held Quotes, …) come with their tickets;
-// these tests drive the probe's kinds through the same seam.
+// on its page. Each kind's own decisions, Tells, and logged reads are tested
+// with it; these are what every queue shares, on Support requests and Reports.
 
 const EMPTY_COUNTS = {
   verification: 0,
@@ -17,357 +17,132 @@ const EMPTY_COUNTS = {
   "data-requests": 0,
 };
 
+/** A Support request, then a Report of a Job a minute later, then another Support request. */
+async function threeRaised({ domain, given, clock }: Harness) {
+  const admin = await given.admin();
+  const artisan = await given.matchableArtisan();
+  const client = await given.client({ name: "Thandi Mokoena" });
+  const jobId = await given.openJob(client, { title: "Paint the lounge" });
+  await domain.support.send(client.actor, { topic: "payment", message: "Charged twice." });
+  clock.advance({ minutes: 1 });
+  await domain.reports.report(artisan.actor, {
+    about: { kind: "job", id: jobId },
+    reason: "contact-or-payment",
+  });
+  clock.advance({ minutes: 1 });
+  await domain.support.send(client.actor, { topic: "other", message: "Hello?" });
+  return { admin, client };
+}
+
 describe("the Admin home", () => {
   test("is one stream of every queue's open items, oldest first, with counts", async () => {
-    const { domain, given, clock } = await createProbeHarness();
-    const { actor } = await given.admin();
-    const reporter = await given.client();
-    const reported = await given.artisan();
-    const first = await domain.probe.report(reporter.actor, {
-      accountId: reported.actor.accountId,
-    });
-    clock.advance({ minutes: 1 });
-    const second = await domain.probe.dispute(reporter.actor, { title: "R1,000 in Dispute" });
-    clock.advance({ minutes: 1 });
-    const third = await domain.probe.report(reporter.actor, {
-      accountId: reported.actor.accountId,
-    });
+    const harness = await createHarness();
+    const { admin } = await threeRaised(harness);
 
-    const home = await domain.queues.home(actor);
-
-    expect(home).toEqual({
-      counts: { ...EMPTY_COUNTS, reports: 2, disputes: 1 },
+    expect(await harness.domain.queues.home(admin.actor)).toEqual({
+      counts: { ...EMPTY_COUNTS, support: 2, reports: 1 },
       items: [
-        {
-          id: first.value.itemId,
-          queue: "reports",
-          title: "A probe Report",
-          raisedAt: expect.any(Date),
-        },
-        {
-          id: second.value.itemId,
-          queue: "disputes",
-          title: "R1,000 in Dispute",
-          raisedAt: expect.any(Date),
-        },
-        {
-          id: third.value.itemId,
-          queue: "reports",
-          title: "A probe Report",
-          raisedAt: expect.any(Date),
-        },
+        expect.objectContaining({ queue: "support", title: "Payment, from Thandi Mokoena" }),
+        expect.objectContaining({ queue: "reports", title: "Report of a Job: Paint the lounge" }),
+        expect.objectContaining({ queue: "support", title: "Other, from Thandi Mokoena" }),
       ],
     });
   });
 
   test("narrows to one queue, keeping every queue's count", async () => {
-    const { domain, given, clock } = await createProbeHarness();
-    const { actor } = await given.admin();
-    const reporter = await given.client();
-    const reported = await given.artisan();
-    await domain.probe.report(reporter.actor, { accountId: reported.actor.accountId });
-    clock.advance({ minutes: 1 });
-    const dispute = await domain.probe.dispute(reporter.actor, { title: "R1,000 in Dispute" });
+    const harness = await createHarness();
+    const { admin } = await threeRaised(harness);
 
-    expect(await domain.queues.home(actor, { queue: "disputes" })).toEqual({
-      counts: { ...EMPTY_COUNTS, reports: 1, disputes: 1 },
-      items: [
-        {
-          id: dispute.value.itemId,
-          queue: "disputes",
-          title: "R1,000 in Dispute",
-          raisedAt: expect.any(Date),
-        },
-      ],
+    expect(await harness.domain.queues.home(admin.actor, { queue: "reports" })).toEqual({
+      counts: { ...EMPTY_COUNTS, support: 2, reports: 1 },
+      items: [expect.objectContaining({ queue: "reports" })],
     });
   });
 
   test("lists every queue, empty ones too", async () => {
-    const { domain, given } = await createProbeHarness();
+    const { domain, given } = await createHarness();
     const { actor } = await given.admin();
 
     expect(await domain.queues.home(actor)).toEqual({ counts: EMPTY_COUNTS, items: [] });
   });
 
-  test("is shown to no one but an Admin", async () => {
-    const { domain, given } = await createProbeHarness();
-    const client = await given.client();
+  test("and an item page are shown to no one but an Admin", async () => {
+    const harness = await createHarness();
+    const { admin, client } = await threeRaised(harness);
+    const [item] = (await harness.domain.queues.home(admin.actor))!.items;
 
-    expect(await domain.queues.home(client.actor)).toBeNull();
-    expect(await domain.queues.home(visitor)).toBeNull();
+    for (const viewer of [client.actor, visitor]) {
+      expect(await harness.domain.queues.home(viewer)).toBeNull();
+      expect(await harness.domain.queues.item(viewer, { itemId: item!.id })).toBeNull();
+    }
+    expect(await harness.domain.queues.item(admin.actor, { itemId: "nope" })).toBeNull();
   });
 });
 
-describe("a queue item page", () => {
-  test("offers only the allowed decisions, each saying who is told", async () => {
-    const { domain, given } = await createProbeHarness();
-    const { actor } = await given.admin();
-    const reporter = await given.client();
-    const reported = await given.artisan();
-    const raised = await domain.probe.report(reporter.actor, {
-      accountId: reported.actor.accountId,
-    });
-
-    const item = await domain.queues.item(actor, { itemId: raised.value.itemId });
-
-    expect(item).toMatchObject({
-      id: raised.value.itemId,
-      queue: "reports",
-      title: "A probe Report",
-      counts: { ...EMPTY_COUNTS, reports: 1 },
-      decided: null,
-      decisions: [
-        { key: "dismiss", label: "Dismiss", told: "Nobody", reason: "optional" },
-        { key: "warn", label: "Warn", told: "The reported Account", reason: "required" },
-      ],
-      tabs: [
-        {
-          key: "evidence",
-          label: "Evidence",
-          blocks: [{ kind: "text", text: "Reported by a Client." }],
-        },
-        { key: "conversation", label: "Conversation", read: "conversation" },
-      ],
-      sidebar: [
-        {
-          title: "Parties",
-          blocks: [{ kind: "facts", facts: [{ label: "Reported", value: "Sipho Dlamini" }] }],
-        },
-      ],
-      timeline: [{ at: expect.any(Date), text: "Raised" }],
-    });
-  });
-
-  test("of an item that does not exist is null", async () => {
-    const { domain, given } = await createProbeHarness();
-    const { actor } = await given.admin();
-
-    expect(await domain.queues.item(actor, { itemId: "nope" })).toBeNull();
-  });
-
-  test("is shown to no one but an Admin", async () => {
-    const { domain, given } = await createProbeHarness();
-    const reporter = await given.client();
-    const reported = await given.artisan();
-    const raised = await domain.probe.report(reporter.actor, {
-      accountId: reported.actor.accountId,
-    });
-
-    expect(await domain.queues.item(reporter.actor, { itemId: raised.value.itemId })).toBeNull();
-  });
-});
-
-describe("recording a decision", () => {
-  async function reportRaised() {
-    const harness = await createProbeHarness();
+describe("a decision", () => {
+  async function supportRaised() {
+    const harness = await createHarness();
     const admin = await harness.given.admin();
-    const reporter = await harness.given.client();
-    const reported = await harness.given.artisan();
-    const raised = await harness.domain.probe.report(reporter.actor, {
-      accountId: reported.actor.accountId,
-    });
-    return { ...harness, admin, reporter, reported, itemId: raised.value.itemId };
+    const client = await harness.given.client();
+    await harness.domain.support.send(client.actor, { topic: "payment", message: "Twice." });
+    const [item] = (await harness.domain.queues.home(admin.actor))!.items;
+    return { ...harness, admin, client, itemId: item!.id };
   }
 
-  test("tells who the decision says, and takes the item off the home stream", async () => {
-    const { domain, admin, reported, itemId, mailer } = await reportRaised();
-
-    const decided = await domain.queues.decide(admin.actor, {
-      itemId,
-      decision: "warn",
-      reason: "Asked to be paid in cash.",
-    });
-
-    expect(decided).toEqual({ ok: true, value: { itemId, decision: "warn" } });
-    expect(await domain.notices.list(reported.actor)).toMatchObject([
-      { event: "probe.warned", title: "You were warned" },
-    ]);
-    expect(mailer.sentTo(reported.email).at(-1)!.subject).toBe("You were warned");
-    expect(await domain.queues.home(admin.actor)).toMatchObject({
-      counts: { reports: 0 },
-      items: [],
-    });
-  });
-
   test("is shown on the item, with no decision left to make", async () => {
-    const { domain, admin, itemId, clock } = await reportRaised();
+    const { domain, admin, itemId, clock } = await supportRaised();
     clock.advance({ hours: 2 });
 
-    await domain.queues.decide(admin.actor, { itemId, decision: "dismiss", reason: "" });
+    await domain.queues.decide(admin.actor, { itemId, decision: "answer", reason: "Refunded." });
 
     expect(await domain.queues.item(admin.actor, { itemId })).toMatchObject({
-      decided: {
-        decision: "dismiss",
-        label: "Dismiss",
-        reason: null,
-        by: admin.email,
-        at: clock.now(),
-      },
+      decided: { decision: "answer", reason: "Refunded.", by: admin.email, at: clock.now() },
       decisions: [],
-      timeline: [{ text: "Raised" }, { at: clock.now(), text: `Dismiss, by ${admin.email}` }],
+      timeline: [{ text: "Raised" }, { at: clock.now(), text: `Answer, by ${admin.email}` }],
     });
   });
 
-  test("writes who decided what, and when, to the audit log", async () => {
-    const { domain, admin, itemId, clock } = await reportRaised();
+  test.each([
+    ["by someone not an Admin", "client", "answer", "Yes.", "admin-only"],
+    ["the item does not allow", "admin", "suspend", "No.", "not-allowed"],
+    ["without the reason it requires", "admin", "answer", "   ", "reason-required"],
+  ] as const)(
+    "%s is refused, and nothing is recorded",
+    async (_, by, decision, reason, refused) => {
+      const { domain, admin, client, itemId } = await supportRaised();
 
-    await domain.queues.decide(admin.actor, { itemId, decision: "warn", reason: "Cash." });
+      expect(
+        await domain.queues.decide({ admin, client }[by].actor, { itemId, decision, reason }),
+      ).toMatchObject({ ok: false, refusal: { reason: refused } });
+      expect(await domain.queues.item(admin.actor, { itemId })).toMatchObject({ decided: null });
+      expect((await domain.admins.auditLog(admin.actor))!.rows).toEqual([]);
+    },
+  );
 
-    expect((await domain.admins.auditLog(admin.actor))!.rows).toMatchObject([
-      {
-        at: clock.now(),
-        admin: admin.email,
-        action: "queue.decided",
-        summary: "Warn: A probe Report. Reason: Cash.",
-        subjectId: itemId,
-      },
-    ]);
-  });
-
-  test("cannot be reopened", async () => {
-    const { domain, admin, given, reported, itemId } = await reportRaised();
+  test("by two Admins at once records only one, and tells once", async () => {
+    const { domain, given, mailer } = await createHarness();
+    const admin = await given.admin();
     const other = await given.admin();
-    await domain.queues.decide(admin.actor, { itemId, decision: "dismiss" });
+    const client = await given.client();
+    await domain.support.send(client.actor, { topic: "payment", message: "Charged twice." });
+    const [item] = (await domain.queues.home(admin.actor))!.items;
+    const sentBefore = mailer.sentTo(client.email).length;
 
-    const again = await domain.queues.decide(other.actor, {
-      itemId,
-      decision: "warn",
-      reason: "Changed my mind.",
-    });
-
-    expect(again).toMatchObject({ ok: false, refusal: { reason: "already-decided" } });
-    expect(await domain.notices.list(reported.actor)).toEqual([]);
-    expect(await domain.queues.item(admin.actor, { itemId })).toMatchObject({
-      decided: { decision: "dismiss", by: admin.email },
-    });
-  });
-
-  test("by two Admins at once records only one", async () => {
-    const { domain, admin, given, reported, itemId } = await reportRaised();
-    const other = await given.admin();
-
-    const results = await Promise.all([
-      domain.queues.decide(admin.actor, { itemId, decision: "warn", reason: "One." }),
-      domain.queues.decide(other.actor, { itemId, decision: "warn", reason: "Two." }),
-    ]);
+    const results = await Promise.all(
+      [admin, other].map((each) =>
+        domain.queues.decide(each.actor, { itemId: item!.id, decision: "answer", reason: "Yes." }),
+      ),
+    );
 
     expect(results.filter((result) => result.ok)).toHaveLength(1);
     expect(results.filter((result) => !result.ok)).toMatchObject([
       { refusal: { reason: "already-decided" } },
     ]);
-    expect(await domain.notices.list(reported.actor)).toHaveLength(1);
+    expect(mailer.sentTo(client.email).slice(sentBefore)).toHaveLength(1);
     expect(
       (await domain.admins.auditLog(admin.actor))!.rows.filter(
         (row) => row.action === "queue.decided",
       ),
     ).toHaveLength(1);
-  });
-
-  test("is refused for a decision the item does not allow", async () => {
-    const { domain, admin, itemId } = await reportRaised();
-
-    expect(
-      await domain.queues.decide(admin.actor, { itemId, decision: "suspend", reason: "No." }),
-    ).toMatchObject({ ok: false, refusal: { reason: "not-allowed" } });
-    expect(await domain.queues.home(admin.actor)).toMatchObject({ counts: { reports: 1 } });
-  });
-
-  test("is refused without a reason the decision requires", async () => {
-    const { domain, admin, itemId } = await reportRaised();
-
-    expect(
-      await domain.queues.decide(admin.actor, { itemId, decision: "warn", reason: "   " }),
-    ).toMatchObject({ ok: false, refusal: { reason: "reason-required" } });
-  });
-
-  test("passes on a kind's refusal, recording nothing", async () => {
-    const { domain, admin, itemId } = await reportRaised();
-
-    expect(
-      await domain.queues.decide(admin.actor, { itemId, decision: "warn", reason: "refuse me" }),
-    ).toMatchObject({ ok: false, refusal: { reason: "probe-refused" } });
-    expect(await domain.queues.item(admin.actor, { itemId })).toMatchObject({ decided: null });
-    expect((await domain.admins.auditLog(admin.actor))!.rows).toEqual([]);
-  });
-
-  test("is done only by an Admin", async () => {
-    const { domain, reporter, itemId } = await reportRaised();
-
-    expect(
-      await domain.queues.decide(reporter.actor, { itemId, decision: "dismiss" }),
-    ).toMatchObject({ ok: false, refusal: { reason: "admin-only" } });
-  });
-});
-
-describe("a logged read", () => {
-  test("is written to the audit log before it is shown", async () => {
-    const { domain, given } = await createProbeHarness();
-    const admin = await given.admin();
-    const reporter = await given.client();
-    const reported = await given.artisan();
-    const raised = await domain.probe.report(reporter.actor, {
-      accountId: reported.actor.accountId,
-    });
-
-    const opened = await domain.queues.open(admin.actor, {
-      itemId: raised.value.itemId,
-      read: "conversation",
-    });
-
-    expect(opened).toEqual({ ok: true, value: [{ kind: "text", text: "Hello, can I pay cash?" }] });
-    expect((await domain.admins.auditLog(admin.actor))!.rows).toMatchObject([
-      {
-        admin: admin.email,
-        action: "read",
-        summary: "Opened the Conversation: A probe Report",
-        subjectId: raised.value.itemId,
-      },
-    ]);
-  });
-
-  test("of something the item does not have is refused, and not logged", async () => {
-    const { domain, given } = await createProbeHarness();
-    const admin = await given.admin();
-    const reporter = await given.client();
-    const reported = await given.artisan();
-    const raised = await domain.probe.report(reporter.actor, {
-      accountId: reported.actor.accountId,
-    });
-
-    expect(
-      await domain.queues.open(admin.actor, { itemId: raised.value.itemId, read: "documents" }),
-    ).toMatchObject({ ok: false, refusal: { reason: "not-found" } });
-    expect((await domain.admins.auditLog(admin.actor))!.rows).toEqual([]);
-  });
-
-  test("is open to no one but an Admin", async () => {
-    const { domain, given } = await createProbeHarness();
-    const reporter = await given.client();
-    const reported = await given.artisan();
-    const raised = await domain.probe.report(reporter.actor, {
-      accountId: reported.actor.accountId,
-    });
-
-    expect(
-      await domain.queues.open(reported.actor, {
-        itemId: raised.value.itemId,
-        read: "conversation",
-      }),
-    ).toMatchObject({ ok: false, refusal: { reason: "admin-only" } });
-  });
-});
-
-describe("no Tell reaches an Admin", () => {
-  test("when an item is raised", async () => {
-    const { domain, given, mailer } = await createProbeHarness();
-    const admin = await given.admin();
-    const reporter = await given.client();
-    const reported = await given.artisan();
-    const sentBefore = mailer.sentTo(admin.email).length;
-
-    await domain.probe.report(reporter.actor, { accountId: reported.actor.accountId });
-    await domain.system.runDueClocks();
-
-    expect(mailer.sentTo(admin.email)).toHaveLength(sentBefore);
   });
 });

@@ -6,7 +6,7 @@ import type { Context } from "../context";
 import { LEDGER_KINDS, ledgerWrites, RELEASED_PARTS, type LedgerKind } from "../ledger";
 import { formatRands } from "../money";
 import type { PaymentEvent } from "../ports";
-import { formatDay, saDay } from "../sa-days";
+import { DAY_MS, formatDay, saDay } from "../sa-days";
 import { ledgerEntries, payouts, verificationChecks } from "../schema";
 import { sentBackSignalWrites } from "../signals";
 import { raiseSupportRequest } from "../support";
@@ -25,7 +25,7 @@ import { accountName, payoutReference, payoutRow, UNPAID_STATES, type PayoutRow 
 /** The clock that tells the Artisan a Payout paused for 3 days is delayed, not lost. */
 export const PAUSED_CLOCK = "payout.paused";
 
-const PAUSED_FOR_MS = 3 * 24 * 60 * 60 * 1000;
+const PAUSED_FOR_MS = 3 * DAY_MS;
 
 /**
  * The bank paid a Payout into the Artisan's Payout account: it is paid, no

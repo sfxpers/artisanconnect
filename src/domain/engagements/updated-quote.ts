@@ -32,7 +32,7 @@ import {
   refundWhole,
   type PaymentRow,
 } from "./payments-in";
-import { engagementRow, type EngagementRow } from "./rows";
+import { engagementRow, type EngagementRow, engagementNotFound } from "./rows";
 import {
   isBeforeCompletion,
   priceNow,
@@ -66,7 +66,7 @@ export async function proposeUpdatedQuote(
 ) {
   const engagement = await engagementRow(ctx, input.engagementId);
   if (actor.kind !== "artisan" || !engagement || engagement.artisanId !== actor.accountId) {
-    return refuse("not-found", "That Engagement does not exist.");
+    return engagementNotFound();
   }
   const parsed = updatedQuoteFields.safeParse({
     labour: input.labour,

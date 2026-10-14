@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { NextStepCard, Page, Refusal } from "@/components/page";
+import { CODE_INPUT, useAppForm } from "@/components/form";
+import { AuthCard, Refusal } from "@/components/page";
 import { useTurnstile } from "@/components/turnstile";
 import { EMAIL_CODE } from "@/domain/accounts/inputs";
 import { adminSignIn, requestAdminCode } from "@/web/admin";
@@ -22,106 +21,79 @@ function AdminSignIn() {
   const router = useRouter();
   const navigate = useNavigate();
   const turnstile = useTurnstile();
-  const [email, setEmail] = useState("");
   const [sentTo, setSentTo] = useState<string | null>(null);
-  const [code, setCode] = useState("");
-  const [busy, setBusy] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);
-
-  async function sendCode() {
-    setBusy(true);
-    setRefusal(null);
-    const result = await requestAdminCode({ data: { email, turnstileToken: turnstile.token } });
-    turnstile.reset();
-    setBusy(false);
-    if (!result.ok) return setRefusal(result.refusal.message);
-    setSentTo(result.value.email);
-  }
-
-  async function signIn() {
-    if (!sentTo) return;
-    setBusy(true);
-    setRefusal(null);
-    const result = await adminSignIn({ data: { email: sentTo, code } });
-    setBusy(false);
-    if (!result.ok) return setRefusal(result.refusal.message);
-    await router.invalidate();
-    await navigate({ to: "/admin" });
-  }
+  const form = useAppForm({
+    defaultValues: { email: "", code: "" },
+    onSubmit: async ({ value }) => {
+      setRefusal(null);
+      if (!sentTo) {
+        const sent = await requestAdminCode({
+          data: { email: value.email, turnstileToken: turnstile.token },
+        });
+        turnstile.reset();
+        if (!sent.ok) return setRefusal(sent.refusal.message);
+        return setSentTo(sent.value.email);
+      }
+      const result = await adminSignIn({ data: { email: sentTo, code: value.code } });
+      if (!result.ok) return setRefusal(result.refusal.message);
+      await router.invalidate();
+      await navigate({ to: "/admin" });
+    },
+  });
 
   return (
-    <Page narrow>
-      <NextStepCard label={t.label} title={t.title}>
-        {sentTo ? (
-          <form
-            className="space-y-4"
-            onSubmit={(event) => {
-              event.preventDefault();
-              void signIn();
-            }}
-          >
-            <p className="text-sm text-muted-foreground">{t.sent(sentTo)}</p>
-            <div className="space-y-1.5">
-              <Label htmlFor="code">{t.code}</Label>
-              <Input
-                id="code"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                maxLength={EMAIL_CODE.length}
-                value={code}
-                onChange={(event) => setCode(event.target.value)}
-              />
-            </div>
-            <Refusal message={refusal} />
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="submit"
-                size="lg"
-                disabled={busy || code.trim().length !== EMAIL_CODE.length}
-              >
-                {t.submit}
-              </Button>
+    <AuthCard label={t.label} title={t.title}>
+      <form.AppForm>
+        <form.Form className="space-y-4">
+          {sentTo ? (
+            <>
+              <p className="text-sm text-muted-foreground">{t.sent(sentTo)}</p>
+              <form.AppField name="code">
+                {(field) => <field.TextField label={t.code} {...CODE_INPUT} />}
+              </form.AppField>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-muted-foreground">{t.lead}</p>
+              <form.AppField name="email">
+                {(field) => <field.TextField label={t.email} type="email" autoComplete="email" />}
+              </form.AppField>
+              {turnstile.widget}
+            </>
+          )}
+          <Refusal message={refusal} />
+          <div className="flex flex-wrap gap-2">
+            <form.Subscribe
+              selector={(state) =>
+                sentTo
+                  ? state.values.code.trim().length === EMAIL_CODE.length
+                  : !!state.values.email.trim()
+              }
+            >
+              {(ready) => (
+                <form.Submit size="lg" disabled={!ready || (!sentTo && !turnstile.token)}>
+                  {sentTo ? t.submit : t.send}
+                </form.Submit>
+              )}
+            </form.Subscribe>
+            {sentTo && (
               <Button
                 type="button"
                 size="lg"
                 variant="ghost"
                 onClick={() => {
                   setSentTo(null);
-                  setCode("");
+                  form.setFieldValue("code", "");
                   setRefusal(null);
                 }}
               >
                 {t.otherEmail}
               </Button>
-            </div>
-          </form>
-        ) : (
-          <form
-            className="space-y-4"
-            onSubmit={(event) => {
-              event.preventDefault();
-              void sendCode();
-            }}
-          >
-            <p className="text-sm text-muted-foreground">{t.lead}</p>
-            <div className="space-y-1.5">
-              <Label htmlFor="email">{t.email}</Label>
-              <Input
-                id="email"
-                type="email"
-                autoComplete="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-              />
-            </div>
-            {turnstile.widget}
-            <Refusal message={refusal} />
-            <Button type="submit" size="lg" disabled={busy || !turnstile.token || !email.trim()}>
-              {t.send}
-            </Button>
-          </form>
-        )}
-      </NextStepCard>
-    </Page>
+            )}
+          </div>
+        </form.Form>
+      </form.AppForm>
+    </AuthCard>
   );
 }

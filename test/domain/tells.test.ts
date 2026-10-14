@@ -1,7 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { visitor } from "@/domain/actor";
-import { createHarness } from "../support/harness";
-import { createProbeHarness } from "../support/probe";
+import { createHarness, type Harness } from "../support/harness";
 
 // A Tell is an in-app notice plus one email naming the event and linking back,
 // with no message text, never to the actor. "Told" means the notice was written.
@@ -54,7 +53,6 @@ describe("a Tell", () => {
       password: "correct horse battery",
       rulesVersion: rules.version,
       consentsToDataUse: true,
-      ip: "203.0.113.9",
     });
 
     await domain.marketplaceRules.publish((await given.admin()).actor, { summary: "Version 2." });
@@ -65,50 +63,51 @@ describe("a Tell", () => {
   });
 
   test("is never sent to the actor", async () => {
-    const { domain, given } = await createProbeHarness();
-    const { actor } = await given.client();
+    const { domain, given } = await createHarness();
+    const { client, conversationId } = await talking(given, domain);
 
-    await domain.probe.poke(actor, { accountId: actor.accountId });
+    await domain.conversations.send(client.actor, { conversationId, text: "Monday?" });
 
-    expect(await domain.notices.list(actor)).toEqual([]);
+    expect((await domain.notices.list(client.actor)).map((notice) => notice.event)).toEqual([
+      "quote.sent",
+    ]);
   });
 
   test("whose email fails is still told, and the every-minute run sends the email", async () => {
-    const { domain, given, mailer, clock } = await createProbeHarness();
-    const poker = await given.artisan();
-    const poked = await given.client();
-    const sentBefore = mailer.sentTo(poked.email).length;
+    const { domain, given, mailer, clock } = await createHarness();
+    const { artisan, client, conversationId } = await talking(given, domain);
+    const sentBefore = mailer.sentTo(client.email).length;
 
     mailer.failNextSend();
-    await domain.probe.poke(poker.actor, { accountId: poked.actor.accountId });
+    await domain.conversations.send(artisan.actor, { conversationId, text: "Monday suits me." });
 
-    expect(await domain.notices.list(poked.actor)).toHaveLength(1);
-    expect(mailer.sentTo(poked.email)).toHaveLength(sentBefore);
+    expect(await domain.notices.list(client.actor)).toContainEqual(
+      expect.objectContaining({ event: "message.new" }),
+    );
+    expect(mailer.sentTo(client.email)).toHaveLength(sentBefore);
 
     clock.advance({ minutes: 1 });
     await domain.system.runDueClocks();
     await domain.system.runDueClocks();
 
-    expect(mailer.sentTo(poked.email).slice(sentBefore)).toMatchObject([
-      { subject: "You were poked" },
+    expect(mailer.sentTo(client.email).slice(sentBefore)).toMatchObject([
+      { subject: expect.stringMatching(/^New message on /) },
     ]);
   });
 });
 
 describe("the Notices stream", () => {
   test("shows an Account its own notices, newest first", async () => {
-    const { domain, given, clock } = await createProbeHarness();
-    const poker = await given.artisan();
-    const poked = await given.client();
+    const { domain, given, clock } = await createHarness();
+    const { client } = await talking(given, domain);
     const bystander = await given.client();
 
-    await domain.probe.poke(poker.actor, { accountId: poked.actor.accountId });
     clock.advance({ minutes: 5 });
     await domain.marketplaceRules.publish((await given.admin()).actor, { summary: "Version 2." });
 
-    expect((await domain.notices.list(poked.actor)).map((notice) => notice.event)).toEqual([
+    expect((await domain.notices.list(client.actor)).map((notice) => notice.event)).toEqual([
       "marketplace-rules-changed",
-      "probe.poked",
+      "quote.sent",
     ]);
     expect((await domain.notices.list(bystander.actor)).map((notice) => notice.event)).toEqual([
       "marketplace-rules-changed",
@@ -121,3 +120,13 @@ describe("the Notices stream", () => {
     expect(await domain.notices.list(visitor)).toEqual([]);
   });
 });
+
+/** A Client and an Artisan whose Sent Quote opened a Conversation. */
+async function talking(given: Harness["given"], domain: Harness["domain"]) {
+  const artisan = await given.matchableArtisan();
+  const client = await given.client();
+  const jobId = await given.openJob(client);
+  await given.sentQuote(artisan, jobId);
+  const [conversation] = (await domain.conversations.forJob(client.actor, { jobId }))!;
+  return { artisan, client, conversationId: conversation!.conversationId };
+}

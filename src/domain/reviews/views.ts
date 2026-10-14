@@ -1,3 +1,4 @@
+import { isFrozen } from "../chargebacks/frozen";
 import type { Context } from "../context";
 import { REVIEW_GROUND_NAMES, reviewsOn, type ReviewRow } from "./rows";
 import { windowClosesAt } from "./window";
@@ -16,16 +17,23 @@ const SHOWN_STATES = {
 /** The Engagement's Reviews as the party sees them; null until it is Completed. */
 export async function engagementReviews(
   ctx: Context,
-  engagement: { id: string; state: string; completedAt: Date | null },
+  engagement: {
+    id: string;
+    state: string;
+    completedAt: Date | null;
+    reviewWindowClosesAt: Date | null;
+  },
   accountId: string,
 ) {
   if (engagement.state !== "completed" || !engagement.completedAt) return null;
   const written = await reviewsOn(ctx, engagement.id);
   const mine = written.find((review) => review.authorId === accountId) ?? null;
   const theirs = written.find((review) => review.authorId !== accountId) ?? null;
-  const closesAt = windowClosesAt(engagement.completedAt);
-  const open = ctx.now().getTime() < closesAt.getTime();
-  const revealed = !!mine || !open;
+  const closesAt = windowClosesAt({ ...engagement, completedAt: engagement.completedAt });
+  // While a Chargeback freezes it, the window waits: neither written nor read.
+  const frozen = await isFrozen(ctx, engagement.id);
+  const open = !frozen && ctx.now().getTime() < closesAt.getTime();
+  const revealed = !!mine || (!open && !frozen);
   return {
     closesAt,
     /** Whether a Review may still be written: the party writes one, if it has not. */

@@ -16,11 +16,9 @@ import {
   hasLiveSignUpCode,
   identityByEmail,
   LIMITS,
-  mayEnterCode,
   mayRequestCode,
   sessionHeaders,
   slowDown,
-  type From,
 } from "./codes";
 import {
   acceptance,
@@ -91,16 +89,13 @@ export const accountsSection = defineSection({
        * sign-up with the Email replaces it. An Email already held is refused
        * by email, with the same answer on screen as a free one.
        */
-      async signUp(actor: Actor, input: SignUpDetails & From) {
+      async signUp(actor: Actor, input: SignUpDetails) {
         if (actor.kind !== "visitor") {
           return refuse("signed-in", "Sign out before signing up for another Account.");
         }
         const parsed = signUpDetails.safeParse(input);
         if (!parsed.success) return refuse("invalid", firstProblem(parsed.error));
         const details = parsed.data;
-
-        const tried = await tryWithin(ctx, [{ key: `sign-up:${input.ip}`, ...LIMITS.signUpPerIp }]);
-        if (!tried.ok) return slowDown(tried.waitSeconds);
 
         const rules = await currentRules(ctx);
         if (details.rulesVersion !== rules.version) {
@@ -122,7 +117,7 @@ export const accountsSection = defineSection({
         const given = { name: details.name, tradingName: details.tradingName ?? null };
         const checked = await checkNames(ctx, given);
         if (!checked.ok) return checked;
-        const refused = await mayRequestCode(ctx, details.email, input.ip);
+        const refused = await mayRequestCode(ctx, details.email);
         if (refused) return refused;
 
         if (heldByAnyone) {
@@ -186,13 +181,13 @@ export const accountsSection = defineSection({
        * A new Email code for a sign-up, after 60 seconds; the old one stops
        * working. The answer is the same whether or not the Email is signing up.
        */
-      async resendCode(actor: Actor, input: { email: string } & From) {
+      async resendCode(actor: Actor, input: { email: string }) {
         if (actor.kind !== "visitor") {
           return refuse("signed-in", "Sign out before signing up for another Account.");
         }
         const address = email.safeParse(input.email);
         if (!address.success) return refuse("invalid", firstProblem(address.error));
-        const refused = await mayRequestCode(ctx, address.data, input.ip);
+        const refused = await mayRequestCode(ctx, address.data);
         if (refused) return refused;
 
         const identity = await identityByEmail(ctx, address.data);
@@ -208,7 +203,7 @@ export const accountsSection = defineSection({
        * Proves the Email with its Email code, which makes the Account and
        * signs it in. The device and IP are recorded, as at every sign-in (#140).
        */
-      async confirmEmail(actor: Actor, input: { email: string; code: string } & From & Seen) {
+      async confirmEmail(actor: Actor, input: { email: string; code: string } & Seen) {
         if (actor.kind !== "visitor") {
           return refuse("signed-in", "Sign out before signing up for another Account.");
         }
@@ -216,9 +211,6 @@ export const accountsSection = defineSection({
         const given = code.safeParse(input.code);
         if (!address.success) return refuse("invalid", firstProblem(address.error));
         if (!given.success) return refuse("invalid", firstProblem(given.error));
-
-        const tooMany = await mayEnterCode(ctx, input.ip);
-        if (tooMany) return tooMany;
 
         let verified;
         try {
@@ -262,15 +254,13 @@ export const accountsSection = defineSection({
           email: string;
           password: string;
           acceptsRules?: { rulesVersion: number; consentsToDataUse: boolean };
-        } & From &
-          Seen,
+        } & Seen,
       ) {
         if (actor.kind !== "visitor") return refuse("signed-in", "You are already signed in.");
         const address = email.safeParse(input.email);
         if (!address.success) return refuse("invalid", firstProblem(address.error));
 
         const tried = await tryWithin(ctx, [
-          { key: `sign-in:${input.ip}`, ...LIMITS.signInPerIp },
           { key: `sign-in:${address.data}`, ...LIMITS.signInPerEmail },
         ]);
         if (!tried.ok) return slowDown(tried.waitSeconds);
@@ -366,11 +356,11 @@ export const accountsSection = defineSection({
        * Sends an Email code to set a new password. The answer is the same
        * whether or not an Account holds the Email.
        */
-      async requestRecovery(actor: Actor, input: { email: string } & From) {
+      async requestRecovery(actor: Actor, input: { email: string }) {
         if (actor.kind !== "visitor") return refuse("signed-in", "You are already signed in.");
         const address = email.safeParse(input.email);
         if (!address.success) return refuse("invalid", firstProblem(address.error));
-        const refused = await mayRequestCode(ctx, address.data, input.ip);
+        const refused = await mayRequestCode(ctx, address.data);
         if (refused) return refused;
 
         const identity = await identityByEmail(ctx, address.data);
@@ -381,7 +371,7 @@ export const accountsSection = defineSection({
       },
 
       /** Sets a new password with the recovery Email code. Every session ends. */
-      async recover(actor: Actor, input: { email: string; code: string; password: string } & From) {
+      async recover(actor: Actor, input: { email: string; code: string; password: string }) {
         if (actor.kind !== "visitor") return refuse("signed-in", "You are already signed in.");
         const address = email.safeParse(input.email);
         const given = code.safeParse(input.code);
@@ -389,9 +379,6 @@ export const accountsSection = defineSection({
         if (!address.success) return refuse("invalid", firstProblem(address.error));
         if (!given.success) return refuse("invalid", firstProblem(given.error));
         if (!newPassword.success) return refuse("invalid", firstProblem(newPassword.error));
-
-        const tooMany = await mayEnterCode(ctx, input.ip);
-        if (tooMany) return tooMany;
 
         try {
           await getAuth().api.resetPasswordEmailOTP({
@@ -503,11 +490,11 @@ export const accountsSection = defineSection({
        * Sends an Email code to reopen a Closed Account. The answer is the
        * same whether or not a Closed Account holds the Email.
        */
-      async requestReopenCode(actor: Actor, input: { email: string } & From) {
+      async requestReopenCode(actor: Actor, input: { email: string }) {
         if (actor.kind !== "visitor") return refuse("signed-in", "You are already signed in.");
         const address = email.safeParse(input.email);
         if (!address.success) return refuse("invalid", firstProblem(address.error));
-        const refused = await mayRequestCode(ctx, address.data, input.ip);
+        const refused = await mayRequestCode(ctx, address.data);
         if (refused) return refused;
 
         const identity = await identityByEmail(ctx, address.data);
@@ -533,16 +520,13 @@ export const accountsSection = defineSection({
           email: string;
           code: string;
           acceptsRules?: { rulesVersion: number; consentsToDataUse: boolean };
-        } & From &
-          Seen,
+        } & Seen,
       ) {
         if (actor.kind !== "visitor") return refuse("signed-in", "You are already signed in.");
         const address = email.safeParse(input.email);
         const given = code.safeParse(input.code);
         if (!address.success) return refuse("invalid", firstProblem(address.error));
         if (!given.success) return refuse("invalid", firstProblem(given.error));
-        const tooMany = await mayEnterCode(ctx, input.ip);
-        if (tooMany) return tooMany;
 
         // Checked first and used only once the rules are accepted, so a code
         // stopped for the rules still works.
@@ -611,13 +595,12 @@ export const accountsSection = defineSection({
        */
       async requestEmailChange(
         actor: Actor,
-        input: { email: string; password: string; cookie: string | null } & From,
+        input: { email: string; password: string; cookie: string | null },
       ) {
         const session = await sessionOf(actor, input.cookie);
         if (!session) return refuse("sign-in-required", "Sign in to change your Email.");
         // Counted as a sign-in with the Email, so the password cannot be guessed here instead.
         const tried = await tryWithin(ctx, [
-          { key: `sign-in:${input.ip}`, ...LIMITS.signInPerIp },
           { key: `sign-in:${session.email}`, ...LIMITS.signInPerEmail },
         ]);
         if (!tried.ok) return slowDown(tried.waitSeconds);
@@ -637,7 +620,7 @@ export const accountsSection = defineSection({
         }
         const taken = await takeAddress(ctx, address.data);
         if (!taken.ok) return taken;
-        const refused = await mayRequestCode(ctx, address.data, input.ip);
+        const refused = await mayRequestCode(ctx, address.data);
         if (refused) return refused;
 
         if (taken.writes.length > 0) await ctx.commit(taken.writes);
@@ -655,7 +638,7 @@ export const accountsSection = defineSection({
        */
       async changeEmail(
         actor: Actor,
-        input: { email: string; code: string; cookie: string | null } & From,
+        input: { email: string; code: string; cookie: string | null },
       ) {
         const session = await sessionOf(actor, input.cookie);
         if (!session) return refuse("sign-in-required", "Sign in to change your Email.");
@@ -663,8 +646,6 @@ export const accountsSection = defineSection({
         const given = code.safeParse(input.code);
         if (!address.success) return refuse("invalid", firstProblem(address.error));
         if (!given.success) return refuse("invalid", firstProblem(given.error));
-        const tooMany = await mayEnterCode(ctx, input.ip);
-        if (tooMany) return tooMany;
         // Another Account may have taken it while the code waited.
         const taken = await takeAddress(ctx, address.data);
         if (!taken.ok) return taken;

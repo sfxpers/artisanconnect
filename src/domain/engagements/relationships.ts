@@ -1,15 +1,29 @@
-import { desc, eq, min } from "drizzle-orm";
+import { and, desc, eq, min } from "drizzle-orm";
 import type { Context } from "../context";
 import { accounts, engagements } from "../schema";
+import { DAY_MS } from "../sa-days";
 
 // The Protected Relationship Period (#139, ADR 0014): the 365 days after the
 // first Payment in a Client Relationship, during which all work between the
 // pair belongs on the platform. A later Payment does not extend it, and
-// nothing ends or pauses it. Only the Admin sees it.
+// nothing ends or pauses it. Both parties see when it ends on each of their
+// Engagements; the Admin sees it for every Client Relationship.
 
-export const PROTECTED_RELATIONSHIP_DAYS = 365;
+const PROTECTED_RELATIONSHIP_DAYS = 365;
 
-const DAY_MS = 24 * 60 * 60 * 1000;
+function protectedUntilAfter(firstPaymentAt: Date) {
+  return new Date(firstPaymentAt.getTime() + PROTECTED_RELATIONSHIP_DAYS * DAY_MS);
+}
+
+/** When the Protected Relationship Period of a Client and an Artisan who have Hired ends. */
+export async function protectedUntil(ctx: Context, clientId: string, artisanId: string) {
+  // An Engagement is Hired when its Payment arrives, so the first Hire is the first Payment.
+  const [row] = await ctx.db
+    .select({ firstPaymentAt: min(engagements.hiredAt) })
+    .from(engagements)
+    .where(and(eq(engagements.clientId, clientId), eq(engagements.artisanId, artisanId)));
+  return protectedUntilAfter(row!.firstPaymentAt!);
+}
 
 /**
  * The Client Relationships of a Client or an Artisan, each with the other
@@ -36,12 +50,12 @@ export async function clientRelationshipsOf(
   const now = ctx.now().getTime();
   return rows.map(({ firstPaymentAt: first, ...row }) => {
     const firstPayment = first!;
-    const protectedUntil = new Date(firstPayment.getTime() + PROTECTED_RELATIONSHIP_DAYS * DAY_MS);
+    const until = protectedUntilAfter(firstPayment);
     return {
       ...row,
       firstPaymentAt: firstPayment,
-      protectedUntil,
-      protectedNow: now < protectedUntil.getTime(),
+      protectedUntil: until,
+      protectedNow: now < until.getTime(),
     };
   });
 }

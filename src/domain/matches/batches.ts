@@ -17,6 +17,7 @@ import { suspendedNow } from "../standing";
 import { tellWhile } from "../tells";
 import { verifiedCategoriesOf } from "../verification";
 import { slotOf } from "../verification/checks";
+import { DAY_MS } from "../sa-days";
 
 // A Batch (ADR 0003): an Open matched Job is offered to up to ten eligible
 // Artisans at once, those offered any Job least recently first. The first
@@ -25,9 +26,7 @@ import { slotOf } from "../verification/checks";
 // place: not availability, nothing paid, no rating, no badge.
 
 /** The most Artisans one Batch offers a Job to. */
-export const BATCH_SIZE = 10;
-
-const DAY_MS = 24 * 60 * 60 * 1000;
+const BATCH_SIZE = 10;
 
 /**
  * Sends the Job's next Batch, if it is still the one due: a clock from before

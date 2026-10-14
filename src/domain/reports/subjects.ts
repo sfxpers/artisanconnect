@@ -22,7 +22,7 @@ export type ReportSubject = (typeof REPORT_SUBJECTS)[number];
 export type About = { kind: ReportSubject; id: string };
 
 /** What a Report of a thing the reporter can see is about, as the module reads it. */
-export type Reportable = {
+type Reportable = {
   /** Whose the thing is: the Account reported. */
   reportedId: string;
   /** What the thing is called, for the reporter's Tell and the Admin's item. */

@@ -1,5 +1,4 @@
-import { expect, test } from "@playwright/test";
-import { seed, signIn } from "./support/helpers";
+import { expect, seed, signIn, test } from "./support/helpers";
 
 test("the Engagement's Conversation shows the Hire, voice notes, and PDFs, and takes a phone number", async ({
   page,
@@ -17,6 +16,8 @@ test("the Engagement's Conversation shows the Hire, voice notes, and PDFs, and t
 
   await page.goto(`/jobs/${jobId}?tab=messages&conversation=${conversationId}`);
   await expect(page.getByText(/Hired and paid ·/)).toBeVisible();
+  // Before the first message, each party is told the Admin may read it.
+  await expect(page.getByText(/The Admin may read this Conversation/)).toBeVisible();
   await expect(
     page.getByText("Call me on 082 555 1234 when you're home.", { exact: false }),
   ).toBeVisible();

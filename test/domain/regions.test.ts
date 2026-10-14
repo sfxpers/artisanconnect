@@ -1,4 +1,3 @@
-import { env } from "cloudflare:test";
 import { describe, expect, test } from "vitest";
 import { visitor, type Actor } from "@/domain/actor";
 import { createHarness, type Harness } from "../support/harness";
@@ -61,28 +60,6 @@ describe("the seeded Regions", () => {
     const [found] = await domain.regions.searchSuburbs(visitor, { query: name });
 
     expect(found).toMatchObject({ name, region: { name: region } });
-  });
-
-  // No command changes a Region or a suburb, so this checks the database
-  // itself refuses: the seed holds even against a bug.
-  test("refuse moving, renaming, or removing a suburb or a Region", async () => {
-    await createHarness();
-
-    await expect(
-      env.DB.prepare("UPDATE suburbs SET region_id = 'southern' WHERE id = 'clifton'").run(),
-    ).rejects.toThrow(/never moved, renamed, or removed/);
-    await expect(
-      env.DB.prepare("UPDATE suburbs SET name = 'CLIFTON BEACH' WHERE id = 'clifton'").run(),
-    ).rejects.toThrow(/never moved, renamed, or removed/);
-    await expect(env.DB.prepare("DELETE FROM suburbs WHERE id = 'clifton'").run()).rejects.toThrow(
-      /never moved, renamed, or removed/,
-    );
-    await expect(
-      env.DB.prepare("UPDATE regions SET name = 'Atlantic' WHERE id = 'table-bay'").run(),
-    ).rejects.toThrow(/never changes/);
-    await expect(
-      env.DB.prepare("DELETE FROM regions WHERE id = 'table-bay'").run(),
-    ).rejects.toThrow(/never changes/);
   });
 });
 

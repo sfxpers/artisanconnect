@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { notFound } from "@tanstack/react-router";
 import { requestActor, requestDomain } from "./session";
+import { filesOf, textOf } from "./form-data";
 
 // Browse and the Artisan Profile: thin adapters onto the domain module, which
 // decides who sees what (ADR 0017).
@@ -37,9 +38,9 @@ export const editProfile = createServerFn({ method: "POST" })
   .validator((input: FormData) => {
     if (!(input instanceof FormData)) throw new Error("Expected a form");
     return {
-      about: String(input.get("about") ?? ""),
+      about: textOf(input, "about") ?? "",
       keep: input.getAll("keep").map(String),
-      add: input.getAll("add").filter((value): value is File => value instanceof File),
+      add: filesOf(input, "add"),
     };
   })
   .handler(async ({ data }) => {

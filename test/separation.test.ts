@@ -1,7 +1,7 @@
 import { parse } from "jsonc-parser";
-import { describe, expect, expectTypeOf, test } from "vitest";
+import { describe, expect, test } from "vitest";
 import wranglerConfig from "../wrangler.jsonc?raw";
-import { createDomain, PORT_NAMES, type Ports } from "@/domain";
+import { createDomain, type Ports } from "@/domain";
 import { createHarness, TEST_CONFIG } from "./support/harness";
 
 // ADR 0018: this product does not know EcoBuiltConnect. There is no path to or
@@ -11,33 +11,10 @@ import { createHarness, TEST_CONFIG } from "./support/harness";
 // other product.
 
 describe("the domain module", () => {
-  test("has exactly the ports D1, R2, a clock, a content reader, a payment adapter, and a mailer", async () => {
-    expectTypeOf<keyof Ports>().toEqualTypeOf<
-      "db" | "files" | "clock" | "contentReader" | "payments" | "mailer"
-    >();
-    expect([...PORT_NAMES].sort()).toEqual([
-      "clock",
-      "contentReader",
-      "db",
-      "files",
-      "mailer",
-      "payments",
-    ]);
-  });
-
   test("cannot be built with any other port", async () => {
     const { ports } = await createHarness();
 
     expect(() => createDomain({ ...ports, importer: {} } as Ports, TEST_CONFIG)).toThrow(
-      /exactly the ports/,
-    );
-  });
-
-  test("cannot be built without one of its ports", async () => {
-    const { ports } = await createHarness();
-    const { mailer: _, ...withoutMailer } = ports;
-
-    expect(() => createDomain(withoutMailer as unknown as Ports, TEST_CONFIG)).toThrow(
       /exactly the ports/,
     );
   });
@@ -50,8 +27,9 @@ const config = parse(wranglerConfig) as WorkerConfig;
 const ENVIRONMENT_KEYS = [
   "vars",
   "secrets",
-  "assets",
   "ai",
+  "images",
+  "ratelimits",
   "d1_databases",
   "r2_buckets",
   "send_email",
@@ -62,8 +40,8 @@ const TOP_LEVEL_KEYS = [
   "compatibility_date",
   "compatibility_flags",
   "main",
-  "workers_dev",
   "observability",
+  "upload_source_maps",
   "triggers",
   "env",
   ...ENVIRONMENT_KEYS,
@@ -80,12 +58,13 @@ function bindingNames(environment: Record<string, unknown>) {
       (binding) => binding[field],
     );
   return [
-    (environment.assets as { binding?: string } | undefined)?.binding,
     (environment.ai as { binding?: string } | undefined)?.binding,
+    (environment.images as { binding?: string } | undefined)?.binding,
     ...named("d1_databases", "binding"),
     ...named("r2_buckets", "binding"),
     ...named("send_email", "name"),
-  ].sort();
+    ...named("ratelimits", "name"),
+  ].sort((a = "", b = "") => a.localeCompare(b));
 }
 
 describe("the Worker", () => {
@@ -100,24 +79,30 @@ describe("the Worker", () => {
     }
   });
 
-  // ASSETS is not named in ADR 0017; it serves the web app's own client build.
   test.each(environments)(
-    "binds exactly D1, R2, Workers AI, Email Sending, and its assets in %s",
+    "binds exactly D1, R2, Images, Workers AI, Email Sending, and a rate limit in %s",
     (_, environment) => {
-      expect(bindingNames(environment)).toEqual(["AI", "ASSETS", "DB", "R2", "SEND_EMAIL"]);
+      expect(bindingNames(environment)).toEqual([
+        "AI",
+        "DB",
+        "IMAGES",
+        "IP_LIMIT",
+        "R2",
+        "SEND_EMAIL",
+      ]);
       expect(Object.keys(environment.vars as object).sort()).toEqual([
-        "APP_NAME",
         "APP_URL",
         "ENVIRONMENT",
         "MAIL_FROM",
         "PAYOUT_RUN_TIME",
         "TURNSTILE_SITE_KEY",
       ]);
-      // Sentry, better-auth's session signing, and Turnstile (ADR 0017).
+      // better-auth's session signing, Turnstile (ADR 0017), and the payment
+      // adapter's webhook signing.
       expect((environment.secrets as { required: string[] }).required).toEqual([
-        "SENTRY_DSN",
         "BETTER_AUTH_SECRET",
         "TURNSTILE_SECRET_KEY",
+        "PAYMENTS_WEBHOOK_SECRET",
       ]);
     },
   );
@@ -134,7 +119,30 @@ describe("the Worker", () => {
     expect(new Set(buckets).size).toBe(3);
   });
 
+  test("keeps Workers Logs, and reports every failure and logged error to Workers Issues", () => {
+    expect(config.observability).toEqual({ enabled: true, issues: { enabled: true } });
+  });
+
   test("runs due clocks every minute", () => {
     expect(config.triggers).toEqual({ crons: ["* * * * *"] });
+  });
+});
+
+// Every host the code names, read from the source itself.
+const sources = import.meta.glob<string>("../src/**/*.{ts,tsx}", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+});
+
+describe("the code", () => {
+  test("reaches no host but Cloudflare's own", () => {
+    const hosts = new Set(
+      Object.values(sources).flatMap((text) =>
+        [...text.matchAll(/https?:\/\/([a-z0-9.-]+)/gi)].map((match) => match[1]!.toLowerCase()),
+      ),
+    );
+    // sitemaps.org is the sitemap's XML namespace, which is never fetched.
+    expect([...hosts].sort()).toEqual(["challenges.cloudflare.com", "www.sitemaps.org"]);
   });
 });

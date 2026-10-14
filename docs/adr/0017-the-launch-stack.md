@@ -3,9 +3,9 @@
 **App and data**
 
 - TanStack Start on Cloudflare Workers. Every rule lives in one plain TypeScript domain module; the web app reaches it through server functions, and an HTTP API over the same module comes when a native app does.
-- shadcn on Base UI with Tailwind v4, plus TanStack Query, TanStack Form, and Zod schemas shared with the domain module.
+- shadcn on Base UI with Tailwind v4, plus TanStack Form and Zod schemas shared with the domain module. Pages load their data through TanStack Router's loaders and its built-in cache, invalidated after each action.
 - D1 with Drizzle. Money is append-only ledger rows, written in one atomic batch per event.
-- R2 for files. Photos have their location data stripped and are stored as one resized copy plus a thumbnail.
+- R2 for files. Cloudflare Images draws each photo again, which drops its location data, and it is stored as one resized copy plus a thumbnail.
 
 **Services**
 
@@ -14,7 +14,7 @@
 - **Clocks:** every clock is a row with a due time, fired by a cron every minute; Payouts go in a daily run.
 - **Workers AI** reads media and text for the content check.
 - **Payments:** a fake adapter, shaped like the provider the research picks.
-- **Monitoring and environments:** Workers Logs and Sentry; local, staging, and production, each with its own data.
+- **Monitoring and environments:** Workers Logs, with Workers Issues grouping every failure and logged error; local, staging, and production, each with its own data.
 
 **Tests and tooling**
 
@@ -29,3 +29,5 @@
 - Workflows per Engagement, because Fix requests, "Not started", and Chargebacks would keep waking and aborting them.
 - Postgres, because launch volume does not need a second service.
 - An HTTP API from day one, because no app exists yet.
+- Sentry, because Workers Issues groups the same failures, and the errors the code catches and logs, with no SDK or secret.
+- TanStack Query, because the router's own loader cache covers what the pages need: no data is shared between routes, and every write reloads the page that made it.

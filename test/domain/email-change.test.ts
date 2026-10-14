@@ -27,7 +27,6 @@ describe("changing the Email", () => {
       email: "thandi.m@example.com",
       password: client.password,
       cookie: cookieOf(client.cookies),
-      ip: IP,
     });
 
     expect(asked).toEqual({ ok: true, value: { email: "thandi.m@example.com" } });
@@ -51,14 +50,12 @@ describe("changing the Email", () => {
       email: "thandi.m@example.com",
       password: client.password,
       cookie,
-      ip: IP,
     });
 
     const changed = await domain.accounts.changeEmail(client.actor, {
       email: "thandi.m@example.com",
       code: given.codeSentTo("thandi.m@example.com"),
       cookie,
-      ip: IP,
     });
 
     expect(changed).toEqual({
@@ -83,13 +80,11 @@ describe("changing the Email", () => {
       email: "thandi.m@example.com",
       password: client.password,
       cookie,
-      ip: IP,
     });
     await domain.accounts.changeEmail(client.actor, {
       email: "thandi.m@example.com",
       code: given.codeSentTo("thandi.m@example.com"),
       cookie,
-      ip: IP,
     });
 
     const told = mailer.sentTo("thandi@example.com").at(-1);
@@ -107,7 +102,6 @@ describe("changing the Email", () => {
       password: "another horse battery",
       rulesVersion: rules.version,
       consentsToDataUse: true,
-      ip: "198.51.100.200",
     });
     clock.advance({ minutes: 11 });
     const client = await given.client();
@@ -117,13 +111,11 @@ describe("changing the Email", () => {
       email: "taken@example.com",
       password: client.password,
       cookie,
-      ip: IP,
     });
     const changed = await domain.accounts.changeEmail(client.actor, {
       email: "taken@example.com",
       code: given.codeSentTo("taken@example.com"),
       cookie,
-      ip: IP,
     });
 
     expect(changed).toMatchObject({ ok: true });
@@ -132,36 +124,30 @@ describe("changing the Email", () => {
 });
 
 describe("changing the Email, refused", () => {
-  test("for an address another Account holds, and nothing is sent to it", async () => {
+  test.each([
+    ["for an address another Account holds, whatever its case", "Sipho@Example.com", "held"],
+    ["for an Admin's address", "staff@example.com", "held"],
+    ["for the address it has already", "thandi@example.com", "same-email"],
+    [
+      "without the Account's password, so a session taken from it cannot change it",
+      "thief@example.com",
+      "wrong-password",
+    ],
+  ])("%s, sending nothing", async (_, email, reason) => {
     const { domain, given, mailer } = await createHarness();
-    const other = await given.artisan({ email: "sipho@example.com" });
-    const client = await given.client();
-    const before = mailer.sentTo(other.email).length;
+    await given.artisan({ email: "sipho@example.com" });
+    await given.admin({ email: "staff@example.com" });
+    const client = await given.client({ email: "thandi@example.com" });
+    const before = mailer.sentTo(email.toLowerCase()).length;
 
     const asked = await domain.accounts.requestEmailChange(client.actor, {
-      email: "Sipho@Example.com",
-      password: client.password,
+      email,
+      password: reason === "wrong-password" ? "not the password" : client.password,
       cookie: cookieOf(client.cookies),
-      ip: IP,
     });
 
-    expect(asked).toMatchObject({ ok: false, refusal: { reason: "held" } });
-    expect(mailer.sentTo(other.email)).toHaveLength(before);
-  });
-
-  test("for an Admin's address", async () => {
-    const { domain, given } = await createHarness();
-    await given.admin({ email: "staff@example.com" });
-    const client = await given.client();
-
-    expect(
-      await domain.accounts.requestEmailChange(client.actor, {
-        email: "staff@example.com",
-        password: client.password,
-        cookie: cookieOf(client.cookies),
-        ip: IP,
-      }),
-    ).toMatchObject({ ok: false, refusal: { reason: "held" } });
+    expect(asked).toMatchObject({ ok: false, refusal: { reason } });
+    expect(mailer.sentTo(email.toLowerCase())).toHaveLength(before);
   });
 
   test("once another Account took the address while the code waited", async () => {
@@ -172,7 +158,6 @@ describe("changing the Email, refused", () => {
       email: "new@example.com",
       password: client.password,
       cookie,
-      ip: IP,
     });
     const code = given.codeSentTo("new@example.com");
     clock.advance({ minutes: 1 });
@@ -182,40 +167,10 @@ describe("changing the Email, refused", () => {
       email: "new@example.com",
       code,
       cookie,
-      ip: IP,
     });
 
     expect(changed).toMatchObject({ ok: false, refusal: { reason: "held" } });
     expect((await domain.accounts.me(client.actor))?.email).toBe(client.email);
-  });
-
-  test("without the Account's password, so a session taken from it cannot change it", async () => {
-    const { domain, given, mailer } = await createHarness();
-    const client = await given.client();
-
-    const asked = await domain.accounts.requestEmailChange(client.actor, {
-      email: "thief@example.com",
-      password: "not the password",
-      cookie: cookieOf(client.cookies),
-      ip: IP,
-    });
-
-    expect(asked).toMatchObject({ ok: false, refusal: { reason: "wrong-password" } });
-    expect(mailer.sentTo("thief@example.com")).toEqual([]);
-  });
-
-  test("for the address it has already", async () => {
-    const { domain, given } = await createHarness();
-    const client = await given.client();
-
-    expect(
-      await domain.accounts.requestEmailChange(client.actor, {
-        email: client.email,
-        password: client.password,
-        cookie: cookieOf(client.cookies),
-        ip: IP,
-      }),
-    ).toMatchObject({ ok: false, refusal: { reason: "same-email" } });
   });
 
   test("with a wrong code, leaving the Email as it was", async () => {
@@ -226,7 +181,6 @@ describe("changing the Email, refused", () => {
       email: "new@example.com",
       password: client.password,
       cookie,
-      ip: IP,
     });
     const right = given.codeSentTo("new@example.com");
     const wrong = right === "000000" ? "111111" : "000000";
@@ -235,7 +189,6 @@ describe("changing the Email, refused", () => {
       email: "new@example.com",
       code: wrong,
       cookie,
-      ip: IP,
     });
 
     expect(changed).toMatchObject({ ok: false, refusal: { reason: "wrong-code" } });
@@ -252,7 +205,6 @@ describe("changing the Email, refused", () => {
         email: "new@example.com",
         password: client.password,
         cookie: cookieOf(client.cookies),
-        ip: IP,
       }),
     ).toMatchObject({ ok: false, refusal: { reason: "sign-in-required" } });
     expect(
@@ -260,7 +212,6 @@ describe("changing the Email, refused", () => {
         email: "new@example.com",
         password: artisan.password,
         cookie: cookieOf(client.cookies),
-        ip: IP,
       }),
     ).toMatchObject({ ok: false, refusal: { reason: "sign-in-required" } });
   });

@@ -1,8 +1,17 @@
 import { useState } from "react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Link, createFileRoute, useRouter } from "@tanstack/react-router";
-import { ChevronRight, Eye } from "lucide-react";
+import { Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 import {
   Card,
   CardContent,
@@ -16,9 +25,10 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Blocks, QueueCounts } from "@/components/admin";
-import { Page, Refusal } from "@/components/page";
+import { Page, Refusal, withSidebar } from "@/components/page";
 import { formatRands } from "@/domain/money";
-import { splitOf, type Block, type DecisionField, type ItemRow } from "@/domain/queues";
+import { splitOf } from "@/domain/queue-names";
+import type { Block, DecisionField, ItemRow } from "@/domain/queues";
 import { cn } from "@/lib/utils";
 import { decideQueueItem, decideQueueRow, getQueueItem, openLoggedRead } from "@/web/admin";
 import { copy, formatDate } from "@/web/copy";
@@ -46,22 +56,26 @@ function QueueItemPage() {
   return (
     <Page>
       <div className="space-y-3">
-        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-          <Link to="/admin" className="hover:text-foreground">
-            {t.queues}
-          </Link>
-          <ChevronRight className="size-3" />
-          <Link to="/admin" search={{ queue: item.queue }} className="hover:text-foreground">
-            {copy.admin.queues[item.queue]}
-          </Link>
-        </div>
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink render={<Link to="/admin" />}>{t.queues}</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink render={<Link to="/admin" search={{ queue: item.queue }} />}>
+                {copy.admin.queues[item.queue]}
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
         <QueueCounts counts={item.counts} current={item.queue} />
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight">{item.title}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{item.title}</h1>
           {item.decided ? <Badge variant="secondary">{t.decided}</Badge> : <Badge>{t.open}</Badge>}
         </div>
       </div>
-      <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
+      <div className={withSidebar}>
         <div className="min-w-0 space-y-6">
           {item.decided ? (
             <DecidedCard decided={item.decided} />
@@ -168,7 +182,7 @@ function DecisionCard({ item }: { item: Item }) {
   }
 
   return (
-    <Card className="ring-2 ring-primary/80">
+    <Card className="ring-2 ring-primary">
       <CardHeader>
         <CardDescription>{t.decision}</CardDescription>
         <CardTitle className="text-lg">{option?.label ?? t.choose}</CardTitle>
@@ -241,7 +255,7 @@ function DecisionCard({ item }: { item: Item }) {
 
 function DecidedCard({ decided }: { decided: NonNullable<Item["decided"]> }) {
   return (
-    <Card className="ring-2 ring-primary/80">
+    <Card className="ring-2 ring-primary">
       <CardHeader>
         <CardDescription>{t.decision}</CardDescription>
         <CardTitle className="text-lg">{t.recorded(decided.label)}</CardTitle>
@@ -277,7 +291,7 @@ function RowsCard({
   highlighted: boolean;
 }) {
   return (
-    <Card className={cn(highlighted && "ring-2 ring-primary/80")}>
+    <Card className={cn(highlighted && "ring-2 ring-primary")}>
       <CardHeader>
         <CardDescription>{t.decision}</CardDescription>
         <CardTitle className="text-lg">{highlighted ? t.eachRow : t.rowsNow}</CardTitle>
@@ -332,7 +346,7 @@ function RowDecision({ itemId, row }: { itemId: string; row: ItemRow }) {
   return (
     <div className="space-y-3 py-4 first:pt-0 last:pb-0">
       <div className="flex flex-wrap items-center gap-2">
-        <h3 className="font-medium">{row.title}</h3>
+        <h3 className="font-semibold">{row.title}</h3>
         <Badge variant={row.state === "Waiting" ? "default" : "secondary"}>{row.state}</Badge>
       </div>
       <div className="grid gap-4 md:grid-cols-2">
@@ -426,22 +440,20 @@ function DecisionFieldInput({
     return (
       <div className="space-y-2">
         <div className="flex justify-between gap-3 text-sm">
-          <Label htmlFor={id}>
+          <Label id={id}>
             {label}: {formatRands(released)}
           </Label>
           <span className="text-muted-foreground">
             {field.restLabel ?? t.splitRefunded}: {formatRands(total - released)}
           </span>
         </div>
-        <input
-          id={id}
-          type="range"
+        <Slider
+          aria-labelledby={id}
           min={0}
           max={total}
           step={total % 100 === 0 ? 100 : 1}
-          value={released}
-          onChange={(event) => onChange(event.target.value)}
-          className="w-full accent-primary"
+          value={[released]}
+          onValueChange={(next) => onChange(String(Array.isArray(next) ? next[0] : next))}
         />
         <p className="text-xs text-muted-foreground">
           {t.splitOf(formatRands(total), field.wholeLabel)}
@@ -453,21 +465,19 @@ function DecisionFieldInput({
     return (
       <div className="space-y-1.5">
         <Label id={id}>{label}</Label>
-        <div role="radiogroup" aria-labelledby={id} className="flex flex-wrap gap-2">
+        <RadioGroup
+          aria-labelledby={id}
+          value={value}
+          onValueChange={(next) => onChange(String(next))}
+          className="flex flex-wrap gap-4"
+        >
           {field.options?.map((option) => (
-            <Button
-              key={option.value}
-              type="button"
-              role="radio"
-              aria-checked={value === option.value}
-              variant={value === option.value ? "default" : "outline"}
-              size="sm"
-              onClick={() => onChange(option.value)}
-            >
+            <Label key={option.value} className="font-normal">
+              <RadioGroupItem value={option.value} />
               {option.label}
-            </Button>
+            </Label>
           ))}
-        </div>
+        </RadioGroup>
       </div>
     );
   }

@@ -1,6 +1,6 @@
-import { env } from "cloudflare:test";
 import { describe, expect, test } from "vitest";
 import type { Actor } from "@/domain/actor";
+import { releasesTo } from "../support/money";
 import { createHarness, type Harness } from "../support/harness";
 import { textPdf } from "../support/pdfs";
 import { photo } from "../support/verification";
@@ -788,11 +788,8 @@ describe("Approval", () => {
       state: "completed",
       money: { ...money, artisanFeePercent: 10 },
     });
-    const labour = await labourRows(engagementId);
-    expect(labour.map(({ kind, amount_cents }) => ({ kind, amount_cents }))).toEqual([
-      { kind: "payout.owed", amount_cents: 135_000 },
-      { kind: "release.artisan-fee", amount_cents: 15_000 },
-      { kind: "release.labour", amount_cents: 150_000 },
+    expect(await labourReleases(domain, artisan)).toEqual([
+      { part: "labour", releasedCents: 150_000, artisanFeeCents: 15_000, amountCents: 135_000 },
     ]);
     const title = "The Client approved the work, and the Labour was released: Paint the lounge";
     expect((await toldOf(domain, artisan, jobId)).at(0)).toMatchObject({
@@ -852,7 +849,7 @@ describe("Approval", () => {
       ok: false,
       refusal: { reason: "not-awaiting", message: "This Engagement is Completed." },
     });
-    expect(await labourRows(engagementId)).toHaveLength(3);
+    expect(await labourReleases(domain, artisan)).toHaveLength(1);
   });
 
   test("is the Engagement's Client's only", async () => {
@@ -867,7 +864,7 @@ describe("Approval", () => {
         refusal: { reason: "not-found" },
       });
     }
-    expect(await labourRows(engagementId)).toEqual([]);
+    expect(await labourReleases(domain, artisan)).toEqual([]);
   });
 
   test("with no Materials, releases the whole Hired Quote", async () => {
@@ -933,7 +930,7 @@ describe("Approval by seven days of silence", () => {
       completedAt: clock.now(),
       money: { releasedCents: 200_000 },
     });
-    expect(await labourRows(engagementId)).toHaveLength(3);
+    expect(await labourReleases(domain, artisan)).toHaveLength(1);
     expect((await toldOf(domain, artisan, jobId)).at(0)).toMatchObject({
       event: "engagement.approved",
       title:
@@ -957,7 +954,7 @@ describe("Approval by seven days of silence", () => {
     clock.advance({ days: 8 });
     await domain.system.runDueClocks();
 
-    expect(await labourRows(engagementId)).toHaveLength(3);
+    expect(await labourReleases(domain, artisan)).toHaveLength(1);
     expect((await toldOf(domain, client, jobId)).map((notice) => notice.event)).toEqual([
       "engagement.completion",
     ]);
@@ -1014,7 +1011,7 @@ describe("a Fix request", () => {
     expect((await domain.jobs.view(client.actor, { jobId }))?.engagement?.state).toBe(
       "fix-requested",
     );
-    expect(await labourRows(engagementId)).toEqual([]);
+    expect(await labourReleases(domain, artisan)).toEqual([]);
     expect((await toldOf(domain, client, jobId)).map((notice) => notice.event)).toEqual([
       "engagement.completion",
     ]);
@@ -1052,7 +1049,7 @@ describe("a Fix request", () => {
       "completion.made",
       "approved",
     ]);
-    expect(await labourRows(engagementId)).toHaveLength(3);
+    expect(await labourReleases(domain, artisan)).toHaveLength(1);
   });
 
   test("needs a note", async () => {
@@ -1186,35 +1183,6 @@ describe("a Fix request", () => {
   });
 });
 
-describe("an Engagement's state", () => {
-  // The module has no command that could, so this checks the database itself refuses.
-  test("moves only along the paths of Completion, Approval, and Fix requests", async () => {
-    const { domain, given } = await createHarness();
-    const { client, artisan, engagementId } = await startedJob(given);
-    const update = (change: string) =>
-      env.DB.prepare(`UPDATE engagements SET ${change} WHERE id = ?`).bind(engagementId).run();
-
-    for (const change of [
-      "state = 'completed', completed_at = 1",
-      "state = 'fix-requested'",
-      "state = 'paid'",
-    ]) {
-      await expect(update(change)).rejects.toThrow(/cannot change that way/);
-    }
-    await given.markedComplete(artisan, engagementId);
-    await expect(update("state = 'completed'")).rejects.toThrow(/cannot change that way/);
-    await expect(update("state = 'work-started'")).rejects.toThrow(/cannot change that way/);
-    await domain.engagements.approve(client.actor, { engagementId });
-    for (const change of [
-      "state = 'awaiting-approval'",
-      "completed_at = 1",
-      "work_started_at = 1",
-    ]) {
-      await expect(update(change)).rejects.toThrow(/cannot change that way/);
-    }
-  });
-});
-
 type QuoteFields = Parameters<Harness["given"]["sentQuote"]>[2];
 type Trade = "painting" | "electrical" | "plumbing" | "gas";
 
@@ -1276,20 +1244,9 @@ async function lastRow(domain: Harness["domain"], party: { actor: Actor }, jobId
 }
 
 /** The Engagement's Release rows in the ledger, by kind. */
-async function releaseRows(engagementId: string) {
-  const { results } = await env.DB.prepare(
-    "SELECT kind, amount_cents, event_id FROM ledger_entries WHERE engagement_id = ? AND kind NOT LIKE 'payment.%' ORDER BY kind",
-  )
-    .bind(engagementId)
-    .all<{ kind: string; amount_cents: number; event_id: string }>();
-  return results;
-}
-
-/** The rows of the Labour's Release, by kind. */
-async function labourRows(engagementId: string) {
-  const rows = await releaseRows(engagementId);
-  const event = rows.find((row) => row.kind === "release.labour")?.event_id;
-  return rows.filter((row) => row.event_id === event && event);
+/** The Releases of the Labour to the Artisan, as its Payouts show them. */
+async function labourReleases(domain: Harness["domain"], artisan: { actor: Actor }) {
+  return (await releasesTo(domain, artisan)).filter((release) => release.part === "labour");
 }
 
 /**

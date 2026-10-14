@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useRouter } from "@tanstack/react-router";
 
-type Result = { ok: true } | { ok: false; refusal: { message: string } };
+type Outcome = { ok: true; value?: unknown } | { ok: false; refusal: { message: string } };
 
+// Custom: TanStack Query's useMutation would add the cache ADR 0017 rejects.
 /**
  * Runs one action at a time, keeping its refusal to show where the person
  * acted. Once it is done, what follows runs and the page loads again.
@@ -11,7 +12,10 @@ export function useAction() {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);
-  async function run(action: () => Promise<Result>, then?: () => void | Promise<void>) {
+  async function run<R extends Outcome>(
+    action: () => Promise<R>,
+    then?: (value: Extract<R, { ok: true }>["value"]) => unknown,
+  ) {
     setBusy(true);
     setRefusal(null);
     const result = await action();
@@ -20,7 +24,7 @@ export function useAction() {
       setRefusal(result.refusal.message);
       return false;
     }
-    await then?.();
+    await then?.(result.value);
     await router.invalidate();
     setBusy(false);
     return true;

@@ -1,0 +1,41 @@
+# Every pull request, and every push to main, runs the checks AGENTS.md
+# names, so a commit that breaks one is seen without anyone running them by
+# hand. A push to another branch runs them through its pull request, not twice.
+name: Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    # A hung step fails within the hour, not at GitHub's six.
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      # Node and nub, at the versions mise.toml pins.
+      - uses: jdx/mise-action@v5
+      - run: nub install --frozen-lockfile
+      - run: nub run lint
+      - run: nub run fmt:check
+      - run: nub run typecheck
+      - run: nub run test
+      # The smoke tests run the local app, which needs its secrets.
+      - run: |
+          cp .dev.vars.example .dev.vars
+          sed -i "s|^BETTER_AUTH_SECRET=.*|BETTER_AUTH_SECRET=$(openssl rand -base64 32)|" .dev.vars
+          sed -i "s|^PAYMENTS_WEBHOOK_SECRET=.*|PAYMENTS_WEBHOOK_SECRET=$(openssl rand -base64 32)|" .dev.vars
+      # The app runs in the background for the smoke tests to reuse: started
+      # by Playwright on Linux, it never stops, and the step hangs after the
+      # tests pass. The job's end stops it.
+      - run: |
+          nub run db:migrate:local
+          nohup nub run dev > dev-server.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf -o /dev/null http://localhost:3000 && exit 0; sleep 2; done
+          cat dev-server.log
+          exit 1
+      # In the runner's own Chrome, as playwright.config.ts asks.
+      - run: nub run test:smoke
+        timeout-minutes: 15

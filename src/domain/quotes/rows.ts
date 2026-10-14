@@ -3,6 +3,7 @@ import type { Context } from "../context";
 import { refuse } from "../result";
 import { accounts, jobs, quotes } from "../schema";
 import { QUOTE_DAYS, QUOTES_MAX } from "./inputs";
+import { DAY_MS } from "../sa-days";
 
 // Reading a Quote, and what more than one part of the Quotes section says of one.
 
@@ -10,8 +11,6 @@ export type QuoteRow = typeof quotes.$inferSelect;
 
 /** The kind of the clock that Expires a Sent Quote. */
 export const EXPIRY_CLOCK = "quote.expires";
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** When a Quote Sent now Expires. */
 export function expiryOf(sentAt: Date): Date {

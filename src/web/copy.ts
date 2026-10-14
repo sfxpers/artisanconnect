@@ -8,6 +8,7 @@ import { formatTime } from "@/domain/sa-days";
 
 export const copy = {
   appName: "ArtisanConnect",
+  wordmark: ["Artisan", "Connect"],
   header: {
     visitor: { findArtisans: "Find Artisans", signUp: "Sign up", signIn: "Sign in" },
     client: { jobs: "Jobs", findArtisans: "Find Artisans", account: "Account" },
@@ -25,12 +26,30 @@ export const copy = {
     },
     notices: "Notices",
   },
+  footer: {
+    tagline: "Verified Artisans in Cape Town, paid through the platform.",
+    nav: "More",
+    findArtisans: "Find Artisans",
+    rules: "Marketplace rules",
+    support: "Support",
+  },
+  loading: "Loading",
+  /** Before an act that cannot be undone. */
+  ask: { title: "Are you sure?", yes: "Confirm", no: "Go back" },
+  skipToContent: "Skip to content",
+  error: {
+    title: "This page did not load",
+    lead: "Something went wrong on our side, or the connection dropped. Nothing you did was lost; try again.",
+    retry: "Try again",
+    home: "Go to ArtisanConnect",
+  },
   notFound: {
     title: "No such page",
     lead: "Nothing is at this address on ArtisanConnect. The link may be mistyped or out of date.",
     home: "Go to ArtisanConnect",
   },
   landing: {
+    eyebrow: "Cape Town",
     title: "Hire a verified Artisan in Cape Town",
     lead: "Post a Job, compare fixed-price Quotes, and pay through the platform. The money waits with the platform until the work is done.",
     postJob: "Post a Job",
@@ -187,6 +206,7 @@ export const copy = {
     resent: "A new code is on its way. The old one no longer works.",
   },
   signIn: {
+    label: "Welcome back",
     title: "Sign in",
     email: "Email",
     password: "Password",
@@ -275,7 +295,6 @@ export const copy = {
     siteTypes: { home: "Home", business: "Business" },
     suburb: "Suburb",
     suburbHint: "Search the City's official suburbs. Artisans see only the Region.",
-    suburbChange: "Change",
     noSuburb: "No suburb matches. Only a site inside the City of Cape Town can be placed.",
     region: "Region",
     street: "Street address",
@@ -336,7 +355,6 @@ export const copy = {
     editRefused: (reason: string) => `Your last edit was refused: ${reason}`,
     outOfView: (reason: string) =>
       `The Admin took this Job out of view until you fix it: ${reason} Edit it; Artisans see it again once the Admin accepts the edit.`,
-    details: "Job details",
     none: "None given",
   },
   invite: {
@@ -437,6 +455,10 @@ export const copy = {
         .join(" and ") + (invitations + matches === 1 ? " is waiting" : " are waiting"),
     invitationsLead: "A Client chose you and asked you to Quote. You may pass; nobody is told.",
     seeInvitations: "See Invitations",
+    hiredWaiting: (count: number) =>
+      count === 1 ? "A Hired Job is waiting" : `${count} Hired Jobs are waiting`,
+    hiredLead: "Start the work, mark it complete, or put right what the Client asked.",
+    seeActive: "See Active Jobs",
     nothingWaiting: "Nothing is waiting on you",
     nothingWaitingLead: "New Job Matches and Invitations show here.",
     tabs: {
@@ -837,6 +859,9 @@ export const copy = {
     artisanFee: "Artisan Fee",
     artisanFeeShown: (percent: number) => `${percent}% of each Release`,
     hiredQuote: "Hired Quote",
+    protectedUntil: "Protected Relationship Period ends",
+    protectedLead:
+      "Until then, all work between you two belongs on ArtisanConnect: arranging any off it is Leaving. It counts from your first Payment together and never renews.",
     address: "Address",
     chargeback: {
       frozenTitle: "Frozen by a Chargeback",
@@ -966,6 +991,7 @@ export const copy = {
     tabs: {
       overview: "Overview",
       messages: (unread: number) => (unread > 0 ? `Messages (${unread})` : "Messages"),
+      details: "Job details",
     },
     none: "No Conversations yet. One opens with an Invitation or the first Quote.",
     noneArtisan: "No Conversation yet. One opens when you are invited or your Quote is Sent.",
@@ -1477,7 +1503,7 @@ export const copy = {
 
 /** A date as South Africans read it. */
 /** A length of time as minutes and seconds: "4:05". */
-export function formatSeconds(seconds: number): string {
+function formatSeconds(seconds: number): string {
   const whole = Math.round(seconds);
   return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, "0")}`;
 }

@@ -3,7 +3,13 @@ import { notFound } from "@tanstack/react-router";
 import { visitor } from "@/domain/actor";
 import type { FigurePeriod } from "@/domain/figures/periods";
 import type { QueueName } from "@/domain/queue-names";
-import { requestActor, requestDomain, requestIp, sendCookies, turnstileRefusal } from "./session";
+import {
+  requestActor,
+  requestDomain,
+  sendCookies,
+  turnstileRefusal,
+  floodRefusal,
+} from "./session";
 
 // The Admin's server functions: thin adapters onto the domain module, which
 // refuses anyone but an Admin (ADR 0017).
@@ -15,14 +21,15 @@ export const requestAdminCode = createServerFn({ method: "POST" })
     if (refused) return refused;
     return requestDomain().admins.requestSignInCode(visitor, {
       email: data.email,
-      ip: requestIp(),
     });
   });
 
 export const adminSignIn = createServerFn({ method: "POST" })
   .validator((input: { email: string; code: string }) => input)
   .handler(async ({ data }) => {
-    const signedIn = await requestDomain().admins.signIn(visitor, { ...data, ip: requestIp() });
+    const flood = await floodRefusal("code-entry");
+    if (flood) return flood;
+    const signedIn = await requestDomain().admins.signIn(visitor, data);
     if (!signedIn.ok) return signedIn;
     sendCookies(signedIn.value.cookies);
     return { ok: true as const, value: {} };

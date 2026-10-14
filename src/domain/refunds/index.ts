@@ -9,7 +9,7 @@ import { frozenRefusal, isFrozen, isFrozenError, isPaymentFrozen } from "../char
 import { heldRefundRows, settleIfNothingHeld } from "../engagements/dispute";
 import { refundFields, type RefundFields } from "../engagements/inputs";
 import { insertWhile } from "../guarded";
-import { engagementRow, type EngagementRow } from "../engagements/rows";
+import { engagementRow, type EngagementRow, engagementNotFound } from "../engagements/rows";
 import {
   engagementMoney,
   isOverdrawn,
@@ -20,7 +20,7 @@ import {
 import { formatRands } from "../money";
 import type { PaymentEvent } from "../ports";
 import { ok, refuse } from "../result";
-import { formatDay, saDay } from "../sa-days";
+import { DAY_MS, formatDay, saDay } from "../sa-days";
 import { ledgerEntries, payments, refunds } from "../schema";
 import { raiseSupportRequest } from "../support";
 import { emailTells, tellWhile, tellWithEmailWhile } from "../tells";
@@ -49,7 +49,7 @@ import {
 /** The clock that tells the Client a Refund paused for 3 days is delayed, not lost. */
 export const PAUSED_CLOCK = "refund.paused";
 
-const PAUSED_FOR_MS = 3 * 24 * 60 * 60 * 1000;
+const PAUSED_FOR_MS = 3 * DAY_MS;
 
 const PARTS = { materials: "Materials", labour: "Labour" } as const;
 
@@ -74,7 +74,7 @@ export async function refundByArtisan(
 ) {
   const engagement = await engagementRow(ctx, input.engagementId);
   if (actor.kind !== "artisan" || !engagement || engagement.artisanId !== actor.accountId) {
-    return refuse("not-found", "That Engagement does not exist.");
+    return engagementNotFound();
   }
   const parsed = refundFields.safeParse({ materials: input.materials, labour: input.labour });
   if (!parsed.success) return refuse("invalid", firstProblem(parsed.error));

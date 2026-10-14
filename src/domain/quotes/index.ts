@@ -18,7 +18,7 @@ import { emailTells, tellWhile } from "../tells";
 import { startClock } from "../clocks";
 import { alreadyChecked, isAlreadyDecided } from "../content/held";
 import { quoteSentWrites } from "../conversations/rows";
-import { endWrites, expiryClocks } from "./ends";
+import { endWrites, quoteExpiryClocks } from "./ends";
 import { heldQuote, holdWrites, withdrawHeldQuote } from "./held";
 import { quoteFields, type ParsedQuote, type QuoteFields } from "./inputs";
 import { problemMessage, sendingProblem, startPassed } from "./rules";
@@ -53,10 +53,13 @@ import { summariesOf } from "../reviews/rows";
 // Invitation sends one fixed-price Quote on an Open Job. The Content check
 // reads it first (ADR 0011).
 
+/** The Engagement states in which the next step is the Artisan's. */
+const ARTISAN_TURNS: readonly string[] = ["paid", "work-started", "fix-requested"];
+
 export const quotesSection = defineSection({
   name: "quotes",
   queueItems: [heldQuote, heldRevision],
-  clocks: expiryClocks,
+  clocks: quoteExpiryClocks,
   api: (ctx) => ({
     /** Sends a Quote on an Open Job the Artisan holds a Job Match or an Invitation for. */
     async send(actor: Actor, input: QuoteFields & { jobId: string }) {
@@ -300,6 +303,8 @@ export const quotesSection = defineSection({
         quoteId: quote.id,
         state: quote.state as "held" | "sent" | "hired",
         engagementState,
+        /** The Hired work waits on the Artisan to start, complete, or fix it (#106). */
+        waitsOnArtisan: engagementState !== null && ARTISAN_TURNS.includes(engagementState),
         totalCents: quote.labourCents + quote.materialsCents,
         sentAt: quote.sentAt,
         expiresAt: quote.expiresAt,

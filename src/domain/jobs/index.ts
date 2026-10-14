@@ -21,7 +21,7 @@ import { sendDueBatch } from "../matches/batches";
 import { isSuspended, suspendedNow, suspendedRefusal } from "../standing";
 import { emailTells } from "../tells";
 import { engagementAsArtisan, engagementAsClient, notHiredPayments } from "../engagements/views";
-import { expiryClocks } from "./expiry";
+import { jobExpiryClocks } from "./expiry";
 import { hireAgainDraft, hireAgainProblem, hireAgainView, hireAgainWrites } from "./hire-again";
 import { heldJob, holdWrites, refusalOf, stillDraft, withdrawHeldJob } from "./held";
 import {
@@ -41,6 +41,7 @@ import {
   jobRow,
   jobsOf,
   jobText,
+  noJob,
   openWrites,
   photoView,
   type JobPhoto,
@@ -63,7 +64,7 @@ type PhotosInput = { keep?: string[]; add?: Blob[] };
 export const jobsSection = defineSection({
   name: "jobs",
   queueItems: [heldJob, heldJobEdit],
-  clocks: expiryClocks,
+  clocks: jobExpiryClocks,
   api: (ctx) => ({
     /**
      * Saves a new Draft, or the Client's Draft by id, whole: anything may be
@@ -545,10 +546,13 @@ const FIX_HELD_FOR =
  */
 async function heldOnJob(ctx: Context, job: JobRow, artisan: { accountId: string }) {
   if (job.state !== "open" || job.outOfViewSince) return null;
-  const [match, invitation] = await Promise.all([
+  const [held, invitation, suspended] = await Promise.all([
     heldMatch(ctx, job.id, artisan.accountId),
     heldInvitation(ctx, job.id, artisan.accountId),
+    isSuspended(ctx, artisan.accountId),
   ]);
+  // A Suspended Artisan keeps no Job Match (GLOSSARY.md); Quoting refuses it as Suspended.
+  const match = suspended ? null : held;
   if (!match && !invitation) return null;
   return { offeredAt: match?.offeredAt ?? null, invitedAt: invitation?.invitedAt ?? null };
 }
@@ -630,10 +634,6 @@ function editBeingChecked() {
 
 function isEditable(state: JobState) {
   return (EDITABLE_STATES as readonly JobState[]).includes(state);
-}
-
-function noJob() {
-  return refuse("not-found", "That Job does not exist.");
 }
 
 /** What a Job would need from the Client, an incomplete Draft's or an edit's; null if nothing. */

@@ -14,6 +14,7 @@ export function portsFromEnv(env: Env): Ports {
   return {
     db: env.DB,
     files: env.R2,
+    images: env.IMAGES,
     clock: { now: () => new Date() },
     contentReader: workersAiContentReader(env.AI),
     payments: fakePaymentsFromEnv(env),
@@ -21,11 +22,12 @@ export function portsFromEnv(env: Env): Ports {
   };
 }
 
-export function configFromEnv(env: Env): DomainConfig {
-  if (!env.BETTER_AUTH_SECRET) throw new Error("Set the BETTER_AUTH_SECRET secret");
+/** Setting up the first Admin signs no session in, so it passes an empty secret. */
+export function configFromEnv(env: Env, authSecret = env.BETTER_AUTH_SECRET || null): DomainConfig {
+  if (authSecret === null) throw new Error("Set the BETTER_AUTH_SECRET secret");
   return {
     appUrl: env.APP_URL,
-    authSecret: env.BETTER_AUTH_SECRET,
+    authSecret,
     payoutRunTime: env.PAYOUT_RUN_TIME,
   };
 }
@@ -35,7 +37,11 @@ export function configFromEnv(env: Env): DomainConfig {
  * so its checkout page finds a collection whichever isolate opened it.
  */
 export function fakePaymentsFromEnv(env: Env) {
-  return createStoredFakePayments({ store: d1FakePaymentsStore(env.DB) });
+  if (!env.PAYMENTS_WEBHOOK_SECRET) throw new Error("Set the PAYMENTS_WEBHOOK_SECRET secret");
+  return createStoredFakePayments({
+    store: d1FakePaymentsStore(env.DB),
+    webhookSecret: env.PAYMENTS_WEBHOOK_SECRET,
+  });
 }
 
 /** Cloudflare Email Sending, outbound only. */

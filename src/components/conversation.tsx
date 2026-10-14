@@ -1,11 +1,19 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useRouter } from "@tanstack/react-router";
-import { FileText, ImagePlus, Mic, Paperclip, ShieldAlert, Square } from "lucide-react";
+import {
+  FileText,
+  ImagePlus,
+  MessagesSquare,
+  Mic,
+  Paperclip,
+  ShieldAlert,
+  Square,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Refusal } from "@/components/page";
+import { EmptyState, Refusal } from "@/components/page";
 import { useAction } from "@/components/use-action";
 import { cn } from "@/lib/utils";
 import { MESSAGE_ATTACHMENTS_MAX, MESSAGE_MAX } from "@/domain/conversations/inputs";
@@ -31,6 +39,8 @@ const t = copy.conversation;
  * per Artisan, beside the one open; the Artisan's own. Events show as rows
  * that are not speech, and the viewer's messages being checked show to them
  * only. Once Hired, the Engagement's also takes voice notes and PDFs (#131).
+ * Custom: shadcn's Message and Bubble would add more lines than they replace,
+ * and its Message Scroller needs another package.
  */
 export function Messages({
   jobId,
@@ -44,11 +54,11 @@ export function Messages({
   asClient: boolean;
 }) {
   if (conversations.length === 0) {
-    return <p className="text-sm text-muted-foreground">{asClient ? t.none : t.noneArtisan}</p>;
+    return <EmptyState icon={<MessagesSquare />}>{asClient ? t.none : t.noneArtisan}</EmptyState>;
   }
   const summary = conversations.find((each) => each.conversationId === open?.conversationId);
   return (
-    <div className={cn("grid gap-4", asClient && "md:grid-cols-[14rem_1fr]")}>
+    <div className={cn("grid gap-4", asClient && "md:grid-cols-4 md:*:last:col-span-3")}>
       {asClient && (
         <ul className="space-y-1">
           {conversations.map((each) => (
@@ -94,7 +104,7 @@ function Thread({ view, unread }: { view: ConversationView; unread: number }) {
     <Card className="min-w-0">
       <CardContent className="space-y-4">
         <div className="text-sm font-medium">{view.with.name ?? t.noName}</div>
-        <ol className="max-h-[32rem] space-y-3 overflow-y-auto">
+        <ol className="max-h-128 space-y-3 overflow-y-auto">
           {view.items.length === 0 && <li className="text-sm text-muted-foreground">{t.empty}</li>}
           {view.items.map((item) => (
             <li key={item.kind === "message" ? item.messageId : `${item.event}:${String(item.at)}`}>
@@ -131,7 +141,7 @@ function ItemRow({ item }: { item: Item }) {
     <div className={cn("flex flex-col gap-1", item.mine ? "items-end" : "items-start")}>
       <div
         className={cn(
-          "max-w-[85%] space-y-2 rounded-2xl px-3 py-2 text-sm",
+          "max-w-5/6 space-y-2 rounded-2xl px-3 py-2 text-sm",
           item.mine ? "bg-primary text-primary-foreground" : "bg-muted",
           item.state !== "delivered" && "opacity-70",
         )}
@@ -144,7 +154,7 @@ function ItemRow({ item }: { item: Item }) {
                 <img
                   src={photo.thumbnailHref}
                   alt={t.photo(index + 1)}
-                  className="aspect-[4/3] w-full rounded-lg object-cover"
+                  className="aspect-4/3 w-full rounded-lg object-cover"
                 />
               </a>
             ))}
@@ -155,7 +165,7 @@ function ItemRow({ item }: { item: Item }) {
       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         {item.state === "held" && (
           <>
-            <Badge variant="secondary">{t.beingChecked}</Badge>
+            <Badge variant="warning">{t.beingChecked}</Badge>
             <span>{t.beingCheckedLead}</span>
             <Button
               size="xs"
@@ -232,7 +242,7 @@ function Composer({ view }: { view: ConversationView }) {
     form.append("text", text);
     // Anything else is drawn as a photo, which leaves a file the browser cannot draw as it is.
     const shrunk = await Promise.all(
-      files.map((file) =>
+      files.map(async (file) =>
         file.type === "application/pdf" || file.type.startsWith("audio/")
           ? file
           : shrinkPhoto(file),
@@ -361,6 +371,7 @@ const RECORDING_MAX_SECONDS = 5 * 60 - 2;
  * Records a voice note from the microphone, stopping by itself before it is
  * too long; each recording is handed over as a file, to a callback that only
  * sets state. `seconds` is how long the one going has run, or null when none is.
+ * Custom: neither shadcn nor TanStack records sound; this is the browser's MediaRecorder.
  */
 function useVoiceRecorder(onRecorded: (file: File) => void) {
   const [seconds, setSeconds] = useState<number | null>(null);

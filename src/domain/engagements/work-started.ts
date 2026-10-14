@@ -12,10 +12,10 @@ import {
   releaseRows,
 } from "../ledger";
 import { ok, refuse } from "../result";
-import { formatDay, formatTime, saDay } from "../sa-days";
+import { formatDay, formatTime, HOUR_MS, saDay } from "../sa-days";
 import { engagements, type WORK_STARTED_BY } from "../schema";
 import { emailTells, tellWhile } from "../tells";
-import { engagementRow, type EngagementRow } from "./rows";
+import { engagementRow, type EngagementRow, engagementNotFound } from "./rows";
 
 // Work started (#127, ADR 0006): the moment the Artisan is working on site.
 // The Client sets it, or the Artisan says they've started and it is Work
@@ -24,10 +24,10 @@ import { engagementRow, type EngagementRow } from "./rows";
 // Artisan Fee, as a ledger row owed to the Artisan.
 
 /** The clock that makes the Artisan's claim Work started if the Client does not answer. */
-export const START_CLAIM_CLOCK = "engagement.start-claim";
+const START_CLAIM_CLOCK = "engagement.start-claim";
 
 /** How long the Client has to answer "Not started". */
-const ANSWER_MS = 24 * 60 * 60 * 1000;
+const ANSWER_MS = 24 * HOUR_MS;
 
 type StartedBy = (typeof WORK_STARTED_BY)[number];
 
@@ -45,7 +45,7 @@ export function answerBy(claimedAt: Date): Date {
 export async function markWorkStarted(ctx: Context, actor: Actor, input: { engagementId: string }) {
   const engagement = await engagementRow(ctx, input.engagementId);
   if (actor.kind !== "client" || !engagement || engagement.clientId !== actor.accountId) {
-    return refuse("not-found", "That Engagement does not exist.");
+    return engagementNotFound();
   }
   if (engagement.state !== "paid") return notPaid(engagement);
   if (await isFrozen(ctx, engagement.id)) return frozenRefusal();
@@ -63,7 +63,7 @@ export async function markWorkStarted(ctx: Context, actor: Actor, input: { engag
 export async function claimStarted(ctx: Context, actor: Actor, input: { engagementId: string }) {
   const engagement = await engagementRow(ctx, input.engagementId);
   if (actor.kind !== "artisan" || !engagement || engagement.artisanId !== actor.accountId) {
-    return refuse("not-found", "That Engagement does not exist.");
+    return engagementNotFound();
   }
   if (engagement.state !== "paid") return notPaid(engagement);
   if (await isFrozen(ctx, engagement.id)) return frozenRefusal();
@@ -125,7 +125,7 @@ export async function answerNotStarted(
 ) {
   const engagement = await engagementRow(ctx, input.engagementId);
   if (actor.kind !== "client" || !engagement || engagement.clientId !== actor.accountId) {
-    return refuse("not-found", "That Engagement does not exist.");
+    return engagementNotFound();
   }
   if (engagement.state !== "paid") return notPaid(engagement);
   if (await isFrozen(ctx, engagement.id)) return frozenRefusal();

@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { notFound } from "@tanstack/react-router";
 import { requestActor, requestDomain } from "./session";
+import { filesOf, textOf } from "./form-data";
 
 // Posting and managing a Job: thin adapters onto the domain module, which
 // decides who sees what (ADR 0017).
@@ -30,17 +31,11 @@ export const getJob = createServerFn({ method: "GET" })
     return { as: "client" as const, ...job };
   });
 
-/** A form's text, or undefined when it was left out. */
-function field(form: FormData, name: string): string | undefined {
-  const value = form.get(name);
-  return typeof value === "string" ? value : undefined;
-}
-
 /** The photos kept, by id, under "keep", and those added under "add". */
 function photos(form: FormData) {
   return {
     keep: form.getAll("keep").map(String),
-    add: form.getAll("add").filter((value): value is File => value instanceof File),
+    add: filesOf(form, "add"),
   };
 }
 
@@ -53,18 +48,18 @@ function asForm(input: unknown): FormData {
 export const saveJobDraft = createServerFn({ method: "POST" })
   .validator((input: FormData) => {
     const form = asForm(input);
-    const gasWork = field(form, "gasWork");
+    const gasWork = textOf(form, "gasWork");
     return {
-      jobId: field(form, "jobId") || undefined,
-      category: field(form, "category") || null,
-      siteType: field(form, "siteType") || null,
-      suburbId: field(form, "suburbId") || null,
-      street: field(form, "street"),
-      title: field(form, "title"),
-      description: field(form, "description"),
+      jobId: textOf(form, "jobId") || undefined,
+      category: textOf(form, "category") || null,
+      siteType: textOf(form, "siteType") || null,
+      suburbId: textOf(form, "suburbId") || null,
+      street: textOf(form, "street"),
+      title: textOf(form, "title"),
+      description: textOf(form, "description"),
       gasWork: gasWork === "yes" ? true : gasWork === "no" ? false : null,
-      preferredStart: field(form, "preferredStart") || null,
-      matching: field(form, "matching") || null,
+      preferredStart: textOf(form, "preferredStart") || null,
+      matching: textOf(form, "matching") || null,
       ...photos(form),
     };
   })
@@ -82,11 +77,11 @@ export const editJob = createServerFn({ method: "POST" })
   .validator((input: FormData) => {
     const form = asForm(input);
     return {
-      jobId: field(form, "jobId") ?? "",
-      title: field(form, "title") ?? "",
-      description: field(form, "description") ?? "",
-      siteType: field(form, "siteType") ?? "",
-      preferredStart: field(form, "preferredStart") || null,
+      jobId: textOf(form, "jobId") ?? "",
+      title: textOf(form, "title") ?? "",
+      description: textOf(form, "description") ?? "",
+      siteType: textOf(form, "siteType") ?? "",
+      preferredStart: textOf(form, "preferredStart") || null,
       ...photos(form),
     };
   })

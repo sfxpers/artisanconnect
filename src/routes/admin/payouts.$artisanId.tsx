@@ -1,8 +1,8 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { ChevronRight } from "lucide-react";
+import { Banknote, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Page } from "@/components/page";
+import { EmptyState, Page } from "@/components/page";
 import { formatRands } from "@/domain/money";
 import { copy, formatDate } from "@/web/copy";
 import { onlyForAdmins } from "@/web/guards";
@@ -39,7 +39,7 @@ function MoneyHistory() {
       </nav>
       <div className="space-y-1">
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight">{history.name}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{history.name}</h1>
           {history.held && <Badge variant="destructive">{copy.admin.payouts.held}</Badge>}
         </div>
         <p className="text-sm text-muted-foreground">{history.email}</p>
@@ -50,7 +50,7 @@ function MoneyHistory() {
         <Total label={t.paid} cents={history.paidCents} />
       </div>
       {history.releases.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t.empty}</p>
+        <EmptyState icon={<Banknote />}>{t.empty}</EmptyState>
       ) : (
         <Card className="py-0">
           <ul className="divide-y">

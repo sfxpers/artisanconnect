@@ -1,8 +1,8 @@
-import { env } from "cloudflare:test";
 import { describe, expect, test } from "vitest";
 import type { Actor } from "@/domain/actor";
 import type { ChargebackOutcome } from "@/domain/ports";
 import { formatRands } from "@/domain/money";
+import { releasesTo } from "../support/money";
 import { createHarness, type Harness } from "../support/harness";
 
 // Chargebacks (#137): a card Payment the bank reverses freezes its
@@ -19,10 +19,10 @@ describe("a Chargeback opened", () => {
   test("freezes the Engagement, suspends the Client and tells them, tells the Artisan, and raises a Chargebacks item", async () => {
     const { domain, given, clock } = await createHarness();
     const admin = await given.admin();
-    const { client, artisan, jobId, engagementId } = await startedJob(given);
+    const { client, artisan, jobId, collectionId } = await startedJob(given);
     clock.advance({ hours: 1 });
 
-    await opened(given, (await hiredPayment(engagementId))!);
+    await opened(given, collectionId);
 
     expect((await domain.jobs.view(client.actor, { jobId }))?.engagement).toMatchObject({
       state: "work-started",
@@ -49,9 +49,9 @@ describe("a Chargeback opened", () => {
     expect((await domain.queues.home(admin.actor, { queue: "chargebacks" }))?.items).toEqual([
       expect.objectContaining({ queue: "chargebacks", title: "Chargeback: Paint the lounge" }),
     ]);
-    expect(await chargebackRows(engagementId)).toEqual([
-      { kind: "chargeback.opened", amount_cents: 210_000 },
-    ]);
+    expect(await said(domain, admin, (await itemOf(domain, admin))!.id)).toContainEqual(
+      expect.stringContaining(`disputing ${formatRands(210_000)}`),
+    );
     for (const party of [client, artisan]) {
       expect((await rows(domain, party, jobId)).at(-1)).toMatchObject({
         kind: "event",
@@ -63,9 +63,9 @@ describe("a Chargeback opened", () => {
   test("shows the Suspension on the People page as the system's", async () => {
     const { domain, given } = await createHarness();
     const admin = await given.admin();
-    const { client, engagementId } = await hiredJob(given);
+    const { client, collectionId } = await hiredJob(given);
 
-    await opened(given, (await hiredPayment(engagementId))!);
+    await opened(given, collectionId);
 
     const person = await domain.people.view(admin.actor, { accountId: client.actor.accountId });
     expect(person?.suspensions).toEqual([
@@ -77,8 +77,7 @@ describe("a Chargeback opened", () => {
     const { domain, given } = await createHarness();
     const paid = await hiredJob(given);
     const awaiting = await awaitingApproval(given);
-    for (const job of [paid, awaiting])
-      await opened(given, (await hiredPayment(job.engagementId))!);
+    for (const job of [paid, awaiting]) await opened(given, job.collectionId);
     const frozen = { ok: false, refusal: { reason: "frozen" } };
 
     const on = { engagementId: paid.engagementId };
@@ -113,7 +112,7 @@ describe("a Chargeback opened", () => {
 
   test("ends an Updated Quote waiting for the Client; its Payment arriving later is refunded whole", async () => {
     const { domain, given } = await createHarness();
-    const { client, artisan, jobId, engagementId } = await startedJob(given);
+    const { client, artisan, jobId, engagementId, collectionId } = await startedJob(given);
     const proposed = await domain.engagements.proposeUpdatedQuote(artisan.actor, {
       engagementId,
       labour: "2000",
@@ -126,7 +125,7 @@ describe("a Chargeback opened", () => {
     });
     if (!checkout.ok) throw new Error(checkout.refusal.message);
 
-    await opened(given, (await hiredPayment(engagementId))!);
+    await opened(given, collectionId);
     await given.paid(new URL(checkout.value.checkoutUrl).pathname.split("/").at(-1)!);
 
     const job = await domain.jobs.view(client.actor, { jobId });
@@ -141,10 +140,10 @@ describe("a Chargeback opened", () => {
 describe("every clock on a frozen Engagement", () => {
   test("does nothing when the Artisan's claim's 24 hours end", async () => {
     const { domain, given, clock } = await createHarness();
-    const { client, artisan, jobId, engagementId } = await hiredJob(given);
+    const { client, artisan, jobId, engagementId, collectionId } = await hiredJob(given);
     const claimed = await domain.engagements.claimStarted(artisan.actor, { engagementId });
     if (!claimed.ok) throw new Error(claimed.refusal.message);
-    await opened(given, (await hiredPayment(engagementId))!);
+    await opened(given, collectionId);
 
     clock.advance({ hours: 25 });
     await domain.system.runDueClocks();
@@ -157,8 +156,8 @@ describe("every clock on a frozen Engagement", () => {
 
   test("does nothing when a Completion's seven days end, nor reminds the Client", async () => {
     const { domain, given, clock } = await createHarness();
-    const { client, jobId, engagementId } = await awaitingApproval(given);
-    await opened(given, (await hiredPayment(engagementId))!);
+    const { client, jobId, collectionId } = await awaitingApproval(given);
+    await opened(given, collectionId);
 
     clock.advance({ days: 6 });
     await domain.system.runDueClocks();
@@ -176,10 +175,10 @@ describe("every clock on a frozen Engagement", () => {
 
   test("does nothing when a Cancellation's 72 hours end, nor reminds the Artisan", async () => {
     const { domain, given, clock } = await createHarness();
-    const { client, artisan, jobId, engagementId } = await startedJob(given);
+    const { client, artisan, jobId, engagementId, collectionId } = await startedJob(given);
     const cancelled = await domain.engagements.cancel(client.actor, { engagementId });
     if (!cancelled.ok) throw new Error(cancelled.refusal.message);
-    await opened(given, (await hiredPayment(engagementId))!);
+    await opened(given, collectionId);
 
     clock.advance({ hours: 73 });
     await domain.system.runDueClocks();
@@ -199,8 +198,8 @@ describe("the Admin's decision", () => {
   test("waits for the bank to close the Chargeback", async () => {
     const { domain, given } = await createHarness();
     const admin = await given.admin();
-    const { engagementId } = await startedJob(given);
-    await opened(given, (await hiredPayment(engagementId))!);
+    const { collectionId } = await startedJob(given);
+    await opened(given, collectionId);
 
     const item = await itemOf(domain, admin);
     expect(item?.decisions).toEqual([]);
@@ -216,16 +215,17 @@ describe("the Admin's decision", () => {
   test("once the bank closes it, splits each unreleased line, with what it sent back recorded", async () => {
     const { domain, given } = await createHarness();
     const admin = await given.admin();
-    const { engagementId } = await hiredJob(given);
-    const collectionId = (await hiredPayment(engagementId))!;
+    const { collectionId } = await hiredJob(given);
     await opened(given, collectionId);
 
     await closed(given, collectionId, "lost", 210_000);
 
-    expect(await chargebackRows(engagementId)).toEqual([
-      { kind: "chargeback.opened", amount_cents: 210_000 },
-      { kind: "chargeback.reversed", amount_cents: 210_000 },
-    ]);
+    expect(await said(domain, admin, (await itemOf(domain, admin))!.id)).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining(`disputing ${formatRands(210_000)}`),
+        expect.stringContaining(`sending ${formatRands(210_000)} back to the Client`),
+      ]),
+    );
     expect((await itemOf(domain, admin))?.decisions).toEqual([
       expect.objectContaining({
         key: "decide",
@@ -251,12 +251,11 @@ describe("the Admin's decision", () => {
   test("releases what the Admin gives the Artisan and leaves the rest with the Chargeback: the Engagement is Cancelled, and the platform's loss recorded", async () => {
     const { domain, given } = await createHarness();
     const admin = await given.admin();
-    const { client, artisan, jobId, engagementId } = await startedJob(given);
-    const collectionId = (await hiredPayment(engagementId))!;
+    const { client, artisan, jobId, collectionId } = await startedJob(given);
     await opened(given, collectionId);
     await closed(given, collectionId, "lost", 210_000);
 
-    await decided(
+    const itemId = await decided(
       domain,
       admin,
       { labourReleasedCents: "60000" },
@@ -286,16 +285,16 @@ describe("the Admin's decision", () => {
         },
       },
     });
-    expect(await chargebackRows(engagementId)).toEqual([
-      { kind: "chargeback.opened", amount_cents: 210_000 },
-      { kind: "chargeback.reversed", amount_cents: 210_000 },
-      // The bank sent back R2 100; the platform held back R900 of it.
-      { kind: "chargeback.loss", amount_cents: 120_000 },
-      { kind: "chargeback.labour", amount_cents: 90_000 },
-    ]);
-    expect(await kindRows(engagementId, "release.labour")).toEqual([
-      { kind: "release.labour", amount_cents: 60_000 },
-    ]);
+    // The bank sent back R2 100; the platform held back R900 of it.
+    expect(await said(domain, admin, itemId)).toEqual(
+      expect.arrayContaining([
+        `The platform's loss: ${formatRands(120_000)}`,
+        `Left with the Chargeback: ${formatRands(90_000)}`,
+      ]),
+    );
+    expect(
+      (await releasesTo(domain, artisan)).filter((release) => release.part === "labour"),
+    ).toMatchObject([{ releasedCents: 60_000 }]);
     expect(await domain.notices.list(artisan.actor)).toContainEqual(
       expect.objectContaining({
         event: "engagement.chargeback-decided",
@@ -320,12 +319,16 @@ describe("the Admin's decision", () => {
   test("refunds what is left to the Client beyond what the bank sent back, as when the platform won", async () => {
     const { domain, given, payments } = await createHarness();
     const admin = await given.admin();
-    const { client, jobId, engagementId } = await startedJob(given);
-    const collectionId = (await hiredPayment(engagementId))!;
+    const { client, jobId, collectionId } = await startedJob(given);
     await opened(given, collectionId);
     await closed(given, collectionId, "won", 0);
 
-    await decided(domain, admin, { labourReleasedCents: "100000" }, "Half the work is missing.");
+    const itemId = await decided(
+      domain,
+      admin,
+      { labourReleasedCents: "100000" },
+      "Half the work is missing.",
+    );
 
     expect((await domain.jobs.view(client.actor, { jobId }))?.engagement).toMatchObject({
       state: "cancelled",
@@ -344,34 +347,37 @@ describe("the Admin's decision", () => {
         }),
       },
     ]);
-    expect(await kindRows(engagementId, "chargeback.loss")).toEqual([]);
+    expect(await said(domain, admin, itemId)).toContain(`The platform's loss: ${formatRands(0)}`);
   });
 
   test("makes an Engagement awaiting approval Completed", async () => {
     const { domain, given } = await createHarness();
     const admin = await given.admin();
-    const { client, jobId, engagementId } = await awaitingApproval(given);
-    const collectionId = (await hiredPayment(engagementId))!;
+    const { client, jobId, collectionId } = await awaitingApproval(given);
     await opened(given, collectionId);
     await closed(given, collectionId, "lost", 210_000);
 
-    await decided(domain, admin, { labourReleasedCents: "150000" }, "The work was done.");
+    const itemId = await decided(
+      domain,
+      admin,
+      { labourReleasedCents: "150000" },
+      "The work was done.",
+    );
 
     expect((await domain.jobs.view(client.actor, { jobId }))?.engagement).toMatchObject({
       state: "completed",
       completedAt: expect.any(Date),
       money: { releasedCents: 200_000, unreleasedCents: 0 },
     });
-    expect(await kindRows(engagementId, "chargeback.loss")).toEqual([
-      { kind: "chargeback.loss", amount_cents: 210_000 },
-    ]);
+    expect(await said(domain, admin, itemId)).toContain(
+      `The platform's loss: ${formatRands(210_000)}`,
+    );
   });
 
   test("a Completion it made does not lower the Artisan Fee on the Client Relationship's later work", async () => {
     const { domain, given } = await createHarness();
     const admin = await given.admin();
-    const { client, artisan, engagementId } = await awaitingApproval(given);
-    const collectionId = (await hiredPayment(engagementId))!;
+    const { client, artisan, collectionId } = await awaitingApproval(given);
     await opened(given, collectionId);
     await closed(given, collectionId, "lost", 210_000);
     await decided(domain, admin, {}, "The work was not done.");
@@ -395,8 +401,7 @@ describe("the Admin's decision", () => {
   test("a Completion it made offers no Hire Again (#139), which would be at the repeat Artisan Fee", async () => {
     const { domain, given } = await createHarness();
     const admin = await given.admin();
-    const { client, jobId, engagementId } = await awaitingApproval(given);
-    const collectionId = (await hiredPayment(engagementId))!;
+    const { client, jobId, engagementId, collectionId } = await awaitingApproval(given);
     await opened(given, collectionId);
     await closed(given, collectionId, "lost", 210_000);
     await decided(domain, admin, {}, "The work was not done.");
@@ -415,14 +420,13 @@ describe("the Admin's decision", () => {
   test("decides what a Dispute holds too, closing it and its item", async () => {
     const { domain, given } = await createHarness();
     const admin = await given.admin();
-    const { client, jobId, engagementId } = await awaitingApproval(given);
+    const { client, jobId, engagementId, collectionId } = await awaitingApproval(given);
     const disputed = await domain.engagements.dispute(client.actor, {
       engagementId,
       amount: "600",
       reason: "The second coat is missing on the east wall.",
     });
     if (!disputed.ok) throw new Error(disputed.refusal.message);
-    const collectionId = (await hiredPayment(engagementId))!;
     await opened(given, collectionId);
     await closed(given, collectionId, "lost", 210_000);
     const [disputeItem] = (await domain.queues.home(admin.actor, { queue: "disputes" }))!.items;
@@ -445,12 +449,16 @@ describe("the Admin's decision", () => {
   test("may release part of the Materials before Work started, leaving the rest with the Chargeback", async () => {
     const { domain, given } = await createHarness();
     const admin = await given.admin();
-    const { client, jobId, engagementId } = await hiredJob(given);
-    const collectionId = (await hiredPayment(engagementId))!;
+    const { client, jobId, collectionId } = await hiredJob(given);
     await opened(given, collectionId);
     await closed(given, collectionId, "lost", 210_000);
 
-    await decided(domain, admin, { materialsReleasedCents: "20000" }, "Some paint was bought.");
+    const itemId = await decided(
+      domain,
+      admin,
+      { materialsReleasedCents: "20000" },
+      "Some paint was bought.",
+    );
 
     expect((await domain.jobs.view(client.actor, { jobId }))?.engagement).toMatchObject({
       state: "cancelled",
@@ -458,15 +466,15 @@ describe("the Admin's decision", () => {
       money: { releasedCents: 20_000, unreleasedCents: 0 },
       chargeback: { decision: { releasedCents: 20_000, chargedBackCents: 180_000 } },
     });
-    expect(await kindRows(engagementId, "chargeback.loss")).toEqual([
-      { kind: "chargeback.loss", amount_cents: 30_000 },
-    ]);
+    expect(await said(domain, admin, itemId)).toContain(
+      `The platform's loss: ${formatRands(30_000)}`,
+    );
   });
 
   test("decides the Engagement's money once for every Chargeback on it, once the bank closed each", async () => {
     const { domain, given } = await createHarness();
     const admin = await given.admin();
-    const { client, artisan, jobId, engagementId } = await startedJob(given);
+    const { client, artisan, jobId, engagementId, collectionId: hireId } = await startedJob(given);
     const proposed = await domain.engagements.proposeUpdatedQuote(artisan.actor, {
       engagementId,
       labour: "2000",
@@ -480,7 +488,6 @@ describe("the Admin's decision", () => {
     if (!checkout.ok) throw new Error(checkout.refusal.message);
     const updatedId = new URL(checkout.value.checkoutUrl).pathname.split("/").at(-1)!;
     await given.paid(updatedId);
-    const hireId = (await hiredPayment(engagementId))!;
     await opened(given, hireId);
     await opened(given, updatedId);
     await closed(given, hireId, "lost", 210_000);
@@ -489,6 +496,9 @@ describe("the Admin's decision", () => {
     expect((await domain.queues.item(admin.actor, { itemId: first!.id }))?.decisions).toEqual([]);
 
     await closed(given, updatedId, "lost", 52_500);
+    const itemIds = (await domain.queues.home(admin.actor, { queue: "chargebacks" }))!.items.map(
+      (item) => item.id,
+    );
     await decided(domain, admin, {}, "No work after the Materials.");
 
     expect((await domain.jobs.view(client.actor, { jobId }))?.engagement).toMatchObject({
@@ -503,15 +513,22 @@ describe("the Admin's decision", () => {
       decision: "together",
     });
     // R2 625 sent back; R2 000 of it held back.
-    const loss = await kindRows(engagementId, "chargeback.loss");
-    expect(loss.reduce((sum, row) => sum + row.amount_cents, 0)).toBe(62_500);
+    // Each Chargeback's item shows its share of the loss.
+    let loss = 0;
+    for (const id of itemIds) {
+      const line = (await said(domain, admin, id)).find((each) =>
+        each.startsWith("The platform's loss"),
+      );
+      loss += Number(line!.replace(/\D/g, ""));
+    }
+    expect(loss).toBe(62_500);
   });
 
   test("lets the Admin read the Conversation on a logged click", async () => {
     const { domain, given } = await createHarness();
     const admin = await given.admin();
-    const { engagementId } = await startedJob(given);
-    await opened(given, (await hiredPayment(engagementId))!);
+    const { collectionId } = await startedJob(given);
+    await opened(given, collectionId);
     const item = await itemOf(domain, admin);
     expect(item?.tabs).toContainEqual({
       key: "conversation",
@@ -533,8 +550,7 @@ describe("the Admin's decision", () => {
   test("is final", async () => {
     const { domain, given } = await createHarness();
     const admin = await given.admin();
-    const { engagementId } = await startedJob(given);
-    const collectionId = (await hiredPayment(engagementId))!;
+    const { collectionId } = await startedJob(given);
     await opened(given, collectionId);
     await closed(given, collectionId, "lost", 210_000);
     const item = await itemOf(domain, admin);
@@ -555,8 +571,7 @@ describe("on a clock that ticks between reads, as a real one does", () => {
   test("a Chargeback opens, closes, and is decided, ending the Engagement", async () => {
     const { domain, given, clock } = await createHarness();
     const admin = await given.admin();
-    const { client, jobId, engagementId } = await startedJob(given);
-    const collectionId = (await hiredPayment(engagementId))!;
+    const { client, jobId, collectionId } = await startedJob(given);
     const frozen = clock.now;
     clock.now = () => {
       clock.advance({ minutes: 0.001 });
@@ -565,19 +580,24 @@ describe("on a clock that ticks between reads, as a real one does", () => {
 
     await opened(given, collectionId);
     await closed(given, collectionId, "lost", 210_000);
-    await decided(domain, admin, { labourReleasedCents: "60000" }, "A third was done.");
+    const itemId = await decided(
+      domain,
+      admin,
+      { labourReleasedCents: "60000" },
+      "A third was done.",
+    );
 
     expect((await domain.jobs.view(client.actor, { jobId }))?.engagement).toMatchObject({
       state: "cancelled",
       money: { releasedCents: 110_000, unreleasedCents: 0 },
       chargeback: { frozen: false, decision: { releasedCents: 60_000, chargedBackCents: 90_000 } },
     });
-    expect(await chargebackRows(engagementId)).toEqual([
-      { kind: "chargeback.opened", amount_cents: 210_000 },
-      { kind: "chargeback.reversed", amount_cents: 210_000 },
-      { kind: "chargeback.loss", amount_cents: 120_000 },
-      { kind: "chargeback.labour", amount_cents: 90_000 },
-    ]);
+    expect(await said(domain, admin, itemId)).toEqual(
+      expect.arrayContaining([
+        `The platform's loss: ${formatRands(120_000)}`,
+        `Left with the Chargeback: ${formatRands(90_000)}`,
+      ]),
+    );
   });
 });
 
@@ -585,8 +605,7 @@ describe("money already released", () => {
   test("stays the Artisan's: its Payout still goes in the daily run, and once sent is the platform's loss", async () => {
     const { domain, given, payments, clock } = await createHarness();
     const admin = await given.admin();
-    const { engagementId } = await startedJob(given);
-    const collectionId = (await hiredPayment(engagementId))!;
+    const { collectionId } = await startedJob(given);
     await opened(given, collectionId);
 
     clock.set(RUN_AT);
@@ -606,18 +625,18 @@ describe("money already released", () => {
         ]),
       }),
     );
-    await decided(domain, admin, {}, "Nothing was done after the Materials.");
+    const itemId = await decided(domain, admin, {}, "Nothing was done after the Materials.");
     // R2 100 sent back, R1 500 of it held back: the Materials released and the Protection Fee lost.
-    expect(await kindRows(engagementId, "chargeback.loss")).toEqual([
-      { kind: "chargeback.loss", amount_cents: 60_000 },
-    ]);
+    expect(await said(domain, admin, itemId)).toContain(
+      `The platform's loss: ${formatRands(60_000)}`,
+    );
   });
 
   test("waits while the Admin holds the Artisan's Payouts", async () => {
     const { domain, given, clock } = await createHarness();
     const admin = await given.admin();
-    const { artisan, engagementId } = await startedJob(given);
-    await opened(given, (await hiredPayment(engagementId))!);
+    const { artisan, collectionId } = await startedJob(given);
+    await opened(given, collectionId);
     const held = await domain.payouts.hold(admin.actor, { artisanId: artisan.actor.accountId });
     if (!held.ok) throw new Error(held.refusal.message);
 
@@ -631,8 +650,7 @@ describe("repeated and out-of-order Chargeback events", () => {
   test("change nothing twice", async () => {
     const { domain, given, payments } = await createHarness();
     const admin = await given.admin();
-    const { client, engagementId } = await startedJob(given);
-    const collectionId = (await hiredPayment(engagementId))!;
+    const { client, collectionId } = await startedJob(given);
     const opening = await payments.openChargeback(collectionId);
     const closing = await payments.closeChargeback(collectionId, {
       outcome: "lost",
@@ -643,10 +661,12 @@ describe("repeated and out-of-order Chargeback events", () => {
       expect(await domain.system.receivePaymentEvent(event)).toEqual({ ok: true, value: {} });
     }
 
-    expect(await chargebackRows(engagementId)).toEqual([
-      { kind: "chargeback.opened", amount_cents: 210_000 },
-      { kind: "chargeback.reversed", amount_cents: 210_000 },
-    ]);
+    expect(await said(domain, admin, (await itemOf(domain, admin))!.id)).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining(`disputing ${formatRands(210_000)}`),
+        expect.stringContaining(`sending ${formatRands(210_000)} back to the Client`),
+      ]),
+    );
     expect((await domain.queues.home(admin.actor, { queue: "chargebacks" }))?.items).toHaveLength(
       1,
     );
@@ -660,8 +680,7 @@ describe("repeated and out-of-order Chargeback events", () => {
   test("a closing that arrives first opens it, closed, and its opening then changes nothing", async () => {
     const { domain, given, payments } = await createHarness();
     const admin = await given.admin();
-    const { client, jobId, engagementId } = await startedJob(given);
-    const collectionId = (await hiredPayment(engagementId))!;
+    const { client, jobId, collectionId } = await startedJob(given);
     const opening = await payments.openChargeback(collectionId);
     const closing = await payments.closeChargeback(collectionId, {
       outcome: "partially_accepted",
@@ -675,10 +694,12 @@ describe("repeated and out-of-order Chargeback events", () => {
       { frozen: true },
     );
     expect((await domain.accounts.me(client.actor))?.standing.suspended).not.toBeNull();
-    expect(await chargebackRows(engagementId)).toEqual([
-      { kind: "chargeback.opened", amount_cents: 210_000 },
-      { kind: "chargeback.reversed", amount_cents: 100_000 },
-    ]);
+    expect(await said(domain, admin, (await itemOf(domain, admin))!.id)).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining(`disputing ${formatRands(210_000)}`),
+        expect.stringContaining(`sending ${formatRands(100_000)} back to the Client`),
+      ]),
+    );
     expect((await itemOf(domain, admin))?.decisions).toEqual([
       expect.objectContaining({ key: "decide" }),
     ]);
@@ -708,13 +729,12 @@ describe("a Refund waiting on a charged-back Payment", () => {
   test("is not sent while frozen, and the decision marks it sent back by the bank, lowering the loss", async () => {
     const { domain, given, payments } = await createHarness();
     const admin = await given.admin();
-    const { client, artisan, jobId, engagementId } = await startedJob(given);
+    const { client, artisan, jobId, engagementId, collectionId } = await startedJob(given);
     // One Refund at a time per Payment: the second waits while the first is with the adapter.
     for (const labour of ["200", "300"]) {
       const made = await domain.engagements.refund(artisan.actor, { engagementId, labour });
       if (!made.ok) throw new Error(made.refusal.message);
     }
-    const collectionId = (await hiredPayment(engagementId))!;
     await opened(given, collectionId);
     const [first] = refundsAsked(payments);
     await domain.system.receivePaymentEvent(await payments.succeedRefund(first!.id));
@@ -723,7 +743,7 @@ describe("a Refund waiting on a charged-back Payment", () => {
     expect(refundsAsked(payments)).toHaveLength(1);
 
     await closed(given, collectionId, "lost", 210_000);
-    await decided(domain, admin, {}, "The work was not done.");
+    const itemId = await decided(domain, admin, {}, "The work was not done.");
     await domain.system.runDueClocks();
 
     expect(refundsAsked(payments)).toHaveLength(1);
@@ -732,12 +752,10 @@ describe("a Refund waiting on a charged-back Payment", () => {
       expect.objectContaining({ amountCents: 30_000, state: "charged-back" }),
     ]);
     // What the bank sent back, less the R1 000 of Labour left with it and the R300 Refund it paid instead.
-    expect(await kindRows(engagementId, "chargeback.loss")).toEqual([
-      { kind: "chargeback.loss", amount_cents: 80_000 },
-    ]);
-    expect(await kindRows(engagementId, "refund.charged-back")).toEqual([
-      { kind: "refund.charged-back", amount_cents: 30_000 },
-    ]);
+    expect(await said(domain, admin, itemId)).toContain(
+      `The platform's loss: ${formatRands(80_000)}`,
+    );
+    expect(await chargedBackRefunds(domain, client, jobId)).toEqual([30_000]);
     expect(await domain.notices.list(client.actor)).toContainEqual(
       expect.objectContaining({
         event: "engagement.chargeback-decided",
@@ -753,19 +771,23 @@ describe("a Refund the bank sent back only part of", () => {
   test("is charged back for that part, and the rest is sent as a Refund of its own", async () => {
     const { domain, given, payments } = await createHarness();
     const admin = await given.admin();
-    const { client, artisan, jobId, engagementId } = await startedJob(given);
+    const { client, artisan, jobId, engagementId, collectionId } = await startedJob(given);
     for (const labour of ["200", "300"]) {
       const made = await domain.engagements.refund(artisan.actor, { engagementId, labour });
       if (!made.ok) throw new Error(made.refusal.message);
     }
-    const collectionId = (await hiredPayment(engagementId))!;
     await opened(given, collectionId);
     const [first] = refundsAsked(payments);
     await domain.system.receivePaymentEvent(await payments.succeedRefund(first!.id));
     await closed(given, collectionId, "partially_accepted", 10_000);
 
     // All the Labour left goes to the Artisan, so the R100 the bank sent back pays the waiting Refund.
-    await decided(domain, admin, { labourReleasedCents: "100000" }, "The work was done.");
+    const itemId = await decided(
+      domain,
+      admin,
+      { labourReleasedCents: "100000" },
+      "The work was done.",
+    );
 
     expect((await domain.jobs.view(client.actor, { jobId }))?.engagement?.refunds).toEqual([
       expect.objectContaining({ amountCents: 20_000, state: "paid" }),
@@ -773,10 +795,8 @@ describe("a Refund the bank sent back only part of", () => {
       expect.objectContaining({ amountCents: 20_000, state: "on-its-way" }),
     ]);
     expect(refundsAsked(payments).at(-1)).toMatchObject({ collectionId, amountCents: 20_000 });
-    expect(await kindRows(engagementId, "refund.charged-back")).toEqual([
-      { kind: "refund.charged-back", amount_cents: 10_000 },
-    ]);
-    expect(await kindRows(engagementId, "chargeback.loss")).toEqual([]);
+    expect(await chargedBackRefunds(domain, client, jobId)).toEqual([10_000]);
+    expect(await said(domain, admin, itemId)).toContain(`The platform's loss: ${formatRands(0)}`);
   });
 });
 
@@ -784,13 +804,12 @@ describe("a failed Refund on a charged-back Payment", () => {
   test("cannot be paid by hand while frozen, and the decision charges it back", async () => {
     const { domain, given, payments } = await createHarness();
     const admin = await given.admin();
-    const { client, artisan, jobId, engagementId } = await startedJob(given);
+    const { client, artisan, jobId, engagementId, collectionId } = await startedJob(given);
     const made = await domain.engagements.refund(artisan.actor, { engagementId, labour: "300" });
     if (!made.ok) throw new Error(made.refusal.message);
     await domain.system.receivePaymentEvent(
       await payments.failRefund(refundsAsked(payments)[0]!.id),
     );
-    const collectionId = (await hiredPayment(engagementId))!;
     await opened(given, collectionId);
     const [request] = (await domain.queues.home(admin.actor, { queue: "support" }))!.items;
 
@@ -809,9 +828,7 @@ describe("a failed Refund on a charged-back Payment", () => {
     expect((await domain.jobs.view(client.actor, { jobId }))?.engagement?.refunds).toEqual([
       expect.objectContaining({ amountCents: 30_000, state: "charged-back" }),
     ]);
-    expect(await kindRows(engagementId, "refund.charged-back")).toEqual([
-      { kind: "refund.charged-back", amount_cents: 30_000 },
-    ]);
+    expect(await chargedBackRefunds(domain, client, jobId)).toEqual([30_000]);
     expect((await domain.queues.item(admin.actor, { itemId: request!.id }))?.decisions).toEqual([
       expect.objectContaining({ key: "resolve" }),
     ]);
@@ -821,6 +838,7 @@ describe("a failed Refund on a charged-back Payment", () => {
 describe("a Chargeback on other Payments", () => {
   test("on an Updated Quote's Payment freezes its Engagement", async () => {
     const { domain, given } = await createHarness();
+    const admin = await given.admin();
     const { client, artisan, jobId, engagementId } = await startedJob(given);
     const proposed = await domain.engagements.proposeUpdatedQuote(artisan.actor, {
       engagementId,
@@ -841,15 +859,15 @@ describe("a Chargeback on other Payments", () => {
     expect((await domain.jobs.view(client.actor, { jobId }))?.engagement?.chargeback).toMatchObject(
       { frozen: true },
     );
-    expect(await chargebackRows(engagementId)).toEqual([
-      { kind: "chargeback.opened", amount_cents: 52_500 },
-    ]);
+    expect(await said(domain, admin, (await itemOf(domain, admin))!.id)).toContainEqual(
+      expect.stringContaining(`disputing ${formatRands(52_500)}`),
+    );
   });
 
   test("on the Hire's Payment refunds what the bank did not send back from an Updated Quote's Payment", async () => {
     const { domain, given, payments } = await createHarness();
     const admin = await given.admin();
-    const { client, artisan, jobId, engagementId } = await startedJob(given);
+    const { client, artisan, jobId, engagementId, collectionId: hireId } = await startedJob(given);
     const proposed = await domain.engagements.proposeUpdatedQuote(artisan.actor, {
       engagementId,
       labour: "2000",
@@ -863,7 +881,6 @@ describe("a Chargeback on other Payments", () => {
     if (!checkout.ok) throw new Error(checkout.refusal.message);
     const extraId = new URL(checkout.value.checkoutUrl).pathname.split("/").at(-1)!;
     await given.paid(extraId);
-    const hireId = (await hiredPayment(engagementId))!;
     await opened(given, hireId);
     // The bank sent back the Hire's Labour; the extra R500 of Labour is the Updated Quote's.
     await closed(given, hireId, "lost", 150_000);
@@ -903,13 +920,10 @@ describe("a Chargeback on other Payments", () => {
     expect((await domain.accounts.me(client.actor))?.standing.suspended).not.toBeNull();
     const item = await itemOf(domain, admin);
     expect(item?.decisions).toEqual([expect.objectContaining({ key: "decide", fields: [] })]);
-    await decided(domain, admin, {}, "Refunded whole already.");
-    const { results } = await env.DB.prepare(
-      "SELECT kind, amount_cents FROM ledger_entries WHERE payment_id = ? AND kind = 'chargeback.loss'",
-    )
-      .bind(collectionId)
-      .all();
-    expect(results).toEqual([{ kind: "chargeback.loss", amount_cents: 210_000 }]);
+    const itemId = await decided(domain, admin, {}, "Refunded whole already.");
+    expect(await said(domain, admin, itemId)).toContain(
+      `The platform's loss: ${formatRands(210_000)}`,
+    );
   });
 
   test("on a Payment that Hired nobody whose Refund was not sent yet never sends it, and tells the Client", async () => {
@@ -933,7 +947,7 @@ describe("a Chargeback on other Payments", () => {
     expect(refundsAsked(payments)).toEqual([]);
 
     await closed(given, collectionId, "lost", 210_000);
-    await decided(domain, admin, {}, "The bank sent it all back.");
+    const itemId = await decided(domain, admin, {}, "The bank sent it all back.");
     await domain.system.runDueClocks();
 
     expect(refundsAsked(payments)).toEqual([]);
@@ -945,25 +959,20 @@ describe("a Chargeback on other Payments", () => {
         title: `${formatRands(210_000)} of your Refund is not sent, as your bank sent it back by your Chargeback: Paint the lounge`,
       }),
     );
-    const { results } = await env.DB.prepare(
-      "SELECT kind, amount_cents FROM ledger_entries WHERE payment_id = ? AND kind IN ('chargeback.loss', 'refund.charged-back')",
-    )
-      .bind(collectionId)
-      .all();
-    expect(results).toEqual([{ kind: "refund.charged-back", amount_cents: 210_000 }]);
+    expect(await said(domain, admin, itemId)).toContain(`The platform's loss: ${formatRands(0)}`);
   });
 
   test("on a Client already Suspended leaves that Suspension standing, and still tells them", async () => {
     const { domain, given } = await createHarness();
     const admin = await given.admin();
-    const { client, engagementId } = await startedJob(given);
+    const { client, collectionId } = await startedJob(given);
     const suspended = await domain.people.suspend(admin.actor, {
       accountId: client.actor.accountId,
       reason: "Asked an Artisan to be paid in cash.",
     });
     if (!suspended.ok) throw new Error(suspended.refusal.message);
 
-    await opened(given, (await hiredPayment(engagementId))!);
+    await opened(given, collectionId);
 
     expect((await domain.accounts.me(client.actor))?.standing.suspended).toMatchObject({
       reason: "Asked an Artisan to be paid in cash.",
@@ -1026,14 +1035,7 @@ async function decided(
     fields,
   });
   if (!made.ok) throw new Error(made.refusal.message);
-}
-
-/** The Engagement's Hire's Payment: its collection's id. */
-async function hiredPayment(engagementId: string) {
-  const row = await env.DB.prepare("SELECT payment_id FROM engagements WHERE id = ?")
-    .bind(engagementId)
-    .first<{ payment_id: string }>();
-  return row?.payment_id;
+  return item!.id;
 }
 
 /** The Refunds asked of the payment adapter, oldest first. */
@@ -1043,19 +1045,26 @@ function refundsAsked(payments: Harness["payments"]) {
     .map((call) => call.input as { id: string; amountCents: number });
 }
 
-/** The Engagement's Chargeback rows in the ledger, oldest first. */
-async function chargebackRows(engagementId: string) {
-  return kindRows(engagementId, "chargeback.");
+/** What the Admin's Chargeback item says of it: each line of its tab, a fact as "label: value". */
+async function said(domain: Harness["domain"], admin: Admin, itemId: string) {
+  const tab = (await domain.queues.item(admin.actor, { itemId }))?.tabs.find(
+    (each) => each.key === "chargeback",
+  );
+  return (tab && "blocks" in tab ? tab.blocks : []).flatMap((block) =>
+    block.kind === "text"
+      ? [block.text]
+      : block.kind === "facts"
+        ? block.facts.map((fact) => `${fact.label}: ${fact.value}`)
+        : [],
+  );
 }
 
-/** The Engagement's ledger rows whose kind starts so, oldest first. */
-async function kindRows(engagementId: string, kind: string) {
-  const { results } = await env.DB.prepare(
-    "SELECT kind, amount_cents FROM ledger_entries WHERE engagement_id = ? AND kind LIKE ? ORDER BY recorded_at, rowid",
-  )
-    .bind(engagementId, `${kind}%`)
-    .all<{ kind: string; amount_cents: number }>();
-  return results;
+/** What of each Refund the bank sent back by the Chargeback, as the Client sees it. */
+async function chargedBackRefunds(domain: Harness["domain"], client: Party, jobId: string) {
+  const refunds = (await domain.jobs.view(client.actor, { jobId }))?.engagement?.refunds ?? [];
+  return refunds
+    .filter((refund) => refund.state === "charged-back")
+    .map((refund) => refund.amountCents);
 }
 
 /** The Engagement's money, as its Client sees it. */
@@ -1069,9 +1078,9 @@ async function hiredJob(given: Harness["given"]) {
   const artisan = await given.matchableArtisan({ name: "Sipho Dlamini" });
   const jobId = await given.openJob(client);
   const quoteId = await given.sentQuote(artisan, jobId, { startOn: "2026-10-05" });
-  await given.hired(client, quoteId);
+  const collectionId = await given.hired(client, quoteId);
   const engagementId = await given.engagementOf(client, jobId);
-  return { client, artisan, jobId, engagementId };
+  return { client, artisan, jobId, engagementId, collectionId };
 }
 
 /** As `hiredJob`, with Work started by the Client, which released the Materials. */

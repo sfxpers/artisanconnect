@@ -179,7 +179,7 @@ function revision6Hash(password: Uint8Array, salt: Uint8Array, userData: Uint8Ar
 
 // Ciphers
 
-export function rc4(key: Uint8Array, data: Uint8Array): Uint8Array {
+function rc4(key: Uint8Array, data: Uint8Array): Uint8Array {
   const s = new Uint8Array(256);
   for (let i = 0; i < 256; i++) s[i] = i;
   for (let i = 0, j = 0; i < 256; i++) {

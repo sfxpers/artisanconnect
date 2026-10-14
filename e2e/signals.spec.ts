@@ -1,5 +1,4 @@
-import { expect, test } from "@playwright/test";
-import { seed, signIn, signInAdmin, signOut } from "./support/helpers";
+import { expect, seed, signIn, signInAdmin, signOut, test } from "./support/helpers";
 
 test("a Client Hires an Artisan who signed in on the same browser, and the Admin holds the Artisan's Payouts from the Signal", async ({
   browser,
@@ -59,4 +58,9 @@ test("a Client Hires an Artisan who signed in on the same browser, and the Admin
   await signIn(asArtisan, artisan);
   await asArtisan.goto("/payouts");
   await expect(asArtisan.getByText(/The Admin holds your Payouts/)).toBeVisible();
+  // An Artisan's settings rows include its VAT number, Payout account, and Identity Number.
+  await asArtisan.goto("/account");
+  for (const row of ["VAT number", "Payout account", "Identity Number"]) {
+    await expect(asArtisan.getByText(row, { exact: true })).toBeVisible();
+  }
 });

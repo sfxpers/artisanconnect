@@ -5,7 +5,7 @@ import { insertWhile } from "./guarded";
 import { auditLog } from "./schema";
 
 /** One line of the audit log: what an Admin did or read. */
-export type AuditEntry = {
+type AuditEntry = {
   /** What was done, by kind, such as "admin.invited" or "read". */
   action: string;
   /** What it was done to, said for the Admin reading the log. */

@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import type { Actor, AdminActor } from "@/domain/actor";
 import { createHarness, type Harness } from "../support/harness";
+import { createFakePayments, type FakePayments } from "@/domain/fakes/payments";
 import { formatRands } from "@/domain/money";
 import { collectionOf } from "../support/given";
 
@@ -358,6 +359,26 @@ describe("when the Payment arrives", () => {
     ).toMatchObject({ ok: false, refusal: { reason: "read-only" } });
   });
 
+  test("waits on the Artisan until the work is marked complete, and again at a Fix request", async () => {
+    const { domain, given } = await createHarness();
+    const { client, artisan, jobId, quoteId } = await quoted(given);
+    const waits = async () => (await domain.quotes.mine(artisan.actor))![0]!.waitsOnArtisan;
+    expect(await waits()).toBe(false);
+
+    await given.hired(client, quoteId);
+    expect(await waits()).toBe(true);
+    const engagementId = await given.engagementOf(client, jobId);
+    await given.workStarted(client, engagementId);
+    expect(await waits()).toBe(true);
+    await given.markedComplete(artisan, engagementId);
+    expect(await waits()).toBe(false);
+    await domain.engagements.requestFix(client.actor, {
+      engagementId,
+      note: "One wall is patchy.",
+    });
+    expect(await waits()).toBe(true);
+  });
+
   test("joins the Artisan's Active Jobs, without the address", async () => {
     const { domain, given } = await createHarness();
     const { client, artisan, jobId, quoteId } = await quoted(given);
@@ -432,12 +453,31 @@ describe("a failed attempt", () => {
 });
 
 describe("payment events", () => {
-  test("one not signed by the provider is refused and changes nothing", async () => {
+  // Any other secret includes the one the fake once had as a default, which
+  // this public repository shows (#111 review, D26).
+  test.each([
+    [
+      "with no signature",
+      async (payments: FakePayments, collectionId: string) => ({
+        ...(await payments.succeedCollection(collectionId)),
+        headers: {},
+      }),
+    ],
+    [
+      "signed with any other secret",
+      (payments: FakePayments, collectionId: string) =>
+        createFakePayments({
+          webhookSecret: "fake-webhook-secret",
+          state: payments.snapshot(),
+        }).succeedCollection(collectionId),
+    ],
+  ])("one %s is refused and changes nothing", async (_, forge) => {
     const { domain, given, payments } = await createHarness();
     const { client, jobId, quoteId } = await quoted(given);
-    const webhook = await payments.succeedCollection(await given.checkout(client, quoteId));
 
-    const forged = await domain.system.receivePaymentEvent({ ...webhook, headers: {} });
+    const forged = await domain.system.receivePaymentEvent(
+      await forge(payments, await given.checkout(client, quoteId)),
+    );
 
     expect(forged).toEqual({
       ok: false,

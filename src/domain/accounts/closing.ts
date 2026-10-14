@@ -15,7 +15,7 @@ import { discardFiles, type StoredFile } from "../uploads";
 // money still owed to it is still paid.
 
 /** Whether the Account is a party to an Engagement neither Completed nor Cancelled. */
-export async function hasEngagementInProgress(ctx: Context, accountId: string) {
+async function hasEngagementInProgress(ctx: Context, accountId: string) {
   const [row] = await ctx.db
     .select({ id: engagements.id })
     .from(engagements)
@@ -45,7 +45,7 @@ export async function closedState(ctx: Context, accountId: string) {
  * meanwhile on something it withdraws aborts the batch with an error
  * `isAlreadyDecided` recognises: read again then.
  */
-export async function closeWrites(
+async function closeWrites(
   ctx: Context,
   actor: AccountActor,
 ): Promise<{ writes: Write[]; discard: StoredFile[] }> {
@@ -93,7 +93,7 @@ export async function closeAccount(
   throw new Error(`Account ${actor.accountId} kept changing while it was closed`);
 }
 
-export function inProgressRefusal() {
+function inProgressRefusal() {
   return refuse(
     "engagement-in-progress",
     "You have an Engagement in progress. Close your Account once each is Completed or Cancelled.",

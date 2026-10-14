@@ -68,7 +68,7 @@ async function sentQuotersOf(ctx: Context, jobId: string, after: Date) {
   return rows.map((row) => row.artisanId);
 }
 
-export const expiryClocks = {
+export const jobExpiryClocks = {
   [EXPIRY_CLOCKS.reminder]: reminder,
   [EXPIRY_CLOCKS.expiry]: expiry,
 } satisfies Record<string, ClockHandler>;

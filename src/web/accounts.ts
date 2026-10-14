@@ -9,10 +9,10 @@ import {
   requestCookie,
   requestDomain,
   keepDevice,
-  requestIp,
   requestSeen,
   sendCookies,
   endSession,
+  floodRefusal,
   turnstileRefusal,
 } from "./session";
 
@@ -39,7 +39,7 @@ export const signUp = createServerFn({ method: "POST" })
   .handler(async ({ data: { turnstileToken, ...details } }) => {
     const refused = await turnstileRefusal(turnstileToken);
     if (refused) return refused;
-    return requestDomain().accounts.signUp(visitor, { ...details, ip: requestIp() });
+    return requestDomain().accounts.signUp(visitor, details);
   });
 
 export const resendCode = createServerFn({ method: "POST" })
@@ -47,12 +47,14 @@ export const resendCode = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const refused = await turnstileRefusal(data.turnstileToken);
     if (refused) return refused;
-    return requestDomain().accounts.resendCode(visitor, { email: data.email, ip: requestIp() });
+    return requestDomain().accounts.resendCode(visitor, { email: data.email });
   });
 
 export const confirmEmail = createServerFn({ method: "POST" })
   .validator((input: { email: string; code: string }) => input)
   .handler(async ({ data }) => {
+    const flood = await floodRefusal("code-entry");
+    if (flood) return flood;
     const domain = requestDomain();
     const seen = requestSeen();
     const confirmed = await domain.accounts.confirmEmail(visitor, { ...data, ...seen });
@@ -94,15 +96,16 @@ export const requestRecovery = createServerFn({ method: "POST" })
     if (refused) return refused;
     return requestDomain().accounts.requestRecovery(visitor, {
       email: data.email,
-      ip: requestIp(),
     });
   });
 
 export const recover = createServerFn({ method: "POST" })
   .validator((input: { email: string; code: string; password: string }) => input)
-  .handler(async ({ data }) =>
-    requestDomain().accounts.recover(visitor, { ...data, ip: requestIp() }),
-  );
+  .handler(async ({ data }) => {
+    const flood = await floodRefusal("code-entry");
+    if (flood) return flood;
+    return requestDomain().accounts.recover(visitor, data);
+  });
 
 /** Gives the signed-in Account new names, which go through the Content check. */
 export const changeNames = createServerFn({ method: "POST" })
@@ -122,13 +125,14 @@ export const setVatNumber = createServerFn({ method: "POST" })
 
 /** Sends an Email code to the new Email the signed-in Account gives, with its password. */
 export const requestEmailChange = createServerFn({ method: "POST" })
-  .validator((input: { email: string; password: string }) => input)
-  .handler(async ({ data }) => {
+  .validator((input: Guarded<{ email: string; password: string }>) => input)
+  .handler(async ({ data: { turnstileToken, ...data } }) => {
+    const refused = await turnstileRefusal(turnstileToken);
+    if (refused) return refused;
     const domain = requestDomain();
     return domain.accounts.requestEmailChange(await requestActor(domain), {
       ...data,
       cookie: requestCookie(),
-      ip: requestIp(),
     });
   });
 
@@ -136,11 +140,12 @@ export const requestEmailChange = createServerFn({ method: "POST" })
 export const changeEmail = createServerFn({ method: "POST" })
   .validator((input: { email: string; code: string }) => input)
   .handler(async ({ data }) => {
+    const flood = await floodRefusal("code-entry");
+    if (flood) return flood;
     const domain = requestDomain();
     const changed = await domain.accounts.changeEmail(await requestActor(domain), {
       ...data,
       cookie: requestCookie(),
-      ip: requestIp(),
     });
     if (!changed.ok) return changed;
     sendCookies(changed.value.cookies);
@@ -164,7 +169,6 @@ export const requestReopenCode = createServerFn({ method: "POST" })
     if (refused) return refused;
     return requestDomain().accounts.requestReopenCode(visitor, {
       email: data.email,
-      ip: requestIp(),
     });
   });
 
@@ -172,6 +176,8 @@ export const requestReopenCode = createServerFn({ method: "POST" })
 export const reopen = createServerFn({ method: "POST" })
   .validator((input: { email: string; code: string; acceptsRules?: Acceptance }) => input)
   .handler(async ({ data }) => {
+    const flood = await floodRefusal("code-entry");
+    if (flood) return flood;
     const domain = requestDomain();
     const seen = requestSeen();
     const opened = await domain.accounts.reopen(visitor, { ...data, ...seen });

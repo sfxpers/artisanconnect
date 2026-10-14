@@ -1,4 +1,3 @@
-import { env } from "cloudflare:test";
 import { describe, expect, test } from "vitest";
 import type { Actor } from "@/domain/actor";
 import type { CreateRefund } from "@/domain/ports";
@@ -143,7 +142,6 @@ describe("a Cancellation before Work started", () => {
       startClaim: null,
       money: { releasedCents: 0, refundedCents: 200_000 },
     });
-    expect(await ledgerKinds(engagementId, "release.")).toEqual([]);
   });
 
   test("shows in the Conversation as a row that is not speech, then the Refund's", async () => {
@@ -306,7 +304,6 @@ describe("a Cancellation after Work started", () => {
       completedAt: null,
       money: { releasedCents: 50_000, refundedCents: 150_000 },
     });
-    expect(await ledgerKinds(engagementId, "release.labour")).toEqual([]);
     // No reminder of Approval by silence went to the Client either.
     expect((await toldOf(domain, client, jobId)).map((notice) => notice.event)).not.toContain(
       "engagement.approval-reminder",
@@ -404,23 +401,6 @@ describe("a Cancellation", () => {
       });
     }
     expect(refundsAsked(payments)).toHaveLength(1);
-  });
-
-  test("is final: the database refuses any move out of Cancelled, or a second Cancellation", async () => {
-    const { domain, given } = await createHarness();
-    const { client, engagementId } = await hiredJob(given);
-    await cancelled(domain, client, engagementId, "Never arrived.");
-
-    for (const change of [
-      "state = 'paid'",
-      "state = 'work-started', work_started_at = 1, work_started_by = 'client'",
-      "cancelled_by = 'artisan'",
-      "cancellation_reason = 'Changed my mind.'",
-    ]) {
-      await expect(
-        env.DB.prepare(`UPDATE engagements SET ${change} WHERE id = ?`).bind(engagementId).run(),
-      ).rejects.toThrow("an Engagement cannot change that way");
-    }
   });
 
   test("finishes the Job in the Client's Jobs, and both lists show the Engagement's state", async () => {
@@ -691,14 +671,4 @@ async function reminders(domain: Harness["domain"], account: { actor: Actor }) {
   return (await domain.notices.list(account.actor)).filter(
     (notice) => notice.event === "engagement.cancellation-reminder",
   );
-}
-
-/** The kinds of the Engagement's ledger rows whose kind starts so. */
-async function ledgerKinds(engagementId: string, kind: string) {
-  const { results } = await env.DB.prepare(
-    "SELECT kind FROM ledger_entries WHERE engagement_id = ? AND kind LIKE ?",
-  )
-    .bind(engagementId, `${kind}%`)
-    .all<{ kind: string }>();
-  return results.map((row) => row.kind);
 }

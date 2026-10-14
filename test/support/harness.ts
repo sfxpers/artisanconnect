@@ -1,11 +1,12 @@
 import { applyD1Migrations, env, reset } from "cloudflare:test";
 import { onTestFinished, vi } from "vitest";
 import { createDomain, type DomainConfig, type Ports } from "@/domain";
-import { createFakeClock, type FakeClock } from "@/domain/fakes/clock";
-import { createFakeContentReader } from "@/domain/fakes/content-reader";
-import { createFakeMailer } from "@/domain/fakes/mailer";
+import { createFakeClock, type FakeClock } from "./fakes/clock";
+import { createFakeContentReader } from "./fakes/content-reader";
+import { createFakeMailer } from "./fakes/mailer";
 import { createFakePayments } from "@/domain/fakes/payments";
 import { given } from "./given";
+import { pagesOf } from "./pdfs";
 
 export const TEST_CONFIG: DomainConfig = {
   appUrl: "https://artisanconnect.test",
@@ -24,12 +25,13 @@ export async function createHarness() {
   await applyD1Migrations(env.DB, env.TEST_MIGRATIONS);
   const clock = withSystemTime(createFakeClock());
   const mailer = createFakeMailer();
-  const payments = createFakePayments({ clock });
+  const payments = createFakePayments({ clock, webhookSecret: "test-webhook-secret" });
   const ports = {
     db: env.DB,
     files: env.R2,
+    images: env.IMAGES,
     clock,
-    contentReader: createFakeContentReader(),
+    contentReader: createFakeContentReader(pagesOf),
     payments,
     mailer,
   } satisfies Ports;

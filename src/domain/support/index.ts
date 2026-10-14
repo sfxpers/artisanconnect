@@ -75,7 +75,7 @@ const SUPPORT_TAGS = {
   "paused-money": "Paused money",
 } as const;
 
-export type SupportTag = keyof typeof SUPPORT_TAGS;
+type SupportTag = keyof typeof SUPPORT_TAGS;
 
 /**
  * A system request: `about` titles it for the Admin, `details` says what

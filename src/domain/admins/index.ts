@@ -2,13 +2,7 @@ import { and, desc, eq, isNull, lt, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import type { Actor } from "../actor";
 import { authErrorCode, createAuth, type Auth } from "../accounts/auth";
-import {
-  codeRefusal,
-  mayEnterCode,
-  mayRequestCode,
-  sessionHeaders,
-  type From,
-} from "../accounts/codes";
+import { codeRefusal, mayRequestCode, sessionHeaders } from "../accounts/codes";
 import { code, email, firstProblem } from "../accounts/inputs";
 import { audit } from "../audit";
 import type { Context } from "../context";
@@ -62,11 +56,11 @@ export const adminsSection = defineSection({
        * Sends an Email code to sign in. Only an Admin's Email is sent one, but
        * the answer is the same for any Email, so nobody can probe who is staff.
        */
-      async requestSignInCode(actor: Actor, input: { email: string } & From) {
+      async requestSignInCode(actor: Actor, input: { email: string }) {
         if (actor.kind !== "visitor") return refuse("signed-in", "You are already signed in.");
         const address = email.safeParse(input.email);
         if (!address.success) return refuse("invalid", firstProblem(address.error));
-        const refused = await mayRequestCode(ctx, address.data, input.ip);
+        const refused = await mayRequestCode(ctx, address.data);
         if (refused) return refused;
 
         const [admin] = await ctx.db
@@ -82,14 +76,12 @@ export const adminsSection = defineSection({
       },
 
       /** Signs an Admin in with its Email code: the only way an Admin signs in. */
-      async signIn(actor: Actor, input: { email: string; code: string } & From) {
+      async signIn(actor: Actor, input: { email: string; code: string }) {
         if (actor.kind !== "visitor") return refuse("signed-in", "You are already signed in.");
         const address = email.safeParse(input.email);
         const given = code.safeParse(input.code);
         if (!address.success) return refuse("invalid", firstProblem(address.error));
         if (!given.success) return refuse("invalid", firstProblem(given.error));
-        const tooMany = await mayEnterCode(ctx, input.ip);
-        if (tooMany) return tooMany;
 
         let signedIn;
         try {

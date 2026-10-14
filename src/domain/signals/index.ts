@@ -23,7 +23,7 @@ import { payoutReference } from "../payouts/rows";
 import { defineQueueItemKind, type Block, type DecisionField } from "../queues";
 import { accountSidebar } from "../quotes/held";
 import { ok, refuse } from "../result";
-import { formatDay, formatTime, saDay } from "../sa-days";
+import { DAY_MS, formatDay, formatTime, saDay } from "../sa-days";
 import {
   accounts,
   chargebacks,
@@ -54,7 +54,7 @@ import { discardFiles } from "../uploads";
 // Payout hold. Device and IP are recorded at sign-in and at each Payment.
 
 /** What counts as "repeated" (#111 leaves the numbers to the build). */
-export const REPEATED = {
+const REPEATED = {
   /** The days repeated trouble is counted over. */
   withinDays: 90,
   /**
@@ -73,12 +73,10 @@ export const REPEATED = {
 } as const;
 
 /** How long an Account is new, for sharing a device or IP with a Suspended one. */
-export const NEW_ACCOUNT_DAYS = 30;
+const NEW_ACCOUNT_DAYS = 30;
 
 /** A second sent-back Payout within these days of another raises a Signal. */
-export const SENT_BACK_WITHIN_DAYS = 90;
-
-const DAY_MS = 24 * 60 * 60 * 1000;
+const SENT_BACK_WITHIN_DAYS = 90;
 
 type SignalKind = (typeof SIGNAL_KINDS)[number];
 
@@ -146,11 +144,7 @@ function keyOf(finding: Pick<Finding, "kind" | "accountId" | "otherAccountId" | 
  * the batch runs. One of its key open then takes what was found instead, as
  * a Report folds into an open item. Nobody is told.
  */
-export async function signalWrites(
-  ctx: Context,
-  finding: Finding,
-  condition?: SQL,
-): Promise<Write[]> {
+async function signalWrites(ctx: Context, finding: Finding, condition?: SQL): Promise<Write[]> {
   const key = keyOf(finding);
   const earlier = await ctx.db
     .select({ found: signals.found })
@@ -843,7 +837,7 @@ function accountField(named: Named[]): DecisionField {
   };
 }
 
-export const signalItem = defineQueueItemKind("signal", {
+const signalItem = defineQueueItemKind("signal", {
   queue: "signals",
   decisions: {
     close: { label: "Close", told: "Nobody", reason: "optional", reasonLabel: "Note" },

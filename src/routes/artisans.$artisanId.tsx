@@ -29,8 +29,7 @@ export const Route = createFileRoute("/artisans/$artisanId")({
   }),
   component: ArtisanProfilePage,
   notFoundComponent: () => (
-    <Page title={t.notFound}>
-      <p className="text-sm text-muted-foreground">{t.notFoundLead}</p>
+    <Page title={t.notFound} lead={t.notFoundLead}>
       <Link to="/artisans" className={buttonVariants({ variant: "outline", size: "sm" })}>
         {t.back}
       </Link>
@@ -56,7 +55,7 @@ function ArtisanProfilePage() {
         aside={
           <>
             {visitor && (
-              <Card size="sm" className="ring-2 ring-primary/80">
+              <Card size="sm" className="ring-2 ring-primary">
                 <CardHeader>
                   <CardTitle>{t.inviteTitle(profile.publicName)}</CardTitle>
                 </CardHeader>
