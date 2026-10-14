@@ -78,9 +78,9 @@ Bindings live in `wrangler.jsonc` and are available in server code via `import {
 | `BETTER_AUTH_SECRET`   | secret: signs session cookies                         |
 | `TURNSTILE_SECRET_KEY` | secret: locally, Cloudflare's always-pass test secret |
 
-Local secrets go in `.dev.vars` (copy `.dev.vars.example` and set `BETTER_AUTH_SECRET`). Set the others with `nubx wrangler secret put BETTER_AUTH_SECRET --env staging` (or `production`), and the same for `TURNSTILE_SECRET_KEY` and `PAYMENTS_WEBHOOK_SECRET`. Errors go to Workers Logs, and Workers Issues groups them in the dashboard. Replace `APP_URL` and `TURNSTILE_SITE_KEY` in `wrangler.jsonc` for staging and production. Set `MAIL_FROM` to an address on the domain verified for Email Sending.
+Local secrets go in `.dev.vars` (copy `.dev.vars.example` and set `BETTER_AUTH_SECRET`). Set the others with `nubx wrangler secret put BETTER_AUTH_SECRET --env staging` (or `production`), and the same for `TURNSTILE_SECRET_KEY` and `PAYMENTS_WEBHOOK_SECRET`. Errors go to Workers Logs, and Workers Issues groups them in the dashboard. `MAIL_FROM` is an address on `artisanconnect.co.za`, the domain onboarded for Email Sending; `TURNSTILE_SITE_KEY` is the widget made for each environment's host.
 
-Custom domain: uncomment `routes` in `wrangler.jsonc` and replace the hostname.
+Both environments are on the Work account (`account_id` in `wrangler.jsonc`). Production serves `https://artisanconnect.co.za` as a Workers custom domain (`routes` under `env.production`); staging serves its `workers.dev` address.
 
 D1 databases are provisioned on first deploy, so the first time an environment is deployed, deploy before migrating, then make its first Admin:
 
@@ -110,3 +110,9 @@ nub add <package>
 ```
 
 Every form is TanStack Form on shadcn's Field (`src/components/form.tsx`). Pages load through route loaders and reload after each action; TanStack Query is not used (ADR 0017).
+
+The design (`docs/review/111.md` §11) lives in tokens only: every colour, the radius, and the font are in `src/styles.css` (`:root` and `.dark`), and pages and components use those tokens, never their own colours or arbitrary values. shadcn's own files in `src/components/ui` stay as it writes them; customise through tokens and variants. Copy is only in `src/web/copy.ts`. To save every designed screen at 375 and 1280 pixels, light and dark, against a running dev server:
+
+```sh
+SCREENS=after nub x playwright test -c e2e/screens
+```
