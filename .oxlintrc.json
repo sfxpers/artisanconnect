@@ -23,13 +23,17 @@
       "rules": { "typescript/unbound-method": "off" }
     },
     {
-      // shadcn's own components, as it writes them: an input group's click only
-      // focuses its input, which the keyboard reaches by itself.
-      "files": ["src/components/ui/**"],
+      // shadcn's own components and hooks, as it writes them, never forked: an
+      // input group's click only focuses its input, which the keyboard reaches
+      // by itself; a chart's colour key and the phone check are its own code.
+      "files": ["src/components/ui/**", "src/hooks/**"],
       "rules": {
         "jsx-a11y/label-has-associated-control": "off",
         "jsx-a11y/click-events-have-key-events": "off",
-        "jsx-a11y/no-noninteractive-element-interactions": "off"
+        "jsx-a11y/no-noninteractive-element-interactions": "off",
+        "jsx-a11y/prefer-tag-over-role": "off",
+        "typescript/restrict-template-expressions": "off",
+        "react/set-state-in-effect": "off"
       }
     },
     {
