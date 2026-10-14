@@ -245,14 +245,23 @@ export function issuesOf(result: { success: boolean; error?: { issues: Issue[] }
 type Issue = { path: PropertyKey[]; message: string };
 
 /** The form element, submitting through TanStack Form. */
+/**
+ * The form, which TanStack Form submits; a submit a field refuses moves the
+ * focus to the first field with a problem, where its error is said (WCAG 3.3.1).
+ */
 function Form(props: Omit<ComponentProps<"form">, "onSubmit">) {
   const form = useFormContext();
   return (
     <form
       {...props}
-      onSubmit={(event) => {
+      onSubmit={async (event) => {
         event.preventDefault();
-        void form.handleSubmit();
+        const element = event.currentTarget;
+        await form.handleSubmit();
+        if (form.state.isValid) return;
+        requestAnimationFrame(() =>
+          element.querySelector<HTMLElement>("[aria-invalid=true]")?.focus(),
+        );
       }}
     />
   );

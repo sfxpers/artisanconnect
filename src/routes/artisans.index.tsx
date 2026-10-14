@@ -224,38 +224,32 @@ type BrowseCard = Listed[number];
 function ArtisanCard({ card }: { card: BrowseCard }) {
   const { photo, badges } = card;
   return (
-    <Card className="h-full gap-0 py-0">
-      <Link
-        to="/artisans/$artisanId"
-        params={{ artisanId: card.artisanId }}
-        className="block rounded-t-lg"
-        tabIndex={-1}
-        aria-hidden
-      >
-        {photo ? (
-          <img
-            src={photo.thumbnailHref}
-            alt=""
-            loading="lazy"
-            width={photo.width}
-            height={photo.height}
-            className="aspect-video w-full border-b bg-muted object-cover sm:aspect-4/3"
-          />
-        ) : (
-          <div className="grid aspect-video w-full place-items-center border-b bg-muted text-muted-foreground sm:aspect-4/3">
-            <span className="flex items-center gap-2 text-sm">
-              <ImageOff className="size-4" aria-hidden />
-              {t.noPhoto}
-            </span>
-          </div>
-        )}
-      </Link>
+    // The name's link covers the card, so the whole card opens the Profile.
+    <Card className="relative h-full gap-0 py-0 hover:ring-primary">
+      {photo ? (
+        <img
+          src={photo.thumbnailHref}
+          alt=""
+          loading="lazy"
+          width={photo.width}
+          height={photo.height}
+          className="aspect-video w-full border-b bg-muted object-cover sm:aspect-4/3"
+        />
+      ) : (
+        <div className="grid aspect-video w-full place-items-center border-b bg-muted text-muted-foreground sm:aspect-4/3">
+          <span className="flex items-center gap-2 text-sm">
+            <ImageOff className="size-4" aria-hidden />
+            {t.noPhoto}
+          </span>
+        </div>
+      )}
+
       <CardContent className="space-y-2 py-4">
         <div className="flex items-start justify-between gap-2">
           <Link
             to="/artisans/$artisanId"
             params={{ artisanId: card.artisanId }}
-            className="min-w-0 truncate font-semibold hover:underline"
+            className="min-w-0 truncate font-semibold after:absolute after:inset-0 hover:underline"
           >
             {card.publicName}
           </Link>

@@ -88,116 +88,112 @@ export function DraftForm({
   }
 
   return (
-    <form
-      className="space-y-5"
-      onSubmit={(event) => {
-        event.preventDefault();
-        void form.handleSubmit();
-      }}
-    >
-      {job?.hireAgain && (
-        <div className="space-y-1 rounded-lg border bg-muted/40 p-3 text-sm">
-          <p className="font-medium">{t.hireAgain}</p>
-          <p className="text-muted-foreground">
-            {t.hireAgainDraftLead(job.hireAgain.publicName ?? copy.quotes.noName)}
-          </p>
-        </div>
-      )}
-      <form.Field name="category">
-        {(field) => (
-          <Field>
-            <FieldLabel htmlFor="category">{t.category}</FieldLabel>
-            <Choose
-              id="category"
-              value={field.state.value}
-              onChange={field.handleChange}
-              placeholder={t.chooseCategory}
-              options={SERVICE_CATEGORIES.map((category) => ({
-                value: category,
-                label: SERVICE_CATEGORY_NAMES[category],
-              }))}
-            />
-          </Field>
+    <form.AppForm>
+      <form.Form className="space-y-5">
+        {job?.hireAgain && (
+          <div className="space-y-1 rounded-lg border bg-muted/40 p-3 text-sm">
+            <p className="font-medium">{t.hireAgain}</p>
+            <p className="text-muted-foreground">
+              {t.hireAgainDraftLead(job.hireAgain.publicName ?? copy.quotes.noName)}
+            </p>
+          </div>
         )}
-      </form.Field>
-      <form.Subscribe selector={(state) => state.values.category === "plumbing"}>
-        {(plumbing) =>
-          plumbing && (
-            <form.AppField name="gasWork">
-              {(field) => (
-                <field.ChoiceField
-                  label={t.gasWork}
-                  options={[
-                    { value: "yes", label: t.yes },
-                    { value: "no", label: t.no },
-                  ]}
-                />
-              )}
-            </form.AppField>
-          )
-        }
-      </form.Subscribe>
-      <form.AppField name="siteType">
-        {(field) => <field.ChoiceField {...siteTypes} />}
-      </form.AppField>
-      <form.Field name="suburb">
-        {(field) => <SuburbPicker value={field.state.value} onChange={field.handleChange} />}
-      </form.Field>
-      <form.AppField name="street">
-        {(field) => (
-          <field.TextField
-            label={t.street}
-            description={t.streetHint}
-            autoComplete="street-address"
-            maxLength={STREET_MAX}
-          />
-        )}
-      </form.AppField>
-      <form.AppField name="title">{(field) => <field.TextField {...title} />}</form.AppField>
-      <form.AppField name="description">
-        {(field) => <field.TextareaField {...description} />}
-      </form.AppField>
-      <PhotosField
-        photos={photos}
-        label={t.photos}
-        hint={t.photosHint(JOB_PHOTOS_MAX)}
-        max={JOB_PHOTOS_MAX}
-      />
-      <form.AppField name="preferredStart">
-        {(field) => <field.DateField {...preferredStart} />}
-      </form.AppField>
-      {/* A Job opened by Hire Again is Invite-only, inviting only that Artisan (#139). */}
-      {!job?.hireAgain && (
-        <form.AppField name="matching">
+        <form.Field name="category">
           {(field) => (
-            <field.ChoiceField
-              label={t.matching}
-              options={MATCHINGS.map((matching) => ({
-                value: matching,
-                label: t.matchings[matching],
-                hint: t.matchingHints[matching],
-              }))}
+            <Field>
+              <FieldLabel htmlFor="category">{t.category}</FieldLabel>
+              <Choose
+                id="category"
+                value={field.state.value}
+                onChange={field.handleChange}
+                placeholder={t.chooseCategory}
+                options={SERVICE_CATEGORIES.map((category) => ({
+                  value: category,
+                  label: SERVICE_CATEGORY_NAMES[category],
+                }))}
+              />
+            </Field>
+          )}
+        </form.Field>
+        <form.Subscribe selector={(state) => state.values.category === "plumbing"}>
+          {(plumbing) =>
+            plumbing && (
+              <form.AppField name="gasWork">
+                {(field) => (
+                  <field.ChoiceField
+                    label={t.gasWork}
+                    options={[
+                      { value: "yes", label: t.yes },
+                      { value: "no", label: t.no },
+                    ]}
+                  />
+                )}
+              </form.AppField>
+            )
+          }
+        </form.Subscribe>
+        <form.AppField name="siteType">
+          {(field) => <field.ChoiceField {...siteTypes} />}
+        </form.AppField>
+        <form.Field name="suburb">
+          {(field) => <SuburbPicker value={field.state.value} onChange={field.handleChange} />}
+        </form.Field>
+        <form.AppField name="street">
+          {(field) => (
+            <field.TextField
+              label={t.street}
+              description={t.streetHint}
+              autoComplete="street-address"
+              maxLength={STREET_MAX}
             />
           )}
         </form.AppField>
-      )}
+        <form.AppField name="title">{(field) => <field.TextField {...title} />}</form.AppField>
+        <form.AppField name="description">
+          {(field) => <field.TextareaField {...description} />}
+        </form.AppField>
+        <PhotosField
+          photos={photos}
+          label={t.photos}
+          hint={t.photosHint(JOB_PHOTOS_MAX)}
+          max={JOB_PHOTOS_MAX}
+        />
+        <form.AppField name="preferredStart">
+          {(field) => <field.DateField {...preferredStart} />}
+        </form.AppField>
+        {/* A Job opened by Hire Again is Invite-only, inviting only that Artisan (#139). */}
+        {!job?.hireAgain && (
+          <form.AppField name="matching">
+            {(field) => (
+              <field.ChoiceField
+                label={t.matching}
+                options={MATCHINGS.map((matching) => ({
+                  value: matching,
+                  label: t.matchings[matching],
+                  hint: t.matchingHints[matching],
+                }))}
+              />
+            )}
+          </form.AppField>
+        )}
 
-      <Refusal message={refusal} />
-      <div className="flex flex-wrap gap-2">
-        <Button type="submit" disabled={busy}>
-          {t.postJob}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={busy}
-          onClick={() => void formData(form.state.values).then(onSave)}
-        >
-          {t.saveDraft}
-        </Button>
-        {extra}
-      </div>
-    </form>
+        <Refusal message={refusal} />
+        <div className="flex flex-wrap gap-2">
+          <Button type="submit" disabled={busy}>
+            {t.postJob}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={busy}
+            onClick={() => void formData(form.state.values).then(onSave)}
+          >
+            {t.saveDraft}
+          </Button>
+          {extra}
+        </div>
+      </form.Form>
+    </form.AppForm>
   );
 }
 
@@ -231,39 +227,35 @@ export function EditForm({
   });
 
   return (
-    <form
-      className="space-y-5"
-      onSubmit={(event) => {
-        event.preventDefault();
-        void form.handleSubmit();
-      }}
-    >
-      <form.AppField name="title">{(field) => <field.TextField {...title} />}</form.AppField>
-      <form.AppField name="description">
-        {(field) => <field.TextareaField {...description} />}
-      </form.AppField>
-      <PhotosField
-        photos={photos}
-        label={t.photos}
-        hint={t.photosHint(JOB_PHOTOS_MAX)}
-        max={JOB_PHOTOS_MAX}
-      />
-      <form.AppField name="siteType">
-        {(field) => <field.ChoiceField {...siteTypes} />}
-      </form.AppField>
-      <form.AppField name="preferredStart">
-        {(field) => <field.DateField {...preferredStart} />}
-      </form.AppField>
-      <Refusal message={refusal} />
-      <div className="flex gap-2">
-        <Button type="submit" disabled={busy}>
-          {t.sendEdit}
-        </Button>
-        <Button type="button" variant="ghost" disabled={busy} onClick={onCancel}>
-          {t.cancel}
-        </Button>
-      </div>
-    </form>
+    <form.AppForm>
+      <form.Form className="space-y-5">
+        <form.AppField name="title">{(field) => <field.TextField {...title} />}</form.AppField>
+        <form.AppField name="description">
+          {(field) => <field.TextareaField {...description} />}
+        </form.AppField>
+        <PhotosField
+          photos={photos}
+          label={t.photos}
+          hint={t.photosHint(JOB_PHOTOS_MAX)}
+          max={JOB_PHOTOS_MAX}
+        />
+        <form.AppField name="siteType">
+          {(field) => <field.ChoiceField {...siteTypes} />}
+        </form.AppField>
+        <form.AppField name="preferredStart">
+          {(field) => <field.DateField {...preferredStart} />}
+        </form.AppField>
+        <Refusal message={refusal} />
+        <div className="flex gap-2">
+          <Button type="submit" disabled={busy}>
+            {t.sendEdit}
+          </Button>
+          <Button type="button" variant="ghost" disabled={busy} onClick={onCancel}>
+            {t.cancel}
+          </Button>
+        </div>
+      </form.Form>
+    </form.AppForm>
   );
 }
 
