@@ -1,3 +1,4 @@
+import { Buffer } from "node:buffer";
 import type { ContentContext, ContentReader, ContentVerdict } from "@/domain";
 
 // The content reader on Workers AI (ADR 0017): a vision model reads the text
@@ -168,11 +169,7 @@ function parseAnswer(response: unknown): { verdict: string; reason: string } | n
 }
 
 function base64(bytes: Uint8Array): string {
-  let binary = "";
-  for (let i = 0; i < bytes.length; i += 0x8000) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-  }
-  return btoa(binary);
+  return Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength).toString("base64");
 }
 
 function dataUrl(bytes: Uint8Array, contentType: string): string {

@@ -1,3 +1,4 @@
+import { Buffer } from "node:buffer";
 import type { Context } from "./context";
 import { MINUTE_MS } from "./sa-days";
 
@@ -57,13 +58,9 @@ function signingKey(ctx: Context) {
 }
 
 function base64Url(bytes: Uint8Array): string {
-  return btoa(String.fromCharCode(...bytes))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
+  return Buffer.from(bytes).toString("base64url");
 }
 
 function fromBase64Url(text: string): Uint8Array<ArrayBuffer> {
-  const binary = atob(text.replace(/-/g, "+").replace(/_/g, "/"));
-  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  return Uint8Array.from(Buffer.from(text, "base64url"));
 }
