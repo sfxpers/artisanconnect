@@ -48,7 +48,7 @@ export async function codeSentTo(page: Page, email: string): Promise<string> {
 }
 
 /** Fills in the sign-in form and submits it, whatever the answer. */
-export async function submitSignIn(page: Page, account: { email: string; password: string }) {
+async function submitSignIn(page: Page, account: { email: string; password: string }) {
   await page.goto("/sign-in");
   const button = page.getByRole("button", { name: "Sign in" });
   // Enabled once the page has hydrated and Turnstile has passed; filled sooner, it is emptied.

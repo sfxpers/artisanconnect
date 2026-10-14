@@ -111,7 +111,7 @@ nub add <package>
 
 Every form is TanStack Form on shadcn's Field (`src/components/form.tsx`). Pages load through route loaders and reload after each action; TanStack Query is not used (ADR 0017).
 
-The design (`docs/review/111.md` §11) lives in tokens only: every colour, the radius, and the font are in `src/styles.css` (`:root` and `.dark`), and pages and components use those tokens, never their own colours or arbitrary values. shadcn's own files in `src/components/ui` stay as it writes them; customise through tokens and variants. Copy is only in `src/web/copy.ts`. To save every designed screen at 375 and 1280 pixels, light and dark, against a running dev server:
+The design (`docs/review/111.md` §11) lives in tokens only: every colour, the radius, and the font are in `src/styles.css` (`:root` and `.dark`), and pages and components use those tokens, never their own colours or arbitrary values; `nub run lint` checks it (`scripts/check-tokens.mjs`). shadcn's own files in `src/components/ui` stay as it writes them; customise through tokens and variants. Copy is only in `src/web/copy.ts`. To save every designed screen at 375 and 1280 pixels, light and dark, against a running dev server:
 
 ```sh
 SCREENS=after nub x playwright test -c e2e/screens

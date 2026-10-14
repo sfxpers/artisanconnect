@@ -10,7 +10,7 @@
     "deploy:staging": "wrangler d1 migrations apply DB --config wrangler.jsonc --env staging --remote && CLOUDFLARE_ENV=staging vite build && wrangler deploy",
     "deploy:production": "wrangler d1 migrations apply DB --config wrangler.jsonc --env production --remote && CLOUDFLARE_ENV=production vite build && wrangler deploy",
     "cf-typegen": "wrangler types",
-    "lint": "oxlint .",
+    "lint": "oxlint . && node scripts/check-tokens.mjs",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
     "typecheck": "tsc --noEmit",

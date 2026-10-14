@@ -1,6 +1,6 @@
 # Coding standards
 
-The judgement calls a reviewer checks. Anything mechanical is a check instead: oxlint (including the rule that pages and components import no domain rule), oxfmt, `tsc`, the tests, and CI (`.github/workflows/check.yml`).
+The judgement calls a reviewer checks. Anything mechanical is a check instead: oxlint (including the rule that pages and components import no domain rule), `scripts/check-tokens.mjs` (no colour or arbitrary value outside `src/styles.css`), oxfmt, `tsc`, the tests, and CI (`.github/workflows/check.yml`).
 
 ## Sources of truth
 
@@ -9,6 +9,12 @@ The judgement calls a reviewer checks. Anything mechanical is a check instead: o
 ## Stack first
 
 Use Cloudflare (Workers, D1, R2, Images, Workers AI, Turnstile, the Rate Limiting binding, Email Sending, Cron), TanStack (Start, Router, Form), shadcn, and Drizzle before writing code or adding a library. Custom code that stays carries one line saying why the stack cannot do it.
+
+## Design
+
+- shadcn first: a component shadcn has is added with its CLI and used as written; it changes only through tokens and its variants. The design is in `docs/review/111.md` §11.
+- Copy lives in `src/web/copy.ts`, in the glossary's words.
+- One primary action a screen; money as lines; a deadline as a date and a countdown; a loading, an empty, and an error state for every list.
 
 ## Shape
 
