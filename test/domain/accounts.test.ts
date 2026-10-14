@@ -535,37 +535,22 @@ describe("one person's Client and Artisan Accounts", () => {
 });
 
 describe("a shown name", () => {
-  test("shows a Client to Artisans as the first word and last initial", async () => {
+  test.each([
+    ["the first word and last initial", { name: "Thandi Nomsa Mokoena" }, "Thandi M."],
+    [
+      "its trading name, when it has one",
+      { name: "Thandi Mokoena", tradingName: "Bayside Guesthouse" },
+      "Bayside G.",
+    ],
+    ["a one-word name whole", { name: "Thandi" }, "Thandi"],
+  ])("shows a Client to Artisans by %s", async (_, names, shown) => {
     const { domain, given } = await createHarness();
-    const client = await given.client({ name: "Thandi Nomsa Mokoena" });
+    const client = await given.client(names);
     const artisan = await given.artisan();
 
     expect(
       await domain.accounts.shownName(artisan.actor, { accountId: client.actor.accountId }),
-    ).toBe("Thandi M.");
-  });
-
-  test("shows a Client by its trading name when it has one", async () => {
-    const { domain, given } = await createHarness();
-    const client = await given.client({
-      name: "Thandi Mokoena",
-      tradingName: "Bayside Guesthouse",
-    });
-    const artisan = await given.artisan();
-
-    expect(
-      await domain.accounts.shownName(artisan.actor, { accountId: client.actor.accountId }),
-    ).toBe("Bayside G.");
-  });
-
-  test("shows a one-word name whole", async () => {
-    const { domain, given } = await createHarness();
-    const client = await given.client({ name: "Thandi" });
-    const artisan = await given.artisan();
-
-    expect(
-      await domain.accounts.shownName(artisan.actor, { accountId: client.actor.accountId }),
-    ).toBe("Thandi");
+    ).toBe(shown);
   });
 
   test("shows an Artisan to anyone by its public name", async () => {
