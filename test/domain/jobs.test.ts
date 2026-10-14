@@ -110,6 +110,34 @@ describe("a Draft", () => {
 });
 
 describe("posting a Job", () => {
+  test("needs its Client while a Quote is Sent on it, and again while its work awaits Approval (#111 story 67)", async () => {
+    const { domain, given } = await createHarness();
+    const client = await given.client();
+    const artisan = await given.matchableArtisan();
+    const jobId = await given.openJob(client);
+    const group = async () => {
+      const mine = (await domain.jobs.mine(client.actor))!;
+      return (["needsYou", "inProgress", "finished"] as const).find((name) =>
+        mine[name].some((job) => job.jobId === jobId),
+      );
+    };
+    expect(await group()).toBe("inProgress");
+
+    const quoteId = await given.sentQuote(artisan, jobId);
+    expect(await group()).toBe("needsYou");
+
+    await given.hired(client, quoteId);
+    const engagementId = await given.engagementOf(client, jobId);
+    expect(await group()).toBe("inProgress");
+
+    await given.workStarted(client, engagementId);
+    await given.markedComplete(artisan, engagementId);
+    expect(await group()).toBe("needsYou");
+
+    await given.approved(client, engagementId);
+    expect(await group()).toBe("finished");
+  });
+
   test("opens a complete Draft for 14 days, In progress", async () => {
     const { domain, given, clock } = await createHarness();
     const client = await given.client();

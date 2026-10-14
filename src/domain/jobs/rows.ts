@@ -2,7 +2,7 @@ import { and, desc, eq, isNull, sql, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { startClock } from "../clocks";
 import type { Context } from "../context";
-import { engagements, jobs, regions, suburbs } from "../schema";
+import { engagements, jobs, quotes, regions, suburbs } from "../schema";
 import { SERVICE_CATEGORY_NAMES, type ServiceCategory } from "../service-categories";
 import type { StoredFile } from "../uploads";
 import { OPEN_DAYS } from "./inputs";
@@ -72,7 +72,12 @@ export type JobRow = NonNullable<Awaited<ReturnType<typeof jobRow>>>;
 /** A Client's Jobs, the one changed last first, each with its Engagement's state once Hired. */
 export async function jobsOf(ctx: Context, clientId: string) {
   return ctx.db
-    .select({ ...JOB_COLUMNS, engagementState: engagements.state })
+    .select({
+      ...JOB_COLUMNS,
+      engagementState: engagements.state,
+      /** How many Quotes on it are Sent, waiting on the Client to Hire or Decline. */
+      sentQuotes: sql<number>`(select count(*) from ${quotes} where ${quotes.jobId} = ${jobs.id} and ${quotes.state} = 'sent')`,
+    })
     .from(jobs)
     .leftJoin(suburbs, eq(suburbs.id, jobs.suburbId))
     .leftJoin(regions, eq(regions.id, suburbs.regionId))

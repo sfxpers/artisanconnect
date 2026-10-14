@@ -61,7 +61,7 @@ export const copy = {
     chooseTrade: "Choose a trade",
     suburb: "Your suburb",
     search: "Find Artisans",
-    searchHint: "Choose a trade to search.",
+    searchHint: "Choose a trade first, then search.",
     postJob: "Or post a Job and let Artisans come to you",
     tradesTitle: "Browse by trade",
     tradePhoto: (trade: string) => `${trade} work`,
@@ -312,6 +312,10 @@ export const copy = {
       "Describe the work, pick your suburb, and add photos. Verified Artisans near you send fixed-price Quotes.",
     another: "Post a Job",
     anotherLead: "Describe the work, pick your suburb, and add photos.",
+    needYou: (count: number) => (count === 1 ? "A Job needs you" : `${count} Jobs need you`),
+    needYouLead: (title: string) =>
+      `First: ${title}. Quotes to compare, or work to approve, wait on you.`,
+    openJob: "Open it",
     post: "Post a Job",
     groups: {
       needsYou: "Needs you",

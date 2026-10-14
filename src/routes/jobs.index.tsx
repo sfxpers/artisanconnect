@@ -24,14 +24,32 @@ function MyJobs() {
   const mine = Route.useLoaderData();
   if (!mine) return null;
   const none = mine.needsYou.length + mine.inProgress.length + mine.finished.length === 0;
+  // A Draft first needs finishing, which its own page does; anything else needs the Client now.
+  const first = mine.needsYou.find((job) => job.state !== "draft");
   return (
     <Page title={t.title}>
-      <NextStepCard label={t.nextStep} title={none ? t.first : t.another}>
-        <p className="text-sm text-muted-foreground">{none ? t.firstLead : t.anotherLead}</p>
-        <Link to="/jobs/new" className={buttonVariants({ size: "lg" })}>
-          {t.post}
-        </Link>
-      </NextStepCard>
+      {first ? (
+        <NextStepCard label={t.nextStep} title={t.needYou(mine.needsYou.length)}>
+          <p className="text-sm text-muted-foreground">
+            {t.needYouLead(first.title || t.untitled)}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Link to="/jobs/$jobId" params={{ jobId: first.jobId }} className={buttonVariants()}>
+              {t.openJob}
+            </Link>
+            <Link to="/jobs/new" className={buttonVariants({ variant: "outline" })}>
+              {t.post}
+            </Link>
+          </div>
+        </NextStepCard>
+      ) : (
+        <NextStepCard label={t.nextStep} title={none ? t.first : t.another}>
+          <p className="text-sm text-muted-foreground">{none ? t.firstLead : t.anotherLead}</p>
+          <Link to="/jobs/new" className={buttonVariants({ className: "w-fit" })}>
+            {t.post}
+          </Link>
+        </NextStepCard>
+      )}
       {!none && (
         <>
           <Group title={t.groups.needsYou} jobs={mine.needsYou} />
