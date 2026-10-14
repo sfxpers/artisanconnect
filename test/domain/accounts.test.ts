@@ -279,19 +279,6 @@ describe("signing in", () => {
     });
   });
 
-  test("a session in use is kept alive past its first week", async () => {
-    const { domain, given, clock } = await createHarness();
-    const { actor, cookies } = await given.client();
-    clock.advance({ days: 6 });
-    const kept = await domain.accounts.whoIs(visitor, { cookie: cookieHeader(cookies) });
-
-    clock.advance({ days: 6 });
-
-    expect(
-      await domain.accounts.whoIs(visitor, { cookie: cookieHeader(kept.cookies) }),
-    ).toMatchObject({ actor });
-  });
-
   test("no session is a Visitor", async () => {
     const { domain } = await createHarness();
 

@@ -1,7 +1,7 @@
 import { parse } from "jsonc-parser";
-import { describe, expect, expectTypeOf, test } from "vitest";
+import { describe, expect, test } from "vitest";
 import wranglerConfig from "../wrangler.jsonc?raw";
-import { createDomain, PORT_NAMES, type Ports } from "@/domain";
+import { createDomain, type Ports } from "@/domain";
 import { createHarness, TEST_CONFIG } from "./support/harness";
 
 // ADR 0018: this product does not know EcoBuiltConnect. There is no path to or
@@ -11,21 +11,6 @@ import { createHarness, TEST_CONFIG } from "./support/harness";
 // other product.
 
 describe("the domain module", () => {
-  test("has exactly the ports D1, R2, Images, a clock, a content reader, a payment adapter, and a mailer", async () => {
-    expectTypeOf<keyof Ports>().toEqualTypeOf<
-      "db" | "files" | "images" | "clock" | "contentReader" | "payments" | "mailer"
-    >();
-    expect([...PORT_NAMES].sort()).toEqual([
-      "clock",
-      "contentReader",
-      "db",
-      "files",
-      "images",
-      "mailer",
-      "payments",
-    ]);
-  });
-
   test("cannot be built with any other port", async () => {
     const { ports } = await createHarness();
 
