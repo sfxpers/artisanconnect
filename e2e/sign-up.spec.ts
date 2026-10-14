@@ -75,4 +75,27 @@ test("a Visitor signs up as an Artisan and lands at Verification, then is asked 
   for (const tab of [/^Job Matches/, /^Invitations/, /^Active Jobs/, /^Notices/]) {
     await expect(page.getByRole("tab", { name: tab })).toBeVisible();
   }
+
+  // Every setting in one place, an Artisan's included (#30).
+  await header.getByRole("link", { name: "Account" }).click();
+  await expect(page.locator("dt")).toHaveText([
+    "Kind",
+    "Name",
+    "Trading name",
+    "Email",
+    "VAT number",
+    "Payout account",
+    "Marketplace rules",
+    "Identity Number",
+    "Contact support",
+    "Warnings",
+    "Request my data",
+    "Close Account",
+  ]);
+  // A new Email's code is sent only once Turnstile has passed (#20).
+  await expect(async () => {
+    await page.getByRole("button", { name: "Change Email" }).click();
+    await expect(page.getByLabel("New Email")).toBeVisible({ timeout: 1000 });
+  }).toPass();
+  await expect(page.getByRole("button", { name: "Send a code" })).toBeEnabled({ timeout: 30_000 });
 });
