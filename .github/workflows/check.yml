@@ -1,9 +1,11 @@
-# Every push and pull request runs the checks AGENTS.md names, so a commit
-# that breaks one is seen without anyone running them by hand.
+# Every pull request, and every push to main, runs the checks AGENTS.md
+# names, so a commit that breaks one is seen without anyone running them by
+# hand. A push to another branch runs them through its pull request, not twice.
 name: Check
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 jobs:

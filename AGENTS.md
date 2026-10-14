@@ -14,4 +14,4 @@ Single-context: one `GLOSSARY.md` + `docs/adr/` at the repo root. See `docs/agen
 
 ### Checks and review
 
-Every commit passes `nub run lint`, `fmt:check`, `typecheck`, `test`, and `test:smoke`; CI runs them on every push and pull request (`.github/workflows/check.yml`). Review applies `CODING_STANDARDS.md`, which holds only judgement calls; a rule a check can enforce becomes a check.
+Every commit passes `nub run lint`, `fmt:check`, `typecheck`, `test`, and `test:smoke`; CI runs them on every pull request and every push to `main` (`.github/workflows/check.yml`). Review applies `CODING_STANDARDS.md`, which holds only judgement calls; a rule a check can enforce becomes a check.
