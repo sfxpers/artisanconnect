@@ -657,6 +657,8 @@ describe("the Engagement's Conversation", () => {
   test.each([
     ["a bank account number", "Pay to account 62812345678", "Take out the bank account number."],
     ["a card number", "Use card 4111 1111 1111 1111", "Take out the bank account number."],
+    ["a payment link", "Pay at paypal.me/sipho", "Take out the payment link."],
+    ["a payment service's link", "https://pay.yoco.com/r/abc", "Take out the payment link."],
   ])("still refuses %s", async (_, text, message) => {
     const { domain, given } = await createHarness();
     const { client, conversationId } = await engaged(given, domain);

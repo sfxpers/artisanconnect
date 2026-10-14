@@ -992,6 +992,7 @@ async function readerVerdict(ctx: Context, content: ContentToRead): Promise<Cont
 const HIT_NAMES: Record<PatternHit, string> = {
   "bank-account": "a bank account or card number",
   link: "a link",
+  "payment-link": "a payment link",
   phone: "a phone number",
   email: "an email address",
 };

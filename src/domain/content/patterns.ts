@@ -6,21 +6,26 @@ import type { ContentContext } from "../ports";
 // number in words, a handle, an ask to pay off the platform) is the content
 // reader's to find.
 
-export type PatternHit = "phone" | "email" | "link" | "bank-account";
+export type PatternHit = "phone" | "email" | "link" | "payment-link" | "bank-account";
 
 const MESSAGES: Record<PatternHit, string> = {
   phone: "Take out the phone number. Contact details can only be shared after Payment.",
   email: "Take out the email address. Contact details can only be shared after Payment.",
   link: "Take out the link. Links can only be shared after Payment.",
+  "payment-link": "Take out the payment link. Pay and be paid only through ArtisanConnect.",
   "bank-account": "Take out the bank account number. Pay and be paid only through ArtisanConnect.",
 };
 
 /**
  * After Payment, in that Engagement's Conversation, the parties may swap phone
- * numbers, emails, and links; only payment details stay refused (ADR 0011),
- * and the content reader tells a payment link from any other.
+ * numbers, emails, and links; only payment details stay refused (ADR 0011).
+ * A link to a payment service is refused here; the content reader finds the rest.
  */
 const ALLOWED_AFTER_PAYMENT: ReadonlySet<PatternHit> = new Set(["phone", "email", "link"]);
+
+/** A link to a payment service people in South Africa pay through. */
+const PAYMENT_LINK =
+  /(?<![\p{L}\p{N}-])(?:[\p{L}\p{N}-]+\.)*(?:payfast\.co\.za|payf\.st|yoco\.com|snapscan\.(?:co\.za|io)|zapper\.com|ozow\.com|paystack\.(?:com|shop)|paypal\.(?:com|me))(?![\p{L}\p{N}-])/iu;
 
 const EMAIL = /[\p{L}\p{N}._%+-]+@[\p{L}\p{N}-]+(?:\.[\p{L}\p{N}-]+)*\.\p{L}{2,}/u;
 
@@ -53,6 +58,7 @@ export function patternHit(text: string, context: ContentContext): PatternHit | 
   if (EMAIL.test(normalized)) hits.add("email");
   // An email's domain is not a link of its own.
   if (LINK.test(normalized.replace(new RegExp(EMAIL.source, "gu"), " "))) hits.add("link");
+  if (PAYMENT_LINK.test(normalized)) hits.add("payment-link");
   if (NAMED_ACCOUNT.test(normalized)) hits.add("bank-account");
   for (const match of normalized.matchAll(DIGIT_RUN)) {
     const run = match[0];
@@ -65,7 +71,7 @@ export function patternHit(text: string, context: ContentContext): PatternHit | 
     // A card number is a payment detail as much as an account number is.
     else if (digits.length >= 9 && digits.length <= 19) hits.add("bank-account");
   }
-  const order: PatternHit[] = ["bank-account", "link", "phone", "email"];
+  const order: PatternHit[] = ["bank-account", "payment-link", "link", "phone", "email"];
   return (
     order.find(
       (hit) =>
