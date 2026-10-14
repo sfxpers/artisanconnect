@@ -4,6 +4,7 @@ import { useConfirm } from "@/components/confirm";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useTurnstile } from "@/components/turnstile";
 import { CODE_INPUT, useAppForm } from "@/components/form";
 import { useAction } from "@/components/use-action";
 import { Page, Refusal } from "@/components/page";
@@ -229,14 +230,16 @@ function EmailRow({ email }: { email: string }) {
   const [stage, setStage] = useState<"shown" | "new" | "code">("shown");
   const [refusal, setRefusal] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const turnstile = useTurnstile();
   const form = useAppForm({
     defaultValues: { email: "", password: "", code: "" },
     onSubmit: async ({ value, formApi }) => {
       setRefusal(null);
       if (stage === "new") {
         const sent = await requestEmailChange({
-          data: { email: value.email, password: value.password },
+          data: { email: value.email, password: value.password, turnstileToken: turnstile.token },
         });
+        turnstile.reset();
         if (!sent.ok) return setRefusal(sent.refusal.message);
         formApi.setFieldValue("email", sent.value.email);
         return setStage("code");
@@ -290,6 +293,7 @@ function EmailRow({ email }: { email: string }) {
                     />
                   )}
                 </form.AppField>
+                {turnstile.widget}
               </>
             ) : (
               <>
@@ -303,7 +307,9 @@ function EmailRow({ email }: { email: string }) {
             )}
             <Refusal message={refusal} />
             <div className="flex gap-2">
-              <form.Submit size="sm">{stage === "new" ? e.send : e.submit}</form.Submit>
+              <form.Submit size="sm" disabled={stage === "new" && !turnstile.token}>
+                {stage === "new" ? e.send : e.submit}
+              </form.Submit>
               <Button type="button" size="sm" variant="ghost" onClick={cancel}>
                 {e.cancel}
               </Button>

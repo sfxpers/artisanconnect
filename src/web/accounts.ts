@@ -125,8 +125,10 @@ export const setVatNumber = createServerFn({ method: "POST" })
 
 /** Sends an Email code to the new Email the signed-in Account gives, with its password. */
 export const requestEmailChange = createServerFn({ method: "POST" })
-  .validator((input: { email: string; password: string }) => input)
-  .handler(async ({ data }) => {
+  .validator((input: Guarded<{ email: string; password: string }>) => input)
+  .handler(async ({ data: { turnstileToken, ...data } }) => {
+    const refused = await turnstileRefusal(turnstileToken);
+    if (refused) return refused;
     const domain = requestDomain();
     return domain.accounts.requestEmailChange(await requestActor(domain), {
       ...data,
