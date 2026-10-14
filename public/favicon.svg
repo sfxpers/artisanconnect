@@ -1,0 +1,9 @@
+<!-- The ArtisanConnect tab icon: an A in the brand teal (oklch(0.42 0.08 200), the --primary token), lighter in dark mode. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <style>
+    rect { fill: #005a5e; }
+    @media (prefers-color-scheme: dark) { rect { fill: #4fbec4; } path { stroke: #0e1012; } }
+  </style>
+  <rect width="32" height="32" rx="7" />
+  <path d="M9.5 24 16 8l6.5 16M12 18h8" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+</svg>

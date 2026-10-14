@@ -16,7 +16,7 @@ import {
   SERVICE_CATEGORY_NAMES,
   type ServiceCategory,
 } from "@/domain/service-categories";
-import { copy } from "@/web/copy";
+import { copy, pageTitle } from "@/web/copy";
 import { getBrowse, getRegionNames } from "@/web/profiles";
 
 type Search = {
@@ -58,7 +58,11 @@ export const Route = createFileRoute("/artisans/")({
   head: ({ match }) => ({
     meta: [
       {
-        title: `${match.search.category ? t.titleFor(SERVICE_CATEGORY_NAMES[match.search.category]) : t.title} · ${copy.appName}`,
+        title: pageTitle(
+          match.search.category
+            ? t.titleFor(SERVICE_CATEGORY_NAMES[match.search.category])
+            : t.title,
+        ),
       },
     ],
   }),

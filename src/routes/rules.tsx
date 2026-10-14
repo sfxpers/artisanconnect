@@ -2,10 +2,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Page } from "@/components/page";
 import { getCurrentRules } from "@/web/accounts";
-import { copy, formatDate } from "@/web/copy";
+import { copy, formatDate, pageTitle } from "@/web/copy";
 
 export const Route = createFileRoute("/rules")({
   loader: () => getCurrentRules(),
+  head: () => ({ meta: [{ title: pageTitle(t.title) }] }),
   component: Rules,
 });
 

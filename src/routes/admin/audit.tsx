@@ -4,7 +4,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { DataTable, type DataColumn } from "@/components/data-table";
 import { EmptyState, Page } from "@/components/page";
 import { getAuditLog } from "@/web/admin";
-import { copy, formatDate } from "@/web/copy";
+import { copy, formatDate, pageTitle } from "@/web/copy";
 import { onlyForAdmins } from "@/web/guards";
 
 export const Route = createFileRoute("/admin/audit")({
@@ -15,6 +15,7 @@ export const Route = createFileRoute("/admin/audit")({
   },
   loaderDeps: ({ search }) => search,
   loader: ({ deps }) => getAuditLog({ data: deps }),
+  head: () => ({ meta: [{ title: pageTitle(t.title) }] }),
   component: AuditLog,
 });
 

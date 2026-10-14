@@ -35,7 +35,7 @@ import {
   type ConversationView,
 } from "@/components/conversation";
 import { JOB_TABS, JobTabs, type JobTab } from "@/components/job-tabs";
-import { copy, formatDeadline } from "@/web/copy";
+import { copy, formatDeadline, pageTitle } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
 import { getConversation, getConversations } from "@/web/conversations";
 import { getInviteList } from "@/web/invitations";
@@ -87,6 +87,9 @@ export const Route = createFileRoute("/jobs/$jobId")({
     ]);
     return { job, invite, quotes: quotes ?? [], ...conversations };
   },
+  head: ({ loaderData }) => ({
+    meta: [{ title: pageTitle(loaderData?.job.title || copy.jobs.untitled) }],
+  }),
   component: JobPage,
 });
 

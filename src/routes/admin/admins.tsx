@@ -17,7 +17,7 @@ import { useAction } from "@/components/use-action";
 import { useConfirm } from "@/components/confirm";
 import { Page, Refusal, withSidebar } from "@/components/page";
 import { getAdmins, inviteAdmin, removeAdmin } from "@/web/admin";
-import { copy, formatDate } from "@/web/copy";
+import { copy, formatDate, pageTitle } from "@/web/copy";
 import { onlyForAdmins } from "@/web/guards";
 
 export const Route = createFileRoute("/admin/admins")({
@@ -25,6 +25,7 @@ export const Route = createFileRoute("/admin/admins")({
     onlyForAdmins(context);
   },
   loader: () => getAdmins(),
+  head: () => ({ meta: [{ title: pageTitle(t.title) }] }),
   component: Admins,
 });
 

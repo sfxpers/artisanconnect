@@ -24,7 +24,7 @@ import { splitOf } from "@/domain/queue-names";
 import type { Block, DecisionField, ItemRow } from "@/domain/queues";
 import { cn } from "@/lib/utils";
 import { decideQueueItem, decideQueueRow, getQueueItem, openLoggedRead } from "@/web/admin";
-import { copy, formatDate } from "@/web/copy";
+import { copy, formatDate, pageTitle } from "@/web/copy";
 import { onlyForAdmins } from "@/web/guards";
 
 export const Route = createFileRoute("/admin/items/$itemId")({
@@ -32,6 +32,9 @@ export const Route = createFileRoute("/admin/items/$itemId")({
     onlyForAdmins(context);
   },
   loader: ({ params }) => getQueueItem({ data: { itemId: params.itemId } }),
+  head: ({ loaderData }) => ({
+    meta: [{ title: pageTitle(loaderData?.title ?? copy.admin.home.title) }],
+  }),
   component: QueueItemPage,
 });
 

@@ -1606,6 +1606,11 @@ export const copy = {
   notAPerson: "Complete the check above first.",
 } as const;
 
+/** A page's title in the browser's tab: the page, then ArtisanConnect (WCAG 2.4.2). */
+export function pageTitle(page: string): string {
+  return `${page} · ${copy.appName}`;
+}
+
 /** A length of time as minutes and seconds: "4:05". */
 function formatSeconds(seconds: number): string {
   const whole = Math.round(seconds);

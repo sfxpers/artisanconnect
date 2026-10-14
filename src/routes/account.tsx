@@ -17,7 +17,7 @@ import {
   signOut,
   withdrawNames,
 } from "@/web/accounts";
-import { copy, formatDate } from "@/web/copy";
+import { copy, formatDate, pageTitle } from "@/web/copy";
 import { getMyDataRequests, requestData } from "@/web/data-requests";
 import { onlyFor } from "@/web/guards";
 import type { Me } from "@/web/me";
@@ -25,6 +25,7 @@ import type { Me } from "@/web/me";
 export const Route = createFileRoute("/account")({
   beforeLoad: ({ context }) => ({ me: onlyFor("account", context) }),
   loader: () => getMyDataRequests(),
+  head: () => ({ meta: [{ title: pageTitle(t.title) }] }),
   component: Account,
 });
 

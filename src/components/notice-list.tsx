@@ -1,4 +1,4 @@
-import { Bell } from "lucide-react";
+import { Bell, ChevronRight } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Card } from "@/components/ui/card";
 import { copy, formatDate } from "@/web/copy";
@@ -15,17 +15,15 @@ export function NoticeList({ notices }: { notices: Notice[] }) {
     <Card className="py-0">
       <ul className="divide-y">
         {notices.map((notice) => (
-          <li key={notice.id} className="flex items-center gap-4 p-4">
+          // The title links to what the Tell is about, and covers the whole row.
+          <li key={notice.id} className="relative flex items-center gap-4 p-4 hover:bg-muted">
             <div className="min-w-0 flex-1">
-              <div className="font-medium">{notice.title}</div>
+              <Link to={notice.link} className="font-medium after:absolute after:inset-0">
+                {notice.title}
+              </Link>
               <div className="text-xs text-muted-foreground">{formatDate(notice.toldAt)}</div>
             </div>
-            <Link
-              to={notice.link}
-              className="shrink-0 text-sm font-medium text-primary underline underline-offset-4"
-            >
-              {copy.notices.open}
-            </Link>
+            <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
           </li>
         ))}
       </ul>

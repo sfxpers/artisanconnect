@@ -13,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Spinner } from "@/components/ui/spinner";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -449,6 +450,7 @@ function Checkout({ quote }: { quote: ClientQuote }) {
           disabled={busy || !acknowledged}
           onClick={() => void pay()}
         >
+          {busy && <Spinner data-icon="inline-start" />}
           {q.hirePay(formatRands(quote.paymentCents))}
         </Button>
         <p className="text-xs text-muted-foreground">{q.hireLead}</p>

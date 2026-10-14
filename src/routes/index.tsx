@@ -10,11 +10,19 @@ import {
   SERVICE_CATEGORY_NAMES,
   type ServiceCategory,
 } from "@/domain/service-categories";
-import { copy } from "@/web/copy";
+import { copy, pageTitle } from "@/web/copy";
 import { onlyForVisitors } from "@/web/guards";
 
 export const Route = createFileRoute("/")({
   beforeLoad: ({ context }) => onlyForVisitors(context),
+  head: () => ({
+    meta: [
+      { title: pageTitle(t.title) },
+      { name: "description", content: t.lead },
+      { property: "og:title", content: t.title },
+      { property: "og:description", content: t.lead },
+    ],
+  }),
   component: Landing,
 });
 

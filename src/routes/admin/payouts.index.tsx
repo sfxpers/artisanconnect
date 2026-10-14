@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { DataTable, type DataColumn } from "@/components/data-table";
 import { EmptyState, Page } from "@/components/page";
 import { formatRands } from "@/domain/money";
-import { copy } from "@/web/copy";
+import { copy, pageTitle } from "@/web/copy";
 import { onlyForAdmins } from "@/web/guards";
 import { getUnpaidTotals, holdPayouts, liftPayoutHold } from "@/web/payouts";
 
@@ -16,6 +16,7 @@ export const Route = createFileRoute("/admin/payouts/")({
     onlyForAdmins(context);
   },
   loader: () => getUnpaidTotals(),
+  head: () => ({ meta: [{ title: pageTitle(t.title) }] }),
   component: AdminPayouts,
 });
 

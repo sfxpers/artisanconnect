@@ -5,7 +5,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState, Page } from "@/components/page";
 import { formatRands } from "@/domain/money";
-import { copy, formatDate } from "@/web/copy";
+import { copy, formatDate, pageTitle } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
 import { getMyPayouts, isStopped } from "@/web/payouts";
 
@@ -14,6 +14,7 @@ export const Route = createFileRoute("/payouts")({
     onlyFor("artisan", context);
   },
   loader: () => getMyPayouts(),
+  head: () => ({ meta: [{ title: pageTitle(t.title) }] }),
   component: Payouts,
 });
 

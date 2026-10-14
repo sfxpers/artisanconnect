@@ -23,6 +23,7 @@ import {
   InputGroupInput,
 } from "@/components/ui/input-group";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { EMAIL_CODE } from "@/domain/accounts/inputs";
 import { copy } from "@/web/copy";
@@ -258,11 +259,17 @@ function Form(props: Omit<ComponentProps<"form">, "onSubmit">) {
 }
 
 /** The submit button, idle while the form submits. */
-function Submit({ disabled, ...props }: ComponentProps<typeof Button>) {
+/** The form's submit, turning while the form is sent, so a slow answer shows it is on its way. */
+function Submit({ disabled, children, ...props }: ComponentProps<typeof Button>) {
   const form = useFormContext();
   return (
     <form.Subscribe selector={(state) => state.isSubmitting}>
-      {(submitting) => <Button type="submit" disabled={submitting || disabled} {...props} />}
+      {(submitting) => (
+        <Button type="submit" disabled={submitting || disabled} {...props}>
+          {submitting && <Spinner data-icon="inline-start" />}
+          {children}
+        </Button>
+      )}
     </form.Subscribe>
   );
 }

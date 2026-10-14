@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { DataTable, type DataColumn } from "@/components/data-table";
 import { Input } from "@/components/ui/input";
 import { EmptyState, Page } from "@/components/page";
-import { copy } from "@/web/copy";
+import { copy, pageTitle } from "@/web/copy";
 import { onlyForAdmins } from "@/web/guards";
 import { findPeople } from "@/web/people";
 
@@ -18,6 +18,7 @@ export const Route = createFileRoute("/admin/people/")({
   },
   loaderDeps: ({ search }) => search,
   loader: ({ deps }) => findPeople({ data: { query: deps.q ?? "" } }),
+  head: () => ({ meta: [{ title: pageTitle(t.title) }] }),
   component: People,
 });
 

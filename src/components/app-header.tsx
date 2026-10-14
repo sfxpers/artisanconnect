@@ -96,6 +96,15 @@ export function AppHeader({ me }: { me: Me | null }) {
               <Bell />
             </Link>
           )}
+          {!me && (
+            // On a phone the pages are in the menu, but signing in stays one tap away.
+            <Link
+              to="/sign-in"
+              className={buttonVariants({ variant: "ghost", className: "md:hidden" })}
+            >
+              {copy.header.visitor.signIn}
+            </Link>
+          )}
           <ThemeMenu />
           {me && (
             <Link to="/account" aria-label={copy.header.client.account} className="rounded-full">

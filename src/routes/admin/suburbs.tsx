@@ -16,7 +16,7 @@ import { Page, Refusal, withSidebar } from "@/components/page";
 import { useAction } from "@/components/use-action";
 import { cn } from "@/lib/utils";
 import { addSuburb, getAdminSuburbs } from "@/web/admin";
-import { copy } from "@/web/copy";
+import { copy, pageTitle } from "@/web/copy";
 import { onlyForAdmins } from "@/web/guards";
 import { Choose } from "@/components/choose";
 
@@ -25,6 +25,7 @@ export const Route = createFileRoute("/admin/suburbs")({
     onlyForAdmins(context);
   },
   loader: () => getAdminSuburbs(),
+  head: () => ({ meta: [{ title: pageTitle(t.title) }] }),
   component: Suburbs,
 });
 

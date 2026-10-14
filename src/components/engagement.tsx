@@ -305,7 +305,7 @@ export function CancelAction({
   if (!open) {
     return (
       <div>
-        <Button variant="outline" onClick={() => setOpen(true)}>
+        <Button variant="ghost" className="text-destructive" onClick={() => setOpen(true)}>
           {t.cancelJob}
         </Button>
       </div>
@@ -445,7 +445,7 @@ function DisputeForm({
   if (!open) {
     return (
       <div>
-        <Button variant="outline" onClick={() => setOpen(true)}>
+        <Button variant="ghost" onClick={() => setOpen(true)}>
           {d.open(asClient)}
         </Button>
       </div>

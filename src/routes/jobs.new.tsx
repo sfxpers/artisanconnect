@@ -3,7 +3,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Card, CardContent } from "@/components/ui/card";
 import { DraftForm } from "@/components/job-form";
 import { Page } from "@/components/page";
-import { copy } from "@/web/copy";
+import { copy, pageTitle } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
 import { postJob, saveJobDraft } from "@/web/jobs";
 
@@ -11,6 +11,7 @@ export const Route = createFileRoute("/jobs/new")({
   beforeLoad: ({ context }) => {
     onlyFor("client", context);
   },
+  head: () => ({ meta: [{ title: pageTitle(t.newTitle) }] }),
   component: NewJob,
 });
 

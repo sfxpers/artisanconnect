@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Page, Refusal } from "@/components/page";
 import { REGIONS_MAX } from "@/domain/regions/places";
 import { cn } from "@/lib/utils";
-import { copy } from "@/web/copy";
+import { copy, pageTitle } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
 import { chooseRegions, getRegions, searchSuburbs } from "@/web/regions";
 
@@ -18,6 +18,7 @@ export const Route = createFileRoute("/regions")({
     onlyFor("artisan", context);
   },
   loader: () => getRegions(),
+  head: () => ({ meta: [{ title: pageTitle(t.title) }] }),
   component: Regions,
 });
 

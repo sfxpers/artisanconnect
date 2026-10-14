@@ -9,13 +9,14 @@ import { Page, Refusal } from "@/components/page";
 import { PhotosField, usePhotos } from "@/components/photos-field";
 import { useAction } from "@/components/use-action";
 import { ABOUT_MAX, PROFILE_PHOTOS_MAX } from "@/domain/profiles/inputs";
-import { copy } from "@/web/copy";
+import { copy, pageTitle } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
 import { editProfile, getMyProfile, withdrawProfileEdit } from "@/web/profiles";
 
 export const Route = createFileRoute("/profile")({
   beforeLoad: ({ context }) => ({ me: onlyFor("artisan", context) }),
   loader: () => getMyProfile(),
+  head: () => ({ meta: [{ title: pageTitle(t.title) }] }),
   component: MyProfile,
 });
 

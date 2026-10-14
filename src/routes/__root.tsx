@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { HeadContent, Link, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import appCss from "@/styles.css?url";
+import { SearchX } from "lucide-react";
 import { ThemeProvider } from "next-themes";
 import { AppFooter } from "@/components/app-footer";
 import { AdminShell } from "@/components/admin-shell";
@@ -10,7 +11,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ConfirmProvider } from "@/components/confirm";
 import { AppHeader } from "@/components/app-header";
-import { Page } from "@/components/page";
+import { EmptyState, Page } from "@/components/page";
 import { buttonVariants } from "@/components/ui/button";
 import { getSession } from "@/web/accounts";
 import { copy } from "@/web/copy";
@@ -26,7 +27,10 @@ export const Route = createRootRoute({
       { title: copy.appName },
       { name: "color-scheme", content: "light dark" },
     ],
-    links: [{ rel: "stylesheet", href: appCss }],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+    ],
   }),
   // Who is signed in decides the header and which pages they may open.
   beforeLoad: () => getSession(),
@@ -88,10 +92,23 @@ function SuspendedBanner({ suspended }: { suspended: { reason: string; since: Da
 function NotFound() {
   const t = copy.notFound;
   return (
-    <Page title={t.title} lead={t.lead} narrow>
-      <Link to="/" className={buttonVariants()}>
-        {t.home}
-      </Link>
+    <Page narrow>
+      <EmptyState
+        icon={<SearchX />}
+        title={t.title}
+        action={
+          <div className="flex flex-wrap justify-center gap-2">
+            <Link to="/" className={buttonVariants()}>
+              {t.home}
+            </Link>
+            <Link to="/artisans" className={buttonVariants({ variant: "outline" })}>
+              {copy.header.visitor.findArtisans}
+            </Link>
+          </div>
+        }
+      >
+        {t.lead}
+      </EmptyState>
     </Page>
   );
 }

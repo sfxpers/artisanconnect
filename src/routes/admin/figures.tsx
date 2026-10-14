@@ -13,7 +13,7 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import { getFigures } from "@/web/admin";
-import { copy, formatDate } from "@/web/copy";
+import { copy, formatDate, pageTitle } from "@/web/copy";
 import { onlyForAdmins } from "@/web/guards";
 
 export const Route = createFileRoute("/admin/figures")({
@@ -26,6 +26,7 @@ export const Route = createFileRoute("/admin/figures")({
   },
   loaderDeps: ({ search }) => search,
   loader: ({ deps }) => getFigures({ data: deps }),
+  head: () => ({ meta: [{ title: pageTitle(t.title) }] }),
   component: Figures,
 });
 

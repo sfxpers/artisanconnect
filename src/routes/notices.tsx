@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { NoticeList } from "@/components/notice-list";
 import { Page } from "@/components/page";
 import { getNotices } from "@/web/accounts";
-import { copy } from "@/web/copy";
+import { copy, pageTitle } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
 
 export const Route = createFileRoute("/notices")({
@@ -10,6 +10,7 @@ export const Route = createFileRoute("/notices")({
     onlyFor("account", context);
   },
   loader: () => getNotices(),
+  head: () => ({ meta: [{ title: pageTitle(copy.notices.title) }] }),
   component: Notices,
 });
 

@@ -5,12 +5,13 @@ import { AuthCard, Refusal, RulesCard } from "@/components/page";
 import { useTurnstile } from "@/components/turnstile";
 import type { MarketplaceRules } from "@/domain/accounts/rules";
 import { getCurrentRules, signIn } from "@/web/accounts";
-import { copy } from "@/web/copy";
+import { copy, pageTitle } from "@/web/copy";
 import { onlyForVisitors } from "@/web/guards";
 import { landingFor } from "@/web/me";
 
 export const Route = createFileRoute("/sign-in")({
   beforeLoad: ({ context }) => onlyForVisitors(context),
+  head: () => ({ meta: [{ title: pageTitle(t.title) }] }),
   component: SignIn,
 });
 

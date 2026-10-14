@@ -1,9 +1,10 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { NextStepCard, Page } from "@/components/page";
-import { copy, formatDeadline } from "@/web/copy";
+import { copy, formatDeadline, pageTitle } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
 import { getMyJobs } from "@/web/jobs";
 
@@ -12,6 +13,7 @@ export const Route = createFileRoute("/jobs/")({
     onlyFor("client", context);
   },
   loader: () => getMyJobs(),
+  head: () => ({ meta: [{ title: pageTitle(t.title) }] }),
   component: MyJobs,
 });
 
@@ -71,13 +73,14 @@ function Group({ title, jobs }: { title: string; jobs: Summary[] }) {
         <Card className="py-0">
           <ul className="divide-y">
             {jobs.map((job) => (
-              <li key={job.jobId} className="flex items-center gap-4 p-4">
+              // The title's link covers the whole row, so the row is one target.
+              <li key={job.jobId} className="relative flex items-center gap-4 p-4 hover:bg-muted">
                 <div className="min-w-0 flex-1 space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <Link
                       to="/jobs/$jobId"
                       params={{ jobId: job.jobId }}
-                      className="font-medium hover:underline"
+                      className="font-medium after:absolute after:inset-0"
                     >
                       {job.title || t.untitled}
                     </Link>
@@ -99,13 +102,7 @@ function Group({ title, jobs }: { title: string; jobs: Summary[] }) {
                       .join(" · ")}
                   </div>
                 </div>
-                <Link
-                  to="/jobs/$jobId"
-                  params={{ jobId: job.jobId }}
-                  className={buttonVariants({ size: "sm", variant: "outline" })}
-                >
-                  {t.open}
-                </Link>
+                <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
               </li>
             ))}
           </ul>

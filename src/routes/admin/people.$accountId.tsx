@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Page, Refusal, withSidebar } from "@/components/page";
 import { formatRands } from "@/domain/money";
-import { copy, formatDate } from "@/web/copy";
+import { copy, formatDate, pageTitle } from "@/web/copy";
 import { onlyForAdmins } from "@/web/guards";
 import { holdPayouts, liftPayoutHold } from "@/web/payouts";
 import { getPerson, liftSuspension, suspendPerson, warnPerson } from "@/web/people";
@@ -17,6 +17,9 @@ export const Route = createFileRoute("/admin/people/$accountId")({
     onlyForAdmins(context);
   },
   loader: ({ params }) => getPerson({ data: { accountId: params.accountId } }),
+  head: ({ loaderData }) => ({
+    meta: [{ title: pageTitle(loaderData?.name ?? copy.admin.people.title) }],
+  }),
   component: Person,
 });
 

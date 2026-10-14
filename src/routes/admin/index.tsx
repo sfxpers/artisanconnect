@@ -7,7 +7,7 @@ import { EmptyState, Page } from "@/components/page";
 import { QUEUE_NAMES, type QueueName } from "@/domain/queue-names";
 import { formatRands } from "@/domain/money";
 import { getAdminHome } from "@/web/admin";
-import { copy, formatDate } from "@/web/copy";
+import { copy, formatDate, pageTitle } from "@/web/copy";
 import { onlyForAdmins } from "@/web/guards";
 import { getFloat } from "@/web/payouts";
 
@@ -22,6 +22,7 @@ export const Route = createFileRoute("/admin/")({
     const [home, float] = await Promise.all([getAdminHome({ data: deps }), getFloat()]);
     return { ...home, float };
   },
+  head: () => ({ meta: [{ title: pageTitle(t.title) }] }),
   component: AdminHome,
 });
 

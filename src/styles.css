@@ -83,7 +83,7 @@
   --warning: oklch(0.52 0.13 50);
   --warning-foreground: oklch(0.985 0.01 50);
   --rating: oklch(0.64 0.15 68);
-  --border: oklch(0.91 0.005 250);
+  --border: oklch(0.87 0.006 250);
   --input: oklch(0.62 0.012 255);
   --ring: oklch(0.5 0.09 200);
   --chart-1: oklch(0.42 0.08 200);
@@ -97,7 +97,7 @@
   --sidebar-primary-foreground: oklch(0.985 0.004 200);
   --sidebar-accent: oklch(0.935 0.006 250);
   --sidebar-accent-foreground: oklch(0.21 0.012 255);
-  --sidebar-border: oklch(0.91 0.005 250);
+  --sidebar-border: oklch(0.87 0.006 250);
   --sidebar-ring: oklch(0.5 0.09 200);
 }
 
@@ -172,4 +172,19 @@
 :focus-visible:not([data-slot="input-group-control"]) {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
+}
+
+/*
+ * Someone who asks their device for less motion gets none: dialogs, sheets,
+ * and menus appear without sliding or fading (WCAG 2.3.3).
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

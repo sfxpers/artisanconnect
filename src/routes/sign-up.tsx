@@ -17,12 +17,13 @@ import { Page, Refusal } from "@/components/page";
 import { useTurnstile } from "@/components/turnstile";
 import { email, name, password, tradingNameText } from "@/domain/accounts/inputs";
 import { getCurrentRules, signUp } from "@/web/accounts";
-import { copy } from "@/web/copy";
+import { copy, pageTitle } from "@/web/copy";
 import { onlyForVisitors } from "@/web/guards";
 
 export const Route = createFileRoute("/sign-up")({
   beforeLoad: ({ context }) => onlyForVisitors(context),
   loader: () => getCurrentRules(),
+  head: () => ({ meta: [{ title: pageTitle(t.title) }] }),
   component: SignUp,
 });
 

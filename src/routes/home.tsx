@@ -15,7 +15,7 @@ import { EmptyState, NextStepCard, Page, Refusal, withSidebar } from "@/componen
 import { REGIONS_MAX } from "@/domain/regions/places";
 import { formatRands } from "@/domain/money";
 import { getNotices } from "@/web/accounts";
-import { copy, formatDate } from "@/web/copy";
+import { copy, formatDate, pageTitle } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
 import { passInvitation } from "@/web/invitations";
 import { passMatch } from "@/web/matches";
@@ -30,6 +30,7 @@ export const Route = createFileRoute("/home")({
     const [notices, work, payouts] = await Promise.all([getNotices(), getMyWork(), getMyPayouts()]);
     return { notices, work, payouts };
   },
+  head: () => ({ meta: [{ title: pageTitle(t.title) }] }),
   component: Home,
 });
 

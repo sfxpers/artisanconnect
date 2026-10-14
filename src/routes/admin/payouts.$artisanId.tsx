@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState, Page } from "@/components/page";
 import { formatRands } from "@/domain/money";
-import { copy, formatDate } from "@/web/copy";
+import { copy, formatDate, pageTitle } from "@/web/copy";
 import { onlyForAdmins } from "@/web/guards";
 import { getPayoutHistory, isStopped } from "@/web/payouts";
 
@@ -13,6 +13,9 @@ export const Route = createFileRoute("/admin/payouts/$artisanId")({
     onlyForAdmins(context);
   },
   loader: ({ params }) => getPayoutHistory({ data: { artisanId: params.artisanId } }),
+  head: ({ loaderData }) => ({
+    meta: [{ title: pageTitle(loaderData?.name ?? copy.admin.payouts.title) }],
+  }),
   component: MoneyHistory,
 });
 

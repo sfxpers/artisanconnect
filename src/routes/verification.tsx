@@ -24,7 +24,7 @@ import {
   type FilePart,
 } from "@/domain/verification/checks";
 import type { VerificationSlot } from "@/domain/verification";
-import { copy } from "@/web/copy";
+import { copy, pageTitle } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
 import { getMyVerification, submitCheck } from "@/web/verification";
 import { Choose } from "@/components/choose";
@@ -34,6 +34,7 @@ export const Route = createFileRoute("/verification")({
     onlyFor("artisan", context);
   },
   loader: () => getMyVerification(),
+  head: () => ({ meta: [{ title: pageTitle(t.title) }] }),
   component: Verification,
 });
 

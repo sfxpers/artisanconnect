@@ -2,11 +2,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Page } from "@/components/page";
 import { getLocalMail } from "@/web/accounts";
-import { copy } from "@/web/copy";
+import { copy, pageTitle } from "@/web/copy";
 
 /** Locally only: the emails the app would have sent, Email codes included. */
 export const Route = createFileRoute("/dev/mail")({
   loader: () => getLocalMail(),
+  head: () => ({ meta: [{ title: pageTitle(copy.devMail.title) }] }),
   component: LocalMail,
 });
 

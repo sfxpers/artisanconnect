@@ -15,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Page, Refusal, withSidebar } from "@/components/page";
 import { useAction } from "@/components/use-action";
 import { getRulesVersions, publishRules } from "@/web/admin";
-import { copy, formatDate } from "@/web/copy";
+import { copy, formatDate, pageTitle } from "@/web/copy";
 import { onlyForAdmins } from "@/web/guards";
 
 export const Route = createFileRoute("/admin/rules")({
@@ -23,6 +23,7 @@ export const Route = createFileRoute("/admin/rules")({
     onlyForAdmins(context);
   },
   loader: () => getRulesVersions(),
+  head: () => ({ meta: [{ title: pageTitle(t.title) }] }),
   component: Rules,
 });
 

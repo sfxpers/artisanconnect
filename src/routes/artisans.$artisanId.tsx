@@ -15,10 +15,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Field, FieldLabel } from "@/components/ui/field";
+import { Spinner } from "@/components/ui/spinner";
 import { Choose } from "@/components/choose";
 import { EmptyState, Page, Refusal } from "@/components/page";
 import { ReportAction } from "@/components/report";
-import { copy } from "@/web/copy";
+import { copy, pageTitle } from "@/web/copy";
 import { inviteArtisan } from "@/web/invitations";
 import { getMyJobs } from "@/web/jobs";
 import { getProfile } from "@/web/profiles";
@@ -44,7 +45,7 @@ export const Route = createFileRoute("/artisans/$artisanId")({
   head: ({ loaderData }) => {
     if (!loaderData) return {};
     const { profile, origin } = loaderData;
-    const title = `${profile.publicName} · ${copy.appName}`;
+    const title = pageTitle(profile.publicName);
     const description = t.description(
       profile.publicName,
       profile.categories.map((each) => each.name),
@@ -201,6 +202,7 @@ function InviteDialog({
           <DialogClose render={<Button variant="outline" />}>{t.cancel}</DialogClose>
           {jobs.length > 0 && (
             <Button disabled={!jobId || busy} onClick={() => void send()}>
+              {busy && <Spinner data-icon="inline-start" />}
               {t.sendInvitation}
             </Button>
           )}
