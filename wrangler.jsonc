@@ -127,7 +127,7 @@
         "MAIL_FROM": "ArtisanConnect <no-reply@artisanconnect.co.za>",
         "APP_URL": "https://artisanconnect.co.za",
         "PAYOUT_RUN_TIME": "09:00",
-        "TURNSTILE_SITE_KEY": "replace-with-the-production-turnstile-site-key",
+        "TURNSTILE_SITE_KEY": "0x4AAAAAAFWwjRc9qeMKE8Jh",
       },
       "secrets": {
         "required": ["BETTER_AUTH_SECRET", "TURNSTILE_SECRET_KEY", "PAYMENTS_WEBHOOK_SECRET"],
