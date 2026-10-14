@@ -134,8 +134,8 @@ describe("the Worker", () => {
     expect(new Set(buckets).size).toBe(3);
   });
 
-  test("reports every failure and logged error to Workers Issues", () => {
-    expect(config.observability).toEqual({ issues: { enabled: true } });
+  test("keeps Workers Logs, and reports every failure and logged error to Workers Issues", () => {
+    expect(config.observability).toEqual({ enabled: true, issues: { enabled: true } });
   });
 
   test("runs due clocks every minute", () => {

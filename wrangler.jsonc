@@ -10,6 +10,7 @@
   // ],
   // Workers Logs, with Issues grouping every failure and logged error (ADR 0017).
   "observability": {
+    "enabled": true,
     "issues": { "enabled": true },
   },
   // So an Issue's stack names the source lines, not the bundle's.
