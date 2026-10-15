@@ -101,6 +101,29 @@ describe("signing up", () => {
     expect(told.text).not.toMatch(/\b\d{6}\b/);
   });
 
+  test("answers alike when the Email is an Admin's, and tells that address", async () => {
+    const harness = await createHarness();
+    const { clock, mailer } = harness;
+    await harness.given.admin({ email: "staff@example.com" });
+    clock.advance({ minutes: 1 });
+
+    const held = await signUp(harness, { email: "staff@example.com" });
+    const free = await signUp(harness, { email: "free@example.com" });
+
+    expect(held).toEqual({ ok: true, value: { email: "staff@example.com" } });
+    expect(free).toEqual({ ok: true, value: { email: "free@example.com" } });
+    expect(mailer.sentTo("staff@example.com").at(-1)?.subject).toBe(
+      "Someone tried to sign up with your Email",
+    );
+    expect(
+      await harness.domain.accounts.signIn(visitor, {
+        email: "staff@example.com",
+        password: "correct horse battery",
+        ip: IP,
+      }),
+    ).toMatchObject({ ok: false, refusal: { reason: "wrong-credentials" } });
+  });
+
   test("a sign-up whose Email is not yet proven holds nothing, and once its code has stopped working a new sign-up replaces it", async () => {
     const harness = await createHarness();
     const { domain, given } = harness;
