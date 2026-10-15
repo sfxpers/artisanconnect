@@ -31,7 +31,9 @@ export function RatingSummary({ average, count }: { average: number | null; coun
     <span className="inline-flex items-center gap-2 text-sm">
       <Stars rating={average} />
       <span className="font-medium tabular-nums">{average.toFixed(1)}</span>
-      <span className="text-muted-foreground">{copy.profile.reviewCount(count)}</span>
+      <span className="whitespace-nowrap text-muted-foreground">
+        {copy.profile.reviewCount(count)}
+      </span>
     </span>
   );
 }

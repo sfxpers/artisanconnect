@@ -144,7 +144,7 @@ function Browse() {
               {search.region || search.available ? t.emptyFiltered : t.empty}
             </EmptyState>
           ) : (
-            <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {cards.map((card) => (
                 <li key={card.artisanId}>
                   <ArtisanCard card={card} />
@@ -233,10 +233,10 @@ function ArtisanCard({ card }: { card: BrowseCard }) {
           loading="lazy"
           width={photo.width}
           height={photo.height}
-          className="aspect-video w-full border-b bg-muted object-cover sm:aspect-4/3"
+          className="aspect-3/2 w-full border-b bg-muted object-cover"
         />
       ) : (
-        <div className="grid aspect-video w-full place-items-center border-b bg-muted text-muted-foreground sm:aspect-4/3">
+        <div className="grid aspect-3/2 w-full place-items-center border-b bg-muted text-muted-foreground">
           <span className="flex items-center gap-2 text-sm">
             <ImageOff className="size-4" aria-hidden />
             {t.noPhoto}
@@ -244,35 +244,34 @@ function ArtisanCard({ card }: { card: BrowseCard }) {
         </div>
       )}
 
-      <CardContent className="space-y-2 py-4">
-        <div className="flex items-start justify-between gap-2">
-          <Link
-            to="/artisans/$artisanId"
-            params={{ artisanId: card.artisanId }}
-            className="min-w-0 truncate font-semibold after:absolute after:inset-0 hover:underline"
-          >
-            {card.publicName}
-          </Link>
+      <CardContent className="space-y-2 py-3">
+        <Link
+          to="/artisans/$artisanId"
+          params={{ artisanId: card.artisanId }}
+          className="block truncate font-semibold after:absolute after:inset-0 hover:underline"
+        >
+          {card.publicName}
+        </Link>
+        <RatingSummary average={card.reviews.average} count={card.reviews.count} />
+        <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+          {copy.profile.completed(card.completed)}
           {card.availableForJobs ? (
             <Badge variant="success">{t.available}</Badge>
           ) : (
             <Badge variant="outline">{t.notAvailable}</Badge>
           )}
         </div>
-        <RatingSummary average={card.reviews.average} count={card.reviews.count} />
-        <p className="text-sm text-muted-foreground">{copy.profile.completed(card.completed)}</p>
         {badges.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {badges.slice(0, 2).map((badge) => (
-              <Badge key={`${badge.kind}:${badge.category ?? ""}`} variant="outline">
-                <ShieldCheck />
-                {badge.name}
-              </Badge>
-            ))}
-            {badges.length > 2 && (
-              <Badge variant="outline">{t.morebadges(badges.length - 2)}</Badge>
-            )}
-          </div>
+          <p className="flex items-center gap-2 text-sm">
+            <ShieldCheck className="size-4 shrink-0 text-primary" aria-hidden />
+            <span>
+              {badges
+                .slice(0, 2)
+                .map((badge) => badge.name)
+                .join(" · ")}
+              {badges.length > 2 && ` ${t.morebadges(badges.length - 2)}`}
+            </span>
+          </p>
         )}
         {card.gasWork && <p className="text-xs text-muted-foreground">{t.gasWork}</p>}
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
