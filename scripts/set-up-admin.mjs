@@ -7,12 +7,8 @@
 //
 // Staging and production need `nubx wrangler login` first, and their D1 must
 // exist and be migrated (the first deploy does both).
-import { execFileSync } from "node:child_process";
-import { rmSync, readFileSync, writeFileSync } from "node:fs";
-import { createRequire } from "node:module";
 import path from "node:path";
 import { parseArgs } from "node:util";
-import { applyEdits, modify, parse } from "jsonc-parser";
 import { withWorkerModule } from "./worker-module.mjs";
 
 const root = path.resolve(import.meta.dirname, "..");
@@ -30,57 +26,24 @@ if (!email || (environment && !["staging", "production"].includes(environment)))
   process.exit(1);
 }
 
-const configPath = environment ? remoteConfig(environment) : path.join(root, "wrangler.jsonc");
-try {
-  await withWorkerModule(
-    path.join(root, "src/worker/set-up-admin.ts"),
-    { configPath, environment, remoteBindings: Boolean(environment) },
-    async (module, env) => {
-      const result = await module.setUpFirstAdmin(env, email);
-      if (!result.ok) {
-        console.error(result.refusal.message);
-        process.exitCode = 1;
-      } else {
-        const signIn = new URL("/admin/sign-in", env.APP_URL).href;
-        console.log(
-          `${result.value.email} is the first Admin. Sign in with an Email code at ${signIn}`,
-        );
-      }
-    },
-  );
-} finally {
-  if (environment) rmSync(configPath, { force: true });
-}
-
-// Custom until each environment's D1 id is committed to wrangler.jsonc, which
-// waits for production's first deploy to provision it.
-/**
- * A copy of wrangler.jsonc whose D1 for this environment is the remote one.
- * Remote D1 needs its id, which wrangler.jsonc leaves out so the first deploy
- * can provision it; it is looked up by name.
- */
-function remoteConfig(environment) {
-  const source = readFileSync(path.join(root, "wrangler.jsonc"), "utf8");
-  const database = parse(source).env[environment].d1_databases[0];
-  const wrangler = createRequire(import.meta.url).resolve("wrangler/bin/wrangler.js");
-  const listed = JSON.parse(
-    execFileSync(process.execPath, [wrangler, "d1", "list", "--json"], { encoding: "utf8" }),
-  );
-  const found = listed.find((listedDatabase) => listedDatabase.name === database.database_name);
-  if (!found)
-    throw new Error(`No D1 named ${database.database_name}. Deploy ${environment} first.`);
-  let edited = source;
-  for (const [key, value] of [
-    ["database_id", found.uuid],
-    ["remote", true],
-  ]) {
-    edited = applyEdits(
-      edited,
-      modify(edited, ["env", environment, "d1_databases", 0, key], value, {}),
-    );
-  }
-  // Beside wrangler.jsonc, so its relative paths still resolve.
-  const written = path.join(root, `wrangler.admin-setup.${environment}.jsonc`);
-  writeFileSync(written, edited);
-  return written;
-}
+await withWorkerModule(
+  path.join(root, "src/worker/set-up-admin.ts"),
+  // Staging's and production's D1 are remote: wrangler.jsonc names each by its id.
+  {
+    configPath: path.join(root, "wrangler.jsonc"),
+    environment,
+    remoteBindings: Boolean(environment),
+  },
+  async (module, env) => {
+    const result = await module.setUpFirstAdmin(env, email);
+    if (!result.ok) {
+      console.error(result.refusal.message);
+      process.exitCode = 1;
+    } else {
+      const signIn = new URL("/admin/sign-in", env.APP_URL).href;
+      console.log(
+        `${result.value.email} is the first Admin. Sign in with an Email code at ${signIn}`,
+      );
+    }
+  },
+);
