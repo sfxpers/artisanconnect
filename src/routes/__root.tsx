@@ -34,6 +34,8 @@ export const Route = createRootRoute({
   }),
   // Who is signed in decides the header and which pages they may open.
   beforeLoad: () => getSession(),
+  // The document around every page, a not-found or failed one too.
+  shellComponent: RootDocument,
   component: RootComponent,
   // An unknown address, or a notFound() no nearer route shows.
   notFoundComponent: NotFound,
@@ -49,27 +51,23 @@ function RootComponent() {
       {copy.skipToContent}
     </a>
   );
-  return (
-    <RootDocument>
-      {admin ? (
-        <AdminShell admin={admin}>
-          {skip}
-          <div id="main" className="flex-1">
-            <Outlet />
-          </div>
-        </AdminShell>
-      ) : (
-        <div className="flex min-h-svh flex-col">
-          {skip}
-          <AppHeader me={me} unread={unreadNotices} />
-          {me?.standing.suspended && <SuspendedBanner suspended={me.standing.suspended} />}
-          <div id="main" className="flex flex-1 flex-col">
-            <Outlet />
-          </div>
-          <AppFooter signedIn={me !== null} />
-        </div>
-      )}
-    </RootDocument>
+  return admin ? (
+    <AdminShell admin={admin}>
+      {skip}
+      <div id="main" className="flex-1">
+        <Outlet />
+      </div>
+    </AdminShell>
+  ) : (
+    <div className="flex min-h-svh flex-col">
+      {skip}
+      <AppHeader me={me} unread={unreadNotices} />
+      {me?.standing.suspended && <SuspendedBanner suspended={me.standing.suspended} />}
+      <div id="main" className="flex flex-1 flex-col">
+        <Outlet />
+      </div>
+      <AppFooter signedIn={me !== null} />
+    </div>
   );
 }
 
