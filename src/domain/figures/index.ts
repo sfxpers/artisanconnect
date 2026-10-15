@@ -11,7 +11,7 @@ import {
   type SQL,
 } from "drizzle-orm";
 import type { SQLiteColumn } from "drizzle-orm/sqlite-core";
-import type { Actor } from "../actor";
+import type { Actor } from "../shared/actor";
 import { LEDGER_KINDS, type LedgerKind } from "../ledger";
 import {
   disputes,
@@ -24,8 +24,13 @@ import {
   warnings,
 } from "../schema";
 import { defineSection } from "../section";
-import { DEFAULT_FIGURE_PERIOD, FIGURE_PERIODS, periodDays, type FigurePeriod } from "./periods";
-import { DAY_MS } from "../sa-days";
+import {
+  DEFAULT_FIGURE_PERIOD,
+  FIGURE_PERIODS,
+  periodDays,
+  type FigurePeriod,
+} from "../shared/periods";
+import { DAY_MS } from "../shared/sa-days";
 
 // The Admin's figures (#142): how the marketplace is doing over a period,
 // with no targets. Jobs and Hires are counted by when they were posted and

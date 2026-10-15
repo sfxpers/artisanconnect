@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DataTable, rowLink, type DataColumn } from "@/components/data-table";
 import { EmptyState, Page } from "@/components/page";
-import { formatRands } from "@/domain/money";
+import { formatRands } from "@/domain/shared/money";
 import { copy, pageTitle } from "@/web/copy";
 import { onlyForAdmins } from "@/web/guards";
 import { getUnpaidTotals, holdPayouts, liftPayoutHold } from "@/web/payouts";

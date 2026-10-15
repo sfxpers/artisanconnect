@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Page } from "@/components/page";
-import { formatRands } from "@/domain/money";
+import { formatRands } from "@/domain/shared/money";
 import { copy, pageTitle } from "@/web/copy";
 import { completeFakeCheckout, getFakeCheckout } from "@/web/fake-checkout";
 

@@ -1,6 +1,6 @@
-import type { AdminActor } from "@/domain/actor";
+import type { AdminActor } from "@/domain/shared/actor";
 import type { Domain } from "@/domain";
-import { passesIdChecksum, type CheckDetailsInput } from "@/domain/verification/checks";
+import { passesIdChecksum, type CheckDetailsInput } from "@/domain/shared/checks";
 import { photos } from "./files";
 import { textPdf } from "./pdfs";
 

@@ -2,8 +2,8 @@
 // Nothing here may import what only runs on the server.
 
 import * as z from "zod";
-import { isDay } from "../sa-days";
-import { SERVICE_CATEGORIES } from "../service-categories";
+import { isDay } from "../shared/sa-days";
+import { SERVICE_CATEGORIES } from "../shared/service-categories";
 
 /** A label on a Job that changes no rule. */
 export const SITE_TYPES = ["home", "business"] as const;

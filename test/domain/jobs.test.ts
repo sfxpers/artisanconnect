@@ -1,5 +1,5 @@
-import { describe, expect, test } from "vitest";
-import { visitor, type Actor, type AdminActor } from "@/domain/actor";
+import { describe, expect, test } from "vite-plus/test";
+import { visitor, type Actor, type AdminActor } from "@/domain/shared/actor";
 import { createHarness, type Harness } from "../support/harness";
 import { photo } from "../support/verification";
 

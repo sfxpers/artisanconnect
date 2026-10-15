@@ -14,7 +14,7 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { SiteSearch } from "@/components/site-search";
 import { Wordmark } from "@/components/wordmark";
-import { SERVICE_CATEGORIES, SERVICE_CATEGORY_NAMES } from "@/domain/service-categories";
+import { SERVICE_CATEGORIES, SERVICE_CATEGORY_NAMES } from "@/domain/shared/service-categories";
 import type { Me } from "@/web/me";
 import { copy } from "@/web/copy";
 

@@ -1,17 +1,17 @@
 import * as z from "zod";
 import { and, eq, sql } from "drizzle-orm";
-import { accountIdOf, system, type Actor } from "../actor";
+import { accountIdOf, system, type Actor } from "../shared/actor";
 import { firstProblem } from "../accounts/inputs";
 import { checkContent } from "../content/check";
 import type { Context } from "../context";
 import { causedBy } from "../errors";
 import { insertWhile } from "../guarded";
-import { ok, refuse } from "../result";
+import { ok, refuse } from "../shared/result";
 import { reports, REPORT_SUBJECTS } from "../schema";
 import { defineSection } from "../section";
 import { emailTells, tell } from "../tells";
 import { itemTitle, REPORT_KINDS } from "./items";
-import { REPORT_NOTE_MAX, REPORT_REASONS } from "./reasons";
+import { REPORT_NOTE_MAX, REPORT_REASONS } from "../shared/reasons";
 import { reportable, type About } from "./subjects";
 
 // Reports (#136, ADR 0020): the third wall. Any signed-in Account Reports a

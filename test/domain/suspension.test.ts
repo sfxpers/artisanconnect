@@ -1,5 +1,5 @@
-import { describe, expect, test } from "vitest";
-import { visitor } from "@/domain/actor";
+import { describe, expect, test } from "vite-plus/test";
+import { visitor } from "@/domain/shared/actor";
 import { createHarness } from "../support/harness";
 
 // Warnings and Suspension (#136): the Admin warns or suspends an Account from

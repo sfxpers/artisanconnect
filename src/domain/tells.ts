@@ -1,5 +1,5 @@
 import { and, asc, desc, eq, isNull, sql, type SQL } from "drizzle-orm";
-import { accountIdOf, type Actor } from "./actor";
+import { accountIdOf, type Actor } from "./shared/actor";
 import type { Context, Write } from "./context";
 import { accounts, authUsers, notices } from "./schema";
 import { defineSection } from "./section";

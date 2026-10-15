@@ -5,7 +5,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Alert, AlertAction, AlertDescription } from "@/components/ui/alert";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState, Page } from "@/components/page";
-import { formatRands } from "@/domain/money";
+import { formatRands } from "@/domain/shared/money";
 import { copy, formatDate, pageTitle } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
 import { getMyPayouts, isStopped } from "@/web/payouts";

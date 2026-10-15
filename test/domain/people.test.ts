@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test } from "vite-plus/test";
 import { createHarness } from "../support/harness";
 
 // The People page (#136): the Admin finds an Account and acts on it directly.

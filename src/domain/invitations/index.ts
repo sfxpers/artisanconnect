@@ -9,7 +9,7 @@ import {
   sql,
   type SQLWrapper,
 } from "drizzle-orm";
-import { accountIdOf, type Actor } from "../actor";
+import { accountIdOf, type Actor } from "../shared/actor";
 import type { Context } from "../context";
 import { openWrites } from "../conversations/rows";
 import { causedBy } from "../errors";
@@ -23,7 +23,7 @@ import {
 } from "../jobs/rows";
 import { browse, type Narrowing } from "../profiles";
 import { belowFive, COUNTED_STATES, jobFull, liveQuoteOf, takesQuotesNow } from "../quotes/rows";
-import { ok, refuse } from "../result";
+import { ok, refuse } from "../shared/result";
 import { invitations, jobMatches, jobs, quotes, regions, suburbs } from "../schema";
 import { defineSection } from "../section";
 import { isSuspended, suspendedRefusal } from "../standing";

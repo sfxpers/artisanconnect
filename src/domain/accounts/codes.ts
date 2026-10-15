@@ -1,7 +1,7 @@
 import { and, eq, gt } from "drizzle-orm";
 import type { Context } from "../context";
 import { tryWithin } from "../rate-limits";
-import { refuse } from "../result";
+import { refuse } from "../shared/result";
 import { authUsers, authVerifications } from "../schema";
 
 // What every way of sending or entering an Email code shares: an Account's

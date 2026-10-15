@@ -1,5 +1,5 @@
 import { and, desc, eq, exists, sql } from "drizzle-orm";
-import type { Actor } from "../actor";
+import type { Actor } from "../shared/actor";
 import type { Context, Write } from "../context";
 import { defineHeldKind } from "../content/held";
 import { jobRow } from "../jobs/rows";

@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Page, Refusal, withSidebar } from "@/components/page";
-import { formatRands } from "@/domain/money";
+import { formatRands } from "@/domain/shared/money";
 import { copy, formatDate, pageTitle } from "@/web/copy";
 import { onlyForAdmins } from "@/web/guards";
 import { holdPayouts, liftPayoutHold } from "@/web/payouts";

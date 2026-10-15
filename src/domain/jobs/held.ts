@@ -2,9 +2,9 @@ import { and, eq, isNull, notExists, sql } from "drizzle-orm";
 import type { Context, Write } from "../context";
 import { defineHeldKind, refusedFor } from "../content/held";
 import type { Block } from "../queues";
-import { formatDay } from "../sa-days";
+import { formatDay } from "../shared/sa-days";
 import { accounts, authUsers, jobs, queueItems } from "../schema";
-import { SERVICE_CATEGORY_NAMES } from "../service-categories";
+import { SERVICE_CATEGORY_NAMES } from "../shared/service-categories";
 import { hireAgainView, hireAgainWrites } from "./hire-again";
 import { jobPhotoPath, jobRow, jobText, openWrites, type JobRow } from "./rows";
 

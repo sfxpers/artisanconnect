@@ -1,5 +1,5 @@
 import { and, asc, eq, exists, inArray, isNull, sql } from "drizzle-orm";
-import type { AdminActor } from "../actor";
+import type { AdminActor } from "../shared/actor";
 import { publicName } from "../accounts/names";
 import type { Context, Write } from "../context";
 import { conversationBlocks } from "../conversations/admin-read";
@@ -18,8 +18,8 @@ import {
 } from "../queues";
 import { accountSidebar, quoteBlocks } from "../quotes/held";
 import { quoteRow } from "../quotes/rows";
-import { ok, refuse } from "../result";
-import { formatTime } from "../sa-days";
+import { ok, refuse } from "../shared/result";
+import { formatTime } from "../shared/sa-days";
 import { accounts, jobs, reports } from "../schema";
 import {
   foundLeavingBefore,
@@ -33,7 +33,7 @@ import { tellWhile } from "../tells";
 import { discardFiles } from "../uploads";
 import { endWrites, groundDecisions, groundOf, reviewBlocks } from "../reviews/precheck";
 import { reviewRow } from "../reviews/rows";
-import { REPORT_REASON_NAMES } from "./reasons";
+import { REPORT_REASON_NAMES } from "../shared/reasons";
 import type { ReportSubject } from "./subjects";
 
 // A Report's queue item (#136): one per reported thing while it is open, with

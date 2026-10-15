@@ -1,6 +1,6 @@
-import { describe, expect, test } from "vitest";
-import type { Actor, AdminActor } from "@/domain/actor";
-import type { FigurePeriod } from "@/domain/figures/periods";
+import { describe, expect, test } from "vite-plus/test";
+import type { Actor, AdminActor } from "@/domain/shared/actor";
+import type { FigurePeriod } from "@/domain/shared/periods";
 import { createHarness, type Harness } from "../support/harness";
 
 // The Admin's figures (#142): how the marketplace is doing over a period,

@@ -1,8 +1,8 @@
 import { checkContent, readFiles } from "../content/check";
 import type { Context } from "../context";
 import type { BankAccountVerification, VerifyBankAccount } from "../ports";
-import { ok, type Result } from "../result";
-import { CHECKS, type CheckKind } from "./checks";
+import { ok, type Result } from "../shared/result";
+import { CHECKS, type CheckKind } from "../shared/checks";
 import type { CheckDetails, CheckFile, Reading } from "./stored";
 
 // The automatic reading of a check, which the Admin sees beside the document

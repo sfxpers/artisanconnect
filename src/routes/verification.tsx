@@ -7,8 +7,8 @@ import { Field, FieldLabel } from "@/components/ui/field";
 import { issuesOf, useAppForm } from "@/components/form";
 import { NextStepCard, Page, Refusal } from "@/components/page";
 import { useAction } from "@/components/use-action";
-import { formatDay } from "@/domain/sa-days";
-import { SERVICE_CATEGORY_NAMES, type ServiceCategory } from "@/domain/service-categories";
+import { formatDay } from "@/domain/shared/sa-days";
+import { SERVICE_CATEGORY_NAMES, type ServiceCategory } from "@/domain/shared/service-categories";
 import {
   CHECKS,
   DOCUMENT_TYPE_NAMES,
@@ -21,7 +21,7 @@ import {
   type CheckKind,
   type DocumentType,
   type FilePart,
-} from "@/domain/verification/checks";
+} from "@/domain/shared/checks";
 import type { VerificationSlot } from "@/domain/verification";
 import { copy, pageTitle } from "@/web/copy";
 import { onlyFor } from "@/web/guards";

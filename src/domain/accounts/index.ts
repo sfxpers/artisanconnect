@@ -1,10 +1,10 @@
 import * as z from "zod";
 import { and, eq, isNull } from "drizzle-orm";
 import { hashPassword } from "better-auth/crypto";
-import { accountIdOf, visitor, type AccountActor, type Actor } from "../actor";
+import { accountIdOf, visitor, type AccountActor, type Actor } from "../shared/actor";
 import { tryWithin } from "../rate-limits";
 import { recordSighting, type Seen } from "../signals";
-import { ok, refuse } from "../result";
+import { ok, refuse } from "../shared/result";
 import { adminActorFor } from "../admins/identity";
 import { alreadyChecked, isAlreadyDecided } from "../content/held";
 import { causedBy } from "../errors";

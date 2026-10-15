@@ -1,13 +1,13 @@
 import { and, desc, eq, isNull, lt, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
-import type { Actor } from "../actor";
+import type { Actor } from "../shared/actor";
 import { authErrorCode, createAuth, type Auth } from "../accounts/auth";
 import { codeRefusal, mayRequestCode, sessionHeaders } from "../accounts/codes";
 import { code, email, firstProblem } from "../accounts/inputs";
 import { audit } from "../audit";
 import type { Context } from "../context";
 import { causedBy } from "../errors";
-import { adminOnly, ok, refuse } from "../result";
+import { adminOnly, ok, refuse } from "../shared/result";
 import { admins, auditLog, authUsers } from "../schema";
 import { defineSection } from "../section";
 import { emailTells, tellAddress } from "../tells";

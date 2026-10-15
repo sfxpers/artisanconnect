@@ -17,32 +17,31 @@ Each thing is written down once:
 
 ## Setup
 
-[mise](https://mise.jdx.dev) installs the Node and [nub](https://nubjs.com) versions `mise.toml` pins; nub installs the rest. `postinstall` writes `worker-configuration.d.ts` from `wrangler.jsonc` (`nub run cf-typegen` after changing it).
+[Vite+](https://viteplus.dev) (`vp`) runs everything: it uses the Node in `.node-version` and the pnpm in `package.json`, and ships Vite, Vitest, Oxlint, and Oxfmt as one set, pinned in `pnpm-workspace.yaml`. `vp install` also sets up the pre-commit hook, which checks what is staged. `postinstall` writes `worker-configuration.d.ts` from `wrangler.jsonc` (`vp run cf-typegen` after changing it).
 
 ```sh
-mise install
-nub install
+curl -fsSL https://vite.plus | bash   # once per machine
+vp install
 cp .dev.vars.example .dev.vars   # then set BETTER_AUTH_SECRET and PAYMENTS_WEBHOOK_SECRET
-nub run db:migrate:local
-nub run dev                      # http://localhost:3000; mail at /dev/mail
+vp run db:migrate:local
+vp dev                           # http://localhost:3000; mail at /dev/mail
 ```
 
-Workers AI runs only remotely, so locally (`remoteBindings: false` in `vite.config.ts`) the Content check Holds everything its patterns pass for the Admin's Pre-check. After `nubx wrangler login`, set it to `true` for live inference.
+Workers AI runs only remotely, so locally (`remoteBindings: false` in `vite.config.ts`) the Content check Holds everything its patterns pass for the Admin's Pre-check. After `vp exec wrangler login`, set it to `true` for live inference.
 
 ## Scripts
 
 ```sh
-nub run lint               # oxlint, then scripts/check-tokens.mjs
-nub run fmt                # oxfmt (fmt:check in CI)
-nub run typecheck
-nub run test               # Vitest in the Workers runtime, on local D1 and R2
-nub run test:smoke         # Playwright against the local app, in the installed Chrome
-nub run db:generate        # a migration from src/domain/schema.ts
-nub run deploy:staging     # migrate, build, and deploy (or deploy:production)
-nub run admin:setup -- you@example.com [--env staging|production]   # the first Admin
+vp check                  # format, lint, and type check (vp check --fix to fix)
+vp run check:tokens       # every colour and size is a token from src/styles.css
+vp test                   # Vitest in the Workers runtime, on local D1 and R2
+vp run test:smoke         # Playwright against the local app, in the installed Chrome
+vp run db:generate        # a migration from src/domain/schema.ts
+vp run deploy:staging     # migrate, build, and deploy (or deploy:production)
+vp run admin:setup you@example.com [--env staging|production]   # the first Admin
 ```
 
-CI (`.github/workflows/check.yml`) runs lint, fmt:check, typecheck, test, and test:smoke on every pull request and push to `main`.
+CI (`.github/workflows/check.yml`) runs check, check:tokens, test, and test:smoke on every pull request and push to `main`.
 
 ## Architecture
 
@@ -63,13 +62,13 @@ Tests drive the module through `test/support/harness.ts`: real local D1 and R2, 
 Both environments are on the account in `wrangler.jsonc`. The first deploy of an environment provisions its D1 and R2, so deploy before migrating, set its secrets, then make its first Admin:
 
 ```sh
-nubx wrangler login
-CLOUDFLARE_ENV=staging nub run build && nubx wrangler deploy
-nubx wrangler d1 migrations apply DB --env staging --remote
-nubx wrangler secret put BETTER_AUTH_SECRET --env staging   # and each secret in .dev.vars.example
-nub run admin:setup -- you@example.com --env staging
+vp exec wrangler login
+CLOUDFLARE_ENV=staging vp build && vp exec wrangler deploy
+vp exec wrangler d1 migrations apply DB --env staging --remote
+vp exec wrangler secret put BETTER_AUTH_SECRET --env staging   # and each secret in .dev.vars.example
+vp run admin:setup you@example.com --env staging
 ```
 
 ## UI
 
-shadcn/ui is set up as **base-nova** (`components.json`). Add a component with `nubx -y shadcn@latest add <name>`; when its CLI cannot install dependencies with nub, add them with `nub add <package>`. Forms are TanStack Form on shadcn's Field (`src/components/form.tsx`); pages load through route loaders and reload after each action.
+shadcn/ui is set up as **base-nova** (`components.json`); its packages stay at the versions shadcn's components ask for, so recharts is pinned at the 3.8.0 its chart names. Add a component with `vpx shadcn@latest add <name>`; when its CLI cannot install dependencies, add them with `vp add <package>`. Forms are TanStack Form on shadcn's Field (`src/components/form.tsx`); pages load through route loaders and reload after each action.

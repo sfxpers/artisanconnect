@@ -22,12 +22,12 @@ import {
   type Matching,
   type SiteType,
 } from "@/domain/jobs/inputs";
-import { SERVICE_CATEGORIES, SERVICE_CATEGORY_NAMES } from "@/domain/service-categories";
+import { SERVICE_CATEGORIES, SERVICE_CATEGORY_NAMES } from "@/domain/shared/service-categories";
 import { copy } from "@/web/copy";
 import type { getJob } from "@/web/jobs";
 import { searchSuburbs } from "@/web/regions";
 import { Choose } from "@/components/choose";
-import { suburbName } from "@/domain/regions/places";
+import { suburbName } from "@/domain/shared/places";
 
 const t = copy.job;
 

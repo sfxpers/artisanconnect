@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import type { CheckDetailsInput, FilePart } from "@/domain/verification/checks";
+import type { CheckDetailsInput, FilePart } from "@/domain/shared/checks";
 import { requestActor, requestDomain } from "./session";
 import { filesOf, textOf } from "./form-data";
 

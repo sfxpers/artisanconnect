@@ -19,7 +19,7 @@
 **Tests and tooling**
 
 - **Tests:** Vitest at one Engagement seam over the domain module, with a fake clock, a fake AI, and a fake payment adapter, plus a few Playwright smoke tests.
-- **Tooling:** mise, nub, oxlint, and oxfmt.
+- **Tooling:** Vite+ (`vp`), which runs Node and pnpm at the versions the repo pins and ships Vite, Vitest, Oxlint, and Oxfmt as one set.
 
 **Data home.** Personal data lives on Cloudflare's network, which may be outside South Africa, and the POPIA consent at sign-up names that transfer.
 
@@ -30,4 +30,5 @@
 - Postgres, because launch volume does not need a second service.
 - An HTTP API from day one, because no app exists yet.
 - Sentry, because Workers Issues groups the same failures, and the errors the code catches and logs, with no SDK or secret.
+- mise and nub beside Vite+, because Vite+ manages Node and pnpm itself and does not run nub.
 - TanStack Query, because the router's own loader cache covers what the pages need: no data is shared between routes, and every write reloads the page that made it.

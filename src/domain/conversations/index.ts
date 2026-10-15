@@ -1,5 +1,5 @@
 import { and, asc, eq, inArray, or, sql } from "drizzle-orm";
-import { accountIdOf, type Actor } from "../actor";
+import { accountIdOf, type Actor } from "../shared/actor";
 import { checkContent } from "../content/check";
 import { alreadyChecked, isAlreadyDecided } from "../content/held";
 import type { Withheld } from "../content/patterns";
@@ -7,7 +7,7 @@ import type { Context } from "../context";
 import { insertWhile } from "../guarded";
 import { jobRow } from "../jobs/rows";
 import type { ContentContext } from "../ports";
-import { ok, refuse } from "../result";
+import { ok, refuse } from "../shared/result";
 import { conversations, messages, type MessageFile } from "../schema";
 import { defineSection } from "../section";
 import { emailTells } from "../tells";

@@ -1,5 +1,5 @@
-import { describe, expect, test } from "vitest";
-import { visitor } from "@/domain/actor";
+import { describe, expect, test } from "vite-plus/test";
+import { visitor } from "@/domain/shared/actor";
 import { createHarness, type Harness } from "../support/harness";
 
 // An Account changes its Email by giving its password and proving the new one

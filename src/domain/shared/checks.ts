@@ -1,6 +1,6 @@
 import * as z from "zod";
-import { isDay } from "../sa-days";
-import { SERVICE_CATEGORIES, type ServiceCategory } from "../service-categories";
+import { isDay } from "./sa-days";
+import { SERVICE_CATEGORIES, type ServiceCategory } from "./service-categories";
 
 // Shared with the web app's forms, so a check is refused the same way in both.
 // Nothing here may import what only runs on the server.

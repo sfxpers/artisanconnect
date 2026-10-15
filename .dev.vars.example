@@ -1,5 +1,5 @@
 # Local secrets. Copy to .dev.vars; staging and production set theirs with
-# `nubx wrangler secret put <NAME> --env <staging|production>`.
+# `vp exec wrangler secret put <NAME> --env <staging|production>`.
 # Signs session cookies. Any long random string locally; `openssl rand -base64 32`.
 BETTER_AUTH_SECRET=
 # Cloudflare's Turnstile test secret, which passes every check.

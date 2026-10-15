@@ -1,6 +1,6 @@
 import type { Context } from "../context";
 import type { ContentContext, ContentVerdict } from "../ports";
-import { ok, refuse, type Result } from "../result";
+import { ok, refuse, type Result } from "../shared/result";
 import { recordRefusal, type SentOn } from "../signals";
 import type { StoredFile } from "../uploads";
 import {

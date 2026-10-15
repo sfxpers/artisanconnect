@@ -1,6 +1,6 @@
 import { and, asc, eq, inArray, sql, type SQL } from "drizzle-orm";
-import type { Actor } from "../actor";
-import { system } from "../actor";
+import type { Actor } from "../shared/actor";
+import { system } from "../shared/actor";
 import { firstProblem } from "../accounts/inputs";
 import { startClock, type ClockHandler } from "../clocks";
 import type { Context, Write } from "../context";
@@ -17,10 +17,10 @@ import {
   ledgerWrites,
   type LedgerRow,
 } from "../ledger";
-import { formatRands } from "../money";
+import { formatRands } from "../shared/money";
 import type { PaymentEvent } from "../ports";
-import { ok, refuse } from "../result";
-import { DAY_MS, formatDay, saDay } from "../sa-days";
+import { ok, refuse } from "../shared/result";
+import { DAY_MS, formatDay, saDay } from "../shared/sa-days";
 import { ledgerEntries, payments, refunds } from "../schema";
 import { raiseSupportRequest } from "../support";
 import { emailTells, tellWhile, tellWithEmailWhile } from "../tells";

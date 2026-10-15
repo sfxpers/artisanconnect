@@ -1,9 +1,9 @@
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
-import type { AdminActor } from "../actor";
+import type { AdminActor } from "../shared/actor";
 import type { Context, Write } from "../context";
 import { causedBy } from "../errors";
 import { defineQueueItemKind, type ItemView, type QueueItem, type QueueItemKind } from "../queues";
-import { ok, refuse } from "../result";
+import { ok, refuse } from "../shared/result";
 import { queueItems } from "../schema";
 import { tell } from "../tells";
 

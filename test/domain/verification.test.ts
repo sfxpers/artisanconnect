@@ -1,5 +1,5 @@
-import { describe, expect, test } from "vitest";
-import { visitor } from "@/domain/actor";
+import { describe, expect, test } from "vite-plus/test";
+import { visitor } from "@/domain/shared/actor";
 import type { Block } from "@/domain/queues";
 import { createHarness, type Harness } from "../support/harness";
 import {
@@ -460,7 +460,7 @@ describe("the Identity Number", () => {
 /** Every check of a submission list accepted, through the Artisan's one open item. */
 async function acceptAll(
   domain: Harness["domain"],
-  admin: { actor: import("@/domain/actor").AdminActor },
+  admin: { actor: import("@/domain/shared/actor").AdminActor },
   checkIds: string[],
 ) {
   const { id: itemId } = await verificationItem(domain, admin);

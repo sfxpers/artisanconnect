@@ -1,5 +1,5 @@
 import { parse } from "jsonc-parser";
-import { describe, expect, test } from "vitest";
+import { describe, expect, test } from "vite-plus/test";
 import wranglerConfig from "../wrangler.jsonc?raw";
 import { createDomain, type Ports } from "@/domain";
 import { createHarness, TEST_CONFIG } from "./support/harness";

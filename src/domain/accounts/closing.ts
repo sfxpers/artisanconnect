@@ -1,8 +1,8 @@
 import { and, eq, isNull, notInArray, or } from "drizzle-orm";
-import type { AccountActor } from "../actor";
+import type { AccountActor } from "../shared/actor";
 import type { Context, Write } from "../context";
 import { isAlreadyDecided } from "../content/held";
-import { ok, refuse, type Result } from "../result";
+import { ok, refuse, type Result } from "../shared/result";
 import { accounts, authSessions, engagements } from "../schema";
 import { newWorkEnded } from "../standing";
 import { emailTells } from "../tells";

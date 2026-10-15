@@ -1,8 +1,8 @@
-import { describe, expect, test } from "vitest";
-import type { Actor, AdminActor } from "@/domain/actor";
+import { describe, expect, test } from "vite-plus/test";
+import type { Actor, AdminActor } from "@/domain/shared/actor";
 import { createHarness, type Harness } from "../support/harness";
 import { createFakePayments, type FakePayments } from "@/domain/fakes/payments";
-import { formatRands } from "@/domain/money";
+import { formatRands } from "@/domain/shared/money";
 import { collectionOf } from "../support/given";
 
 // Hire by Payment (#126, ADR 0004): the Client Hires a Sent Quote by paying

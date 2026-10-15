@@ -1,12 +1,12 @@
 import { and, asc, eq, isNull, notExists, sql, type SQL } from "drizzle-orm";
-import type { Actor, AdminActor } from "./actor";
+import type { Actor, AdminActor } from "./shared/actor";
 import { audit, logRead } from "./audit";
 import { keyOfLink } from "./file-links";
 import type { Context, Write } from "./context";
 import { causedBy } from "./errors";
 import { insertWhile } from "./guarded";
-import { adminOnly, ok, refuse, type Result } from "./result";
-import { QUEUE_NAMES, splitOf, type QueueName } from "./queue-names";
+import { adminOnly, ok, refuse, type Result } from "./shared/result";
+import { QUEUE_NAMES, splitOf, type QueueName } from "./shared/queue-names";
 import { admins, queueItems } from "./schema";
 import { emailTells } from "./tells";
 

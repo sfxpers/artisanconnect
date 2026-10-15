@@ -1,8 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { notFound } from "@tanstack/react-router";
-import { visitor } from "@/domain/actor";
-import type { FigurePeriod } from "@/domain/figures/periods";
-import type { QueueName } from "@/domain/queue-names";
+import { visitor } from "@/domain/shared/actor";
+import type { FigurePeriod } from "@/domain/shared/periods";
+import type { QueueName } from "@/domain/shared/queue-names";
 import {
   requestActor,
   requestDomain,

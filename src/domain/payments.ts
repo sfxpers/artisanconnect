@@ -4,7 +4,7 @@ import { collectionFailed, collectionSucceeded } from "./engagements/hire";
 import { payoutFailed, payoutPaused, payoutSentBack, payoutSucceeded } from "./payouts/events";
 import { refundFailed, refundPaused, refundSucceeded } from "./refunds";
 import type { Webhook } from "./ports";
-import { ok, refuse } from "./result";
+import { ok, refuse } from "./shared/result";
 
 // Payment events (#108): the payment adapter's webhooks, which the webhook
 // route hands to the module as they came. They may repeat or arrive out of

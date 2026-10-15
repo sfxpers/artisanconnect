@@ -3,7 +3,7 @@ import { env } from "cloudflare:workers";
 import { notFound } from "@tanstack/react-router";
 import { getRequestUrl } from "@tanstack/react-start/server";
 import type { SignUpDetails } from "@/domain/accounts/inputs";
-import { visitor } from "@/domain/actor";
+import { visitor } from "@/domain/shared/actor";
 import { localMail } from "@/worker/ports";
 import {
   requestActor,

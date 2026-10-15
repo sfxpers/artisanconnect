@@ -7,7 +7,6 @@ node_modules
 .dev.vars.*
 !.dev.vars.example
 dist
-.output
 .wrangler
 .tanstack
 .vite
@@ -17,3 +16,4 @@ test-results
 playwright-report
 # The review pass: report, screenshots, and their tooling, never committed
 .review/
+.vitest/

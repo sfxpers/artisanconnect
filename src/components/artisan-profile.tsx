@@ -11,7 +11,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import type { Domain } from "@/domain";
-import { formatDay } from "@/domain/sa-days";
+import { formatDay } from "@/domain/shared/sa-days";
 import { copy } from "@/web/copy";
 import { getArtisanReviews } from "@/web/reviews";
 import { ReviewList } from "@/components/reviews";

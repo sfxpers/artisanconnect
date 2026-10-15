@@ -1,10 +1,12 @@
 {
   "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules", "dist", ".wrangler", ".output", ".tanstack"],
+  "exclude": ["node_modules", "dist", ".wrangler", ".tanstack"],
   "compilerOptions": {
     "jsx": "react-jsx",
-    "moduleResolution": "Bundler",
+    // Vite compiles each file alone, so nothing may need the rest of the program.
     "isolatedModules": true,
+    // The Workers types and the DOM's declare the same globals differently;
+    // checking library files fails on every clash.
     "skipLibCheck": true,
     "paths": {
       "@/*": ["./src/*"]

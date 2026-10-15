@@ -35,8 +35,8 @@ import {
   refundFields,
   updatedQuoteFields,
 } from "@/domain/engagements/inputs";
-import { formatRands, PROTECTION_FEE_PERCENT } from "@/domain/money";
-import { formatDay } from "@/domain/sa-days";
+import { formatRands, PROTECTION_FEE_PERCENT } from "@/domain/shared/money";
+import { formatDay } from "@/domain/shared/sa-days";
 import { copy, formatDate, formatDeadline } from "@/web/copy";
 import {
   acceptUpdatedQuote,

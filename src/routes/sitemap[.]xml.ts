@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { SERVICE_CATEGORIES } from "@/domain/service-categories";
+import { SERVICE_CATEGORIES } from "@/domain/shared/service-categories";
 import { requestActor, requestDomain } from "@/web/session";
 
 // What search engines may find: the landing page, Browse for each trade, and

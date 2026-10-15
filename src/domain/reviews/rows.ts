@@ -4,7 +4,7 @@ import { shownName } from "../accounts/names";
 import { notFrozen } from "../chargebacks/frozen";
 import type { Context } from "../context";
 import { accounts, engagements, jobs, reviews, REVIEW_GROUNDS } from "../schema";
-import { SERVICE_CATEGORY_NAMES } from "../service-categories";
+import { SERVICE_CATEGORY_NAMES } from "../shared/service-categories";
 import { REVIEW_WINDOW_MS } from "./window";
 
 // Reading Reviews (#138). Neither party reads the other's until both have

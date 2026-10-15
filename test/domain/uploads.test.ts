@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test } from "vite-plus/test";
 import chromeVideoMp4 from "../fixtures/chrome-video.mp4?inline";
 import chromeVideoWebm from "../fixtures/chrome-video.webm?inline";
 import chromeVoiceMp4 from "../fixtures/chrome-voice-note.mp4?inline";

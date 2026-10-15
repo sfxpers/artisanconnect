@@ -1,9 +1,3 @@
-// The design's rules a check can hold: every colour, radius, and size is a
-// token in src/styles.css, so pages, components, and the web layer use no
-// colour or arbitrary value of their own; and spacing keeps to the 4px grid,
-// whole Tailwind steps, never a half one. shadcn's
-// own files in src/components/ui stay as shadcn writes them, and are left out.
-//   node scripts/check-tokens.mjs        (part of `nub run lint`)
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 

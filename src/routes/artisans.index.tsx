@@ -16,7 +16,7 @@ import {
   SERVICE_CATEGORIES,
   SERVICE_CATEGORY_NAMES,
   type ServiceCategory,
-} from "@/domain/service-categories";
+} from "@/domain/shared/service-categories";
 import { copy, pageTitle } from "@/web/copy";
 import { getBrowse, getRegionNames } from "@/web/profiles";
 

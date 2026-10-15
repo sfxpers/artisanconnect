@@ -1,11 +1,11 @@
 import * as z from "zod";
 import { and, asc, eq, or, sql } from "drizzle-orm";
-import type { Actor } from "../actor";
+import type { Actor } from "../shared/actor";
 import { firstProblem } from "../accounts/inputs";
 import type { Context } from "../context";
 import { isAlreadyDecided } from "../content/held";
 import { causedBy } from "../errors";
-import { adminOnly, ok, refuse } from "../result";
+import { adminOnly, ok, refuse } from "../shared/result";
 import { artisanRecord } from "../engagements/record";
 import { clientRelationshipsOf } from "../engagements/relationships";
 import { accounts, authUsers } from "../schema";

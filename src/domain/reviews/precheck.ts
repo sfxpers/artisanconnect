@@ -1,12 +1,12 @@
 import { and, eq, exists, sql } from "drizzle-orm";
-import type { AdminActor } from "../actor";
+import type { AdminActor } from "../shared/actor";
 import type { Context, Write } from "../context";
 import { jobBlocks } from "../jobs/held";
 import { jobRow } from "../jobs/rows";
 import { defineQueueItemKind, type Block, type DecisionOption } from "../queues";
 import { accountSidebar } from "../quotes/held";
-import { ok } from "../result";
-import { formatTime } from "../sa-days";
+import { ok } from "../shared/result";
+import { formatTime } from "../shared/sa-days";
 import { reviews, REVIEW_GROUNDS } from "../schema";
 import { tellWhile } from "../tells";
 import { REVIEW_GROUND_NAMES, reviewRow, type ReviewGround } from "./rows";

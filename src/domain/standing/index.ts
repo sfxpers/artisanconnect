@@ -1,5 +1,5 @@
 import { and, desc, eq, exists, inArray, isNull, sql, type SQLWrapper } from "drizzle-orm";
-import type { Actor, AdminActor } from "../actor";
+import type { Actor, AdminActor } from "../shared/actor";
 import { audit, systemAudit } from "../audit";
 import type { Context, Write } from "../context";
 import { addedBy, editsStanding, withdrawEdit } from "../jobs/edits";
@@ -7,7 +7,7 @@ import { withdrawHeldJob } from "../jobs/held";
 import { closeJobWrites, endWrites } from "../quotes/ends";
 import { withdrawHeldQuote } from "../quotes/held";
 import { withdrawRevisionWrites } from "../quotes/revisions";
-import { refuse } from "../result";
+import { refuse } from "../shared/result";
 import { jobs, quotes, suspensions, warnings } from "../schema";
 import { linkedSignalWrites } from "../signals";
 import { tell, tellWhile } from "../tells";

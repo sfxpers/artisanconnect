@@ -1,4 +1,4 @@
-import type { Actor } from "../actor";
+import type { Actor } from "../shared/actor";
 import type { Seen } from "../signals";
 import { defineSection } from "../section";
 import {

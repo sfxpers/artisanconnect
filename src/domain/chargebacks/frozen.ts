@@ -1,7 +1,7 @@
 import { and, eq, ne, notExists, sql, type SQL, type SQLWrapper } from "drizzle-orm";
 import type { Context } from "../context";
 import { causedBy } from "../errors";
-import { refuse } from "../result";
+import { refuse } from "../shared/result";
 import { chargebacks } from "../schema";
 
 // What a Chargeback waiting for the Admin freezes (#137): its Engagement, and

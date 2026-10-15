@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { MarketplaceRules } from "@/domain/accounts/rules";
-import { formatRands } from "@/domain/money";
+import { formatRands } from "@/domain/shared/money";
 import { copy, countdownTo, formatDate } from "@/web/copy";
 
 /** A step back up the pages, above a page's title. */

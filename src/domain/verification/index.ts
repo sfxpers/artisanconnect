@@ -11,7 +11,7 @@ import {
   sql,
   type SQLWrapper,
 } from "drizzle-orm";
-import type { Actor, AdminActor } from "../actor";
+import type { Actor, AdminActor } from "../shared/actor";
 import { firstProblem } from "../accounts/inputs";
 import { publicName } from "../accounts/names";
 import { startClock, type ClockHandler } from "../clocks";
@@ -19,8 +19,8 @@ import type { Context, Write } from "../context";
 import { causedBy } from "../errors";
 import { fileLink } from "../file-links";
 import { defineQueueItemKind, type Block, type DecisionField, type ItemRow } from "../queues";
-import { ok, refuse, type Result } from "../result";
-import { daysBefore, formatDay, isDay, saDay, saDayStart } from "../sa-days";
+import { ok, refuse, type Result } from "../shared/result";
+import { daysBefore, formatDay, isDay, saDay, saDayStart } from "../shared/sa-days";
 import { accounts, authUsers, queueItems, verificationChecks } from "../schema";
 import { defineSection } from "../section";
 import {
@@ -28,7 +28,7 @@ import {
   SERVICE_CATEGORIES,
   SERVICE_CATEGORY_NAMES,
   type ServiceCategory,
-} from "../service-categories";
+} from "../shared/service-categories";
 import { payoutAccountSignalWrites } from "../signals";
 import { tell } from "../tells";
 import { discardFiles, uploadFile, UPLOAD_CONTEXTS } from "../uploads";
@@ -46,7 +46,7 @@ import {
   type CheckKind,
   type FilePart,
   type IdentityNumber,
-} from "./checks";
+} from "../shared/checks";
 import { bankFacts, checkBankAccount, readCheck } from "./reading";
 import { allSlots, checkTitle, Standing, type CheckRow } from "./standing";
 import type { CheckDetails, CheckFile } from "./stored";

@@ -1,14 +1,14 @@
 import * as z from "zod";
 import { and, desc, eq, inArray, isNull } from "drizzle-orm";
-import { accountIdOf, type Actor } from "../actor";
+import { accountIdOf, type Actor } from "../shared/actor";
 import { firstProblem } from "../accounts/inputs";
 import { closeAccount, closedRefusal, closedState } from "../accounts/closing";
 import type { Context, Write } from "../context";
 import { WITHDRAWN } from "../content/held";
-import { formatRands } from "../money";
+import { formatRands } from "../shared/money";
 import { defineQueueItemKind, type ItemView } from "../queues";
 import { peoplePage } from "../quotes/held";
-import { ok, refuse } from "../result";
+import { ok, refuse } from "../shared/result";
 import { accounts, authUsers, dataRequests, DATA_REQUEST_KINDS, queueItems } from "../schema";
 import { defineSection } from "../section";
 import { emailAddress, tell } from "../tells";

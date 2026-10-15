@@ -1,6 +1,12 @@
 import type { verificationChecks } from "../schema";
-import { SERVICE_CATEGORIES, type ServiceCategory } from "../service-categories";
-import { CATEGORY_CREDENTIALS, CHECKS, SOUTH_AFRICA, slotOf, type CheckKind } from "./checks";
+import { SERVICE_CATEGORIES, type ServiceCategory } from "../shared/service-categories";
+import {
+  CATEGORY_CREDENTIALS,
+  CHECKS,
+  SOUTH_AFRICA,
+  slotOf,
+  type CheckKind,
+} from "../shared/checks";
 
 // Where an Artisan's Verification stands, derived from its checks and today's
 // South African calendar day. Nothing here is stored: a check stops being
