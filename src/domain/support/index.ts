@@ -82,7 +82,7 @@ type SupportTag = keyof typeof SUPPORT_TAGS;
  * happened, `accountId` names the Account it concerns, if one does, and
  * `refundId` the failed Refund it is for, which the Admin pays by hand.
  */
-export type SystemSupportRequest = {
+type SystemSupportRequest = {
   tag: SupportTag;
   about: string;
   details: string;

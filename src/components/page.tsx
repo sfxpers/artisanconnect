@@ -28,7 +28,7 @@ import { formatRands } from "@/domain/money";
 import { copy, countdownTo, formatDate } from "@/web/copy";
 
 /** A step back up the pages, above a page's title. */
-export type Crumb = {
+type Crumb = {
   to: string;
   label: string;
   params?: Record<string, string>;
@@ -168,7 +168,7 @@ export function NextStepCard({
 }
 
 /** One line of money: what it is, the amount, and a note under it. */
-export type MoneyLine = { label: ReactNode; cents: number; note?: ReactNode; total?: boolean };
+type MoneyLine = { label: ReactNode; cents: number; note?: ReactNode; total?: boolean };
 
 /** Money as a line breakdown, the total last and ruled off; rands in tabular figures. */
 export function MoneyLines({ lines, className }: { lines: MoneyLine[]; className?: string }) {
