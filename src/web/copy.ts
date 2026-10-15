@@ -66,7 +66,6 @@ export const copy = {
   ] satisfies { label: string; category: ServiceCategory }[],
   footer: {
     tagline: "Verified Artisans in Cape Town, paid through the platform.",
-    nav: "More",
     trades: "Find Artisans by trade",
     regions: "Find Artisans by Region",
     company: "ArtisanConnect",
@@ -74,7 +73,7 @@ export const copy = {
     rules: "Marketplace rules",
     support: "Support",
     signUp: "Sign up",
-    photos: "Trade photos: Unsplash photographers, credited in /trades/CREDITS.md.",
+    photos: "Trade photos by Unsplash photographers, each credited",
   },
   loading: "Loading",
   pickDay: "Pick a day",
@@ -111,6 +110,7 @@ export const copy = {
     searchHint: "Choose a trade first, then search.",
     postJob: "Or post a Job and let Artisans come to you",
     popular: "Popular jobs",
+    checksLabel: "What is checked",
     checks: [
       "Every Artisan's identity document checked by the Admin",
       "Plumbers' and electricians' registrations checked",
