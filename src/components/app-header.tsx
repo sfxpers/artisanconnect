@@ -12,7 +12,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { SiteSearch } from "@/components/site-search";
 import { Wordmark } from "@/components/wordmark";
+import { SERVICE_CATEGORIES, SERVICE_CATEGORY_NAMES } from "@/domain/service-categories";
 import type { Me } from "@/web/me";
 import { copy } from "@/web/copy";
 
@@ -62,16 +64,22 @@ const navLink =
   "rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground";
 const navActive = { className: "text-foreground bg-muted" };
 
-/** The one header of a Visitor, a Client, or an Artisan (#107). The Admin's is its sidebar. */
+/**
+ * The one header of a Visitor, a Client, or an Artisan (#107). A Visitor's
+ * and a Client's search first, with the eight trades under it, as large
+ * South African shops head their pages. The Admin's is its sidebar.
+ */
 export function AppHeader({ me, unread = 0 }: { me: Me | null; unread?: number }) {
   const nav = navFor(me);
+  const finding = me?.kind !== "artisan";
   return (
     <header className="sticky top-0 z-40 border-b bg-background">
-      <div className="mx-auto flex h-14 max-w-7xl items-center gap-2 px-4 sm:px-6">
-        <MobileNav nav={nav} />
+      <div className="mx-auto flex h-16 max-w-7xl items-center gap-2 px-4 sm:px-6">
+        <MobileNav nav={nav} trades={finding} />
         <Link to="/" aria-label={copy.appName} className="mr-4 shrink-0 rounded-md">
           <Wordmark />
         </Link>
+        {finding && <SiteSearch className="hidden w-full max-w-xl md:flex" />}
         <nav aria-label={copy.header.main} className="ml-auto hidden items-center gap-1 md:flex">
           {nav.map((item) =>
             item.cta ? (
@@ -131,12 +139,35 @@ export function AppHeader({ me, unread = 0 }: { me: Me | null; unread?: number }
           )}
         </div>
       </div>
+      {finding && (
+        <>
+          <div className="border-t px-4 py-2 md:hidden">
+            <SiteSearch className="w-full" />
+          </div>
+          <nav aria-label={copy.header.trades} className="hidden border-t bg-card md:block">
+            <ul className="mx-auto flex max-w-7xl overflow-x-auto px-2 sm:px-4">
+              {SERVICE_CATEGORIES.map((category) => (
+                <li key={category}>
+                  <Link
+                    to="/artisans"
+                    search={{ category }}
+                    className="block px-3 py-2 text-sm whitespace-nowrap text-muted-foreground hover:text-foreground"
+                    activeProps={{ className: "text-foreground font-medium" }}
+                  >
+                    {SERVICE_CATEGORY_NAMES[category]}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </>
+      )}
     </header>
   );
 }
 
-/** The pages, in a sheet from the left on a phone. */
-function MobileNav({ nav }: { nav: NavItem[] }) {
+/** The pages, and for a Visitor or a Client the trades, in a sheet from the left on a phone. */
+function MobileNav({ nav, trades }: { nav: NavItem[]; trades: boolean }) {
   return (
     <Sheet>
       <SheetTrigger
@@ -146,7 +177,7 @@ function MobileNav({ nav }: { nav: NavItem[] }) {
       >
         <Menu />
       </SheetTrigger>
-      <SheetContent side="left" className="w-72">
+      <SheetContent side="left" className="w-72 overflow-y-auto">
         <SheetHeader>
           <SheetTitle>
             <Wordmark />
@@ -159,6 +190,21 @@ function MobileNav({ nav }: { nav: NavItem[] }) {
             </Link>
           ))}
         </nav>
+        {trades && (
+          <nav aria-label={copy.header.trades} className="grid gap-1 border-t px-4 pt-4">
+            {SERVICE_CATEGORIES.map((category) => (
+              <Link
+                key={category}
+                to="/artisans"
+                search={{ category }}
+                className={navLink}
+                activeProps={navActive}
+              >
+                {SERVICE_CATEGORY_NAMES[category]}
+              </Link>
+            ))}
+          </nav>
+        )}
       </SheetContent>
     </Sheet>
   );

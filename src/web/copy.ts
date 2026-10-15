@@ -2,6 +2,7 @@ import { EMAIL_CODE } from "@/domain/accounts/inputs";
 import type { MessageEvent } from "@/domain/conversations/inputs";
 import type { ENGAGEMENT_STATES, NOT_HIRED_REASONS } from "@/domain/schema";
 import { formatTime } from "@/domain/sa-days";
+import type { ServiceCategory } from "@/domain/service-categories";
 
 // Every word the web app shows, in one place for later translation, in the
 // glossary's words (GLOSSARY.md).
@@ -31,13 +32,49 @@ export const copy = {
     main: "Main",
     menu: "Menu",
     theme: { label: "Theme", light: "Light", dark: "Dark", system: "As the device" },
+    trades: "Trades",
   },
+  search: {
+    label: "Find Artisans by trade or job",
+    placeholder: "What needs doing? Try “geyser” or “tiles”",
+    none: "No trade matches that. Choose one of the eight trades.",
+    trades: "Trades",
+    jobs: "Popular jobs",
+    in: (trade: string) => `in ${trade}`,
+  },
+  /** Jobs people search for, each with the trade that does it. */
+  popularJobs: [
+    { label: "Geyser repair or replacement", category: "plumbing" },
+    { label: "Burst pipe or leak", category: "plumbing" },
+    { label: "Blocked drain", category: "plumbing" },
+    { label: "Gas installation", category: "plumbing" },
+    { label: "Trip switch or distribution board", category: "electrical" },
+    { label: "Electrical certificate of compliance", category: "electrical" },
+    { label: "Lights and plug points", category: "electrical" },
+    { label: "Kitchen cupboards", category: "carpentry" },
+    { label: "Built-in cupboards", category: "carpentry" },
+    { label: "Interior painting", category: "painting" },
+    { label: "Exterior and wall painting", category: "painting" },
+    { label: "Bathroom tiling", category: "tiling" },
+    { label: "Floor tiling", category: "tiling" },
+    { label: "Boundary wall", category: "brickwork" },
+    { label: "Plaster cracks and damp", category: "brickwork" },
+    { label: "Roof leak", category: "roofing" },
+    { label: "Gutters and flashing", category: "roofing" },
+    { label: "Burglar bars", category: "welding" },
+    { label: "Gates and palisade fencing", category: "welding" },
+  ] satisfies { label: string; category: ServiceCategory }[],
   footer: {
     tagline: "Verified Artisans in Cape Town, paid through the platform.",
     nav: "More",
+    trades: "Find Artisans by trade",
+    regions: "Find Artisans by Region",
+    company: "ArtisanConnect",
     findArtisans: "Find Artisans",
     rules: "Marketplace rules",
     support: "Support",
+    signUp: "Sign up",
+    photos: "Trade photos: Unsplash photographers, credited in /trades/CREDITS.md.",
   },
   loading: "Loading",
   pickDay: "Pick a day",
@@ -73,6 +110,12 @@ export const copy = {
     search: "Find Artisans",
     searchHint: "Choose a trade first, then search.",
     postJob: "Or post a Job and let Artisans come to you",
+    popular: "Popular jobs",
+    checks: [
+      "Every Artisan's identity document checked by the Admin",
+      "Plumbers' and electricians' registrations checked",
+      "Paid through ArtisanConnect, released after the work",
+    ],
     tradesTitle: "Browse by trade",
     tradePhoto: (trade: string) => `${trade} work`,
     howTitle: "How a Job goes",
