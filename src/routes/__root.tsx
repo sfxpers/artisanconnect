@@ -14,6 +14,7 @@ import { AppHeader } from "@/components/app-header";
 import { EmptyState, Page } from "@/components/page";
 import { buttonVariants } from "@/components/ui/button";
 import { getSession } from "@/web/accounts";
+import { getRegionNames } from "@/web/profiles";
 import { copy } from "@/web/copy";
 
 export const Route = createRootRoute({
@@ -34,6 +35,9 @@ export const Route = createRootRoute({
   }),
   // Who is signed in decides the header and which pages they may open.
   beforeLoad: () => getSession(),
+  // The Regions the footer links to, read once: they change only by a new seed.
+  loader: () => getRegionNames(),
+  staleTime: Infinity,
   // The document around every page, a not-found or failed one too.
   shellComponent: RootDocument,
   component: RootComponent,
@@ -43,6 +47,7 @@ export const Route = createRootRoute({
 
 function RootComponent() {
   const { me, admin, unreadNotices } = Route.useRouteContext();
+  const regions = Route.useLoaderData();
   const skip = (
     <a
       href="#main"
@@ -66,7 +71,7 @@ function RootComponent() {
       <div id="main" className="flex flex-1 flex-col">
         <Outlet />
       </div>
-      <AppFooter signedIn={me !== null} />
+      <AppFooter signedIn={me !== null} regions={regions} />
     </div>
   );
 }
