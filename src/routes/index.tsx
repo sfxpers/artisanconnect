@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { BadgeCheck, HandCoins, Receipt, Search } from "lucide-react";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Choose } from "@/components/choose";
 import { SuburbPicker, type Suburb } from "@/components/job-form";
@@ -53,7 +53,7 @@ function Landing() {
         <div className="mx-auto grid max-w-7xl items-center gap-8 px-4 py-8 sm:px-6 lg:grid-cols-2 lg:py-12">
           <div className="space-y-6">
             <div className="space-y-3">
-              <h1 className="text-2xl font-semibold sm:text-3xl">{t.title}</h1>
+              <h1 className="text-2xl font-semibold">{t.title}</h1>
               <p className="max-w-xl text-muted-foreground">{t.lead}</p>
             </div>
             <TradeSearch />
@@ -69,13 +69,13 @@ function Landing() {
               <h2 id="popular" className="text-sm font-medium">
                 {t.popular}
               </h2>
-              <ul className="flex flex-wrap gap-2">
+              <ul className="grid gap-x-6 gap-y-1 sm:grid-cols-2">
                 {POPULAR.map((job) => (
                   <li key={job.label}>
                     <Link
                       to="/artisans"
                       search={{ category: job.category }}
-                      className={buttonVariants({ variant: "outline", size: "sm" })}
+                      className="text-sm text-primary hover:underline"
                     >
                       {job.label}
                     </Link>
@@ -99,7 +99,7 @@ function Landing() {
             alt={t.tradePhoto(SERVICE_CATEGORY_NAMES.carpentry)}
             width={960}
             height={640}
-            className="hidden aspect-4/3 w-full rounded-lg border object-cover lg:block"
+            className="aspect-4/3 w-full rounded-lg border object-cover"
           />
         </div>
       </section>
