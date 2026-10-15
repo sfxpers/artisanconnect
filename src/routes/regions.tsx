@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { copy, pageTitle } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
 import { chooseRegions, getRegions, searchSuburbs } from "@/web/regions";
+import { suburbName } from "@/domain/regions/places";
 
 export const Route = createFileRoute("/regions")({
   beforeLoad: ({ context }) => {
@@ -93,7 +94,7 @@ function Regions() {
                     >
                       {region.suburbs.map((suburb) => (
                         <li key={suburb.id} className="break-inside-avoid py-1">
-                          {suburb.name}
+                          {suburbName(suburb.name)}
                         </li>
                       ))}
                     </ul>
@@ -166,7 +167,7 @@ function FindSuburb() {
             <ul className="divide-y text-sm" aria-live="polite">
               {found.suburbs.map((suburb) => (
                 <li key={suburb.id} className="flex justify-between gap-3 py-2">
-                  <span>{suburb.name}</span>
+                  <span>{suburbName(suburb.name)}</span>
                   <span className="text-muted-foreground">{suburb.region.name}</span>
                 </li>
               ))}

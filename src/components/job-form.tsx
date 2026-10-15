@@ -27,6 +27,7 @@ import { copy } from "@/web/copy";
 import type { getJob } from "@/web/jobs";
 import { searchSuburbs } from "@/web/regions";
 import { Choose } from "@/components/choose";
+import { suburbName } from "@/domain/regions/places";
 
 const t = copy.job;
 
@@ -332,7 +333,7 @@ export function SuburbPicker({
           <ComboboxList>
             {(suburb: Suburb) => (
               <ComboboxItem key={suburb.id} value={suburb} className="justify-between">
-                <span>{suburb.name}</span>
+                <span>{suburbName(suburb.name)}</span>
                 <span className="text-muted-foreground">{suburb.region.name}</span>
               </ComboboxItem>
             )}
@@ -344,4 +345,4 @@ export function SuburbPicker({
   );
 }
 
-const labelOf = (suburb: Suburb) => `${suburb.name} · ${suburb.region.name}`;
+const labelOf = (suburb: Suburb) => `${suburbName(suburb.name)} · ${suburb.region.name}`;
