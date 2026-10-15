@@ -135,19 +135,18 @@ function QueueItemPage() {
 /** The highlighted card: only the decisions allowed now, each saying who is told. */
 function DecisionCard({ item }: { item: Item }) {
   const router = useRouter();
-  const [chosen, setChosen] = useState<string | null>(null);
+  // The only decision allowed is chosen already, as one less click.
+  const only = item.decisions.length === 1 ? item.decisions[0]! : null;
+  const [chosen, setChosen] = useState<string | null>(only?.key ?? null);
   const [reason, setReason] = useState("");
-  const [fields, setFields] = useState<Record<string, string>>({});
+  const [fields, setFields] = useState<Record<string, string>>(() => defaultsOf(only));
   const [busy, setBusy] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);
   const option = item.decisions.find((decision) => decision.key === chosen);
 
   function choose(key: string) {
     setChosen(key);
-    const decision = item.decisions.find((each) => each.key === key);
-    setFields(
-      Object.fromEntries((decision?.fields ?? []).map((field) => [field.key, field.value])),
-    );
+    setFields(defaultsOf(item.decisions.find((each) => each.key === key)));
   }
 
   async function record() {
@@ -309,10 +308,7 @@ function RowDecision({ itemId, row }: { itemId: string; row: ItemRow }) {
   function choose(key: string) {
     setChosen(key);
     setRefusal(null);
-    const decision = row.decisions.find((each) => each.key === key);
-    setFields(
-      Object.fromEntries((decision?.fields ?? []).map((field) => [field.key, field.value])),
-    );
+    setFields(defaultsOf(row.decisions.find((each) => each.key === key)));
   }
 
   async function record() {
@@ -529,4 +525,9 @@ function LoggedRead({
       <Refusal message={refusal} />
     </div>
   );
+}
+
+/** A decision's fields as they start: each with the value the item gives it. */
+function defaultsOf(decision: { fields: { key: string; value: string }[] } | null | undefined) {
+  return Object.fromEntries((decision?.fields ?? []).map((field) => [field.key, field.value]));
 }

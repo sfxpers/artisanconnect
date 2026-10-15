@@ -33,7 +33,7 @@ Multi-context repo (presence of `GLOSSARY-MAP.md` at the root):
     ├── ordering/
     │   ├── GLOSSARY.md
     │   └── docs/adr/                  ← context-specific decisions
-    └── artisanconnect/
+    └── billing/
         ├── GLOSSARY.md
         └── docs/adr/
 ```

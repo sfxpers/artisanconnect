@@ -28,7 +28,7 @@ export default defineConfig(async () => {
       // A test drives whole Engagements through workerd, and the slowest take
       // about five seconds alone: past Vitest's default when the machine is busy.
       testTimeout: 20_000,
-      // On by default since 5.0.4, but workerd cannot read the cache it writes (@cloudflare/vitest-plugin 1.4.0).
+      // On by default since 5.0.4, but workerd cannot read the cache it writes (@cloudflare/vitest-plugin 1.4.2).
       fsModuleCache: false,
     },
   };

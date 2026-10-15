@@ -686,6 +686,78 @@ describe("Verification after Hire", () => {
   });
 });
 
+describe("an Engagement's every step", () => {
+  test("is its own party's only: to anyone else the Engagement does not exist", async () => {
+    const { domain, given } = await createHarness();
+    const { client, artisan, jobId, quoteId } = await quoted(given);
+    await given.hired(client, quoteId);
+    const engagementId = await given.engagementOf(client, jobId);
+    const stranger = await given.client();
+    const otherArtisan = await given.matchableArtisan();
+    const admin = await given.admin();
+    const visitor: Actor = { kind: "visitor" };
+    const anyoneBut = (party: { actor: Actor }) =>
+      [
+        client.actor,
+        artisan.actor,
+        stranger.actor,
+        otherArtisan.actor,
+        admin.actor,
+        visitor,
+      ].filter((actor) => actor !== party.actor);
+    const steps: [string, Actor[], (actor: Actor) => Promise<unknown>][] = [
+      [
+        "Work started",
+        anyoneBut(client),
+        (actor) => domain.engagements.workStarted(actor, { engagementId }),
+      ],
+      [
+        "I've started",
+        anyoneBut(artisan),
+        (actor) => domain.engagements.claimStarted(actor, { engagementId }),
+      ],
+      [
+        "Not started",
+        anyoneBut(client),
+        (actor) => domain.engagements.notStarted(actor, { engagementId }),
+      ],
+      [
+        "Completion",
+        anyoneBut(artisan),
+        (actor) => domain.engagements.complete(actor, { engagementId, note: "Done.", photos: [] }),
+      ],
+      [
+        "Approval",
+        anyoneBut(client),
+        (actor) => domain.engagements.approve(actor, { engagementId }),
+      ],
+      [
+        "Refund",
+        anyoneBut(artisan),
+        (actor) => domain.engagements.refund(actor, { engagementId, labour: "100" }),
+      ],
+      [
+        "Cancellation",
+        [stranger.actor, otherArtisan.actor, admin.actor, visitor],
+        (actor) => domain.engagements.cancel(actor, { engagementId }),
+      ],
+    ];
+
+    for (const [step, actors, take] of steps) {
+      for (const actor of actors) {
+        expect(await take(actor), `${step} by ${actor.kind}`).toMatchObject({
+          ok: false,
+          refusal: { reason: "not-found" },
+        });
+      }
+    }
+    expect((await domain.jobs.view(client.actor, { jobId }))?.engagement).toMatchObject({
+      state: "paid",
+      money: { releasedCents: 0, refundedCents: 0 },
+    });
+  });
+});
+
 const QUOTE = {
   scope: "Prepare and paint two walls with two coats of washable white.",
   labour: "1500",

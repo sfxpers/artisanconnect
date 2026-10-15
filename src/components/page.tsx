@@ -28,7 +28,7 @@ import { formatRands } from "@/domain/money";
 import { copy, countdownTo, formatDate } from "@/web/copy";
 
 /** A step back up the pages, above a page's title. */
-export type Crumb = {
+type Crumb = {
   to: string;
   label: string;
   params?: Record<string, string>;
@@ -43,6 +43,7 @@ export function Page({
   title,
   lead,
   crumbs,
+  here,
   status,
   meta,
   actions,
@@ -52,6 +53,8 @@ export function Page({
   title?: ReactNode;
   lead?: ReactNode;
   crumbs?: Crumb[];
+  /** The page's own crumb, when its title is not one line of text or it has none. */
+  here?: string;
   status?: ReactNode;
   meta?: ReactNode;
   actions?: ReactNode;
@@ -67,7 +70,9 @@ export function Page({
     >
       {(crumbs || title || actions) && (
         <header className="space-y-3">
-          {crumbs && <Crumbs crumbs={crumbs} current={typeof title === "string" ? title : null} />}
+          {crumbs && (
+            <Crumbs crumbs={crumbs} current={here ?? (typeof title === "string" ? title : null)} />
+          )}
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0 space-y-1">
               {title && (
@@ -168,7 +173,7 @@ export function NextStepCard({
 }
 
 /** One line of money: what it is, the amount, and a note under it. */
-export type MoneyLine = { label: ReactNode; cents: number; note?: ReactNode; total?: boolean };
+type MoneyLine = { label: ReactNode; cents: number; note?: ReactNode; total?: boolean };
 
 /** Money as a line breakdown, the total last and ruled off; rands in tabular figures. */
 export function MoneyLines({ lines, className }: { lines: MoneyLine[]; className?: string }) {

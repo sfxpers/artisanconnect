@@ -14,3 +14,13 @@ export function suburbKey(name: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]/g, "");
 }
+
+/** A suburb's name as people write it: the City publishes each in capitals ("SEA POINT"). */
+export function suburbName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(
+      /(^|[\s\-/(')])(\p{L})/gu,
+      (_, before: string, letter: string) => before + letter.toUpperCase(),
+    );
+}

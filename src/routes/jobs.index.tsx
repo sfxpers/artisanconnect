@@ -1,5 +1,6 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
+import { Item, ItemActions, ItemContent, ItemDescription, ItemTitle } from "@/components/ui/item";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -75,36 +76,36 @@ function Group({ title, jobs }: { title: string; jobs: Summary[] }) {
         <Card className="py-0">
           <ul className="divide-y">
             {jobs.map((job) => (
-              // The title's link covers the whole row, so the row is one target.
-              <li key={job.jobId} className="relative flex items-center gap-4 p-4 hover:bg-muted">
-                <div className="min-w-0 flex-1 space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Link
-                      to="/jobs/$jobId"
-                      params={{ jobId: job.jobId }}
-                      className="font-medium after:absolute after:inset-0"
-                    >
+              <li key={job.jobId}>
+                <Item
+                  className="rounded-none px-4 py-4"
+                  render={<Link to="/jobs/$jobId" params={{ jobId: job.jobId }} />}
+                >
+                  <ItemContent>
+                    <ItemTitle>
                       {job.title || t.untitled}
-                    </Link>
-                    <Badge variant={job.state === "open" ? "default" : "secondary"}>
-                      {job.engagementState
-                        ? copy.engagement.states[job.engagementState]
-                        : t.states[job.state]}
-                    </Badge>
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {[
-                      job.category,
-                      job.region,
-                      job.state === "open" &&
-                        job.expiresAt &&
-                        t.expires(formatDeadline(job.expiresAt)),
-                    ]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </div>
-                </div>
-                <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                      <Badge variant={job.state === "open" ? "default" : "secondary"}>
+                        {job.engagementState
+                          ? copy.engagement.states[job.engagementState]
+                          : t.states[job.state]}
+                      </Badge>
+                    </ItemTitle>
+                    <ItemDescription>
+                      {[
+                        job.category,
+                        job.region,
+                        job.state === "open" &&
+                          job.expiresAt &&
+                          t.expires(formatDeadline(job.expiresAt)),
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </ItemDescription>
+                  </ItemContent>
+                  <ItemActions>
+                    <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
+                  </ItemActions>
+                </Item>
               </li>
             ))}
           </ul>

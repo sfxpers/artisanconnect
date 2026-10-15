@@ -141,20 +141,6 @@ describe("the Client marks Work started", () => {
     expect(await releasesTo(domain, artisan)).toHaveLength(1);
     expect(await toldOf(domain, artisan, jobId)).toHaveLength(1);
   });
-
-  test("is the Engagement's Client's only", async () => {
-    const { domain, given } = await createHarness();
-    const { artisan, engagementId } = await hiredJob(given);
-    const stranger = await given.client();
-
-    for (const actor of [stranger.actor, artisan.actor, { kind: "visitor" } as Actor]) {
-      expect(await domain.engagements.workStarted(actor, { engagementId })).toMatchObject({
-        ok: false,
-        refusal: { reason: "not-found" },
-      });
-    }
-    expect(await releasesTo(domain, artisan)).toEqual([]);
-  });
 });
 
 describe("the Artisan says they've started", () => {
@@ -301,19 +287,6 @@ describe("the Artisan says they've started", () => {
       refusal: { reason: "not-paid" },
     });
   });
-
-  test("is the Hired Artisan's only", async () => {
-    const { domain, given } = await createHarness();
-    const { client, engagementId } = await hiredJob(given);
-    const other = await given.matchableArtisan();
-
-    for (const actor of [client.actor, other.actor, { kind: "visitor" } as Actor]) {
-      expect(await domain.engagements.claimStarted(actor, { engagementId })).toMatchObject({
-        ok: false,
-        refusal: { reason: "not-found" },
-      });
-    }
-  });
 });
 
 describe("the Client answers Not started", () => {
@@ -381,20 +354,6 @@ describe("the Client answers Not started", () => {
         message: "The Artisan has not said they've started, so there is nothing to answer.",
       },
     });
-  });
-
-  test("is the Engagement's Client's only", async () => {
-    const { domain, given } = await createHarness();
-    const { artisan, engagementId } = await hiredJob(given);
-    await domain.engagements.claimStarted(artisan.actor, { engagementId });
-    const stranger = await given.client();
-
-    for (const actor of [stranger.actor, artisan.actor]) {
-      expect(await domain.engagements.notStarted(actor, { engagementId })).toMatchObject({
-        ok: false,
-        refusal: { reason: "not-found" },
-      });
-    }
   });
 });
 

@@ -95,7 +95,17 @@ function ArtisanProfilePage() {
     />
   ) : null;
   return (
-    <Page crumbs={[{ to: "/artisans", label: t.back }]}>
+    <Page
+      crumbs={[
+        { to: "/artisans", label: t.back },
+        ...profile.categories.slice(0, 1).map(({ category, name }) => ({
+          to: "/artisans",
+          search: { category },
+          label: copy.browse.titleFor(name),
+        })),
+      ]}
+      here={profile.publicName}
+    >
       <ArtisanProfileView
         profile={profile}
         canReport={!!me}

@@ -13,7 +13,8 @@ import { ReportAction } from "@/components/report";
 import { useAction } from "@/components/use-action";
 import type { Domain } from "@/domain";
 import { REVIEW_COMMENT_MAX } from "@/domain/reviews/inputs";
-import { copy, formatDate, formatDeadline } from "@/web/copy";
+import { formatDay, saDay } from "@/domain/sa-days";
+import { copy, formatDeadline } from "@/web/copy";
 import { writeReview } from "@/web/reviews";
 
 // Reviews (#138): the party's own Review and the other's on the Job page,
@@ -56,7 +57,11 @@ export function ReviewList({
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
               <Stars rating={review.rating} />
               <span className="text-xs text-muted-foreground">
-                {[review.reviewer ?? t.someone, review.category?.name, formatDate(review.writtenAt)]
+                {[
+                  review.reviewer ?? t.someone,
+                  review.category?.name,
+                  formatDay(saDay(new Date(review.writtenAt))),
+                ]
                   .filter(Boolean)
                   .join(" · ")}
               </span>
@@ -213,7 +218,9 @@ export function EngagementReviewsCard({
             <>
               <Stars rating={theirs.rating} />
               {theirs.comment && <p className="text-sm whitespace-pre-line">{theirs.comment}</p>}
-              <p className="text-xs text-muted-foreground">{formatDate(theirs.writtenAt)}</p>
+              <p className="text-xs text-muted-foreground">
+                {formatDay(saDay(new Date(theirs.writtenAt)))}
+              </p>
               <ReportAction about={{ kind: "review", id: theirs.reviewId }} label={t.report} />
             </>
           ) : (

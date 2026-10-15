@@ -42,6 +42,7 @@ import { passInvitation } from "@/web/invitations";
 import { passMatch } from "@/web/matches";
 import { reviseQuote, sendQuote, withdrawQuoteBeingChecked, withdrawQuote } from "@/web/quotes";
 import { getClientReviews } from "@/web/reviews";
+import { suburbName } from "@/domain/regions/places";
 
 /** A Job as an Artisan offered it sees it. */
 type OfferedJobView = Extract<Awaited<ReturnType<typeof getJob>>, { as: "artisan" }>;
@@ -177,7 +178,7 @@ export function OfferedJob({
                     <Fact label={t.region}>{job.region?.name}</Fact>
                     {job.address && (
                       <Fact label={copy.engagement.address}>
-                        {job.address.street}, {job.address.suburb}
+                        {job.address.street}, {suburbName(job.address.suburb)}
                       </Fact>
                     )}
                   </dl>

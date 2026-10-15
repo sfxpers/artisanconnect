@@ -14,6 +14,7 @@ import { AppHeader } from "@/components/app-header";
 import { EmptyState, Page } from "@/components/page";
 import { buttonVariants } from "@/components/ui/button";
 import { getSession } from "@/web/accounts";
+import { getRegionNames } from "@/web/profiles";
 import { copy } from "@/web/copy";
 
 export const Route = createRootRoute({
@@ -34,6 +35,11 @@ export const Route = createRootRoute({
   }),
   // Who is signed in decides the header and which pages they may open.
   beforeLoad: () => getSession(),
+  // The Regions the footer links to, read once: they change only by a new seed.
+  loader: () => getRegionNames(),
+  staleTime: Infinity,
+  // The document around every page, a not-found or failed one too.
+  shellComponent: RootDocument,
   component: RootComponent,
   // An unknown address, or a notFound() no nearer route shows.
   notFoundComponent: NotFound,
@@ -41,6 +47,7 @@ export const Route = createRootRoute({
 
 function RootComponent() {
   const { me, admin, unreadNotices } = Route.useRouteContext();
+  const regions = Route.useLoaderData();
   const skip = (
     <a
       href="#main"
@@ -49,27 +56,23 @@ function RootComponent() {
       {copy.skipToContent}
     </a>
   );
-  return (
-    <RootDocument>
-      {admin ? (
-        <AdminShell admin={admin}>
-          {skip}
-          <div id="main" className="flex-1">
-            <Outlet />
-          </div>
-        </AdminShell>
-      ) : (
-        <div className="flex min-h-svh flex-col">
-          {skip}
-          <AppHeader me={me} unread={unreadNotices} />
-          {me?.standing.suspended && <SuspendedBanner suspended={me.standing.suspended} />}
-          <div id="main" className="flex flex-1 flex-col">
-            <Outlet />
-          </div>
-          <AppFooter signedIn={me !== null} />
-        </div>
-      )}
-    </RootDocument>
+  return admin ? (
+    <AdminShell admin={admin}>
+      {skip}
+      <div id="main" className="flex-1">
+        <Outlet />
+      </div>
+    </AdminShell>
+  ) : (
+    <div className="flex min-h-svh flex-col">
+      {skip}
+      <AppHeader me={me} unread={unreadNotices} />
+      {me?.standing.suspended && <SuspendedBanner suspended={me.standing.suspended} />}
+      <div id="main" className="flex flex-1 flex-col">
+        <Outlet />
+      </div>
+      <AppFooter signedIn={me !== null} regions={regions} />
+    </div>
   );
 }
 

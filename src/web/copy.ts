@@ -2,6 +2,7 @@ import { EMAIL_CODE } from "@/domain/accounts/inputs";
 import type { MessageEvent } from "@/domain/conversations/inputs";
 import type { ENGAGEMENT_STATES, NOT_HIRED_REASONS } from "@/domain/schema";
 import { formatTime } from "@/domain/sa-days";
+import type { ServiceCategory } from "@/domain/service-categories";
 
 // Every word the web app shows, in one place for later translation, in the
 // glossary's words (GLOSSARY.md).
@@ -31,13 +32,48 @@ export const copy = {
     main: "Main",
     menu: "Menu",
     theme: { label: "Theme", light: "Light", dark: "Dark", system: "As the device" },
+    trades: "Trades",
   },
+  search: {
+    label: "Find Artisans by trade or job",
+    placeholder: "What needs doing? Try “geyser” or “tiles”",
+    none: "No trade matches that. Choose one of the eight trades.",
+    trades: "Trades",
+    jobs: "Popular jobs",
+    in: (trade: string) => `in ${trade}`,
+  },
+  /** Jobs people search for, each with the trade that does it. */
+  popularJobs: [
+    { label: "Geyser repair or replacement", category: "plumbing" },
+    { label: "Burst pipe or leak", category: "plumbing" },
+    { label: "Blocked drain", category: "plumbing" },
+    { label: "Gas installation", category: "plumbing" },
+    { label: "Trip switch or distribution board", category: "electrical" },
+    { label: "Electrical certificate of compliance", category: "electrical" },
+    { label: "Lights and plug points", category: "electrical" },
+    { label: "Kitchen cupboards", category: "carpentry" },
+    { label: "Built-in cupboards", category: "carpentry" },
+    { label: "Interior painting", category: "painting" },
+    { label: "Exterior and wall painting", category: "painting" },
+    { label: "Bathroom tiling", category: "tiling" },
+    { label: "Floor tiling", category: "tiling" },
+    { label: "Boundary wall", category: "brickwork" },
+    { label: "Plaster cracks and damp", category: "brickwork" },
+    { label: "Roof leak", category: "roofing" },
+    { label: "Gutters and flashing", category: "roofing" },
+    { label: "Burglar bars", category: "welding" },
+    { label: "Gates and palisade fencing", category: "welding" },
+  ] satisfies { label: string; category: ServiceCategory }[],
   footer: {
     tagline: "Verified Artisans in Cape Town, paid through the platform.",
-    nav: "More",
+    trades: "Find Artisans by trade",
+    regions: "Find Artisans by Region",
+    company: "ArtisanConnect",
     findArtisans: "Find Artisans",
     rules: "Marketplace rules",
     support: "Support",
+    signUp: "Sign up",
+    photos: "Trade photos by Unsplash photographers, each credited",
   },
   loading: "Loading",
   pickDay: "Pick a day",
@@ -73,6 +109,13 @@ export const copy = {
     search: "Find Artisans",
     searchHint: "Choose a trade first, then search.",
     postJob: "Or post a Job and let Artisans come to you",
+    popular: "Popular jobs",
+    checksLabel: "What is checked",
+    checks: [
+      "Every Artisan's identity document checked by the Admin",
+      "Plumbers' and electricians' registrations checked",
+      "Paid through ArtisanConnect, released after the work",
+    ],
     tradesTitle: "Browse by trade",
     tradePhoto: (trade: string) => `${trade} work`,
     howTitle: "How a Job goes",
@@ -161,6 +204,9 @@ export const copy = {
       `${average.toFixed(1)} out of 5, from ${count} ${count === 1 ? "Review" : "Reviews"}`,
     noRating: "No Reviews yet",
     reviewCount: (count: number) => (count === 1 ? "(1 Review)" : `(${count} Reviews)`),
+    stars: (rating: number) => (rating === 1 ? "1 star" : `${rating} stars`),
+    ratingShare: (rating: number, count: number, of: number) =>
+      `${rating} out of 5: ${count} of ${of} ${of === 1 ? "Review" : "Reviews"}`,
     notVerifiedNow: "Not verified for any trade right now, so cannot Quote.",
     reviews: "Reviews",
     noReviews: "No Reviews yet. A Client reviews an Artisan once a Job is Completed.",
@@ -624,6 +670,8 @@ export const copy = {
     warrantyHint: "Your own promise. The platform does not make or enforce it.",
     total: "Total",
     minimum: "A Quote totals at least R300.",
+    feeLead:
+      "You are paid in the daily Payout run after each Release: the Materials at Work started, the Labour at Approval, less the Artisan Fee of 10%, or 5% once you have a Completed Job with this Client.",
     includesVat: (vatNumber: string) => `Amounts include VAT (VAT number ${vatNumber}).`,
     noVat: "Not VAT-registered? Your amounts are as given. You can add a VAT number in Account.",
     send: "Send Quote",
@@ -1137,7 +1185,9 @@ export const copy = {
     client: "Client",
     noName: "A Client",
     reviews: (average: number | null, count: number) =>
-      average === null ? "No Reviews yet" : `${average.toFixed(1)} from ${count} Reviews`,
+      average === null
+        ? "No Reviews yet"
+        : `${average.toFixed(1)} from ${count} ${count === 1 ? "Review" : "Reviews"}`,
     completed: (count: number) => `${count} Completed`,
     region: "Region",
     gasWork: "Installs or removes gas",

@@ -292,7 +292,13 @@ describe("a Job Match", () => {
       takesQuotes: true,
       client: {
         shownName: "Thandi M.",
-        reviews: { average: null, count: 0, items: [], more: false },
+        reviews: {
+          average: null,
+          count: 0,
+          ratings: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
+          items: [],
+          more: false,
+        },
         completed: 0,
       },
     });

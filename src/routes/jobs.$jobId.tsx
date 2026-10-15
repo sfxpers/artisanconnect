@@ -53,6 +53,7 @@ import {
   saveJobDraft,
   withdrawJob,
 } from "@/web/jobs";
+import { suburbName } from "@/domain/regions/places";
 
 export const Route = createFileRoute("/jobs/$jobId")({
   // The one Region the invite list shows, if one is chosen, as on Browse; the
@@ -179,7 +180,11 @@ function ClientJob({
             : copy.jobs.states[job.state]}
         </Badge>
       }
-      meta={[job.category?.name, job.suburb?.name, job.siteType && t.siteTypes[job.siteType]]
+      meta={[
+        job.category?.name,
+        job.suburb && suburbName(job.suburb.name),
+        job.siteType && t.siteTypes[job.siteType],
+      ]
         .filter(Boolean)
         .join(" · ")}
     >
@@ -437,7 +442,7 @@ function SiteCard({ job, children }: { job: JobView; children?: ReactNode }) {
             {job.category?.name}
             {job.gasWork && ` · ${t.gasWork} ${t.yes}`}
           </Fact>
-          <Fact label={t.suburb}>{job.suburb?.name}</Fact>
+          <Fact label={t.suburb}>{job.suburb && suburbName(job.suburb.name)}</Fact>
           <Fact label={t.region}>{job.region?.name}</Fact>
           <Fact label={t.street}>{job.street}</Fact>
           <Fact label={t.matching}>{job.matching && t.matchings[job.matching]}</Fact>

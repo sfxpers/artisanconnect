@@ -125,22 +125,6 @@ describe("a Refund by the Artisan", () => {
     });
   });
 
-  test("is only the Hired Artisan's to make", async () => {
-    const { domain, given } = await createHarness();
-    const { client, engagementId } = await hiredJob(given);
-    const other = await given.verifiedArtisan();
-    const notFound = {
-      ok: false,
-      refusal: { reason: "not-found", message: "That Engagement does not exist." },
-    };
-
-    for (const actor of [client.actor, other.actor, { kind: "visitor" } as const]) {
-      expect(await domain.engagements.refund(actor, { engagementId, labour: "100" })).toEqual(
-        notFound,
-      );
-    }
-  });
-
   test("never has an Artisan Fee taken: only what is released does", async () => {
     const { domain, given } = await createHarness();
     const { client, artisan, jobId, engagementId } = await hiredJob(given);

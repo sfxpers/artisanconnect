@@ -99,6 +99,16 @@ export function ClientQuotes({
   const chosen = open.find((quote) => quote.quoteId === hiring && !quote.startPassed);
   if (quotes.length === 0) return <EmptyState icon={<FileText />}>{q.none}</EmptyState>;
 
+  const actionsOf = (quote: ClientQuote) => (
+    <QuoteActions
+      jobId={jobId}
+      quote={quote}
+      hiring={quote.quoteId === chosen?.quoteId}
+      onHire={() => hire(quote.quoteId)}
+      conversationId={conversationOf(quote.artisan.artisanId)}
+    />
+  );
+
   function hire(quoteId: string) {
     setHiring(quoteId);
     // On a phone the checkout is below the fold.
@@ -124,7 +134,7 @@ export function ClientQuotes({
               </ToggleGroup>
             )}
           </div>
-          <div className="rounded-lg border bg-card">
+          <div className="hidden rounded-lg border bg-card md:block">
             <Table aria-label={q.compare}>
               <TableHeader>
                 <TableRow>
@@ -137,115 +147,65 @@ export function ClientQuotes({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                <Row label={q.record}>
-                  {shown.map((quote) => (
-                    <TableCell key={quote.quoteId} className="text-muted-foreground">
-                      {copy.match.reviews(
-                        quote.artisan.reviews.average,
-                        quote.artisan.reviews.count,
+                {[...LINES, { label: q.actions, cell: actionsOf }].map((line) => (
+                  <TableRow key={line.label} className="hover:bg-transparent">
+                    <TableHead
+                      scope="row"
+                      className={cn(
+                        "w-36 bg-muted align-top whitespace-normal",
+                        "strong" in line && line.strong && "text-foreground",
                       )}
-                      <br />
-                      {copy.match.completed(quote.artisan.completed)}
-                    </TableCell>
-                  ))}
-                </Row>
-                <Row label={q.badges}>
-                  {shown.map((quote) => (
-                    <TableCell key={quote.quoteId}>
-                      <Badges badges={quote.artisan.badges} />
-                    </TableCell>
-                  ))}
-                </Row>
-                <Row label={t.labourShort}>
-                  {shown.map((quote) => (
-                    <Money key={quote.quoteId} cents={quote.labourCents} />
-                  ))}
-                </Row>
-                <Row label={t.materialsShort}>
-                  {shown.map((quote) => (
-                    <Money key={quote.quoteId} cents={quote.materialsCents} />
-                  ))}
-                </Row>
-                <Row label={q.protectionFee(PROTECTION_FEE_PERCENT)}>
-                  {shown.map((quote) => (
-                    <Money key={quote.quoteId} cents={quote.protectionFeeCents} />
-                  ))}
-                </Row>
-                <Row label={q.youPay} strong>
-                  {shown.map((quote) => (
-                    <Money key={quote.quoteId} cents={quote.paymentCents} strong />
-                  ))}
-                </Row>
-                <Row label={t.start}>
-                  {shown.map((quote) => (
-                    <TableCell key={quote.quoteId}>
-                      {formatDay(quote.startOn)}
-                      {quote.startPassed && (
-                        <Badge variant="warning" className="ml-2">
-                          {q.startPassed}
-                        </Badge>
-                      )}
-                    </TableCell>
-                  ))}
-                </Row>
-                <Row label={t.duration}>
-                  {shown.map((quote) => (
-                    <TableCell key={quote.quoteId}>{t.days(quote.durationDays)}</TableCell>
-                  ))}
-                </Row>
-                <Row label={t.materialsByShort}>
-                  {shown.map((quote) => (
-                    <TableCell key={quote.quoteId}>
-                      {t.materialsByShown[quote.materialsBy]}
-                    </TableCell>
-                  ))}
-                </Row>
-                <Row label={t.warrantyShort}>
-                  {shown.map((quote) => (
-                    <TableCell key={quote.quoteId} className="whitespace-normal">
-                      {quote.warranty ?? t.noWarranty}
-                    </TableCell>
-                  ))}
-                </Row>
-                <Row label={q.scope}>
-                  {shown.map((quote) => (
-                    <TableCell key={quote.quoteId} className="text-sm whitespace-pre-line">
-                      {quote.scope}
-                      {quote.vatNumber && (
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {t.includesVat(quote.vatNumber)}
-                        </p>
-                      )}
-                    </TableCell>
-                  ))}
-                </Row>
-                <Row label={q.expiresRow}>
-                  {shown.map((quote) => (
-                    <TableCell key={quote.quoteId} className="whitespace-normal">
-                      {quote.expiresAt ? <Deadline at={quote.expiresAt} /> : null}
-                      <p className="text-xs text-muted-foreground">
-                        {quote.sentAt && q.sent(formatDate(quote.sentAt))}
-                        {quote.revisedAt && ` · ${t.revisedOn(formatDate(quote.revisedAt))}`}
-                      </p>
-                    </TableCell>
-                  ))}
-                </Row>
-                <Row label={q.actions}>
-                  {shown.map((quote) => (
-                    <TableCell key={quote.quoteId} className="align-top">
-                      <QuoteActions
-                        jobId={jobId}
-                        quote={quote}
-                        hiring={quote.quoteId === chosen?.quoteId}
-                        onHire={() => hire(quote.quoteId)}
-                        conversationId={conversationOf(quote.artisan.artisanId)}
-                      />
-                    </TableCell>
-                  ))}
-                </Row>
+                    >
+                      {line.label}
+                    </TableHead>
+                    {shown.map((quote) => (
+                      <TableCell
+                        key={quote.quoteId}
+                        className={cn(
+                          "align-top whitespace-normal tabular-nums",
+                          "strong" in line && line.strong && "font-semibold",
+                        )}
+                      >
+                        {line.cell(quote)}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           </div>
+          {/* On a phone, each Quote is a card of the same lines, one under another. */}
+          <ul aria-label={q.compare} className="space-y-3 md:hidden">
+            {shown.map((quote) => (
+              <li key={quote.quoteId}>
+                <Card size="sm">
+                  <CardHeader>
+                    <CardTitle>
+                      <ArtisanName artisan={quote.artisan} />
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <dl className="divide-y text-sm">
+                      {LINES.map((line) => (
+                        <div key={line.label} className="flex justify-between gap-4 py-2">
+                          <dt className="text-muted-foreground">{line.label}</dt>
+                          <dd
+                            className={cn(
+                              "text-right tabular-nums",
+                              "strong" in line && line.strong && "font-semibold",
+                            )}
+                          >
+                            {line.cell(quote)}
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
+                    {actionsOf(quote)}
+                  </CardContent>
+                </Card>
+              </li>
+            ))}
+          </ul>
           {shown.some((quote) => quote.startPassed) && (
             <p className="text-sm text-muted-foreground">{q.startPassedLead}</p>
           )}
@@ -272,39 +232,68 @@ export function ClientQuotes({
   );
 }
 
-/** One line of the comparison: its label, held in place as the table scrolls on a phone. */
-function Row({
-  label,
-  strong,
-  children,
-}: {
-  label: string;
-  strong?: boolean;
-  children: ReactNode;
-}) {
-  return (
-    <TableRow className="hover:bg-transparent">
-      <TableHead
-        scope="row"
-        className={cn(
-          "sticky left-0 z-10 w-36 bg-muted align-top whitespace-normal",
-          strong && "text-foreground",
+/** The lines the Quotes are compared on, in the table and in each card on a phone. */
+const LINES: { label: string; strong?: boolean; cell: (quote: ClientQuote) => ReactNode }[] = [
+  {
+    label: q.record,
+    cell: (quote) => (
+      <span className="text-muted-foreground">
+        {copy.match.reviews(quote.artisan.reviews.average, quote.artisan.reviews.count)}
+        <br />
+        {copy.match.completed(quote.artisan.completed)}
+      </span>
+    ),
+  },
+  { label: q.badges, cell: (quote) => <Badges badges={quote.artisan.badges} /> },
+  { label: t.labourShort, cell: (quote) => formatRands(quote.labourCents) },
+  { label: t.materialsShort, cell: (quote) => formatRands(quote.materialsCents) },
+  {
+    label: q.protectionFee(PROTECTION_FEE_PERCENT),
+    cell: (quote) => formatRands(quote.protectionFeeCents),
+  },
+  { label: q.youPay, strong: true, cell: (quote) => formatRands(quote.paymentCents) },
+  {
+    label: t.start,
+    cell: (quote) => (
+      <>
+        {formatDay(quote.startOn)}
+        {quote.startPassed && (
+          <Badge variant="warning" className="ml-2">
+            {q.startPassed}
+          </Badge>
         )}
-      >
-        {label}
-      </TableHead>
-      {children}
-    </TableRow>
-  );
-}
-
-function Money({ cents, strong }: { cents: number; strong?: boolean }) {
-  return (
-    <TableCell className={cn("tabular-nums", strong && "font-semibold")}>
-      {formatRands(cents)}
-    </TableCell>
-  );
-}
+      </>
+    ),
+  },
+  { label: t.duration, cell: (quote) => t.days(quote.durationDays) },
+  { label: t.materialsByShort, cell: (quote) => t.materialsByShown[quote.materialsBy] },
+  { label: t.warrantyShort, cell: (quote) => quote.warranty ?? t.noWarranty },
+  {
+    label: q.scope,
+    cell: (quote) => (
+      <span className="whitespace-pre-line">
+        {quote.scope}
+        {quote.vatNumber && (
+          <span className="mt-1 block text-xs text-muted-foreground">
+            {t.includesVat(quote.vatNumber)}
+          </span>
+        )}
+      </span>
+    ),
+  },
+  {
+    label: q.expiresRow,
+    cell: (quote) => (
+      <>
+        {quote.expiresAt ? <Deadline at={quote.expiresAt} /> : null}
+        <span className="block text-xs text-muted-foreground">
+          {quote.sentAt && q.sent(formatDate(quote.sentAt))}
+          {quote.revisedAt && ` · ${t.revisedOn(formatDate(quote.revisedAt))}`}
+        </span>
+      </>
+    ),
+  },
+];
 
 function ArtisanName({ artisan }: { artisan: ClientQuote["artisan"] }) {
   return artisan.publicName ? (

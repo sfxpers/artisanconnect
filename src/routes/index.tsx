@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { BadgeCheck, HandCoins, Receipt, Search } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Choose } from "@/components/choose";
 import { SuburbPicker, type Suburb } from "@/components/job-form";
@@ -38,6 +38,9 @@ const t = copy.landing;
 
 const TRUST_ICONS = [BadgeCheck, Receipt, HandCoins];
 
+/** One popular job from most trades, as Checkatrade lists them under its search. */
+const POPULAR = [0, 4, 7, 9, 11, 15, 17].map((index) => copy.popularJobs[index]!);
+
 /**
  * The Visitor's landing page: search by trade and suburb first, then the
  * eight trades, how a Job goes, and what a Visitor can count on: a badge is
@@ -50,10 +53,36 @@ function Landing() {
         <div className="mx-auto grid max-w-7xl items-center gap-8 px-4 py-8 sm:px-6 lg:grid-cols-2 lg:py-12">
           <div className="space-y-6">
             <div className="space-y-3">
-              <h1 className="text-3xl font-semibold sm:text-4xl">{t.title}</h1>
+              <h1 className="text-2xl font-semibold sm:text-3xl">{t.title}</h1>
               <p className="max-w-xl text-muted-foreground">{t.lead}</p>
             </div>
             <TradeSearch />
+            <ul aria-label={t.checksLabel} className="grid gap-2 text-sm">
+              {t.checks.map((check) => (
+                <li key={check} className="flex items-center gap-2">
+                  <BadgeCheck className="size-4 shrink-0 text-primary" aria-hidden />
+                  {check}
+                </li>
+              ))}
+            </ul>
+            <nav aria-labelledby="popular" className="space-y-2">
+              <h2 id="popular" className="text-sm font-medium">
+                {t.popular}
+              </h2>
+              <ul className="flex flex-wrap gap-2">
+                {POPULAR.map((job) => (
+                  <li key={job.label}>
+                    <Link
+                      to="/artisans"
+                      search={{ category: job.category }}
+                      className={buttonVariants({ variant: "outline", size: "sm" })}
+                    >
+                      {job.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
             <Link
               to="/sign-up"
               className="inline-block text-sm font-medium text-primary hover:underline"

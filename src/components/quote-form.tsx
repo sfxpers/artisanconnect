@@ -151,6 +151,7 @@ export function QuoteForm({
                 <p className="text-xs text-muted-foreground">
                   {t.minimum} {vatNumber ? t.includesVat(vatNumber) : t.noVat}
                 </p>
+                <p className="text-xs text-muted-foreground">{t.feeLead}</p>
               </div>
             );
           }}

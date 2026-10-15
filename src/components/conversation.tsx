@@ -11,6 +11,8 @@ import {
   Square,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Bubble, BubbleContent } from "@/components/ui/bubble";
+import { Message, MessageContent, MessageFooter } from "@/components/ui/message";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -40,8 +42,8 @@ const t = copy.conversation;
  * per Artisan, beside the one open; the Artisan's own. Events show as rows
  * that are not speech, and the viewer's messages being checked show to them
  * only. Once Hired, the Engagement's also takes voice notes and PDFs (#131).
- * Custom: shadcn's Message and Bubble would add more lines than they replace,
- * and its Message Scroller needs another package.
+ * Each message is shadcn's Message and Bubble; its Message Scroller needs
+ * another package, so the list scrolls as a plain one.
  */
 export function Messages({
   jobId,
@@ -138,56 +140,59 @@ function ItemRow({ item }: { item: Item }) {
       </div>
     );
   }
+  const align = item.mine ? "end" : "start";
   return (
-    <div className={cn("flex flex-col gap-1", item.mine ? "items-end" : "items-start")}>
-      <div
-        className={cn(
-          "max-w-5/6 space-y-2 rounded-lg px-3 py-2 text-sm",
-          item.mine ? "bg-primary text-primary-foreground" : "bg-muted",
-          item.state !== "delivered" && "opacity-70",
-        )}
-      >
-        {item.text && <p className="whitespace-pre-line break-words">{item.text}</p>}
-        {item.photos.length > 0 && (
-          <div className="grid grid-cols-2 gap-2">
-            {item.photos.map((photo, index) => (
-              <a key={photo.id} href={photo.href} target="_blank" rel="noreferrer">
-                <img
-                  src={photo.thumbnailHref}
-                  alt={t.photo(index + 1)}
-                  className="aspect-4/3 w-full rounded-lg object-cover"
-                />
-              </a>
-            ))}
-          </div>
-        )}
-        {item.files.length > 0 && <MessageFiles files={item.files} />}
-      </div>
-      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-        {item.state === "held" && (
-          <>
-            <Badge variant="warning">{t.beingChecked}</Badge>
-            <span>{t.beingCheckedLead}</span>
-            <ActionButton
-              size="xs"
-              variant="ghost"
-              disabled={action.busy}
-              onClick={() =>
-                action.run(() => withdrawMessage({ data: { messageId: item.messageId } }))
-              }
-            >
-              {t.withdraw}
-            </ActionButton>
-          </>
-        )}
-        {item.state === "refused" && item.refused && (
-          <span className="text-destructive">{t.refused(item.refused.reason)}</span>
-        )}
-        <span>{formatDate(item.at)}</span>
-        {!item.mine && <ReportAction about={{ kind: "message", id: item.messageId }} />}
-      </div>
-      <Refusal message={action.refusal} />
-    </div>
+    <Message align={align}>
+      <MessageContent>
+        <Bubble
+          align={align}
+          variant={item.mine ? "default" : "muted"}
+          className={cn(item.state !== "delivered" && "opacity-70")}
+        >
+          <BubbleContent className="space-y-2">
+            {item.text && <p className="whitespace-pre-line">{item.text}</p>}
+            {item.photos.length > 0 && (
+              <div className="grid grid-cols-2 gap-2">
+                {item.photos.map((photo, index) => (
+                  <a key={photo.id} href={photo.href} target="_blank" rel="noreferrer">
+                    <img
+                      src={photo.thumbnailHref}
+                      alt={t.photo(index + 1)}
+                      className="aspect-4/3 w-full rounded-lg object-cover"
+                    />
+                  </a>
+                ))}
+              </div>
+            )}
+            {item.files.length > 0 && <MessageFiles files={item.files} />}
+          </BubbleContent>
+        </Bubble>
+        <MessageFooter className="flex-wrap gap-2">
+          {item.state === "held" && (
+            <>
+              <Badge variant="warning">{t.beingChecked}</Badge>
+              <span>{t.beingCheckedLead}</span>
+              <ActionButton
+                size="xs"
+                variant="ghost"
+                disabled={action.busy}
+                onClick={() =>
+                  action.run(() => withdrawMessage({ data: { messageId: item.messageId } }))
+                }
+              >
+                {t.withdraw}
+              </ActionButton>
+            </>
+          )}
+          {item.state === "refused" && item.refused && (
+            <span className="text-destructive">{t.refused(item.refused.reason)}</span>
+          )}
+          <span className="font-normal">{formatDate(item.at)}</span>
+          {!item.mine && <ReportAction about={{ kind: "message", id: item.messageId }} />}
+        </MessageFooter>
+        <Refusal message={action.refusal} />
+      </MessageContent>
+    </Message>
   );
 }
 
