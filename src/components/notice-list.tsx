@@ -1,4 +1,5 @@
 import { Bell, ChevronRight } from "lucide-react";
+import { Item, ItemActions, ItemContent, ItemDescription, ItemTitle } from "@/components/ui/item";
 import { useEffect, useState } from "react";
 import { Link, useRouter, useRouterState } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
@@ -38,16 +39,19 @@ export function NoticeList({ notices, fresh = 0 }: { notices: Notice[]; fresh?: 
     <Card className="py-0">
       <ul className="divide-y">
         {notices.map((notice, index) => (
-          // The title links to what the Tell is about, and covers the whole row.
-          <li key={notice.id} className="relative flex items-center gap-4 p-4 hover:bg-muted">
-            <div className="min-w-0 flex-1">
-              <Link to={notice.link} className="font-medium after:absolute after:inset-0">
-                {notice.title}
-              </Link>
-              {index < fresh && <Badge className="ml-2">{copy.notices.new}</Badge>}
-              <div className="text-xs text-muted-foreground">{formatDate(notice.toldAt)}</div>
-            </div>
-            <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+          <li key={notice.id}>
+            <Item className="rounded-none px-4 py-4" render={<Link to={notice.link} />}>
+              <ItemContent>
+                <ItemTitle>
+                  {notice.title}
+                  {index < fresh && <Badge>{copy.notices.new}</Badge>}
+                </ItemTitle>
+                <ItemDescription>{formatDate(notice.toldAt)}</ItemDescription>
+              </ItemContent>
+              <ItemActions>
+                <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
+              </ItemActions>
+            </Item>
           </li>
         ))}
       </ul>
