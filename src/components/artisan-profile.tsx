@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { BadgeCheck, ImageOff, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import {
   Carousel,
   CarouselContent,
@@ -59,6 +60,24 @@ export function ArtisanProfileView({
             <h2 className="text-lg font-semibold">{t.reviews}</h2>
             <RatingSummary average={reviews.average} count={reviews.count} />
           </div>
+          {reviews.count > 0 && (
+            // How many gave each rating, as Etsy and Airbnb show it beside the average.
+            <dl className="max-w-sm space-y-1 text-sm">
+              {reviews.ratings.map(({ rating, count }) => (
+                <div key={rating} className="flex items-center gap-3">
+                  <dt className="w-14 shrink-0 text-muted-foreground">{t.stars(rating)}</dt>
+                  <dd className="flex flex-1 items-center gap-3">
+                    <Progress
+                      value={(count / reviews.count) * 100}
+                      aria-label={t.ratingShare(rating, count, reviews.count)}
+                      className="flex-1"
+                    />
+                    <span className="w-6 text-right tabular-nums">{count}</span>
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          )}
           <ReviewList
             first={reviews}
             load={(page) => getArtisanReviews({ data: { artisanId: profile.artisanId, page } })}

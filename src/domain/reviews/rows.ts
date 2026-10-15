@@ -119,12 +119,23 @@ export async function summariesOf(
 export async function reviewsShown(ctx: Context, reviewedId: string, page = 0) {
   // Read once, so the count and the page agree at the window's close.
   const now = ctx.now();
-  const [summaries, rows] = await Promise.all([
+  const [summaries, rows, byRating] = await Promise.all([
     summariesOf(ctx, [reviewedId], now),
     pageAt(ctx, reviewedId, page, now),
+    ctx.db
+      .select({ rating: reviews.rating, count: sql<number>`count(*)` })
+      .from(reviews)
+      .innerJoin(engagements, eq(engagements.id, reviews.engagementId))
+      .where(and(eq(reviews.reviewedId, reviewedId), shownAt(ctx, now)))
+      .groupBy(reviews.rating),
   ]);
   return {
     ...summaries.get(reviewedId),
+    /** How many of them gave each rating, from 5 down to 1: what anyone reading them all would count. */
+    ratings: [5, 4, 3, 2, 1].map((rating) => ({
+      rating,
+      count: byRating.find((row) => row.rating === rating)?.count ?? 0,
+    })),
     items: rows
       .slice(0, REVIEWS_PAGE)
       .map(({ category, name, tradingName, namesShown, kind, ...review }) => ({

@@ -204,6 +204,9 @@ export const copy = {
       `${average.toFixed(1)} out of 5, from ${count} ${count === 1 ? "Review" : "Reviews"}`,
     noRating: "No Reviews yet",
     reviewCount: (count: number) => (count === 1 ? "(1 Review)" : `(${count} Reviews)`),
+    stars: (rating: number) => (rating === 1 ? "1 star" : `${rating} stars`),
+    ratingShare: (rating: number, count: number, of: number) =>
+      `${rating} out of 5: ${count} of ${of} ${of === 1 ? "Review" : "Reviews"}`,
     notVerifiedNow: "Not verified for any trade right now, so cannot Quote.",
     reviews: "Reviews",
     noReviews: "No Reviews yet. A Client reviews an Artisan once a Job is Completed.",

@@ -537,6 +537,13 @@ describe("Reviews of an Artisan", () => {
     ).toEqual({
       average: null,
       count: 0,
+      ratings: [
+        { rating: 5, count: 0 },
+        { rating: 4, count: 0 },
+        { rating: 3, count: 0 },
+        { rating: 2, count: 0 },
+        { rating: 1, count: 0 },
+      ],
       items: [],
       more: false,
     });
@@ -551,6 +558,13 @@ describe("Reviews of an Artisan", () => {
     expect(profile?.reviews).toEqual({
       average: 4.5,
       count: 2,
+      ratings: [
+        { rating: 5, count: 1 },
+        { rating: 4, count: 1 },
+        { rating: 3, count: 0 },
+        { rating: 2, count: 0 },
+        { rating: 1, count: 0 },
+      ],
       items: [
         {
           reviewId: expect.any(String),
@@ -677,6 +691,13 @@ describe("Reviews of a Client", () => {
 
     const shown = {
       average: 2,
+      ratings: [
+        { rating: 5, count: 0 },
+        { rating: 4, count: 0 },
+        { rating: 3, count: 0 },
+        { rating: 2, count: 1 },
+        { rating: 1, count: 0 },
+      ],
       count: 1,
       items: [
         {
