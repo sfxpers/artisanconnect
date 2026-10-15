@@ -18,3 +18,6 @@ peerDependencyRules:
 allowBuilds:
   esbuild: false
   workerd: false
+# 1.4.3 can read Vitest's module cache, and it shipped inside the one-day window.
+minimumReleaseAgeExclude:
+  - "@cloudflare/vitest-plugin@1.4.3"
