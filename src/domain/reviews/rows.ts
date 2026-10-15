@@ -131,11 +131,13 @@ export async function reviewsShown(ctx: Context, reviewedId: string, page = 0) {
   ]);
   return {
     ...summaries.get(reviewedId),
-    /** How many of them gave each rating, from 5 down to 1: what anyone reading them all would count. */
-    ratings: [5, 4, 3, 2, 1].map((rating) => ({
-      rating,
-      count: byRating.find((row) => row.rating === rating)?.count ?? 0,
-    })),
+    /** How many of them gave each rating: what anyone reading them all would count. */
+    ratings: Object.fromEntries(
+      ([5, 4, 3, 2, 1] as const).map((rating) => [
+        rating,
+        byRating.find((row) => row.rating === rating)?.count ?? 0,
+      ]),
+    ) as Record<1 | 2 | 3 | 4 | 5, number>,
     items: rows
       .slice(0, REVIEWS_PAGE)
       .map(({ category, name, tradingName, namesShown, kind, ...review }) => ({

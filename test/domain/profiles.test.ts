@@ -171,13 +171,7 @@ describe("an Artisan Profile", () => {
       reviews: {
         average: null,
         count: 0,
-        ratings: [
-          { rating: 5, count: 0 },
-          { rating: 4, count: 0 },
-          { rating: 3, count: 0 },
-          { rating: 2, count: 0 },
-          { rating: 1, count: 0 },
-        ],
+        ratings: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
         items: [],
         more: false,
       },

@@ -63,19 +63,22 @@ export function ArtisanProfileView({
           {reviews.count > 0 && (
             // How many gave each rating, as Etsy and Airbnb show it beside the average.
             <dl className="max-w-sm space-y-1 text-sm">
-              {reviews.ratings.map(({ rating, count }) => (
-                <div key={rating} className="flex items-center gap-3">
-                  <dt className="w-14 shrink-0 text-muted-foreground">{t.stars(rating)}</dt>
-                  <dd className="flex flex-1 items-center gap-3">
-                    <Progress
-                      value={(count / reviews.count) * 100}
-                      aria-label={t.ratingShare(rating, count, reviews.count)}
-                      className="flex-1"
-                    />
-                    <span className="w-6 text-right tabular-nums">{count}</span>
-                  </dd>
-                </div>
-              ))}
+              {([5, 4, 3, 2, 1] as const).map((rating) => {
+                const count = reviews.ratings[rating];
+                return (
+                  <div key={rating} className="flex items-center gap-3">
+                    <dt className="w-14 shrink-0 text-muted-foreground">{t.stars(rating)}</dt>
+                    <dd className="flex flex-1 items-center gap-3">
+                      <Progress
+                        value={(count / reviews.count) * 100}
+                        aria-label={t.ratingShare(rating, count, reviews.count)}
+                        className="flex-1"
+                      />
+                      <span className="w-6 text-right tabular-nums">{count}</span>
+                    </dd>
+                  </div>
+                );
+              })}
             </dl>
           )}
           <ReviewList
