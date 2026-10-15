@@ -1137,7 +1137,9 @@ export const copy = {
     client: "Client",
     noName: "A Client",
     reviews: (average: number | null, count: number) =>
-      average === null ? "No Reviews yet" : `${average.toFixed(1)} from ${count} Reviews`,
+      average === null
+        ? "No Reviews yet"
+        : `${average.toFixed(1)} from ${count} ${count === 1 ? "Review" : "Reviews"}`,
     completed: (count: number) => `${count} Completed`,
     region: "Region",
     gasWork: "Installs or removes gas",
