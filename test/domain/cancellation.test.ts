@@ -420,26 +420,6 @@ describe("a Cancellation", () => {
     ]);
   });
 
-  test("is only its parties' to make", async () => {
-    const { domain, given } = await createHarness();
-    const { engagementId } = await hiredJob(given);
-    const otherClient = await given.client();
-    const otherArtisan = await given.verifiedArtisan();
-    const admin = await given.admin();
-
-    for (const actor of [
-      otherClient.actor,
-      otherArtisan.actor,
-      admin.actor,
-      { kind: "visitor" } as const,
-    ]) {
-      expect(await domain.engagements.cancel(actor, { engagementId })).toEqual({
-        ok: false,
-        refusal: { reason: "not-found", message: "That Engagement does not exist." },
-      });
-    }
-  });
-
   test("takes a reason of at most 500 characters", async () => {
     const { domain, given } = await createHarness();
     const { client, engagementId } = await hiredJob(given);

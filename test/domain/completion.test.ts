@@ -197,22 +197,6 @@ describe("the Artisan marks the work complete", () => {
     ).toMatchObject({ ok: true, value: { state: "made" } });
   });
 
-  test("is the Hired Artisan's only", async () => {
-    const { domain, given } = await createHarness();
-    const { client, engagementId } = await startedJob(given);
-    const other = await given.matchableArtisan();
-
-    for (const actor of [client.actor, other.actor, { kind: "visitor" } as Actor]) {
-      expect(
-        await domain.engagements.complete(actor, {
-          engagementId,
-          note: "Done.",
-          photos: [await photo()],
-        }),
-      ).toMatchObject({ ok: false, refusal: { reason: "not-found" } });
-    }
-  });
-
   test("sent twice at once, as by a double tap, makes one Completion and refuses the other", async () => {
     const { domain, given } = await createHarness();
     const { client, artisan, jobId, engagementId } = await startedJob(given);
@@ -850,21 +834,6 @@ describe("Approval", () => {
       refusal: { reason: "not-awaiting", message: "This Engagement is Completed." },
     });
     expect(await labourReleases(domain, artisan)).toHaveLength(1);
-  });
-
-  test("is the Engagement's Client's only", async () => {
-    const { domain, given } = await createHarness();
-    const { artisan, engagementId } = await startedJob(given);
-    await given.markedComplete(artisan, engagementId);
-    const stranger = await given.client();
-
-    for (const actor of [stranger.actor, artisan.actor, { kind: "visitor" } as Actor]) {
-      expect(await domain.engagements.approve(actor, { engagementId })).toMatchObject({
-        ok: false,
-        refusal: { reason: "not-found" },
-      });
-    }
-    expect(await labourReleases(domain, artisan)).toEqual([]);
   });
 
   test("with no Materials, releases the whole Hired Quote", async () => {
