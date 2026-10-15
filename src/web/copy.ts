@@ -670,6 +670,8 @@ export const copy = {
     warrantyHint: "Your own promise. The platform does not make or enforce it.",
     total: "Total",
     minimum: "A Quote totals at least R300.",
+    feeLead:
+      "You are paid in the daily Payout run after each Release: the Materials at Work started, the Labour at Approval, less the Artisan Fee of 10%, or 5% once you have a Completed Job with this Client.",
     includesVat: (vatNumber: string) => `Amounts include VAT (VAT number ${vatNumber}).`,
     noVat: "Not VAT-registered? Your amounts are as given. You can add a VAT number in Account.",
     send: "Send Quote",
