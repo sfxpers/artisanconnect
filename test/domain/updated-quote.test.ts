@@ -448,9 +448,15 @@ describe("accepting an Updated Quote by paying", () => {
       materials: "650",
     });
 
+    // The extra Materials sit on the Materials line. There is no third line to refund.
+    expect((await domain.jobs.viewAsArtisan(artisan.actor, { jobId }))?.engagement).toMatchObject({
+      refundable: { materialsCents: 65_000, labourCents: 180_000 },
+    });
+
     await given.workStarted(client, engagementId);
 
     expect((await domain.jobs.viewAsArtisan(artisan.actor, { jobId }))?.engagement).toMatchObject({
+      refundable: { materialsCents: 0, labourCents: 180_000 },
       money: {
         releasedCents: 65_000,
         payments: [

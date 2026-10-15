@@ -227,8 +227,6 @@ export const copy = {
     postJob: "Post a Job",
     cancel: "Cancel",
     gallery: "Work photos",
-    previous: "Previous photo",
-    next: "Next photo",
     verifiedFor: "Verified for",
     signUp: "Sign up",
     signIn: "Sign in",

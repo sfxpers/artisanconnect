@@ -262,7 +262,7 @@ function Row({
         <div className="flex items-center gap-3">
           <span
             className={cn(
-              "grid size-7 shrink-0 place-items-center rounded-full border border-input text-xs font-semibold tabular-nums",
+              "grid size-7 shrink-0 place-items-center rounded-md border border-input text-xs font-semibold",
               done && "border-primary bg-primary text-primary-foreground",
               open && "border-primary text-primary",
             )}

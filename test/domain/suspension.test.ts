@@ -257,7 +257,32 @@ describe("a Payment arriving once either party is Suspended", () => {
 
     const job = await domain.jobs.view(client.actor, { jobId });
     expect(job?.state).toBe("expired");
-    expect(job?.notHired).toEqual([expect.objectContaining({ reason: "suspended" })]);
+    expect(job?.notHired).toEqual([
+      expect.objectContaining({ amountCents: 210_000, reason: "suspended" }),
+    ]);
+  });
+
+  test("refunds the whole Payment when the Artisan is Suspended while the checkout is open", async () => {
+    const { domain, given } = await createHarness();
+    const admin = await given.admin();
+    const client = await given.client();
+    const artisan = await given.matchableArtisan();
+    const jobId = await given.openJob(client);
+    const quoteId = await given.sentQuote(artisan, jobId);
+    const collectionId = await given.checkout(client, quoteId);
+    // Suspension Withdraws the Sent Quote, so the Payment arrives for a Quote that is no longer Sent.
+    await domain.people.suspend(admin.actor, {
+      accountId: artisan.actor.accountId,
+      reason: "Fraud.",
+    });
+
+    await given.paid(collectionId);
+
+    expect(await domain.jobs.view(client.actor, { jobId })).toMatchObject({
+      state: "open",
+      engagement: null,
+      notHired: [expect.objectContaining({ amountCents: 210_000, reason: "quote-ended" })],
+    });
   });
 });
 

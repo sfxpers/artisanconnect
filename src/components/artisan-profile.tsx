@@ -3,13 +3,6 @@ import { BadgeCheck, ImageOff, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
 import type { Domain } from "@/domain";
 import { formatDay } from "@/domain/shared/sa-days";
 import { copy } from "@/web/copy";
@@ -48,7 +41,9 @@ export function ArtisanProfileView({
     // the work is the main column, and the rest one column beside it.
     <div className="flex flex-col gap-6 lg:grid lg:grid-cols-3 lg:items-start">
       <div className="order-2 min-w-0 space-y-8 lg:col-span-2">
-        <Gallery photos={profile.photos} />
+        <section aria-label={t.gallery}>
+          <PhotoGrid photos={profile.photos} empty={t.noPhotos} />
+        </section>
 
         <section className="space-y-2">
           <h2 className="text-lg font-semibold">{t.about}</h2>
@@ -182,42 +177,7 @@ export function ArtisanProfileView({
   );
 }
 
-/** The work photos in shadcn's Carousel, each opening its full copy. */
-function Gallery({ photos }: { photos: ProfilePhotoView[] }) {
-  if (photos.length === 0) {
-    return <EmptyState icon={<ImageOff />}>{t.noPhotos}</EmptyState>;
-  }
-  return (
-    <section aria-label={t.gallery}>
-      <Carousel opts={{ loop: photos.length > 1 }} className="relative">
-        <CarouselContent>
-          {photos.map((photo, index) => (
-            <CarouselItem key={photo.id}>
-              <a href={photo.href} target="_blank" rel="noreferrer" className="block rounded-lg">
-                <img
-                  src={photo.href}
-                  alt={t.photo(index + 1)}
-                  width={photo.width}
-                  height={photo.height}
-                  loading={index === 0 ? "eager" : "lazy"}
-                  className="aspect-4/3 w-full rounded-lg border bg-muted object-cover lg:aspect-video"
-                />
-              </a>
-            </CarouselItem>
-          ))}
-        </CarouselContent>
-        {photos.length > 1 && (
-          <>
-            <CarouselPrevious className="left-3" aria-label={t.previous} />
-            <CarouselNext className="right-3" aria-label={t.next} />
-          </>
-        )}
-      </Carousel>
-    </section>
-  );
-}
-
-/** Work photos as thumbnails, each opening its full copy. */
+/** Work photos as a grid of thumbnails, each opening its full copy. A carousel would hide all but one. */
 export function PhotoGrid({ photos, empty }: { photos: ProfilePhotoView[]; empty: string }) {
   if (photos.length === 0) return <EmptyState icon={<ImageOff />}>{empty}</EmptyState>;
   return (

@@ -61,7 +61,8 @@
  * 3:1, in both themes. Components use these tokens only.
  */
 :root {
-  --radius: 0.5rem;
+  /* 4px: small radius, 1px borders, almost no shadow. */
+  --radius: 0.25rem;
   --background: oklch(0.985 0.002 250);
   --foreground: oklch(0.17 0.012 255);
   --card: oklch(1 0 0);
@@ -154,7 +155,7 @@
     color-scheme: dark;
   }
   body {
-    @apply bg-background font-sans text-foreground antialiased;
+    @apply bg-background font-sans text-foreground antialiased tabular-nums;
   }
   h1,
   h2,
