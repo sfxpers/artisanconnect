@@ -1,5 +1,5 @@
-import { describe, expect, test } from "vitest";
-import type { Actor, AdminActor } from "@/domain/actor";
+import { describe, expect, test } from "vite-plus/test";
+import type { Actor, AdminActor } from "@/domain/shared/actor";
 import { createHarness, type Harness } from "../support/harness";
 
 // Quotes (#124): an Artisan holding a Job Match or an Invitation sends one

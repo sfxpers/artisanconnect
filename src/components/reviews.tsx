@@ -13,7 +13,7 @@ import { ReportAction } from "@/components/report";
 import { useAction } from "@/components/use-action";
 import type { Domain } from "@/domain";
 import { REVIEW_COMMENT_MAX } from "@/domain/reviews/inputs";
-import { formatDay, saDay } from "@/domain/sa-days";
+import { formatDay, saDay } from "@/domain/shared/sa-days";
 import { copy, formatDeadline } from "@/web/copy";
 import { writeReview } from "@/web/reviews";
 

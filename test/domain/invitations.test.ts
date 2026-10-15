@@ -1,5 +1,5 @@
-import { describe, expect, test } from "vitest";
-import { visitor, type Actor } from "@/domain/actor";
+import { describe, expect, test } from "vite-plus/test";
+import { visitor, type Actor } from "@/domain/shared/actor";
 import { createHarness, type Harness } from "../support/harness";
 
 // Invitations and Invite-only Jobs (#123): a Client invites Artisans from a

@@ -1,5 +1,5 @@
 import { applyD1Migrations, env, reset } from "cloudflare:test";
-import { onTestFinished, vi } from "vitest";
+import { onTestFinished, vi } from "vite-plus/test";
 import { createDomain, type DomainConfig, type Ports } from "@/domain";
 import { createFakeClock, type FakeClock } from "./fakes/clock";
 import { createFakeContentReader } from "./fakes/content-reader";

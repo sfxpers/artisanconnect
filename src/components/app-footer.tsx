@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Wordmark } from "@/components/wordmark";
-import { SERVICE_CATEGORIES, SERVICE_CATEGORY_NAMES } from "@/domain/service-categories";
+import { SERVICE_CATEGORIES, SERVICE_CATEGORY_NAMES } from "@/domain/shared/service-categories";
 import { copy } from "@/web/copy";
 
 /**

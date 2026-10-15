@@ -9,8 +9,8 @@ import {
   setResponseHeader,
 } from "@tanstack/react-start/server";
 import type { Actor } from "@/domain";
-import { visitor } from "@/domain/actor";
-import { refuse } from "@/domain/result";
+import { visitor } from "@/domain/shared/actor";
+import { refuse } from "@/domain/shared/result";
 import { passesTurnstile } from "@/worker/turnstile";
 import { domainFromEnv } from "@/worker/ports";
 

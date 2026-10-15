@@ -2,7 +2,7 @@ import { eq, sql, type SQL } from "drizzle-orm";
 import type { Context, Write } from "./context";
 import { causedBy } from "./errors";
 import { insertWhile } from "./guarded";
-import { artisanFeeCents } from "./money";
+import { artisanFeeCents } from "./shared/money";
 import { ledgerEntries } from "./schema";
 
 // The money ledger (ADR 0017): append-only rows, every event's written in its

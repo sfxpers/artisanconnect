@@ -19,7 +19,7 @@ import {
   REPORT_REASON_NAMES,
   REPORT_REASONS,
   type ReportReason,
-} from "@/domain/reports/reasons";
+} from "@/domain/shared/reasons";
 import { copy } from "@/web/copy";
 import { getReportMade, sendReport } from "@/web/reports";
 

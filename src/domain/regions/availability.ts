@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
-import type { Actor } from "../actor";
-import { ok, refuse } from "../result";
+import type { Actor } from "../shared/actor";
+import { ok, refuse } from "../shared/result";
 import { accounts } from "../schema";
 import { defineSection } from "../section";
 

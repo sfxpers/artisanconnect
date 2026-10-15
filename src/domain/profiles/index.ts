@@ -11,14 +11,14 @@ import {
   type SQL,
   type SQLWrapper,
 } from "drizzle-orm";
-import { accountIdOf, type Actor } from "../actor";
+import { accountIdOf, type Actor } from "../shared/actor";
 import { firstProblem } from "../accounts/inputs";
 import { publicName } from "../accounts/names";
 import { checkContent } from "../content/check";
 import { alreadyChecked, isAlreadyDecided } from "../content/held";
 import type { Context } from "../context";
 import { causedBy } from "../errors";
-import { ok, refuse } from "../result";
+import { ok, refuse } from "../shared/result";
 import { accounts, artisanRegions, authUsers, regions, verificationChecks } from "../schema";
 import { defineSection } from "../section";
 import { suspendedNow } from "../standing";
@@ -26,10 +26,10 @@ import {
   isServiceCategory,
   SERVICE_CATEGORY_NAMES,
   type ServiceCategory,
-} from "../service-categories";
+} from "../shared/service-categories";
 import { checkFileCount, discardFiles, uploadFile, UPLOAD_CONTEXTS } from "../uploads";
 import { badgesOf, badgesOfEach, verifiedCategoriesOf } from "../verification";
-import { slotOf } from "../verification/checks";
+import { slotOf } from "../shared/checks";
 import {
   editsStanding,
   firstShownPhotos,

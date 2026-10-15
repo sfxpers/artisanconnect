@@ -1,7 +1,7 @@
 import { and, eq, inArray, sql, type SQLWrapper } from "drizzle-orm";
-import type { Actor } from "../actor";
+import type { Actor } from "../shared/actor";
 import type { Context } from "../context";
-import { refuse } from "../result";
+import { refuse } from "../shared/result";
 import { engagements, jobs, quotes } from "../schema";
 
 // Reading an Engagement, as each step of its work reads it.

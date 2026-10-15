@@ -1,5 +1,5 @@
 import type { SQL } from "drizzle-orm";
-import type { AdminActor } from "./actor";
+import type { AdminActor } from "./shared/actor";
 import type { Context, Write } from "./context";
 import { insertWhile } from "./guarded";
 import { auditLog } from "./schema";

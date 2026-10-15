@@ -1,9 +1,9 @@
 import { and, eq, isNull } from "drizzle-orm";
-import type { AdminActor } from "../actor";
+import type { AdminActor } from "../shared/actor";
 import type { Context, Write } from "../context";
 import { hasLiveSignUpCode, identityByEmail } from "../accounts/codes";
 import { EMAIL_CODE } from "../accounts/inputs";
-import { refuse } from "../result";
+import { refuse } from "../shared/result";
 import { admins, authUsers } from "../schema";
 
 /** The Admin a sign-in identity is, while it is one. */

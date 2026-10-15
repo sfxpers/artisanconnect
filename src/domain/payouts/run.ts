@@ -14,8 +14,8 @@ import type { Context } from "../context";
 import { causedBy } from "../errors";
 import { insertWhile } from "../guarded";
 import { LEDGER_KINDS, ledgerWrites } from "../ledger";
-import { formatRands } from "../money";
-import { HOUR_MS, MINUTE_MS, saDay, saDayStart } from "../sa-days";
+import { formatRands } from "../shared/money";
+import { HOUR_MS, MINUTE_MS, saDay, saDayStart } from "../shared/sa-days";
 import {
   accounts,
   admins,

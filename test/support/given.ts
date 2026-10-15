@@ -1,8 +1,8 @@
 import type { Domain } from "@/domain";
-import type { Actor, AdminActor } from "@/domain/actor";
+import type { Actor, AdminActor } from "@/domain/shared/actor";
 import type { FakeMailer } from "./fakes/mailer";
 import type { FakePayments } from "@/domain/fakes/payments";
-import type { ServiceCategory } from "@/domain/service-categories";
+import type { ServiceCategory } from "@/domain/shared/service-categories";
 import {
   document,
   identity,

@@ -3,11 +3,11 @@ import { alias } from "drizzle-orm/sqlite-core";
 import { startClock } from "../clocks";
 import type { Context } from "../context";
 import { engagements, jobs, quotes, regions, suburbs } from "../schema";
-import { SERVICE_CATEGORY_NAMES, type ServiceCategory } from "../service-categories";
+import { SERVICE_CATEGORY_NAMES, type ServiceCategory } from "../shared/service-categories";
 import type { StoredFile } from "../uploads";
 import { OPEN_DAYS } from "./inputs";
-import { refuse } from "../result";
-import { DAY_MS, HOUR_MS } from "../sa-days";
+import { refuse } from "../shared/result";
+import { DAY_MS, HOUR_MS } from "../shared/sa-days";
 
 // Reading a Job, and what more than one part of the Jobs section says of one.
 

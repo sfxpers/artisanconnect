@@ -12,7 +12,7 @@ import {
   DISPUTE_PHOTOS_MAX,
 } from "../engagements/inputs";
 import { PROFILE_PHOTOS_MAX } from "../profiles/inputs";
-import { ok, refuse, type Result } from "../result";
+import { ok, refuse, type Result } from "../shared/result";
 import { Locked, startsWith, Unreadable } from "./bytes";
 import { mediaContainer, readMedia, type MediaContainer } from "./media";
 import { hasActiveContent, isPdf } from "./pdf";

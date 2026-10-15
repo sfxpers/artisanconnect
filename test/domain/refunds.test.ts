@@ -1,6 +1,6 @@
-import { describe, expect, test } from "vitest";
-import type { Actor } from "@/domain/actor";
-import { formatRands } from "@/domain/money";
+import { describe, expect, test } from "vite-plus/test";
+import type { Actor } from "@/domain/shared/actor";
+import { formatRands } from "@/domain/shared/money";
 import type { CreateRefund, Webhook } from "@/domain/ports";
 import type { FakePayments } from "@/domain/fakes/payments";
 import { releasesTo } from "../support/money";

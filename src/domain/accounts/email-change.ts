@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { isAPIError } from "better-auth/api";
 import type { Context, Write } from "../context";
-import { refuse } from "../result";
+import { refuse } from "../shared/result";
 import { authUsers } from "../schema";
 import { emailAddress } from "../tells";
 import { hasLiveSignUpCode, identityByEmail } from "./codes";

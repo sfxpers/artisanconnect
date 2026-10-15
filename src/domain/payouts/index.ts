@@ -1,9 +1,9 @@
 import { and, asc, desc, eq, exists, inArray, isNotNull, isNull, or, sql } from "drizzle-orm";
-import type { Actor, AdminActor } from "../actor";
+import type { Actor, AdminActor } from "../shared/actor";
 import { audit } from "../audit";
 import type { Context } from "../context";
 import { LEDGER_KINDS, RELEASED_PARTS, unpaidPayoutCents, type LedgerKind } from "../ledger";
-import { adminOnly, ok, refuse } from "../result";
+import { adminOnly, ok, refuse } from "../shared/result";
 import {
   accounts,
   authUsers,

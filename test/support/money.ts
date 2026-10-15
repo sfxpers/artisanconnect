@@ -1,4 +1,4 @@
-import type { Actor } from "@/domain/actor";
+import type { Actor } from "@/domain/shared/actor";
 import type { Harness } from "./harness";
 
 /**

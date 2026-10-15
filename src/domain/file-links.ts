@@ -1,6 +1,6 @@
 import { Buffer } from "node:buffer";
 import type { Context } from "./context";
-import { MINUTE_MS } from "./sa-days";
+import { MINUTE_MS } from "./shared/sa-days";
 
 // A stored file the Admin opens on a logged click (an identity document, a
 // photo in a Conversation) is reached through a link the logged read hands

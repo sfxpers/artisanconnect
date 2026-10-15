@@ -3,7 +3,7 @@ import { Choose } from "@/components/choose";
 import { FieldLabel } from "@/components/ui/field";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { QUEUE_NAMES, type QueueName } from "@/domain/queue-names";
+import { QUEUE_NAMES, type QueueName } from "@/domain/shared/queue-names";
 import type { Block } from "@/domain/queues";
 import { copy } from "@/web/copy";
 

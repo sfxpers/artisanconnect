@@ -1,5 +1,5 @@
-import { describe, expect, test } from "vitest";
-import type { AccountActor, Actor, AdminActor } from "@/domain/actor";
+import { describe, expect, test } from "vite-plus/test";
+import type { AccountActor, Actor, AdminActor } from "@/domain/shared/actor";
 import type { CreatePayout } from "@/domain/ports";
 import type { FakePayments } from "@/domain/fakes/payments";
 import { collectionOf } from "../support/given";

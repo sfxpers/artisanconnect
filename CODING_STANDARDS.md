@@ -1,6 +1,6 @@
 # Coding standards
 
-The judgement calls a reviewer checks. Anything mechanical is a check instead: oxlint (including the rule that pages and components import no domain rule), `scripts/check-tokens.mjs` (no colour or arbitrary value outside `src/styles.css`, and spacing on the 4px grid), oxfmt, `tsc`, the tests, and CI (`.github/workflows/check.yml`).
+The judgement calls a reviewer checks. Anything mechanical is a check instead: `vp check`, which formats, lints (including the rule that pages and components import no domain rule), and type checks; `scripts/check-tokens.mjs` (no colour or arbitrary value outside `src/styles.css`, and spacing on the 4px grid); the tests; and CI (`.github/workflows/check.yml`).
 
 ## Sources of truth
 

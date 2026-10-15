@@ -1,9 +1,9 @@
-import { describe, expect, test } from "vitest";
-import type { Actor, AdminActor } from "@/domain/actor";
+import { describe, expect, test } from "vite-plus/test";
+import type { Actor, AdminActor } from "@/domain/shared/actor";
 import type { CreatePayout } from "@/domain/ports";
 import type { FakePayments } from "@/domain/fakes/payments";
-import { formatRands } from "@/domain/money";
-import { formatDay } from "@/domain/sa-days";
+import { formatRands } from "@/domain/shared/money";
+import { formatDay } from "@/domain/shared/sa-days";
 import { releasesTo } from "../support/money";
 import { createHarness, type Harness } from "../support/harness";
 import { decideCheck, payoutAccount, submit, verificationItem } from "../support/verification";

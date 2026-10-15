@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { system } from "../actor";
+import { system } from "../shared/actor";
 import type { Context, Write } from "../context";
 import { ledgerWrites, LEDGER_KINDS, paymentInRows } from "../ledger";
 import type { PaymentMethod } from "../ports";

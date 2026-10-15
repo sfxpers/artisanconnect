@@ -10,7 +10,7 @@ import {
   SUPPORT_TOPIC_NAMES,
   SUPPORT_TOPICS,
   type SupportTopic,
-} from "@/domain/support/topics";
+} from "@/domain/shared/topics";
 import { copy, formatDate, pageTitle } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
 import { getMySupport, sendSupport } from "@/web/support";

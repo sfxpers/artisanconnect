@@ -1,5 +1,5 @@
 import { and, asc, eq, exists, inArray, isNull, sql, type SQL } from "drizzle-orm";
-import { system, type Actor } from "../actor";
+import { system, type Actor } from "../shared/actor";
 import { startClock, type ClockHandler } from "../clocks";
 import { checkContent, readFiles } from "../content/check";
 import { alreadyChecked, defineHeldKind, isAlreadyDecided } from "../content/held";
@@ -20,9 +20,9 @@ import {
 } from "../ledger";
 import type { Block } from "../queues";
 import { accountSidebar } from "../quotes/held";
-import { formatRands } from "../money";
-import { ok, refuse, type Result } from "../result";
-import { DAY_MS, formatTime } from "../sa-days";
+import { formatRands } from "../shared/money";
+import { ok, refuse, type Result } from "../shared/result";
+import { DAY_MS, formatTime } from "../shared/sa-days";
 import { windowOpensWrites } from "../reviews/window";
 import {
   completions,
@@ -41,7 +41,7 @@ import {
   type StoredFile,
   type UploadContext,
 } from "../uploads";
-import type { CheckKind } from "../verification/checks";
+import type { CheckKind } from "../shared/checks";
 import { found } from "../verification/reading";
 import { CERTIFICATES, certificateNeeded, NOTE_MAX, type CertificateKind } from "./inputs";
 import { engagementRow, type EngagementRow, engagementNotFound } from "./rows";

@@ -1,7 +1,7 @@
 import { and, desc, eq, min } from "drizzle-orm";
 import type { Context } from "../context";
 import { accounts, engagements } from "../schema";
-import { DAY_MS } from "../sa-days";
+import { DAY_MS } from "../shared/sa-days";
 
 // The Protected Relationship Period (#139, ADR 0014): the 365 days after the
 // first Payment in a Client Relationship, during which all work between the

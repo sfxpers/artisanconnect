@@ -1,8 +1,8 @@
 import { and, count, desc, eq, isNull } from "drizzle-orm";
-import type { Actor } from "../actor";
+import type { Actor } from "../shared/actor";
 import { audit } from "../audit";
 import type { Context } from "../context";
-import { adminOnly, ok, refuse } from "../result";
+import { adminOnly, ok, refuse } from "../shared/result";
 import { defineSection } from "../section";
 import { emailTells, tellEveryAccount } from "../tells";
 import { accounts, authUsers, marketplaceRules } from "../schema";

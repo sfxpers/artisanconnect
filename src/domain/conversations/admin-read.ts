@@ -2,7 +2,7 @@ import { and, asc, eq, sql } from "drizzle-orm";
 import type { Context } from "../context";
 import { fileLink } from "../file-links";
 import type { Block } from "../queues";
-import { formatTime } from "../sa-days";
+import { formatTime } from "../shared/sa-days";
 import { accounts, conversations, messages } from "../schema";
 import type { StoredFile } from "../uploads";
 

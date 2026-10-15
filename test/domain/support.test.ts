@@ -1,5 +1,5 @@
-import { describe, expect, test } from "vitest";
-import { visitor, type AdminActor } from "@/domain/actor";
+import { describe, expect, test } from "vite-plus/test";
+import { visitor, type AdminActor } from "@/domain/shared/actor";
 import { createHarness, type Harness } from "../support/harness";
 
 // A signed-in Account writes to the Admin under a fixed topic, and the Admin's

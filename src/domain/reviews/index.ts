@@ -1,6 +1,6 @@
 import * as z from "zod";
 import { inArray } from "drizzle-orm";
-import { accountIdOf, type Actor } from "../actor";
+import { accountIdOf, type Actor } from "../shared/actor";
 import { firstProblem } from "../accounts/inputs";
 import { publicName } from "../accounts/names";
 import { frozenRefusal, isFrozen } from "../chargebacks/frozen";
@@ -10,7 +10,7 @@ import { engagementRow } from "../engagements/rows";
 import { seesJob } from "../jobs";
 import { jobRow } from "../jobs/rows";
 import { openableArtisan } from "../profiles";
-import { ok, refuse } from "../result";
+import { ok, refuse } from "../shared/result";
 import { accounts, reviews } from "../schema";
 import { defineSection } from "../section";
 import { heldReview } from "./precheck";

@@ -42,7 +42,7 @@ import { passInvitation } from "@/web/invitations";
 import { passMatch } from "@/web/matches";
 import { reviseQuote, sendQuote, withdrawQuoteBeingChecked, withdrawQuote } from "@/web/quotes";
 import { getClientReviews } from "@/web/reviews";
-import { suburbName } from "@/domain/regions/places";
+import { suburbName } from "@/domain/shared/places";
 
 /** A Job as an Artisan offered it sees it. */
 type OfferedJobView = Extract<Awaited<ReturnType<typeof getJob>>, { as: "artisan" }>;

@@ -1,9 +1,9 @@
 import { and, desc, eq, exists, inArray, isNull, sql, type SQLWrapper } from "drizzle-orm";
 import type { Context } from "../context";
-import { refuse } from "../result";
+import { refuse } from "../shared/result";
 import { accounts, jobs, quotes } from "../schema";
 import { QUOTE_DAYS, QUOTES_MAX } from "./inputs";
-import { DAY_MS } from "../sa-days";
+import { DAY_MS } from "../shared/sa-days";
 
 // Reading a Quote, and what more than one part of the Quotes section says of one.
 

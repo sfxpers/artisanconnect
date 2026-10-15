@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import type { JobView } from "@/components/job-form";
-import { formatDay } from "@/domain/sa-days";
+import { formatDay } from "@/domain/shared/sa-days";
 import { copy } from "@/web/copy";
 
 // What the Job page shows of a Job to its Client and to an Artisan offered it.

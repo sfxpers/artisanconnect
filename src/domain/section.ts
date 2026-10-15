@@ -1,4 +1,4 @@
-import type { Actor } from "./actor";
+import type { Actor } from "./shared/actor";
 import type { ClockHandler } from "./clocks";
 import type { Context } from "./context";
 import type { QueueItemKind } from "./queues";

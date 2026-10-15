@@ -1,5 +1,5 @@
 import { and, eq, exists, inArray, sql, type SQL } from "drizzle-orm";
-import { system, type Actor } from "../actor";
+import { system, type Actor } from "../shared/actor";
 import { publicName } from "../accounts/names";
 import { firstProblem } from "../accounts/inputs";
 import { frozenRefusal, isFrozen, notFrozen } from "../chargebacks";
@@ -7,11 +7,11 @@ import type { Context, Write } from "../context";
 import { causedBy } from "../errors";
 import { insertWhile } from "../guarded";
 import { engagementMoney, LEDGER_KINDS, ledgerWrites, paymentInRows, releaseRows } from "../ledger";
-import { formatRands, PROTECTION_FEE_PERCENT, protectionFeeCents } from "../money";
+import { formatRands, PROTECTION_FEE_PERCENT, protectionFeeCents } from "../shared/money";
 import type { PaymentEvent, PaymentMethod } from "../ports";
 import { bankReference } from "../references";
-import { ok, refuse } from "../result";
-import { formatDay, saDay } from "../sa-days";
+import { ok, refuse } from "../shared/result";
+import { formatDay, saDay } from "../shared/sa-days";
 import {
   accounts,
   completions,

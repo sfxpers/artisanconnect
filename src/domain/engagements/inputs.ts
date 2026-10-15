@@ -1,6 +1,6 @@
 import * as z from "zod";
 import { rands } from "../quotes/inputs";
-import type { ServiceCategory } from "../service-categories";
+import type { ServiceCategory } from "../shared/service-categories";
 
 // What a Completion, a Fix request, a Refund, a Cancellation, an Updated
 // Quote, and a Dispute take, shared with the web app's forms.

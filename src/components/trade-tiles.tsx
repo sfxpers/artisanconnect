@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { SERVICE_CATEGORIES, SERVICE_CATEGORY_NAMES } from "@/domain/service-categories";
+import { SERVICE_CATEGORIES, SERVICE_CATEGORY_NAMES } from "@/domain/shared/service-categories";
 import { copy } from "@/web/copy";
 
 /** The eight trades as photo tiles, each opening Browse on it, in the Region given if any. */

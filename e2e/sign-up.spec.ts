@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import { SERVICE_CATEGORY_NAMES } from "@/domain/service-categories";
+import { SERVICE_CATEGORY_NAMES } from "@/domain/shared/service-categories";
 import { clickUntil, codeSentTo, expect, test } from "./support/helpers";
 
 /** Signs a Visitor up as a Client or an Artisan, through to the proven Email. */

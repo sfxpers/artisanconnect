@@ -1,13 +1,13 @@
 import * as z from "zod";
 import { asc, eq, inArray, sql } from "drizzle-orm";
-import type { Actor } from "../actor";
+import type { Actor } from "../shared/actor";
 import { firstProblem } from "../accounts/inputs";
 import { audit } from "../audit";
 import type { Context } from "../context";
-import { adminOnly, ok, refuse } from "../result";
+import { adminOnly, ok, refuse } from "../shared/result";
 import { artisanRegions, regions, suburbs } from "../schema";
 import { defineSection } from "../section";
-import { REGIONS_MAX, suburbKey } from "./places";
+import { REGIONS_MAX, suburbKey } from "../shared/places";
 
 // Regions and suburbs (#100, #119) are seeded data: the City's districts and
 // its official suburbs, each in exactly one Region. A suburb gives a Job its

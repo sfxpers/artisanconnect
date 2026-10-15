@@ -1,5 +1,5 @@
 import { and, eq } from "drizzle-orm";
-import { system } from "../actor";
+import { system } from "../shared/actor";
 import type { Context, Write } from "../context";
 import { defineHeldKind, refusedFor } from "../content/held";
 import { jobBlocks } from "../jobs/held";

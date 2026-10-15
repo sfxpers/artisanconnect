@@ -144,6 +144,6 @@ function assertExactPorts(ports: Ports) {
   }
 }
 
-export type { Actor } from "./actor";
-export type { Result, Refusal } from "./result";
+export type { Actor } from "./shared/actor";
+export type { Result, Refusal } from "./shared/result";
 export type * from "./ports";

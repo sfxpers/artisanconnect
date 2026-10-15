@@ -8,12 +8,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Page, Refusal } from "@/components/page";
-import { REGIONS_MAX } from "@/domain/regions/places";
+import { REGIONS_MAX } from "@/domain/shared/places";
 import { cn } from "@/lib/utils";
 import { copy, pageTitle } from "@/web/copy";
 import { onlyFor } from "@/web/guards";
 import { chooseRegions, getRegions, searchSuburbs } from "@/web/regions";
-import { suburbName } from "@/domain/regions/places";
+import { suburbName } from "@/domain/shared/places";
 
 export const Route = createFileRoute("/regions")({
   beforeLoad: ({ context }) => {

@@ -1,12 +1,12 @@
 import { and, desc, eq } from "drizzle-orm";
 import { engagementNotFound } from "../engagements/rows";
-import type { Actor } from "../actor";
+import type { Actor } from "../shared/actor";
 import { publicName } from "../accounts/names";
 import type { Context } from "../context";
 import { invitable, invitationWrites } from "../invitations";
-import { ok, refuse } from "../result";
+import { ok, refuse } from "../shared/result";
 import { accounts, chargebacks, engagements, jobs } from "../schema";
-import { SERVICE_CATEGORY_NAMES } from "../service-categories";
+import { SERVICE_CATEGORY_NAMES } from "../shared/service-categories";
 import { closedState } from "../accounts/closing";
 import { isSuspended } from "../standing";
 import { jobRow, type JobRow } from "./rows";

@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { accountIdOf, type Actor } from "../actor";
+import { accountIdOf, type Actor } from "../shared/actor";
 import { publicName, shownName } from "../accounts/names";
 import type { Context } from "../context";
 import { viewerOf } from "../conversations/parties";

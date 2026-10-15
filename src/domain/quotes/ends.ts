@@ -1,5 +1,5 @@
 import { and, eq, exists, sql } from "drizzle-orm";
-import type { Actor } from "../actor";
+import type { Actor } from "../shared/actor";
 import type { ClockHandler } from "../clocks";
 import type { Context, Write } from "../context";
 import { jobRow } from "../jobs/rows";

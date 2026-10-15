@@ -2,8 +2,8 @@ import type { ReactNode } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Page } from "@/components/page";
-import { DEFAULT_FIGURE_PERIOD, FIGURE_PERIODS, type FigurePeriod } from "@/domain/figures/periods";
-import { formatRands } from "@/domain/money";
+import { DEFAULT_FIGURE_PERIOD, FIGURE_PERIODS, type FigurePeriod } from "@/domain/shared/periods";
+import { formatRands } from "@/domain/shared/money";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { buttonVariants } from "@/components/ui/button";
 import {

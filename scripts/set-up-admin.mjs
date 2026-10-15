@@ -1,12 +1,4 @@
-// The deploy-time setup command: makes the first Admin of one environment
-// (ADR 0015), through the domain module's own entry point. Once there is an
-// Admin it refuses; further Admins are invited from the Admins page.
-//
-//   nub run admin:setup -- you@example.com                    local D1
-//   nub run admin:setup -- you@example.com --env staging      staging D1 (or production)
-//
-// Staging and production need `nubx wrangler login` first, and their D1 must
-// exist and be migrated (the first deploy does both).
+// Makes the first Admin (ADR 0015). Once there is one, it refuses.
 import path from "node:path";
 import { parseArgs } from "node:util";
 import { withWorkerModule } from "./worker-module.mjs";
@@ -14,7 +6,7 @@ import { withWorkerModule } from "./worker-module.mjs";
 const root = path.resolve(import.meta.dirname, "..");
 const args = process.argv.slice(2);
 const { values, positionals } = parseArgs({
-  // `nub run admin:setup -- …` passes its "--" on.
+  // `vp run admin:setup -- …` passes its "--" on.
   args: args[0] === "--" ? args.slice(1) : args,
   allowPositionals: true,
   options: { env: { type: "string" } },
@@ -22,7 +14,7 @@ const { values, positionals } = parseArgs({
 const [email] = positionals;
 const environment = values.env;
 if (!email || (environment && !["staging", "production"].includes(environment))) {
-  console.error("Usage: nub run admin:setup -- <email> [--env staging|production]");
+  console.error("Usage: vp run admin:setup <email> [--env staging|production]");
   process.exit(1);
 }
 

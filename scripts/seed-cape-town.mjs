@@ -13,7 +13,7 @@
 // address points goes to the district covering most of its area.
 
 import { writeFileSync } from "node:fs";
-import { suburbKey } from "../src/domain/regions/places.ts";
+import { suburbKey } from "../src/domain/shared/places.ts";
 
 const SERVICES = "https://esapqa.capetown.gov.za/agsext/rest/services/Theme_Based";
 const SUBURBS = `${SERVICES}/ODP_SPLIT_5/FeatureServer/3`;

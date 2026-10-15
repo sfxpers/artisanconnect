@@ -30,7 +30,7 @@ import {
   StartActions,
   UpdatedQuoteCard,
 } from "@/components/engagement";
-import { formatRands } from "@/domain/money";
+import { formatRands } from "@/domain/shared/money";
 import {
   Messages,
   type ConversationSummary,
@@ -53,7 +53,7 @@ import {
   saveJobDraft,
   withdrawJob,
 } from "@/web/jobs";
-import { suburbName } from "@/domain/regions/places";
+import { suburbName } from "@/domain/shared/places";
 
 export const Route = createFileRoute("/jobs/$jobId")({
   // The one Region the invite list shows, if one is chosen, as on Browse; the

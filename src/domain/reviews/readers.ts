@@ -1,5 +1,5 @@
 import { and, eq, exists, or, sql } from "drizzle-orm";
-import { accountIdOf, type Actor } from "../actor";
+import { accountIdOf, type Actor } from "../shared/actor";
 import type { Context } from "../context";
 import { seesJob } from "../jobs";
 import { jobRow } from "../jobs/rows";

@@ -1,5 +1,5 @@
 import { and, asc, eq, exists, isNull, not, notExists, sql, type SQL } from "drizzle-orm";
-import { system } from "../actor";
+import { system } from "../shared/actor";
 import { fireDueClock, startClock, type ClockHandler } from "../clocks";
 import { invitationOf } from "../invitations";
 import type { Context, Write } from "../context";
@@ -16,8 +16,8 @@ import {
 import { suspendedNow } from "../standing";
 import { tellWhile } from "../tells";
 import { verifiedCategoriesOf } from "../verification";
-import { slotOf } from "../verification/checks";
-import { DAY_MS } from "../sa-days";
+import { slotOf } from "../shared/checks";
+import { DAY_MS } from "../shared/sa-days";
 
 // A Batch (ADR 0003): an Open matched Job is offered to up to ten eligible
 // Artisans at once, those offered any Job least recently first. The first

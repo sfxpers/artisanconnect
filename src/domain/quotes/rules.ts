@@ -1,6 +1,6 @@
 import type { Context } from "../context";
-import { saDay } from "../sa-days";
-import { SERVICE_CATEGORY_NAMES, type ServiceCategory } from "../service-categories";
+import { saDay } from "../shared/sa-days";
+import { SERVICE_CATEGORY_NAMES, type ServiceCategory } from "../shared/service-categories";
 import { isSuspended } from "../standing";
 import { verifiedFor } from "../verification";
 

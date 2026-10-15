@@ -1,6 +1,6 @@
 import type { BankAccountVerification } from "../ports";
 import type { StoredFile } from "../uploads";
-import type { DocumentType, FilePart } from "./checks";
+import type { DocumentType, FilePart } from "../shared/checks";
 
 // What a Verification check row holds beside its columns.
 

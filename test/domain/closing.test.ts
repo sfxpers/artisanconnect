@@ -1,5 +1,5 @@
-import { describe, expect, test } from "vitest";
-import { visitor } from "@/domain/actor";
+import { describe, expect, test } from "vite-plus/test";
+import { visitor } from "@/domain/shared/actor";
 import { createHarness, type Harness } from "../support/harness";
 
 // An Account with no Engagement in progress closes itself (#141): its Open

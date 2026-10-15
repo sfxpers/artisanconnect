@@ -12,7 +12,7 @@ import {
   sql,
   type SQL,
 } from "drizzle-orm";
-import type { Actor } from "../actor";
+import type { Actor } from "../shared/actor";
 import type { Context, Write } from "../context";
 import { liveQuoteOf } from "../quotes/rows";
 import {

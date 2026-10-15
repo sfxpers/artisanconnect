@@ -1,9 +1,9 @@
 import { createDomain, type DomainConfig } from "@/domain";
 import type { Clock } from "@/domain/ports";
-import type { AdminActor } from "@/domain/actor";
+import type { AdminActor } from "@/domain/shared/actor";
 import { createFakeContentReader } from "../../test/support/fakes/content-reader";
 import { createFakeMailer } from "../../test/support/fakes/mailer";
-import { saDay } from "@/domain/sa-days";
+import { saDay } from "@/domain/shared/sa-days";
 import { configFromEnv, fakePaymentsFromEnv, portsFromEnv } from "@/worker/ports";
 import { webmOpus } from "../../test/support/files";
 import { given } from "../../test/support/given";

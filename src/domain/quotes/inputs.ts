@@ -2,7 +2,7 @@
 // Nothing here may import what only runs on the server.
 
 import * as z from "zod";
-import { isDay } from "../sa-days";
+import { isDay } from "../shared/sa-days";
 
 /** Who supplies the materials: the Artisan, the Client, or both, the scope naming the Client's part. */
 export const MATERIALS_BY = ["artisan", "client", "both"] as const;
