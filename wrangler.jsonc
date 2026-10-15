@@ -3,7 +3,7 @@
   "name": "artisanconnect",
   // The Work account, which holds staging and production.
   "account_id": "ab816378ce175deba8768e44d4c9478b",
-  "compatibility_date": "2026-10-06",
+  "compatibility_date": "2026-10-12",
   "compatibility_flags": ["nodejs_compat"],
   "main": "src/server.ts",
   // Workers Logs, with Issues grouping every failure and logged error (ADR 0017).
