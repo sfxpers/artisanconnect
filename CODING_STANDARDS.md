@@ -8,7 +8,7 @@ The judgement calls a reviewer checks. Anything mechanical is a check instead: o
 
 ## Stack first
 
-Use Cloudflare (Workers, D1, R2, Images, Workers AI, Turnstile, the Rate Limiting binding, Email Sending, Cron), TanStack (Start, Router, Form), shadcn, and Drizzle before writing code or adding a library. Custom code that stays carries one line saying why the stack cannot do it.
+Use Cloudflare (Workers, D1, R2, Images, Workers AI, Turnstile, the Rate Limiting binding, Email Sending, Cron), TanStack (Start, Router, Form), shadcn, and Drizzle before writing code or adding a library. Custom code that stays carries one line saying why the stack cannot do it. A package a shadcn component imports as written stays while that component does, even where the stack has another way (`next-themes`, which shadcn's Sonner reads).
 
 ## Design
 
@@ -21,6 +21,7 @@ Use Cloudflare (Workers, D1, R2, Images, Workers AI, Turnstile, the Rate Limitin
 
 - Every rule lives in `src/domain`. A server function, the cron handler, and the webhook route only pass the request to it.
 - A command takes the acting party first and returns the new state or a typed refusal. Permission checks live inside it.
+- A projection may add a sum of what its viewer can already read (a count per rating); anything else new a viewer sees waits for approval.
 - An abstraction earns its place by removing duplication in three or more places.
 - Config states only what differs from a default.
 - A write that depends on what a command read carries that condition into its batch (`WHERE state = …`), or a trigger guards it.
