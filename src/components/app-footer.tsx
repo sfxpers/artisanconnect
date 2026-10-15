@@ -18,8 +18,8 @@ export function AppFooter({
   const link = "rounded-sm text-muted-foreground hover:text-foreground";
   return (
     <footer className="mt-16 border-t bg-card">
-      <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:grid-cols-2 sm:px-6 lg:grid-cols-4">
-        <div className="space-y-2">
+      <div className="mx-auto grid max-w-7xl grid-cols-2 gap-8 px-4 py-10 sm:px-6 lg:grid-cols-4">
+        <div className="col-span-2 space-y-2 lg:col-span-1">
           <Wordmark />
           <p className="text-sm text-muted-foreground">{t.tagline}</p>
         </div>
