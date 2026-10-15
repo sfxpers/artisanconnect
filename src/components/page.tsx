@@ -43,6 +43,7 @@ export function Page({
   title,
   lead,
   crumbs,
+  here,
   status,
   meta,
   actions,
@@ -52,6 +53,8 @@ export function Page({
   title?: ReactNode;
   lead?: ReactNode;
   crumbs?: Crumb[];
+  /** The page's own crumb, when its title is not one line of text or it has none. */
+  here?: string;
   status?: ReactNode;
   meta?: ReactNode;
   actions?: ReactNode;
@@ -67,7 +70,9 @@ export function Page({
     >
       {(crumbs || title || actions) && (
         <header className="space-y-3">
-          {crumbs && <Crumbs crumbs={crumbs} current={typeof title === "string" ? title : null} />}
+          {crumbs && (
+            <Crumbs crumbs={crumbs} current={here ?? (typeof title === "string" ? title : null)} />
+          )}
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0 space-y-1">
               {title && (
