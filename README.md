@@ -41,7 +41,7 @@ vp run deploy:staging     # migrate, build, and deploy (or deploy:production)
 vp run admin:setup you@example.com [--env staging|production]   # the first Admin
 ```
 
-CI (`.github/workflows/check.yml`) runs check, check:tokens, test, and test:smoke on every pull request and push to `main`.
+CI (`.github/workflows/check.yml`) runs check, check:tokens, test, and test:smoke on every pull request and push to `main`, then deploys a push to `main` (see Deploying).
 
 ## Architecture
 
@@ -58,6 +58,8 @@ Every rule lives in `src/domain`, built from sections with exactly seven ports: 
 Tests drive the module through `test/support/harness.ts`: real local D1 and R2, with a fake clock, content reader, payment adapter, and mailer.
 
 ## Deploying
+
+GitHub Actions deploys. Once `check` passes on a push to `main`, `deploy-staging` runs `vp run deploy:staging`, then `deploy-production` waits in the `production` environment until a reviewer approves it in the run (Actions → the run → Review deployments) and runs `vp run deploy:production` on the same commit. Each environment deploys one run at a time. Both jobs use the `CLOUDFLARE_API_TOKEN` secret and the `CLOUDFLARE_ACCOUNT_ID` variable.
 
 Both environments are on the account in `wrangler.jsonc`. The first deploy of an environment provisions its D1 and R2, so deploy before migrating, set its secrets, then make its first Admin:
 
