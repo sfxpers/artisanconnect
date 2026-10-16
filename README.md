@@ -41,7 +41,7 @@ vp run deploy:staging     # migrate, build, and deploy (or deploy:production)
 vp run admin:setup you@example.com [--env staging|production]   # the first Admin
 ```
 
-CI (`.github/workflows/check.yml`) runs check, check:tokens, test, and test:smoke on every pull request and push to `main`, then deploys a push to `main` (see Deploying).
+CI (`.github/workflows/check.yml`) runs check, check:tokens, test, build, and test:smoke on every pull request and push to `main`, then deploys a push to `main` (see Deploying).
 
 ## Architecture
 

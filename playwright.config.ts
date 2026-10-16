@@ -5,6 +5,7 @@ import { defineConfig } from "@playwright/test";
 export default defineConfig({
   testDir: "e2e",
   workers: 1,
+  forbidOnly: Boolean(process.env.CI),
   // A journey signs in several people, and a sign-in on a dev server that has
   // just started may take 30 seconds (e2e/support/helpers.ts).
   timeout: 60_000,
