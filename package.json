@@ -6,6 +6,9 @@
   "scripts": {
     "deploy:staging": "wrangler d1 migrations apply DB --config wrangler.jsonc --env staging --remote && CLOUDFLARE_ENV=staging vp build && wrangler deploy",
     "deploy:production": "wrangler d1 migrations apply DB --config wrangler.jsonc --env production --remote && CLOUDFLARE_ENV=production vp build && wrangler deploy",
+    "dev": "vp run db:migrate:local && vp dev",
+    "build": "vp build",
+    "preview": "vp preview",
     "cf-typegen": "wrangler types",
     "prepare": "vp config",
     "postinstall": "wrangler types",
