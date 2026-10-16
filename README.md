@@ -23,8 +23,7 @@ Each thing is written down once:
 curl -fsSL https://vite.plus | bash   # once per machine
 vp install
 cp .dev.vars.example .dev.vars   # then set BETTER_AUTH_SECRET and PAYMENTS_WEBHOOK_SECRET
-vp run db:migrate:local
-vp dev                           # http://localhost:3000; mail at /dev/mail
+vp run dev                       # applies local D1 migrations, then http://localhost:3000; mail at /dev/mail
 ```
 
 Workers AI runs only remotely, so locally (`remoteBindings: false` in `vite.config.ts`) the Content check Holds everything its patterns pass for the Admin's Pre-check. After `vp exec wrangler login`, set it to `true` for live inference.

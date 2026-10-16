@@ -17,7 +17,7 @@ export default defineConfig({
     channel: "chrome",
   },
   webServer: {
-    command: "vp run db:migrate:local && vp dev",
+    command: "vp run dev",
     url: "http://localhost:3000",
     reuseExistingServer: true,
     timeout: 120_000,
