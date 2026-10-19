@@ -21,3 +21,8 @@ allowBuilds:
 # 1.4.3 can read Vitest's module cache, and it shipped inside the one-day window.
 minimumReleaseAgeExclude:
   - "@cloudflare/vitest-plugin@1.4.3"
+permissions:
+  "@tanstack/react-start":
+    skills: true
+  "@tanstack/react-table":
+    skills: true
