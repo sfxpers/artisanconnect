@@ -1,4 +1,4 @@
-import type { DomainConfig, Email, Mailer, Ports } from "@/domain";
+import type { ContentReader, DomainConfig, Email, Mailer, Ports } from "@/domain";
 import { createDomain } from "@/domain";
 import { createStoredFakePayments } from "@/domain/fakes/payments";
 import { workersAiContentReader } from "./content-reader";
@@ -11,14 +11,17 @@ export function domainFromEnv(env: Env) {
 
 /** The domain's ports, from the Worker's bindings. */
 export function portsFromEnv(env: Env): Ports {
+  const local = env.ENVIRONMENT === "local";
   return {
     db: env.DB,
     files: env.R2,
     images: env.IMAGES,
     clock: { now: () => new Date() },
-    contentReader: workersAiContentReader(env.AI),
+    // Local: do not call Workers AI (binding stays remote:true so vp dev can
+    // start). Unsures Hold for the Admin's Pre-check — same as when AI is down.
+    contentReader: local ? localContentReader : workersAiContentReader(env.AI),
     payments: fakePaymentsFromEnv(env),
-    mailer: env.ENVIRONMENT === "local" ? localMailbox : cloudflareMailer(env),
+    mailer: local ? localMailbox : cloudflareMailer(env),
   };
 }
 
@@ -62,5 +65,21 @@ const localMailbox: Mailer = {
   async send(email) {
     localMail.unshift(email);
     localMail.length = Math.min(localMail.length, 50);
+  },
+};
+
+/** Local stand-in: file reads are empty; the verdict cannot run, so items Hold. */
+const localContentReader: ContentReader = {
+  async readPhoto() {
+    return "";
+  },
+  async transcribe() {
+    return "";
+  },
+  async readPdf() {
+    return [];
+  },
+  async read() {
+    return { kind: "cannot-run", reason: "Workers AI is not used locally." };
   },
 };

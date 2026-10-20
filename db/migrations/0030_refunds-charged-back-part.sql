@@ -1,3 +1,4 @@
+-- void:allow-destructive
 -- A Refund the bank's Chargeback sent back only part of is charged back for
 -- that part, and the rest is a waiting Refund of its own; a failed one, owed
 -- and paid by hand, may be charged back too (#137).

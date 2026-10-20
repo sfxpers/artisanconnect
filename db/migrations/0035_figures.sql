@@ -1,3 +1,4 @@
+-- void:allow-destructive
 -- The Admin's figures (#142). A Job's posted time: when it first became Open,
 -- at posting or the Admin's release, kept through Renew.
 ALTER TABLE `jobs` ADD `posted_at` integer;--> statement-breakpoint

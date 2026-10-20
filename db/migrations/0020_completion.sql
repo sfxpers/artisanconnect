@@ -1,3 +1,4 @@
+-- void:allow-destructive
 CREATE TABLE `completions` (
 	`id` text PRIMARY KEY NOT NULL,
 	`engagement_id` text NOT NULL,

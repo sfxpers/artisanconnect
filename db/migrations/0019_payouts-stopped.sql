@@ -1,3 +1,4 @@
+-- void:allow-destructive
 -- A Payout refused or sent back (#129). A Release may have more than one
 -- Payout, as one the bank refused or sent back leaves it owed again, so the
 -- one-Payout-per-Release index becomes one going Payout per Release.

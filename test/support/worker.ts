@@ -1,3 +1,3 @@
 // The Worker the test pool runs in. Tests drive the domain module directly;
-// src/server.ts needs TanStack Start's Vite plugin and is a thin adapter.
+// the app Worker entry is Void/TanStack's default plus crons/.
 export default {};

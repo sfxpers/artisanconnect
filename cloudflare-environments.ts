@@ -1,0 +1,137 @@
+/** Staging / production / local Worker targets. Void forbids Wrangler named envs
+ * (`CLOUDFLARE_ENV`); pick one flattened top-level target via `WORKER_TARGET`. */
+
+export const CLOUDFLARE_ACCOUNT_ID = "ab816378ce175deba8768e44d4c9478b";
+
+export const WORKER_SHARED = {
+  upload_source_maps: true,
+  observability: {
+    enabled: true,
+    issues: { enabled: true },
+  },
+  // Workers AI has no local simulation; remote:true matches Void/vektor.
+  // CI smoke and `vp dev` need CLOUDFLARE_API_TOKEN (or void cloudflare login).
+  ai: {
+    binding: "AI",
+    remote: true,
+  },
+  images: {
+    binding: "IMAGES",
+  },
+  send_email: [{ name: "SEND_EMAIL" }],
+};
+
+export const WORKER_ENVIRONMENTS = {
+  local: {
+    name: "artisanconnect",
+    vars: {
+      ENVIRONMENT: "local",
+      MAIL_FROM: "ArtisanConnect <no-reply@example.com>",
+      APP_URL: "http://localhost:3000",
+      PAYOUT_RUN_TIME: "09:00",
+      TURNSTILE_SITE_KEY: "1x00000000000000000000AA",
+    },
+    ratelimits: [
+      {
+        name: "IP_LIMIT",
+        namespace_id: "1001",
+        simple: { limit: 100, period: 60 },
+      },
+    ],
+    d1_databases: [
+      {
+        binding: "DB",
+        database_name: "artisanconnect",
+        migrations_dir: "./db/migrations",
+      },
+    ],
+    r2_buckets: [
+      {
+        binding: "R2",
+        bucket_name: "artisanconnect",
+      },
+    ],
+  },
+  staging: {
+    name: "artisanconnect-staging",
+    // Staging is served on workers.dev only (no custom domain).
+    workers_dev: true,
+    preview_urls: false,
+    routes: [],
+    vars: {
+      ENVIRONMENT: "staging",
+      MAIL_FROM: "ArtisanConnect <no-reply@artisanconnect.co.za>",
+      APP_URL: "https://artisanconnect-staging.weathered-shadow-5138.workers.dev",
+      PAYOUT_RUN_TIME: "09:00",
+      TURNSTILE_SITE_KEY: "0x4AAAAAAFU7PtdnwZ5hBIB7",
+    },
+    ratelimits: [
+      {
+        name: "IP_LIMIT",
+        namespace_id: "1002",
+        simple: { limit: 20, period: 60 },
+      },
+    ],
+    d1_databases: [
+      {
+        binding: "DB",
+        database_name: "artisanconnect-staging",
+        database_id: "658d50d5-6b9f-4d92-afe8-6e1e80570c82",
+        // admin:setup runs beside the Worker and reads this D1.
+        remote: true,
+        migrations_dir: "./db/migrations",
+      },
+    ],
+    r2_buckets: [
+      {
+        binding: "R2",
+        bucket_name: "artisanconnect-staging",
+      },
+    ],
+  },
+  production: {
+    name: "artisanconnect-production",
+    workers_dev: false,
+    preview_urls: false,
+    routes: [{ pattern: "artisanconnect.co.za", custom_domain: true }],
+    vars: {
+      ENVIRONMENT: "production",
+      MAIL_FROM: "ArtisanConnect <no-reply@artisanconnect.co.za>",
+      APP_URL: "https://artisanconnect.co.za",
+      PAYOUT_RUN_TIME: "09:00",
+      TURNSTILE_SITE_KEY: "0x4AAAAAAFWwjRc9qeMKE8Jh",
+    },
+    ratelimits: [
+      {
+        name: "IP_LIMIT",
+        namespace_id: "1003",
+        simple: { limit: 20, period: 60 },
+      },
+    ],
+    d1_databases: [
+      {
+        binding: "DB",
+        database_name: "artisanconnect-production",
+        database_id: "3874eb0d-f6f5-4d2d-992e-96381a3d21e6",
+        // admin:setup runs beside the Worker and reads this D1.
+        remote: true,
+        migrations_dir: "./db/migrations",
+      },
+    ],
+    r2_buckets: [
+      {
+        binding: "R2",
+        bucket_name: "artisanconnect-production",
+      },
+    ],
+  },
+};
+
+export type WorkerEnvironmentName = keyof typeof WORKER_ENVIRONMENTS;
+
+export function resolveWorkerEnvironmentName(
+  workerTarget = process.env.WORKER_TARGET,
+): WorkerEnvironmentName {
+  if (workerTarget === "staging" || workerTarget === "production") return workerTarget;
+  return "local";
+}

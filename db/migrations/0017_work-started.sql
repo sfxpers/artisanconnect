@@ -1,3 +1,4 @@
+-- void:allow-destructive
 ALTER TABLE `engagements` ADD `start_claimed_at` integer;--> statement-breakpoint
 ALTER TABLE `engagements` ADD `work_started_at` integer;--> statement-breakpoint
 ALTER TABLE `engagements` ADD `work_started_by` text;--> statement-breakpoint

@@ -1,5 +1,5 @@
 import { defineConfig, lazyPlugins } from "vite-plus";
-import { cloudflare } from "@cloudflare/vite-plugin";
+import { voidPlugin } from "void";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
@@ -9,7 +9,7 @@ export default defineConfig({
     "*": "vp check --fix",
   },
   fmt: {
-    ignorePatterns: ["**/routeTree.gen.ts", ".agents/**"],
+    ignorePatterns: ["**/routeTree.gen.ts", ".agents/**", "void.lock.json"],
   },
   lint: {
     plugins: ["typescript", "react", "unicorn", "oxc", "import", "vitest", "jsx-a11y"],
@@ -87,15 +87,6 @@ export default defineConfig({
   },
   environments: { ssr: { build: { sourcemap: true } } },
   // Lazy, so `vp check`, `vp lint`, and `vp fmt` read this file without
-  // starting the plugins.
-  plugins: lazyPlugins(() => [
-    tailwindcss(),
-    cloudflare({
-      viteEnvironment: { name: "ssr" },
-      // The plugin default is remote. Workers AI has no local simulation.
-      remoteBindings: false,
-    }),
-    tanstackStart(),
-    viteReact(),
-  ]),
+  // starting the plugins. voidPlugin must come before the framework plugin.
+  plugins: lazyPlugins(() => [voidPlugin(), tailwindcss(), tanstackStart(), viteReact()]),
 });

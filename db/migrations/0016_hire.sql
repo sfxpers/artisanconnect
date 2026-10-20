@@ -1,3 +1,4 @@
+-- void:allow-destructive
 CREATE TABLE `engagements` (
 	`id` text PRIMARY KEY NOT NULL,
 	`job_id` text NOT NULL,

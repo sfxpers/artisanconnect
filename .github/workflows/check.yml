@@ -19,21 +19,32 @@ jobs:
           cache: true
       - run: vp check
       - run: vp run check:tokens
+      # Materialize gitignored .void-wrangler.jsonc for Vitest's cloudflareTest pool
+      # and for local D1 migrate (void prepare alone is not enough in CI).
+      - run: node scripts/ensure-void-wrangler.mjs
       - run: vp test run
       - run: vp build
       - run: |
-          cp .dev.vars.example .dev.vars
-          sed -i "s|^BETTER_AUTH_SECRET=.*|BETTER_AUTH_SECRET=$(openssl rand -base64 32)|" .dev.vars
-          sed -i "s|^PAYMENTS_WEBHOOK_SECRET=.*|PAYMENTS_WEBHOOK_SECRET=$(openssl rand -base64 32)|" .dev.vars
-      # Playwright's own server on Linux never exits, so the step would hang.
+          cp docs/local.env.example .env
+          sed -i "s|^BETTER_AUTH_SECRET=.*|BETTER_AUTH_SECRET=$(openssl rand -base64 32)|" .env
+          sed -i "s|^PAYMENTS_WEBHOOK_SECRET=.*|PAYMENTS_WEBHOOK_SECRET=$(openssl rand -base64 32)|" .env
+      # Workers AI is remote:true, so the dev server needs a Cloudflare token
+      # for the remote proxy (same as vektor). Playwright's own server on Linux
+      # never exits, so the step would hang.
       - run: |
           vp run db:migrate:local
           nohup vp dev > dev-server.log 2>&1 &
           for i in $(seq 1 60); do curl -sf -o /dev/null http://localhost:3000 && exit 0; sleep 2; done
           cat dev-server.log
           exit 1
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
       - run: vp run test:smoke
         timeout-minutes: 15
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
 
   deploy-staging:
     # Only from main, and only once every check above has passed.

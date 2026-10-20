@@ -1,4 +1,5 @@
 // Makes the first Admin (ADR 0015). Once there is one, it refuses.
+import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { parseArgs } from "node:util";
 import { withWorkerModule } from "./worker-module.mjs";
@@ -18,12 +19,19 @@ if (!email || (environment && !["staging", "production"].includes(environment)))
   process.exit(1);
 }
 
+// Void has no named Wrangler envs: rematerialize the Worker config for the target.
+if (environment) process.env.WORKER_TARGET = environment;
+execFileSync("node", [path.join(root, "scripts/ensure-void-wrangler.mjs")], {
+  cwd: root,
+  stdio: "inherit",
+  env: process.env,
+});
+
 await withWorkerModule(
   path.join(root, "src/worker/set-up-admin.ts"),
-  // Staging's and production's D1 are remote: wrangler.jsonc names each by its id.
+  // Staging's and production's D1 are remote: void.config names each by its id.
   {
-    configPath: path.join(root, "wrangler.jsonc"),
-    environment,
+    configPath: path.join(root, ".void-wrangler.jsonc"),
     remoteBindings: Boolean(environment),
   },
   async (module, env) => {
