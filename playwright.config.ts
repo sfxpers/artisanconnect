@@ -21,5 +21,11 @@ export default defineConfig({
     url: "http://localhost:3000",
     reuseExistingServer: true,
     timeout: 120_000,
+    env: {
+      ...process.env,
+      // Match the old remoteBindings: false local path (Workers AI has no local sim).
+      CLOUDFLARE_VITE_FORCE_LOCAL: "true",
+      VOID_INSPECTOR_PORT: "false",
+    },
   },
 });

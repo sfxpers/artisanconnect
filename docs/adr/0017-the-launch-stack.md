@@ -19,7 +19,7 @@
 **Tests and tooling**
 
 - **Tests:** Vitest at one Engagement seam over the domain module, with a fake clock, a fake AI, and a fake payment adapter, plus a few Playwright smoke tests.
-- **Tooling:** Vite+ (`vp`), which runs Node and pnpm at the versions the repo pins and ships Vite, Vitest, Oxlint, and Oxfmt as one set.
+- **Tooling:** Vite+ (`vp`), which runs Node and pnpm at the versions the repo pins and ships Vite, Vitest, Oxlint, and Oxfmt as one set. **Void** owns the Cloudflare Vite plugin (`voidPlugin()`), typed env, Worker config (`void.config.ts` / `void.lock.json`), and `void deploy --platform cloudflare` (staging and production selected with `CLOUDFLARE_ENV`).
 
 **Data home.** Personal data lives on Cloudflare's network, which may be outside South Africa, and the POPIA consent at sign-up names that transfer.
 

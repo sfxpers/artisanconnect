@@ -11,7 +11,7 @@ const [name, ...args] = process.argv.slice(2);
 await withWorkerModule(
   path.join(root, "e2e/support/seeds.ts"),
   // Workers AI is remote only, and the seed passes the Content check by a fake.
-  { configPath: path.join(root, "wrangler.jsonc"), remoteBindings: false },
+  { configPath: path.join(root, ".void-wrangler.jsonc"), remoteBindings: false },
   async (seeds, env) => {
     if (typeof seeds[name] !== "function") throw new Error(`No seed named "${name}"`);
     console.log(JSON.stringify(await seeds[name](env, ...args)));

@@ -14,7 +14,7 @@ export default defineConfig(async () => {
     assetsInclude: ["test/fixtures/**/*.heic"],
     plugins: [
       cloudflareTest({
-        wrangler: { configPath: "./wrangler.jsonc" },
+        wrangler: { configPath: "./.void-wrangler.jsonc" },
         main: "./test/support/worker.ts",
         // The plugin default is remote. Workers AI has no local simulation.
         remoteBindings: false,

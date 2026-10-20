@@ -22,9 +22,11 @@ jobs:
       - run: vp test run
       - run: vp build
       - run: |
-          cp .dev.vars.example .dev.vars
-          sed -i "s|^BETTER_AUTH_SECRET=.*|BETTER_AUTH_SECRET=$(openssl rand -base64 32)|" .dev.vars
-          sed -i "s|^PAYMENTS_WEBHOOK_SECRET=.*|PAYMENTS_WEBHOOK_SECRET=$(openssl rand -base64 32)|" .dev.vars
+          {
+            echo "BETTER_AUTH_SECRET=$(openssl rand -base64 32)"
+            echo "TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA"
+            echo "PAYMENTS_WEBHOOK_SECRET=$(openssl rand -base64 32)"
+          } > .env
       # Playwright's own server on Linux never exits, so the step would hang.
       - run: |
           vp run db:migrate:local

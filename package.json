@@ -4,16 +4,16 @@
   "type": "module",
   "sideEffects": false,
   "scripts": {
-    "deploy:staging": "wrangler d1 migrations apply DB --config wrangler.jsonc --env staging --remote && CLOUDFLARE_ENV=staging vp build && wrangler deploy",
-    "deploy:production": "wrangler d1 migrations apply DB --config wrangler.jsonc --env production --remote && CLOUDFLARE_ENV=production vp build && wrangler deploy",
-    "dev": "vp run db:migrate:local && vp dev",
+    "deploy": "CLOUDFLARE_ENV=production void deploy --platform cloudflare",
+    "deploy:staging": "CLOUDFLARE_ENV=staging void deploy --platform cloudflare",
+    "deploy:production": "CLOUDFLARE_ENV=production void deploy --platform cloudflare",
+    "dev": "vp run db:migrate:local && CLOUDFLARE_VITE_FORCE_LOCAL=true VOID_INSPECTOR_PORT=false vp dev",
     "build": "vp build",
     "preview": "vp preview",
-    "cf-typegen": "wrangler types",
     "prepare": "vp config",
-    "postinstall": "wrangler types",
+    "postinstall": "void prepare && node --input-type=module -e \"import { voidPlugin } from 'void'; voidPlugin();\"",
     "db:generate": "drizzle-kit generate",
-    "db:migrate:local": "wrangler d1 migrations apply DB --local",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local --config .void-wrangler.jsonc",
     "test:smoke": "playwright test",
     "admin:setup": "node scripts/set-up-admin.mjs"
   },
@@ -41,7 +41,6 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "^1.64.0",
     "@cloudflare/vitest-plugin": "^1.4.2",
     "@playwright/test": "^1.64.1",
     "@tailwindcss/vite": "^4.3.3",
@@ -50,12 +49,12 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
     "drizzle-kit": "^0.31.11",
-    "jsonc-parser": "^3.3.1",
     "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2",
     "vite": "catalog:",
     "vite-plus": "catalog:",
     "vitest": "catalog:",
+    "void": "^1.1.12",
     "wrangler": "^4.151.0"
   },
   "packageManager": "pnpm@12.11.2"

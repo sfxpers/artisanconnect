@@ -1,6 +1,5 @@
-import { parse } from "jsonc-parser";
 import { describe, expect, test } from "vite-plus/test";
-import wranglerConfig from "../wrangler.jsonc?raw";
+import { WORKER_ENVIRONMENTS, WORKER_SHARED } from "../cloudflare-environments";
 import { createDomain, type Ports } from "@/domain";
 import { createHarness, TEST_CONFIG } from "./support/harness";
 
@@ -20,50 +19,50 @@ describe("the domain module", () => {
   });
 });
 
-type WorkerConfig = Record<string, unknown> & { env?: Record<string, Record<string, unknown>> };
-const config = parse(wranglerConfig) as WorkerConfig;
+type EnvironmentConfig = typeof WORKER_SHARED &
+  (typeof WORKER_ENVIRONMENTS)[keyof typeof WORKER_ENVIRONMENTS];
 
 /** Every key a Worker environment may have; anything else could be a path out. */
 const ENVIRONMENT_KEYS = [
+  "name",
+  "workers_dev",
+  "preview_urls",
   // Production's custom domain.
   "routes",
   "vars",
-  "secrets",
-  "ai",
-  "images",
   "ratelimits",
   "d1_databases",
   "r2_buckets",
-  "send_email",
 ];
-const TOP_LEVEL_KEYS = [
-  "$schema",
-  "name",
+
+const SHARED_KEYS = [
   "compatibility_date",
   "compatibility_flags",
   "main",
   "observability",
   "upload_source_maps",
   "triggers",
-  // The account that holds staging and production.
-  "account_id",
-  "env",
-  ...ENVIRONMENT_KEYS,
+  "ai",
+  "images",
+  "send_email",
+  "secrets",
 ];
 
-const environments: [string, Record<string, unknown>][] = [
-  ["local", config],
-  ...Object.entries(config.env ?? {}),
-];
+const environments: [string, EnvironmentConfig][] = (
+  Object.entries(WORKER_ENVIRONMENTS) as [
+    keyof typeof WORKER_ENVIRONMENTS,
+    (typeof WORKER_ENVIRONMENTS)[keyof typeof WORKER_ENVIRONMENTS],
+  ][]
+).map(([name, environment]) => [name, { ...WORKER_SHARED, ...environment }]);
 
-function bindingNames(environment: Record<string, unknown>) {
-  const named = (key: string, field: string) =>
+function bindingNames(environment: EnvironmentConfig) {
+  const named = (key: "d1_databases" | "r2_buckets" | "send_email" | "ratelimits", field: string) =>
     ((environment[key] as Record<string, string>[] | undefined) ?? []).map(
       (binding) => binding[field],
     );
   return [
-    (environment.ai as { binding?: string } | undefined)?.binding,
-    (environment.images as { binding?: string } | undefined)?.binding,
+    environment.ai?.binding,
+    environment.images?.binding,
     ...named("d1_databases", "binding"),
     ...named("r2_buckets", "binding"),
     ...named("send_email", "name"),
@@ -77,9 +76,13 @@ describe("the Worker", () => {
   });
 
   test("has no configuration but what ADR 0017 needs", () => {
-    expect(Object.keys(config).filter((key) => !TOP_LEVEL_KEYS.includes(key))).toEqual([]);
-    for (const [, environment] of environments.slice(1)) {
-      expect(Object.keys(environment).filter((key) => !ENVIRONMENT_KEYS.includes(key))).toEqual([]);
+    expect(Object.keys(WORKER_SHARED).filter((key) => !SHARED_KEYS.includes(key as never))).toEqual(
+      [],
+    );
+    for (const [, environment] of Object.entries(WORKER_ENVIRONMENTS)) {
+      expect(
+        Object.keys(environment).filter((key) => !ENVIRONMENT_KEYS.includes(key as never)),
+      ).toEqual([]);
     }
   });
 
@@ -103,7 +106,7 @@ describe("the Worker", () => {
       ]);
       // better-auth's session signing, Turnstile (ADR 0017), and the payment
       // adapter's webhook signing.
-      expect((environment.secrets as { required: string[] }).required).toEqual([
+      expect(environment.secrets.required).toEqual([
         "BETTER_AUTH_SECRET",
         "TURNSTILE_SECRET_KEY",
         "PAYMENTS_WEBHOOK_SECRET",
@@ -112,23 +115,19 @@ describe("the Worker", () => {
   );
 
   test("gives each environment its own D1 and R2", () => {
-    const databases = environments.map(
-      ([, e]) => (e.d1_databases as { database_name: string }[])[0]?.database_name,
-    );
-    const buckets = environments.map(
-      ([, e]) => (e.r2_buckets as { bucket_name: string }[])[0]?.bucket_name,
-    );
+    const databases = environments.map(([, e]) => e.d1_databases[0]?.database_name);
+    const buckets = environments.map(([, e]) => e.r2_buckets[0]?.bucket_name);
 
     expect(new Set(databases).size).toBe(3);
     expect(new Set(buckets).size).toBe(3);
   });
 
   test("keeps Workers Logs, and reports every failure and logged error to Workers Issues", () => {
-    expect(config.observability).toEqual({ enabled: true, issues: { enabled: true } });
+    expect(WORKER_SHARED.observability).toEqual({ enabled: true, issues: { enabled: true } });
   });
 
   test("runs due clocks every minute", () => {
-    expect(config.triggers).toEqual({ crons: ["* * * * *"] });
+    expect(WORKER_SHARED.triggers).toEqual({ crons: ["* * * * *"] });
   });
 });
 
