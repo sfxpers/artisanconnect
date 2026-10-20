@@ -5,7 +5,12 @@ import { getPlatformProxy } from "wrangler";
 export async function withWorkerModule(file, proxyOptions, use) {
   let proxy;
   try {
-    proxy = await getPlatformProxy(proxyOptions);
+    // Local D1 must match `db:migrate:local` / Void's default persist (`.void`),
+    // not Wrangler's `.wrangler/state/v3`.
+    proxy = await getPlatformProxy({
+      persist: { path: ".void" },
+      ...proxyOptions,
+    });
     const { module } = await runnerImport(file, {
       configFile: false,
       logLevel: "error",
