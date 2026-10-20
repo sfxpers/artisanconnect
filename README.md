@@ -26,7 +26,7 @@ cp docs/local.env.example .env        # then set BETTER_AUTH_SECRET and PAYMENTS
 vp run dev                            # applies local D1 migrations, then http://localhost:3000; mail at /dev/mail
 ```
 
-Workers AI has no local simulation (`ai.remote: true` in `cloudflare-environments.ts`). Locally and in CI, `vp dev` / smoke need `CLOUDFLARE_API_TOKEN` (or `void cloudflare login`) so the remote AI proxy can start. The Content check still Holds everything its patterns pass for the Admin's Pre-check when inference is not required.
+Workers AI has no local simulation (`ai.remote: true` in `cloudflare-environments.ts`). Locally and in CI, `vp dev` / smoke need `CLOUDFLARE_API_TOKEN` (or `void cloudflare login`) so the remote AI proxy can start. When `ENVIRONMENT=local`, the Content check uses a stand-in reader (same idea as the local mailbox) and Holds what patterns do not refuse, for the Admin's Pre-check.
 
 ## Scripts
 
