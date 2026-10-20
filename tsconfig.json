@@ -3,12 +3,25 @@
   "include": ["**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules", "dist", ".wrangler", ".tanstack"],
   "compilerOptions": {
+    "target": "ES2022",
     "jsx": "react-jsx",
     "isolatedModules": true,
-    "skipLibCheck": true,
+    "module": "ESNext",
     "paths": {
       "@/*": ["./src/*"]
     },
-    "types": ["void/env"]
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["vite/client", "node", "void/env"],
+    "moduleResolution": "Bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "noUncheckedSideEffectImports": true
   }
 }

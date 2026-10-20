@@ -317,7 +317,7 @@ describe("the Content check of a message", () => {
     const client = await given.client();
     const jobId = await given.openJob(client);
     await given.sentQuote(artisan, jobId);
-    const [{ conversationId }] = (await domain.conversations.forJob(client.actor, { jobId }))!;
+    const { conversationId } = (await domain.conversations.forJob(client.actor, { jobId }))![0]!;
 
     expect(
       await domain.conversations.send(artisan.actor, {
@@ -551,7 +551,7 @@ describe("a read-only Conversation", () => {
     const client = await given.client();
     const jobId = await given.openJob(client, { matching: "invite-only" });
     await invite(domain, client, artisan, jobId);
-    const [{ conversationId }] = (await domain.conversations.forJob(client.actor, { jobId }))!;
+    const { conversationId } = (await domain.conversations.forJob(client.actor, { jobId }))![0]!;
 
     await domain.jobs.close(client.actor, { jobId });
 
@@ -577,7 +577,7 @@ describe("a read-only Conversation", () => {
     const jobId = await given.openJob(client);
     clock.advance({ days: 2 });
     await given.sentQuote(artisan, jobId);
-    const [{ conversationId }] = (await domain.conversations.forJob(client.actor, { jobId }))!;
+    const { conversationId } = (await domain.conversations.forJob(client.actor, { jobId }))![0]!;
 
     clock.advance({ days: 13 });
     await domain.system.runDueClocks();
@@ -596,7 +596,7 @@ describe("an Invitation passed", () => {
     const client = await given.client();
     const jobId = await given.openJob(client, { matching: "invite-only" });
     await invite(domain, client, artisan, jobId);
-    const [{ conversationId }] = (await domain.conversations.forJob(client.actor, { jobId }))!;
+    const { conversationId } = (await domain.conversations.forJob(client.actor, { jobId }))![0]!;
     const before = await domain.conversations.view(client.actor, { conversationId });
 
     await domain.invitations.pass(artisan.actor, { jobId });

@@ -16,7 +16,10 @@ Single-context: one `GLOSSARY.md` + `docs/adr/` at the repo root. See `docs/agen
 
 Every commit passes the checks CI runs (`README.md`, Scripts). Review applies `CODING_STANDARDS.md`, which holds only judgement calls; a rule a check can enforce becomes a check.
 
-## Void
+## Shared stack
 
-- This project uses [Void](https://void.cloud) with TanStack Start on Cloudflare Workers. Void owns resources, typed env, and deploy; TanStack owns routing and SSR.
-- Use Void's CLI and typed APIs. Before working with Void, read the relevant Markdown docs in `node_modules/void/docs/`; start with `guide/quickstart.md` for setup, `integrations/frameworks/tanstack-start.md` for this stack, and `reference/cli.md` for commands.
+- Prefer upstream-supported defaults and public APIs across these four projects. Keep a different approach only for a product requirement or an upstream limitation, and record the reason in the existing README or ADR. Preserve deployed resource identities and migration history when changing tooling.
+- Vite+ owns development, build, formatting, linting, typechecking, and unit tests. Use the repository's scripts and verification commands in `README.md`; preserve product-specific test seams and deployment gates.
+- Before changing Void resources, configuration, environment handling, or deployment, read the matching installed docs in `node_modules/void/docs/`. Start with `guide/quickstart.md`, `integrations/frameworks/tanstack-start.md`, and `reference/cli.md`, then follow the relevant command reference. Void owns resources and deploy; TanStack Start owns routing and SSR. Keep Better Auth integrated directly with TanStack Start while Void-managed auth is unsupported in framework mode.
+- Follow `guide/env-vars.md` for `env.ts`, typed `void/env` access, local `.env`, build-time public `VITE_*` values, and production server secrets. Use native Cloudflare bindings where the product requires them.
+- Follow the installed package's guidance before changing TanStack, Vite+, or shadcn conventions. Use the locally installed shadcn CLI; preserve generated UI components and product tokens rather than regenerating or redesigning them for consistency.

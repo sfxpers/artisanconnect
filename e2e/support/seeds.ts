@@ -36,7 +36,7 @@ export async function quotedTwice(env: Env) {
   for (const [name, labour, materials] of [
     ["Sipho Dlamini", "1500", "500"],
     ["Themba Nkosi", "600", "300"],
-  ]) {
+  ] as const) {
     const artisan = await make.matchableArtisan({
       name,
       email: `${name.split(" ")[0]!.toLowerCase()}-${stamp}@example.test`,
