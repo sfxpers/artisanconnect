@@ -19,6 +19,9 @@ jobs:
           cache: true
       - run: vp check
       - run: vp run check:tokens
+      # Materialize gitignored .void-wrangler.jsonc for Vitest's cloudflareTest pool
+      # and for local D1 migrate (void prepare alone is not enough in CI).
+      - run: node scripts/ensure-void-wrangler.mjs
       - run: vp test run
       - run: vp build
       - run: |

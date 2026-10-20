@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { cloudflareTest, readD1Migrations } from "@cloudflare/vitest-plugin";
 import { defineConfig } from "vite-plus";
@@ -8,6 +9,15 @@ export default defineConfig(async () => {
   process.env.BETTER_AUTH_SECRET ??= "";
   process.env.TURNSTILE_SECRET_KEY ??= "";
   process.env.PAYMENTS_WEBHOOK_SECRET ??= "";
+  // .void-wrangler.jsonc is gitignored; CI and a clean checkout need it before
+  // cloudflareTest reads Wrangler config (same helper as db:migrate:local).
+  execFileSync(
+    process.execPath,
+    [path.join(import.meta.dirname, "scripts/ensure-void-wrangler.mjs")],
+    {
+      stdio: "inherit",
+    },
+  );
   const migrations = await readD1Migrations(path.join(import.meta.dirname, "db/migrations"));
   return {
     resolve: { tsconfigPaths: true },
