@@ -3,10 +3,6 @@
 export const CLOUDFLARE_ACCOUNT_ID = "ab816378ce175deba8768e44d4c9478b";
 
 export const WORKER_SHARED = {
-  // Also on cloudflare (not only worker:) so .void-wrangler.jsonc has them for
-  // Wrangler/Vitest tooling that reads the materialized file directly.
-  compatibility_date: "2026-10-12",
-  compatibility_flags: ["nodejs_compat", "nodejs_als"],
   // Cron + fetch live in src/server.ts (TanStack Start custom entry).
   main: "src/server.ts",
   upload_source_maps: true,
@@ -17,11 +13,11 @@ export const WORKER_SHARED = {
     enabled: true,
     issues: { enabled: true },
   },
-  // Workers AI has no local simulation; local Content check Holds pattern-pass
-  // items (see README). Do not set `remote: true` here — that forces a remote
-  // proxy session during `vp dev` / smoke.
+  // Workers AI has no local simulation; remote:true matches Void/vektor.
+  // CI smoke and `vp dev` need CLOUDFLARE_API_TOKEN (or void cloudflare login).
   ai: {
     binding: "AI",
+    remote: true,
   },
   images: {
     binding: "IMAGES",

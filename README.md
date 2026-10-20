@@ -11,28 +11,22 @@ Each thing is written down once:
 | How code is judged        | `CODING_STANDARDS.md`                                                         |
 | What agents need          | `AGENTS.md`                                                                   |
 | Bindings and environments | `void.config.ts` / `void.lock.json` (targets in `cloudflare-environments.ts`) |
-| Secrets                   | `env.ts` + root `.env` (local)                                                |
+| Secrets                   | `env.ts` + `docs/local.env.example` → `.env`                                  |
 | Colours, radius, and type | `src/styles.css`                                                              |
 | Every word the app shows  | `src/web/copy.ts`                                                             |
 
 ## Setup
 
-[Vite+](https://viteplus.dev) (`vp`) runs everything: it uses the Node in `.node-version` and the pnpm in `package.json`, and ships Vite, Vitest, Oxlint, and Oxfmt as one set, pinned in `pnpm-workspace.yaml`. `vp install` also sets up the pre-commit hook, which checks what is staged. `postinstall` runs `void prepare` for Void codegen (including `.void-wrangler.jsonc`).
+[Vite+](https://viteplus.dev) (`vp`) runs everything: it uses the Node in `.node-version` and the pnpm in `package.json`, and ships Vite, Vitest, Oxlint, and Oxfmt as one set, pinned in `pnpm-workspace.yaml`. `vp install` also sets up the pre-commit hook, which checks what is staged. `postinstall` runs `void prepare` for Void codegen.
 
 ```sh
 curl -fsSL https://vite.plus | bash   # once per machine
 vp install
-# Void allows only a root `.env` (see env.ts). Create it with:
-cat > .env <<'EOF'
-BETTER_AUTH_SECRET=
-TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
-PAYMENTS_WEBHOOK_SECRET=
-EOF
-# then set BETTER_AUTH_SECRET and PAYMENTS_WEBHOOK_SECRET (`openssl rand -base64 32`)
-vp run dev                           # applies local D1 migrations, then http://localhost:3000; mail at /dev/mail
+cp docs/local.env.example .env        # then set BETTER_AUTH_SECRET and PAYMENTS_WEBHOOK_SECRET
+vp run dev                            # applies local D1 migrations, then http://localhost:3000; mail at /dev/mail
 ```
 
-Workers AI has no local simulation. `vp run dev` sets `CLOUDFLARE_VITE_FORCE_LOCAL=true` so the Vite Cloudflare plugin does not open a remote proxy (same as the old `remoteBindings: false`). Locally the Content check Holds everything its patterns pass for the Admin's Pre-check. Live Workers AI runs on deployed staging and production.
+Workers AI has no local simulation (`ai.remote: true` in `cloudflare-environments.ts`). Locally and in CI, `vp dev` / smoke need `CLOUDFLARE_API_TOKEN` (or `void cloudflare login`) so the remote AI proxy can start. The Content check still Holds everything its patterns pass for the Admin's Pre-check when inference is not required.
 
 ## Scripts
 

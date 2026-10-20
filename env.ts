@@ -1,9 +1,10 @@
 import { defineEnv, string } from "void/env";
 
-// Server secrets (Worker secrets). No VITE_* client keys in this app.
-// Local values go in a single root `.env` (Void forbids `.env.example` / `.dev.vars`).
+// Server secrets (Worker secrets). Optional so local/CI can run without every
+// key; production values stay Worker secrets (`void secret put`). No VITE_*
+// client keys in this app.
 export default defineEnv({
-  BETTER_AUTH_SECRET: string(),
-  TURNSTILE_SECRET_KEY: string(),
-  PAYMENTS_WEBHOOK_SECRET: string(),
+  BETTER_AUTH_SECRET: string().optional(),
+  TURNSTILE_SECRET_KEY: string().optional(),
+  PAYMENTS_WEBHOOK_SECRET: string().optional(),
 });

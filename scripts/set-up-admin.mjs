@@ -21,7 +21,11 @@ if (!email || (environment && !["staging", "production"].includes(environment)))
 
 // Void has no named Wrangler envs: rematerialize the Worker config for the target.
 if (environment) process.env.CLOUDFLARE_ENV = environment;
-execFileSync("pnpm", ["exec", "void", "prepare"], { cwd: root, stdio: "inherit" });
+execFileSync("node", [path.join(root, "scripts/ensure-void-wrangler.mjs")], {
+  cwd: root,
+  stdio: "inherit",
+  env: process.env,
+});
 
 await withWorkerModule(
   path.join(root, "src/worker/set-up-admin.ts"),

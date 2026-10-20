@@ -88,12 +88,5 @@ export default defineConfig({
   environments: { ssr: { build: { sourcemap: true } } },
   // Lazy, so `vp check`, `vp lint`, and `vp fmt` read this file without
   // starting the plugins. voidPlugin must come before the framework plugin.
-  // persistTo matches wrangler d1 --local (and the previous Cloudflare Vite
-  // plugin). TanStack Start is Void class "a", whose default would be `.void/`.
-  plugins: lazyPlugins(() => [
-    voidPlugin({ persistTo: ".wrangler/state" }),
-    tailwindcss(),
-    tanstackStart(),
-    viteReact(),
-  ]),
+  plugins: lazyPlugins(() => [voidPlugin(), tailwindcss(), tanstackStart(), viteReact()]),
 });

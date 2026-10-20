@@ -2,12 +2,12 @@
   "version": 1,
   "source": {
     "account_id": "ab816378ce175deba8768e44d4c9478b",
-    "compatibility_date": "2026-10-12",
-    "compatibility_flags": ["nodejs_compat", "nodejs_als"],
     "main": "src/server.ts",
     "upload_source_maps": true,
     "triggers": {
-      "crons": ["* * * * *"]
+      "crons": [
+        "* * * * *"
+      ]
     },
     "observability": {
       "enabled": true,
@@ -16,7 +16,8 @@
       }
     },
     "ai": {
-      "binding": "AI"
+      "binding": "AI",
+      "remote": true
     },
     "images": {
       "binding": "IMAGES"
@@ -27,7 +28,11 @@
       }
     ],
     "secrets": {
-      "required": ["BETTER_AUTH_SECRET", "TURNSTILE_SECRET_KEY", "PAYMENTS_WEBHOOK_SECRET"]
+      "required": [
+        "BETTER_AUTH_SECRET",
+        "TURNSTILE_SECRET_KEY",
+        "PAYMENTS_WEBHOOK_SECRET"
+      ]
     },
     "name": "artisanconnect",
     "vars": {
@@ -63,12 +68,12 @@
   },
   "resolved": {
     "account_id": "ab816378ce175deba8768e44d4c9478b",
-    "compatibility_date": "2026-10-12",
-    "compatibility_flags": ["nodejs_compat", "nodejs_als"],
     "main": "src/server.ts",
     "upload_source_maps": true,
     "triggers": {
-      "crons": ["* * * * *"]
+      "crons": [
+        "* * * * *"
+      ]
     },
     "observability": {
       "enabled": true,
@@ -77,7 +82,8 @@
       }
     },
     "ai": {
-      "binding": "AI"
+      "binding": "AI",
+      "remote": true
     },
     "images": {
       "binding": "IMAGES"
@@ -88,7 +94,11 @@
       }
     ],
     "secrets": {
-      "required": ["BETTER_AUTH_SECRET", "TURNSTILE_SECRET_KEY", "PAYMENTS_WEBHOOK_SECRET"]
+      "required": [
+        "BETTER_AUTH_SECRET",
+        "TURNSTILE_SECRET_KEY",
+        "PAYMENTS_WEBHOOK_SECRET"
+      ]
     },
     "name": "artisanconnect",
     "vars": {
@@ -122,5 +132,5 @@
       }
     ]
   },
-  "text": "{\n  \"account_id\": \"ab816378ce175deba8768e44d4c9478b\",\n  \"compatibility_date\": \"2026-10-12\",\n  \"compatibility_flags\": [\n    \"nodejs_compat\",\n    \"nodejs_als\"\n  ],\n  \"main\": \"src/server.ts\",\n  \"upload_source_maps\": true,\n  \"triggers\": {\n    \"crons\": [\n      \"* * * * *\"\n    ]\n  },\n  \"observability\": {\n    \"enabled\": true,\n    \"issues\": {\n      \"enabled\": true\n    }\n  },\n  \"ai\": {\n    \"binding\": \"AI\"\n  },\n  \"images\": {\n    \"binding\": \"IMAGES\"\n  },\n  \"send_email\": [\n    {\n      \"name\": \"SEND_EMAIL\"\n    }\n  ],\n  \"secrets\": {\n    \"required\": [\n      \"BETTER_AUTH_SECRET\",\n      \"TURNSTILE_SECRET_KEY\",\n      \"PAYMENTS_WEBHOOK_SECRET\"\n    ]\n  },\n  \"name\": \"artisanconnect\",\n  \"vars\": {\n    \"ENVIRONMENT\": \"local\",\n    \"MAIL_FROM\": \"ArtisanConnect <no-reply@example.com>\",\n    \"APP_URL\": \"http://localhost:3000\",\n    \"PAYOUT_RUN_TIME\": \"09:00\",\n    \"TURNSTILE_SITE_KEY\": \"1x00000000000000000000AA\"\n  },\n  \"ratelimits\": [\n    {\n      \"name\": \"IP_LIMIT\",\n      \"namespace_id\": \"1001\",\n      \"simple\": {\n        \"limit\": 100,\n        \"period\": 60\n      }\n    }\n  ],\n  \"d1_databases\": [\n    {\n      \"binding\": \"DB\",\n      \"database_name\": \"artisanconnect\",\n      \"migrations_dir\": \"migrations\"\n    }\n  ],\n  \"r2_buckets\": [\n    {\n      \"binding\": \"R2\",\n      \"bucket_name\": \"artisanconnect\"\n    }\n  ]\n}\n"
+  "text": "{\n  \"account_id\": \"ab816378ce175deba8768e44d4c9478b\",\n  \"main\": \"src/server.ts\",\n  \"upload_source_maps\": true,\n  \"triggers\": {\n    \"crons\": [\n      \"* * * * *\"\n    ]\n  },\n  \"observability\": {\n    \"enabled\": true,\n    \"issues\": {\n      \"enabled\": true\n    }\n  },\n  \"ai\": {\n    \"binding\": \"AI\",\n    \"remote\": true\n  },\n  \"images\": {\n    \"binding\": \"IMAGES\"\n  },\n  \"send_email\": [\n    {\n      \"name\": \"SEND_EMAIL\"\n    }\n  ],\n  \"secrets\": {\n    \"required\": [\n      \"BETTER_AUTH_SECRET\",\n      \"TURNSTILE_SECRET_KEY\",\n      \"PAYMENTS_WEBHOOK_SECRET\"\n    ]\n  },\n  \"name\": \"artisanconnect\",\n  \"vars\": {\n    \"ENVIRONMENT\": \"local\",\n    \"MAIL_FROM\": \"ArtisanConnect <no-reply@example.com>\",\n    \"APP_URL\": \"http://localhost:3000\",\n    \"PAYOUT_RUN_TIME\": \"09:00\",\n    \"TURNSTILE_SITE_KEY\": \"1x00000000000000000000AA\"\n  },\n  \"ratelimits\": [\n    {\n      \"name\": \"IP_LIMIT\",\n      \"namespace_id\": \"1001\",\n      \"simple\": {\n        \"limit\": 100,\n        \"period\": 60\n      }\n    }\n  ],\n  \"d1_databases\": [\n    {\n      \"binding\": \"DB\",\n      \"database_name\": \"artisanconnect\",\n      \"migrations_dir\": \"migrations\"\n    }\n  ],\n  \"r2_buckets\": [\n    {\n      \"binding\": \"R2\",\n      \"bucket_name\": \"artisanconnect\"\n    }\n  ]\n}\n"
 }

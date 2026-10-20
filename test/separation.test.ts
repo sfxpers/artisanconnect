@@ -36,8 +36,6 @@ const ENVIRONMENT_KEYS = [
 ];
 
 const SHARED_KEYS = [
-  "compatibility_date",
-  "compatibility_flags",
   "main",
   "observability",
   "upload_source_maps",

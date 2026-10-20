@@ -12,7 +12,7 @@ dist
 dist-ssr
 *.local
 
-# Environment files. Void uses a single root `.env` (no `.env.example` / `.dev.vars`).
+# Environment files. Void uses a single root `.env` (see docs/local.env.example).
 .env
 .env.*
 .dev.vars

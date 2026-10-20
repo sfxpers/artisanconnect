@@ -15,8 +15,8 @@ export default defineConfig({
     isr: false,
   },
   worker: {
-    // Existing Worker date (newer than Void's deploy default).
-    compatibility_date: "2026-10-12",
+    // Void deploy default; bump deliberately.
+    compatibility_date: "2026-09-11",
     compatibility_flags: ["nodejs_compat", "nodejs_als"],
   },
   cloudflare: {
