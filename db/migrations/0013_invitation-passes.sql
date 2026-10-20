@@ -1,3 +1,4 @@
+-- void:allow-destructive
 ALTER TABLE `invitations` ADD `passed_at` integer;--> statement-breakpoint
 DROP TRIGGER `invitations_fixed`;
 --> statement-breakpoint

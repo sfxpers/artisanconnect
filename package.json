@@ -4,9 +4,9 @@
   "type": "module",
   "sideEffects": false,
   "scripts": {
-    "deploy": "CLOUDFLARE_ENV=production void deploy --platform cloudflare",
-    "deploy:staging": "CLOUDFLARE_ENV=staging void deploy --platform cloudflare",
-    "deploy:production": "CLOUDFLARE_ENV=production void deploy --platform cloudflare",
+    "deploy": "WORKER_TARGET=production void deploy --platform cloudflare",
+    "deploy:staging": "WORKER_TARGET=staging void deploy --platform cloudflare",
+    "deploy:production": "WORKER_TARGET=production void deploy --platform cloudflare",
     "dev": "vp run db:migrate:local && vp dev",
     "build": "vp build",
     "preview": "vp preview",

@@ -1,3 +1,4 @@
+-- void:allow-destructive
 -- Each of these moves is guarded where its command writes it: the update
 -- names the state it moves from, and the command checks the move first.
 -- Who and what an Engagement is for stays fixed here.

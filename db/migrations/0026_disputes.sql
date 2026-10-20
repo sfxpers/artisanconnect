@@ -1,3 +1,4 @@
+-- void:allow-destructive
 -- Disputes (#135): the Client disputes a named part of the Labour at
 -- Completion; the Artisan disputes the unreleased Labour against a Fix request
 -- or a Cancellation's refund. A Dispute decision's Refund is a Refund of its

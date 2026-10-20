@@ -1,3 +1,4 @@
+-- void:allow-destructive
 -- An Identity Number stays held by the Artisan that first had it accepted,
 -- even once its check is replaced or removed, so that replacing the document
 -- does not free it for a second Artisan Account (ADR 0021). A Payout account

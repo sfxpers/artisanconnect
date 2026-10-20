@@ -1,3 +1,4 @@
+-- void:allow-destructive
 -- A Refund waiting on a Payment the bank charged back is never sent once the
 -- Admin decides the Chargeback, as far as the bank sent its money back to the
 -- Client already (#137): it is charged back. The refunds table is made again

@@ -2,13 +2,7 @@
   "version": 1,
   "source": {
     "account_id": "ab816378ce175deba8768e44d4c9478b",
-    "main": "src/server.ts",
     "upload_source_maps": true,
-    "triggers": {
-      "crons": [
-        "* * * * *"
-      ]
-    },
     "observability": {
       "enabled": true,
       "issues": {
@@ -27,27 +21,22 @@
         "name": "SEND_EMAIL"
       }
     ],
-    "secrets": {
-      "required": [
-        "BETTER_AUTH_SECRET",
-        "TURNSTILE_SECRET_KEY",
-        "PAYMENTS_WEBHOOK_SECRET"
-      ]
-    },
-    "name": "artisanconnect",
+    "name": "artisanconnect-staging",
+    "workers_dev": true,
+    "preview_urls": false,
     "vars": {
-      "ENVIRONMENT": "local",
-      "MAIL_FROM": "ArtisanConnect <no-reply@example.com>",
-      "APP_URL": "http://localhost:3000",
+      "ENVIRONMENT": "staging",
+      "MAIL_FROM": "ArtisanConnect <no-reply@artisanconnect.co.za>",
+      "APP_URL": "https://artisanconnect-staging.weathered-shadow-5138.workers.dev",
       "PAYOUT_RUN_TIME": "09:00",
-      "TURNSTILE_SITE_KEY": "1x00000000000000000000AA"
+      "TURNSTILE_SITE_KEY": "0x4AAAAAAFU7PtdnwZ5hBIB7"
     },
     "ratelimits": [
       {
         "name": "IP_LIMIT",
-        "namespace_id": "1001",
+        "namespace_id": "1002",
         "simple": {
-          "limit": 100,
+          "limit": 20,
           "period": 60
         }
       }
@@ -55,26 +44,23 @@
     "d1_databases": [
       {
         "binding": "DB",
-        "database_name": "artisanconnect",
-        "migrations_dir": "migrations"
+        "database_name": "artisanconnect-staging",
+        "migrations_dir": "./db/migrations",
+        "database_id": "658d50d5-6b9f-4d92-afe8-6e1e80570c82",
+        "remote": true
       }
     ],
     "r2_buckets": [
       {
         "binding": "R2",
-        "bucket_name": "artisanconnect"
+        "bucket_name": "artisanconnect-staging"
       }
-    ]
+    ],
+    "routes": []
   },
   "resolved": {
     "account_id": "ab816378ce175deba8768e44d4c9478b",
-    "main": "src/server.ts",
     "upload_source_maps": true,
-    "triggers": {
-      "crons": [
-        "* * * * *"
-      ]
-    },
     "observability": {
       "enabled": true,
       "issues": {
@@ -93,27 +79,22 @@
         "name": "SEND_EMAIL"
       }
     ],
-    "secrets": {
-      "required": [
-        "BETTER_AUTH_SECRET",
-        "TURNSTILE_SECRET_KEY",
-        "PAYMENTS_WEBHOOK_SECRET"
-      ]
-    },
-    "name": "artisanconnect",
+    "name": "artisanconnect-staging",
+    "workers_dev": true,
+    "preview_urls": false,
     "vars": {
-      "ENVIRONMENT": "local",
-      "MAIL_FROM": "ArtisanConnect <no-reply@example.com>",
-      "APP_URL": "http://localhost:3000",
+      "ENVIRONMENT": "staging",
+      "MAIL_FROM": "ArtisanConnect <no-reply@artisanconnect.co.za>",
+      "APP_URL": "https://artisanconnect-staging.weathered-shadow-5138.workers.dev",
       "PAYOUT_RUN_TIME": "09:00",
-      "TURNSTILE_SITE_KEY": "1x00000000000000000000AA"
+      "TURNSTILE_SITE_KEY": "0x4AAAAAAFU7PtdnwZ5hBIB7"
     },
     "ratelimits": [
       {
         "name": "IP_LIMIT",
-        "namespace_id": "1001",
+        "namespace_id": "1002",
         "simple": {
-          "limit": 100,
+          "limit": 20,
           "period": 60
         }
       }
@@ -121,16 +102,19 @@
     "d1_databases": [
       {
         "binding": "DB",
-        "database_name": "artisanconnect",
-        "migrations_dir": "migrations"
+        "database_name": "artisanconnect-staging",
+        "migrations_dir": "./db/migrations",
+        "database_id": "658d50d5-6b9f-4d92-afe8-6e1e80570c82",
+        "remote": true
       }
     ],
     "r2_buckets": [
       {
         "binding": "R2",
-        "bucket_name": "artisanconnect"
+        "bucket_name": "artisanconnect-staging"
       }
-    ]
+    ],
+    "routes": []
   },
-  "text": "{\n  \"account_id\": \"ab816378ce175deba8768e44d4c9478b\",\n  \"main\": \"src/server.ts\",\n  \"upload_source_maps\": true,\n  \"triggers\": {\n    \"crons\": [\n      \"* * * * *\"\n    ]\n  },\n  \"observability\": {\n    \"enabled\": true,\n    \"issues\": {\n      \"enabled\": true\n    }\n  },\n  \"ai\": {\n    \"binding\": \"AI\",\n    \"remote\": true\n  },\n  \"images\": {\n    \"binding\": \"IMAGES\"\n  },\n  \"send_email\": [\n    {\n      \"name\": \"SEND_EMAIL\"\n    }\n  ],\n  \"secrets\": {\n    \"required\": [\n      \"BETTER_AUTH_SECRET\",\n      \"TURNSTILE_SECRET_KEY\",\n      \"PAYMENTS_WEBHOOK_SECRET\"\n    ]\n  },\n  \"name\": \"artisanconnect\",\n  \"vars\": {\n    \"ENVIRONMENT\": \"local\",\n    \"MAIL_FROM\": \"ArtisanConnect <no-reply@example.com>\",\n    \"APP_URL\": \"http://localhost:3000\",\n    \"PAYOUT_RUN_TIME\": \"09:00\",\n    \"TURNSTILE_SITE_KEY\": \"1x00000000000000000000AA\"\n  },\n  \"ratelimits\": [\n    {\n      \"name\": \"IP_LIMIT\",\n      \"namespace_id\": \"1001\",\n      \"simple\": {\n        \"limit\": 100,\n        \"period\": 60\n      }\n    }\n  ],\n  \"d1_databases\": [\n    {\n      \"binding\": \"DB\",\n      \"database_name\": \"artisanconnect\",\n      \"migrations_dir\": \"migrations\"\n    }\n  ],\n  \"r2_buckets\": [\n    {\n      \"binding\": \"R2\",\n      \"bucket_name\": \"artisanconnect\"\n    }\n  ]\n}\n"
+  "text": "{\n  \"account_id\": \"ab816378ce175deba8768e44d4c9478b\",\n  \"upload_source_maps\": true,\n  \"observability\": {\n    \"enabled\": true,\n    \"issues\": {\n      \"enabled\": true\n    }\n  },\n  \"ai\": {\n    \"binding\": \"AI\",\n    \"remote\": true\n  },\n  \"images\": {\n    \"binding\": \"IMAGES\"\n  },\n  \"send_email\": [\n    {\n      \"name\": \"SEND_EMAIL\"\n    }\n  ],\n  \"name\": \"artisanconnect-staging\",\n  \"workers_dev\": true,\n  \"preview_urls\": false,\n  \"vars\": {\n    \"ENVIRONMENT\": \"staging\",\n    \"MAIL_FROM\": \"ArtisanConnect <no-reply@artisanconnect.co.za>\",\n    \"APP_URL\": \"https://artisanconnect-staging.weathered-shadow-5138.workers.dev\",\n    \"PAYOUT_RUN_TIME\": \"09:00\",\n    \"TURNSTILE_SITE_KEY\": \"0x4AAAAAAFU7PtdnwZ5hBIB7\"\n  },\n  \"ratelimits\": [\n    {\n      \"name\": \"IP_LIMIT\",\n      \"namespace_id\": \"1002\",\n      \"simple\": {\n        \"limit\": 20,\n        \"period\": 60\n      }\n    }\n  ],\n  \"d1_databases\": [\n    {\n      \"binding\": \"DB\",\n      \"database_name\": \"artisanconnect-staging\",\n      \"migrations_dir\": \"./db/migrations\",\n      \"database_id\": \"658d50d5-6b9f-4d92-afe8-6e1e80570c82\",\n      \"remote\": true\n    }\n  ],\n  \"r2_buckets\": [\n    {\n      \"binding\": \"R2\",\n      \"bucket_name\": \"artisanconnect-staging\"\n    }\n  ],\n  \"routes\": []\n}\n"
 }

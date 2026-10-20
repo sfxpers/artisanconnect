@@ -1,3 +1,4 @@
+-- void:allow-destructive
 -- Cancellation (#133): either party ends an Engagement before Approval. A
 -- Cancellation's Refund is a Refund of its own cause, so the refunds table is
 -- made again with it, and its trigger with it. A failed Refund's Support

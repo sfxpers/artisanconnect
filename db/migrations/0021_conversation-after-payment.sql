@@ -1,3 +1,4 @@
+-- void:allow-destructive
 ALTER TABLE `messages` ADD `files` text DEFAULT '[]' NOT NULL;--> statement-breakpoint
 -- What a message holds never changes, its voice notes and PDFs (#131) too.
 DROP TRIGGER `messages_fixed`;

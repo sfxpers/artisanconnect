@@ -1,14 +1,10 @@
-/** Staging / production / local Worker targets. Void has no named envs — pick one via CLOUDFLARE_ENV. */
+/** Staging / production / local Worker targets. Void forbids Wrangler named envs
+ * (`CLOUDFLARE_ENV`); pick one flattened top-level target via `WORKER_TARGET`. */
 
 export const CLOUDFLARE_ACCOUNT_ID = "ab816378ce175deba8768e44d4c9478b";
 
 export const WORKER_SHARED = {
-  // Cron + fetch live in src/server.ts (TanStack Start custom entry).
-  main: "src/server.ts",
   upload_source_maps: true,
-  triggers: {
-    crons: ["* * * * *"],
-  },
   observability: {
     enabled: true,
     issues: { enabled: true },
@@ -23,9 +19,6 @@ export const WORKER_SHARED = {
     binding: "IMAGES",
   },
   send_email: [{ name: "SEND_EMAIL" }],
-  secrets: {
-    required: ["BETTER_AUTH_SECRET", "TURNSTILE_SECRET_KEY", "PAYMENTS_WEBHOOK_SECRET"],
-  },
 };
 
 export const WORKER_ENVIRONMENTS = {
@@ -49,7 +42,7 @@ export const WORKER_ENVIRONMENTS = {
       {
         binding: "DB",
         database_name: "artisanconnect",
-        migrations_dir: "migrations",
+        migrations_dir: "./db/migrations",
       },
     ],
     r2_buckets: [
@@ -61,9 +54,10 @@ export const WORKER_ENVIRONMENTS = {
   },
   staging: {
     name: "artisanconnect-staging",
-    // Staging is served on workers.dev only.
+    // Staging is served on workers.dev only (no custom domain).
     workers_dev: true,
     preview_urls: false,
+    routes: [],
     vars: {
       ENVIRONMENT: "staging",
       MAIL_FROM: "ArtisanConnect <no-reply@artisanconnect.co.za>",
@@ -85,7 +79,7 @@ export const WORKER_ENVIRONMENTS = {
         database_id: "658d50d5-6b9f-4d92-afe8-6e1e80570c82",
         // admin:setup runs beside the Worker and reads this D1.
         remote: true,
-        migrations_dir: "migrations",
+        migrations_dir: "./db/migrations",
       },
     ],
     r2_buckets: [
@@ -121,7 +115,7 @@ export const WORKER_ENVIRONMENTS = {
         database_id: "3874eb0d-f6f5-4d2d-992e-96381a3d21e6",
         // admin:setup runs beside the Worker and reads this D1.
         remote: true,
-        migrations_dir: "migrations",
+        migrations_dir: "./db/migrations",
       },
     ],
     r2_buckets: [
@@ -136,8 +130,8 @@ export const WORKER_ENVIRONMENTS = {
 export type WorkerEnvironmentName = keyof typeof WORKER_ENVIRONMENTS;
 
 export function resolveWorkerEnvironmentName(
-  cloudflareEnv = process.env.CLOUDFLARE_ENV,
+  workerTarget = process.env.WORKER_TARGET,
 ): WorkerEnvironmentName {
-  if (cloudflareEnv === "staging" || cloudflareEnv === "production") return cloudflareEnv;
+  if (workerTarget === "staging" || workerTarget === "production") return workerTarget;
   return "local";
 }

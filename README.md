@@ -61,14 +61,14 @@ Tests drive the module through `test/support/harness.ts`: real local D1 and R2, 
 
 GitHub Actions deploys. Once `check` passes on a push to `main`, `deploy-staging` runs `vp run deploy:staging`, then `deploy-production` waits in the `production` environment until a reviewer approves it in the run (Actions → the run → Review deployments) and runs `vp run deploy:production` on the same commit. Each environment deploys one run at a time. Both jobs use the `CLOUDFLARE_API_TOKEN` secret and the `CLOUDFLARE_ACCOUNT_ID` variable.
 
-Void does not support Wrangler named environments: `CLOUDFLARE_ENV=staging|production` selects the matching target in `cloudflare-environments.ts` / `void.config.ts`. Bindings and resource IDs live there and in `void.lock.json`.
+Void does not support Wrangler named environments (`CLOUDFLARE_ENV` is rejected on deploy). This app keeps three flattened Worker targets in `cloudflare-environments.ts`; `WORKER_TARGET=staging|production` picks one into `void.config.ts` (unset = local). Bindings and resource IDs live there and in `void.lock.json`.
 
 Both environments are on the account in `void.config.ts`. The first deploy of an environment provisions its D1 and R2, so deploy before relying on remote data, set its secrets, then make its first Admin:
 
 ```sh
 void cloudflare login
-CLOUDFLARE_ENV=staging void deploy --platform cloudflare
-CLOUDFLARE_ENV=staging void secret put BETTER_AUTH_SECRET   # and each server key in env.ts
+WORKER_TARGET=staging void deploy --platform cloudflare
+WORKER_TARGET=staging void secret put BETTER_AUTH_SECRET   # and each server key in env.ts
 vp run admin:setup you@example.com --env staging
 ```
 

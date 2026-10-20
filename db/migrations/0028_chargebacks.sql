@@ -1,3 +1,4 @@
+-- void:allow-destructive
 -- Chargebacks (#137): a card Payment the bank reverses freezes its
 -- Engagement until the Admin decides its unreleased money, once the bank has
 -- closed it. A Refund the decision makes, of what the bank did not send back,

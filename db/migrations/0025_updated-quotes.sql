@@ -1,3 +1,4 @@
+-- void:allow-destructive
 -- Updated Quote (#134): the Artisan proposes new Labour and Materials before
 -- Completion, neither lower, and the Client accepts by paying the difference
 -- plus its Protection Fee, as a Payment of its own.

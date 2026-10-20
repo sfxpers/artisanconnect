@@ -20,7 +20,7 @@ if (!email || (environment && !["staging", "production"].includes(environment)))
 }
 
 // Void has no named Wrangler envs: rematerialize the Worker config for the target.
-if (environment) process.env.CLOUDFLARE_ENV = environment;
+if (environment) process.env.WORKER_TARGET = environment;
 execFileSync("node", [path.join(root, "scripts/ensure-void-wrangler.mjs")], {
   cwd: root,
   stdio: "inherit",

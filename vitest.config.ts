@@ -8,7 +8,7 @@ export default defineConfig(async () => {
   process.env.BETTER_AUTH_SECRET ??= "";
   process.env.TURNSTILE_SECRET_KEY ??= "";
   process.env.PAYMENTS_WEBHOOK_SECRET ??= "";
-  const migrations = await readD1Migrations(path.join(import.meta.dirname, "migrations"));
+  const migrations = await readD1Migrations(path.join(import.meta.dirname, "db/migrations"));
   return {
     resolve: { tsconfigPaths: true },
     assetsInclude: ["test/fixtures/**/*.heic"],

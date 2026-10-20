@@ -1,3 +1,4 @@
+-- void:allow-destructive
 -- Reviews (#138, ADR 0012): one per party on a Completed Engagement.
 CREATE TABLE `reviews` (
 	`id` text PRIMARY KEY NOT NULL,

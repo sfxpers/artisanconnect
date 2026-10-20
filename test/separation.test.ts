@@ -35,16 +35,7 @@ const ENVIRONMENT_KEYS = [
   "r2_buckets",
 ];
 
-const SHARED_KEYS = [
-  "main",
-  "observability",
-  "upload_source_maps",
-  "triggers",
-  "ai",
-  "images",
-  "send_email",
-  "secrets",
-];
+const SHARED_KEYS = ["observability", "upload_source_maps", "ai", "images", "send_email"];
 
 const environments: [string, EnvironmentConfig][] = (
   Object.entries(WORKER_ENVIRONMENTS) as [
@@ -102,13 +93,6 @@ describe("the Worker", () => {
         "PAYOUT_RUN_TIME",
         "TURNSTILE_SITE_KEY",
       ]);
-      // better-auth's session signing, Turnstile (ADR 0017), and the payment
-      // adapter's webhook signing.
-      expect(environment.secrets.required).toEqual([
-        "BETTER_AUTH_SECRET",
-        "TURNSTILE_SECRET_KEY",
-        "PAYMENTS_WEBHOOK_SECRET",
-      ]);
     },
   );
 
@@ -125,7 +109,7 @@ describe("the Worker", () => {
   });
 
   test("runs due clocks every minute", () => {
-    expect(WORKER_SHARED.triggers).toEqual({ crons: ["* * * * *"] });
+    expect(cronSource).toMatch(/export const cron = "\* \* \* \* \*"/);
   });
 });
 
@@ -135,6 +119,13 @@ const sources = import.meta.glob<string>("../src/**/*.{ts,tsx}", {
   import: "default",
   eager: true,
 });
+const cronSource = Object.values(
+  import.meta.glob<string>("../crons/**/*.ts", {
+    query: "?raw",
+    import: "default",
+    eager: true,
+  }),
+).join("\n");
 
 describe("the code", () => {
   test("reaches no host but Cloudflare's own", () => {
