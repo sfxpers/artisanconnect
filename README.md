@@ -17,7 +17,7 @@ Each thing is written down once:
 
 ## Setup
 
-[Vite+](https://viteplus.dev) (`vp`) runs everything: it uses the Node in `.node-version` and the pnpm in `package.json`, and ships Vite, Vitest, Oxlint, and Oxfmt as one set, pinned in `pnpm-workspace.yaml`. `vp install` also sets up the pre-commit hook, which checks what is staged. `postinstall` runs `void prepare` for Void codegen.
+[Vite+](https://viteplus.dev) (`vp`) runs everything: it uses the Node in `.node-version` and the pnpm in `package.json`, and ships Vite, Vitest, Oxlint, and Oxfmt as one set, pinned in `pnpm-workspace.yaml`. `vp install` also sets up the pre-commit hook, which checks what is staged. `postinstall` runs `void prepare` for Void codegen. Run Void's own commands through `vp exec void ...`; its docs ship in `node_modules/void/docs/` (start with `guide/quickstart.md` and `reference/cli.md`). Dependencies track the versions vetted across the four sibling projects rather than latest tags. Better Auth stays on its existing schema-compatible version; auth upgrades require a separate migration review.
 
 ```sh
 curl -fsSL https://vite.plus | bash   # once per machine
@@ -26,7 +26,9 @@ cp docs/local.env.example .env        # then set BETTER_AUTH_SECRET and PAYMENTS
 vp run dev                            # applies local D1 migrations, then http://localhost:3000; mail at /dev/mail
 ```
 
-Workers AI has no local simulation (`ai.remote: true` in `cloudflare-environments.ts`). Locally and in CI, `vp dev` / smoke need `CLOUDFLARE_API_TOKEN` (or `void cloudflare login`) so the remote AI proxy can start. When `ENVIRONMENT=local`, the Content check uses a stand-in reader (same idea as the local mailbox) and Holds what patterns do not refuse, for the Admin's Pre-check.
+Workers AI has no local simulation (`ai.remote: true` in `cloudflare-environments.ts`). Locally and in CI, `vp dev` / smoke need `CLOUDFLARE_API_TOKEN` (or `vp exec void cloudflare login`) so the remote AI proxy can start. When `ENVIRONMENT=local`, the Content check uses a stand-in reader (same idea as the local mailbox) and Holds what patterns do not refuse, for the Admin's Pre-check.
+
+`.env` is local development only: never commit it and never upload it. In production, each non-`VITE_*` key in `env.ts` is a Worker secret set with `vp exec void secret put`; the plaintext `vars` in `cloudflare-environments.ts` stay as the native config exception (site key, sender, URLs) without moving remote values. This app has no `VITE_*` client keys today; any added later take their production value from the build/deploy shell — builds ignore `VITE_*` values in `.env`. Server code keeps its injected domain-port `Env` shape (`worker-env.d.ts`) — native Cloudflare env access per target, not a `void/env` refactor.
 
 ## Scripts
 
@@ -34,6 +36,7 @@ Workers AI has no local simulation (`ai.remote: true` in `cloudflare-environment
 vp check                  # format, lint, and type check (vp check --fix to fix)
 vp run check:tokens       # every colour and size is a token from src/styles.css
 vp test                   # Vitest in the Workers runtime, on local D1 and R2
+vp run test:tooling       # node:test checks for the repo's own scripts
 vp run test:smoke         # Playwright against the local app, in the installed Chrome
 vp run db:generate        # a migration from src/domain/schema.ts
 vp run deploy:staging     # void deploy to artisanconnect-staging
@@ -63,15 +66,17 @@ GitHub Actions deploys. Once `check` passes on a push to `main`, `deploy-staging
 
 Void does not support Wrangler named environments (`CLOUDFLARE_ENV` is rejected on deploy). This app keeps three flattened Worker targets in `cloudflare-environments.ts`; `WORKER_TARGET=staging|production` picks one into `void.config.ts` (unset = local). Bindings and resource IDs live there and in `void.lock.json`.
 
+Wrangler still runs `d1 migrations apply` and D1 admin because existing history lives in its `d1_migrations` table and `--persist-to .void` state; Void's own migration history (`_void_migrations`) is not a drop-in replacement. For those commands, `scripts/ensure-void-wrangler.mjs` materializes `.void-wrangler.jsonc` through Void's public `voidPlugin()` factory — synchronous, no server — and fails closed when it cannot.
+
 Both environments are on the account in `void.config.ts`. The first deploy of an environment provisions its D1 and R2, so deploy before relying on remote data, set its secrets, then make its first Admin:
 
 ```sh
-void cloudflare login
-WORKER_TARGET=staging void deploy --platform cloudflare
-WORKER_TARGET=staging void secret put BETTER_AUTH_SECRET   # and each server key in env.ts
+vp exec void cloudflare login
+WORKER_TARGET=staging vp exec void deploy --platform cloudflare
+WORKER_TARGET=staging vp exec void secret put BETTER_AUTH_SECRET   # and each server key in env.ts
 vp run admin:setup you@example.com --env staging
 ```
 
 ## UI
 
-shadcn/ui is set up as **base-nova** (`components.json`); its packages stay at the versions shadcn's components ask for, so recharts is pinned at the 3.8.0 its chart names. Add a component with `vpx shadcn@latest add <name>`; when its CLI cannot install dependencies, add them with `vp add <package>`. Forms are TanStack Form on shadcn's Field (`src/components/form.tsx`); pages load through route loaders and reload after each action.
+shadcn/ui is set up as **base-nova** (`components.json`); its packages stay at the versions shadcn's components ask for, so recharts is pinned at the 3.8.0 its chart names. Add a component with `vp exec shadcn add <name>` (the installed CLI, not `@latest`); when its CLI cannot install dependencies, add them with `vp add <package>`. Forms are TanStack Form on shadcn's Field (`src/components/form.tsx`); pages load through route loaders and reload after each action.

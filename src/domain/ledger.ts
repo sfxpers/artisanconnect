@@ -134,7 +134,7 @@ export function isOverdrawn(error: unknown) {
  * Engagement are these: no Updated Quote's Payment arrived since they were
  * read (#134).
  */
-export function paidInIs(ctx: Context, engagementId: string, cents: number) {
+export function paidInIs(_ctx: Context, engagementId: string, cents: number) {
   return sql`(select coalesce(sum(${ledgerEntries.amountCents}), 0) from ${ledgerEntries} where ${ledgerEntries.engagementId} = ${engagementId} and ${ledgerEntries.kind} in (${LEDGER_KINDS.labourIn}, ${LEDGER_KINDS.materialsIn})) = ${cents}`;
 }
 
@@ -143,7 +143,7 @@ export function paidInIs(ctx: Context, engagementId: string, cents: number) {
  * this much: no Release or Refund of it, nor Payment of more, since it was
  * read (#135).
  */
-export function labourUnreleasedIs(ctx: Context, engagementId: string, cents: number) {
+export function labourUnreleasedIs(_ctx: Context, engagementId: string, cents: number) {
   return sql`(select coalesce(sum(case when ${ledgerEntries.kind} = ${LEDGER_KINDS.labourIn} then ${ledgerEntries.amountCents} else -${ledgerEntries.amountCents} end), 0) from ${ledgerEntries} where ${ledgerEntries.engagementId} = ${engagementId} and ${ledgerEntries.kind} in (${LEDGER_KINDS.labourIn}, ${LEDGER_KINDS.labourReleased}, ${LEDGER_KINDS.labourRefunded}, ${LEDGER_KINDS.labourChargedBack})) = ${cents}`;
 }
 
@@ -218,12 +218,10 @@ export async function moneyOf(ctx: Context, rowsOf: SQL) {
     refundedKind: LedgerKind,
     chargedBackKind: LedgerKind,
   ) => {
-    const [paidInCents, releasedCents, refundedCents, chargedBackCents] = [
-      inKind,
-      releasedKind,
-      refundedKind,
-      chargedBackKind,
-    ].map(sum);
+    const paidInCents = sum(inKind);
+    const releasedCents = sum(releasedKind);
+    const refundedCents = sum(refundedKind);
+    const chargedBackCents = sum(chargedBackKind);
     // What a Release or a Refund of it may take now.
     return {
       paidInCents,

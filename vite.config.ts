@@ -17,7 +17,7 @@ export default defineConfig({
     categories: {
       correctness: "error",
     },
-    ignorePatterns: ["**/routeTree.gen.ts"],
+    ignorePatterns: [".agents/**", "**/routeTree.gen.ts"],
     options: {
       typeAware: true,
       typeCheck: true,

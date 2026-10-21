@@ -45,7 +45,7 @@ async function conversation(payment: "before" | "after") {
   const jobId = await given.openJob(client);
   const quoteId = await given.sentQuote(artisan, jobId);
   if (payment === "after") await given.hired(client, quoteId);
-  const [{ conversationId }] = (await domain.conversations.forJob(client.actor, { jobId }))!;
+  const { conversationId } = (await domain.conversations.forJob(client.actor, { jobId }))![0]!;
   /** Sends the file alone, as the Client. */
   async function send(bytes: Bytes, type = "") {
     return domain.conversations.send(client.actor, {
