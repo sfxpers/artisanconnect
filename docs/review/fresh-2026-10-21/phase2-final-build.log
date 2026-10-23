@@ -1,0 +1,257 @@
+note: You are running `vp build` as a Vite+ built-in command. If you meant to run the build npm script, use `vpr build` instead.
+transforming...
+✓ 4090 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/client/.assetsignore                                           0.02 kB
+dist/client/assets/geist-cyrillic-ext-wght-normal-DjL33-gN.woff2    7.42 kB
+dist/client/assets/geist-vietnamese-wght-normal-6IgcOCM7.woff2      8.00 kB
+dist/client/assets/geist-cyrillic-wght-normal-BEAKL7Jp.woff2       15.08 kB
+dist/client/assets/geist-latin-ext-wght-normal-DC-KSUi6.woff2      16.51 kB
+dist/client/assets/geist-latin-wght-normal-BgDaEnEv.woff2          29.40 kB
+dist/client/assets/styles-VGWa5seO.css                            143.53 kB │ gzip:  22.08 kB
+dist/client/assets/clamp-D0kAXd-u.js                                0.08 kB │ gzip:   0.09 kB
+dist/client/assets/me-BEZwwSSt.js                                   0.09 kB │ gzip:   0.10 kB
+dist/client/assets/places-CftHFd1P.js                               0.11 kB │ gzip:   0.12 kB
+dist/client/assets/chevron-left-DFlIhAv0.js                         0.15 kB │ gzip:   0.16 kB
+dist/client/assets/matches-BuTCjaXe.js                              0.17 kB │ gzip:   0.17 kB
+dist/client/assets/FieldItemContext-DxH0s7_W.js                     0.19 kB │ gzip:   0.16 kB
+dist/client/assets/useNavigate-Bb3gU-eu.js                          0.23 kB │ gzip:   0.19 kB
+dist/client/assets/banknote-BMeNZyED.js                             0.27 kB │ gzip:   0.22 kB
+dist/client/assets/artisans._artisanId-DIL5e7J5.js                  0.28 kB │ gzip:   0.22 kB
+dist/client/assets/notices-fazqJ7GW.js                              0.30 kB │ gzip:   0.22 kB
+dist/client/assets/user-search-BuqUSEbd.js                          0.30 kB │ gzip:   0.24 kB
+dist/client/assets/valueToPercent-nAtgqcGP.js                       0.31 kB │ gzip:   0.23 kB
+dist/client/assets/shield-check-DYiedCE6.js                         0.34 kB │ gzip:   0.26 kB
+dist/client/assets/badge-check-REc524vg.js                          0.37 kB │ gzip:   0.25 kB
+dist/client/assets/use-action-CNhOwigl.js                           0.39 kB │ gzip:   0.28 kB
+dist/client/assets/action-button-DCNcQAdr.js                        0.40 kB │ gzip:   0.30 kB
+dist/client/assets/label-ZYU6qZ0I.js                                0.43 kB │ gzip:   0.29 kB
+dist/client/assets/image-off-DnGH1NE4.js                            0.50 kB │ gzip:   0.31 kB
+dist/client/assets/rules-V2ImKvvl.js                                0.56 kB │ gzip:   0.34 kB
+dist/client/assets/mail-CVzQJfis.js                                 0.60 kB │ gzip:   0.36 kB
+dist/client/assets/useAriaLabelledBy-D80QJz_N.js                    0.61 kB │ gzip:   0.41 kB
+dist/client/assets/useRouteContext-26Y6Yo01.js                      0.63 kB │ gzip:   0.40 kB
+dist/client/assets/how-a-job-goes-BwY7XPZl.js                       0.65 kB │ gzip:   0.34 kB
+dist/client/assets/rolldown-runtime-hePW80VL.js                     0.71 kB │ gzip:   0.42 kB
+dist/client/assets/trade-tiles-CL_t3wM4.js                          0.75 kB │ gzip:   0.47 kB
+dist/client/assets/textarea-C-I5BqYY.js                             0.76 kB │ gzip:   0.42 kB
+dist/client/assets/jobs.new-DZS3L-C7.js                             0.88 kB │ gzip:   0.51 kB
+dist/client/assets/audit-DZ8llPmV.js                                0.98 kB │ gzip:   0.51 kB
+dist/client/assets/turnstile-Bwd2LghG.js                            1.06 kB │ gzip:   0.63 kB
+dist/client/assets/notice-list-B0r3ildi.js                          1.08 kB │ gzip:   0.60 kB
+dist/client/assets/rating-BHtkUuIM.js                               1.26 kB │ gzip:   0.68 kB
+dist/client/assets/fake-checkout._collectionId-J0lFUkJ6.js          1.35 kB │ gzip:   0.63 kB
+dist/client/assets/table-s9WDRaAH.js                                1.40 kB │ gzip:   0.53 kB
+dist/client/assets/admin-B4LWOgqO.js                                1.42 kB │ gzip:   0.76 kB
+dist/client/assets/people.index-BQf1PHIa.js                         1.55 kB │ gzip:   0.78 kB
+dist/client/assets/payouts.index-B0xwyNLT.js                        1.69 kB │ gzip:   0.83 kB
+dist/client/assets/confirm-email-BmzxNM56.js                        1.71 kB │ gzip:   0.85 kB
+dist/client/assets/sign-in-DLwklZFG.js                              1.82 kB │ gzip:   0.87 kB
+dist/client/assets/recover-DhxsmPT9.js                              1.83 kB │ gzip:   0.80 kB
+dist/client/assets/photos-field-AYNWLchQ.js                         1.97 kB │ gzip:   1.09 kB
+dist/client/assets/item-CS8V7OpG.js                                 2.21 kB │ gzip:   0.90 kB
+dist/client/assets/support-CEHusibu.js                              2.31 kB │ gzip:   1.02 kB
+dist/client/assets/jobs.index-DAG7xuiU.js                           2.35 kB │ gzip:   0.93 kB
+dist/client/assets/payouts._artisanId-C0GTd-u6.js                   2.45 kB │ gzip:   0.95 kB
+dist/client/assets/reopen-wRYeHZzt.js                               2.46 kB │ gzip:   1.03 kB
+dist/client/assets/pager-BXHbFY0U.js                                2.51 kB │ gzip:   1.06 kB
+dist/client/assets/admins-8r102ATE.js                               2.58 kB │ gzip:   1.12 kB
+dist/client/assets/input-D4-G2bej.js                                2.64 kB │ gzip:   1.31 kB
+dist/client/assets/admin-DwKVZpuh.js                                2.69 kB │ gzip:   1.10 kB
+dist/client/assets/rules-DPo9GCmw.js                                2.72 kB │ gzip:   1.09 kB
+dist/client/assets/file-picker-BMkGF6E9.js                          2.79 kB │ gzip:   1.32 kB
+dist/client/assets/sign-in-CoqwPfKL.js                              3.02 kB │ gzip:   1.15 kB
+dist/client/assets/payouts-DmL3-ikH.js                              3.07 kB │ gzip:   1.17 kB
+dist/client/assets/profile-Dtum9PCe.js                              3.24 kB │ gzip:   1.32 kB
+dist/client/assets/suburbs-DAcX8PvM.js                              3.28 kB │ gzip:   1.39 kB
+dist/client/assets/regions-DT1IN6VJ.js                              3.40 kB │ gzip:   1.43 kB
+dist/client/assets/artisans._artisanId-wHtHaRjR.js                  3.47 kB │ gzip:   1.61 kB
+dist/client/assets/field-zwPx3-z2.js                                3.76 kB │ gzip:   1.24 kB
+dist/client/assets/useControlled-brwCE0RU.js                        3.77 kB │ gzip:   1.75 kB
+dist/client/assets/react-dom-C2cu7bt4.js                            3.90 kB │ gzip:   1.42 kB
+dist/client/assets/reason-parts-CLH4xH8H.js                         4.22 kB │ gzip:   1.93 kB
+dist/client/assets/CompositeRoot-G7SLt7ar.js                        4.46 kB │ gzip:   1.95 kB
+dist/client/assets/artisan-profile-B8IdB2If.js                      4.93 kB │ gzip:   1.56 kB
+dist/client/assets/routes-8i6yrR7G.js                               4.94 kB │ gzip:   1.91 kB
+dist/client/assets/preload-helper-DCtEkX2q.js                       5.09 kB │ gzip:   1.98 kB
+dist/client/assets/sign-up-BW8t_jqx.js                              5.64 kB │ gzip:   1.98 kB
+dist/client/assets/checkbox-pAmSf6kq.js                             5.82 kB │ gzip:   2.71 kB
+dist/client/assets/artisans.index-CjKejIff.js                       5.85 kB │ gzip:   2.21 kB
+dist/client/assets/job-form-BMocWss3.js                             6.36 kB │ gzip:   2.33 kB
+dist/client/assets/people._accountId-r2511PGi.js                    6.53 kB │ gzip:   1.99 kB
+dist/client/assets/radio-group-Djfy3-Ez.js                          6.74 kB │ gzip:   2.99 kB
+dist/client/assets/account-CHX1WlqS.js                              9.99 kB │ gzip:   2.76 kB
+dist/client/assets/reviews-CS8jORrx.js                             11.58 kB │ gzip:   4.25 kB
+dist/client/assets/verification-DytLpwOD.js                        13.51 kB │ gzip:   4.57 kB
+dist/client/assets/home-DYIz2H-p.js                                13.74 kB │ gzip:   4.34 kB
+dist/client/assets/items._itemId-st3-LCkH.js                       26.93 kB │ gzip:   9.87 kB
+dist/client/assets/choose-CF5KC7wr.js                              28.98 kB │ gzip:  10.23 kB
+dist/client/assets/data-table-Dg5xdBWC.js                          34.70 kB │ gzip:  10.80 kB
+dist/client/assets/createServerFn-BW40xI5A.js                      38.10 kB │ gzip:  12.39 kB
+dist/client/assets/jobs._jobId-CgaEpOaO.js                         75.76 kB │ gzip:  19.51 kB
+dist/client/assets/serializeValue-B69ke-Kt.js                      76.31 kB │ gzip:  27.40 kB
+dist/client/assets/form-Dy5ICsMl.js                               151.95 kB │ gzip:  41.67 kB
+dist/client/assets/page-B228NqkU.js                               276.06 kB │ gzip:  90.07 kB
+dist/client/assets/figures-CUmhxo-K.js                            343.64 kB │ gzip: 102.33 kB
+dist/client/assets/index-BdpP3zxo.js                              452.62 kB │ gzip: 142.54 kB
+
+✓ built in 2.23s
+transforming...
+✓ 5041 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/server/wrangler.json                                                 1.98 kB │ gzip:   1.01 kB
+dist/server/assets/geist-cyrillic-ext-wght-normal-DjL33-gN.woff2          7.42 kB
+dist/server/assets/geist-vietnamese-wght-normal-6IgcOCM7.woff2            8.00 kB
+dist/server/assets/geist-cyrillic-wght-normal-BEAKL7Jp.woff2             15.08 kB
+dist/server/assets/geist-latin-ext-wght-normal-DC-KSUi6.woff2            16.51 kB
+dist/server/assets/geist-latin-wght-normal-BgDaEnEv.woff2                29.40 kB
+dist/server/.vite/manifest.json                                          58.39 kB │ gzip:   6.20 kB
+dist/server/assets/styles-VGWa5seO.css                                  143.53 kB │ gzip:  22.08 kB
+dist/server/assets/kysely-adapter-D6E4H0Xg.js                             0.07 kB │ gzip:   0.08 kB
+dist/server/assets/start-C63VetBp.js                                      0.08 kB │ gzip:   0.10 kB │ map:     0.44 kB
+dist/server/assets/artisans._artisanId-C679MD8-.js                        0.12 kB │ gzip:   0.13 kB │ map:     8.53 kB
+dist/server/assets/clamp-D0kAXd-u.js                                      0.12 kB │ gzip:   0.13 kB │ map:     0.56 kB
+dist/server/assets/me-BEZwwSSt.js                                         0.13 kB │ gzip:   0.14 kB │ map:     0.87 kB
+dist/server/assets/empty-plugin-adapters-BaGcmrjC.js                      0.13 kB │ gzip:   0.13 kB │ map:     0.62 kB
+dist/server/assets/not-found-i5RsCZif.js                                  0.16 kB │ gzip:   0.15 kB │ map:     1.36 kB
+dist/server/assets/utils-DIyF8v9q.js                                      0.20 kB │ gzip:   0.18 kB │ map:     0.92 kB
+dist/server/assets/form-data-BbTEoUIl.js                                  0.20 kB │ gzip:   0.18 kB │ map:     1.00 kB
+dist/server/assets/createServerRpc-C6NEgf4E.js                            0.20 kB │ gzip:   0.19 kB │ map:     0.92 kB
+dist/server/assets/chevron-left-Cp550gJs.js                               0.20 kB │ gzip:   0.19 kB │ map:     1.02 kB
+dist/server/assets/x-B0mBeICM.js                                          0.22 kB │ gzip:   0.20 kB │ map:     1.05 kB
+dist/server/assets/FieldItemContext-DdVs-1LL.js                           0.25 kB │ gzip:   0.21 kB │ map:     0.90 kB
+dist/server/assets/matches-L6N8moP0.js                                    0.27 kB │ gzip:   0.24 kB │ map:     0.93 kB
+dist/server/assets/useNavigate-CPewXSly.js                                0.28 kB │ gzip:   0.24 kB │ map:     2.33 kB
+dist/server/assets/banknote-CsPbE3_H.js                                   0.32 kB │ gzip:   0.26 kB │ map:     1.33 kB
+dist/server/assets/createSsrRpc-DvxpJ-g8.js                               0.32 kB │ gzip:   0.26 kB │ map:     1.18 kB
+dist/server/assets/user-search-B8LXGj-h.js                                0.35 kB │ gzip:   0.27 kB │ map:     1.42 kB
+dist/server/assets/bell-DkdYsC2P.js                                       0.36 kB │ gzip:   0.29 kB │ map:     1.25 kB
+dist/server/assets/valueToPercent-ocw364iK.js                             0.36 kB │ gzip:   0.28 kB │ map:     1.88 kB
+dist/server/assets/notices-CG4BCeGG.js                                    0.39 kB │ gzip:   0.28 kB │ map:     1.35 kB
+dist/server/assets/artisans._artisanId-DKHF-jSi.js                        0.39 kB │ gzip:   0.27 kB │ map:     8.92 kB
+dist/server/assets/shield-check-VDkJouoB.js                               0.39 kB │ gzip:   0.30 kB │ map:     1.33 kB
+dist/server/assets/badge-check-xivT2kpu.js                                0.42 kB │ gzip:   0.28 kB │ map:     1.37 kB
+dist/server/assets/service-categories-CcF4IDNJ.js                         0.42 kB │ gzip:   0.27 kB │ map:     1.35 kB
+dist/server/assets/redirect-DmtLUW0N.js                                   0.43 kB │ gzip:   0.28 kB │ map:     2.71 kB
+dist/server/assets/use-action-BBA2oYY8.js                                 0.44 kB │ gzip:   0.32 kB │ map:     1.81 kB
+dist/server/assets/guards-BqXfnVCM.js                                     0.46 kB │ gzip:   0.26 kB │ map:     1.82 kB
+dist/server/assets/action-button-DqymKDxT.js                              0.49 kB │ gzip:   0.36 kB │ map:     1.61 kB
+dist/server/assets/matches-n_iwdkiT.js                                    0.50 kB │ gzip:   0.36 kB │ map:     1.38 kB
+dist/server/assets/label-CW4itfFS.js                                      0.51 kB │ gzip:   0.34 kB │ map:     0.91 kB
+dist/server/assets/image-off-ExYzW2mb.js                                  0.54 kB │ gzip:   0.35 kB │ map:     1.84 kB
+dist/server/assets/rules-DRCT7krJ.js                                      0.65 kB │ gzip:   0.40 kB │ map:     2.19 kB
+dist/server/assets/mail-DFBYfOO1.js                                       0.68 kB │ gzip:   0.41 kB │ map:     2.38 kB
+dist/server/assets/useAriaLabelledBy-CToF9M7f.js                          0.70 kB │ gzip:   0.47 kB │ map:     3.85 kB
+dist/server/assets/useRouteContext-bOrtqQtH.js                            0.70 kB │ gzip:   0.43 kB │ map:     3.95 kB
+dist/server/assets/rolldown-runtime-hePW80VL.js                           0.71 kB │ gzip:   0.42 kB
+dist/server/assets/regions-C-EPg1wp.js                                    0.72 kB │ gzip:   0.44 kB │ map:     3.51 kB
+dist/server/assets/how-a-job-goes-DrSsakAk.js                             0.74 kB │ gzip:   0.40 kB │ map:     1.65 kB
+dist/server/assets/people-_pVE6Y36.js                                     0.76 kB │ gzip:   0.44 kB │ map:     2.84 kB
+dist/server/assets/support-CyjxHX_p.js                                    0.78 kB │ gzip:   0.46 kB │ map:     1.93 kB
+dist/server/assets/reports-DZKcfK1P.js                                    0.81 kB │ gzip:   0.46 kB │ map:     2.15 kB
+dist/server/assets/textarea-BeU4cHK6.js                                   0.84 kB │ gzip:   0.47 kB │ map:     1.24 kB
+dist/server/assets/trade-tiles-CvtxRCgF.js                                0.85 kB │ gzip:   0.53 kB │ map:     2.27 kB
+dist/server/assets/data-requests-Cb_YraOd.js                              0.88 kB │ gzip:   0.51 kB │ map:     2.24 kB
+dist/server/assets/payouts-BoUQJCZ7.js                                    0.88 kB │ gzip:   0.53 kB │ map:     3.55 kB
+dist/server/assets/jobs.new-Dvnb4sae.js                                   0.99 kB │ gzip:   0.58 kB │ map:     3.72 kB
+dist/server/assets/profiles-CAnUl7D-.js                                   1.02 kB │ gzip:   0.62 kB │ map:     3.90 kB
+dist/server/assets/audit-C3whl55e.js                                      1.07 kB │ gzip:   0.56 kB │ map:     4.09 kB
+dist/server/assets/verification-CLoqUv3H.js                               1.08 kB │ gzip:   0.65 kB │ map:     3.15 kB
+dist/server/assets/turnstile-BmU2TDbk.js                                  1.12 kB │ gzip:   0.67 kB │ map:     4.13 kB
+dist/server/assets/reviews-BKGvRPMw.js                                    1.14 kB │ gzip:   0.54 kB │ map:     3.15 kB
+dist/server/assets/invitations-CY27AHrL.js                                1.15 kB │ gzip:   0.54 kB │ map:     3.00 kB
+dist/server/assets/notice-list-D8vHEiBx.js                                1.24 kB │ gzip:   0.68 kB │ map:     4.15 kB
+dist/server/assets/fake-checkout-BnvmgrYd.js                              1.26 kB │ gzip:   0.67 kB │ map:     3.89 kB
+dist/server/assets/rating-C7iRfJaO.js                                     1.35 kB │ gzip:   0.74 kB │ map:     3.68 kB
+dist/server/assets/table-D-Gcst8r.js                                      1.48 kB │ gzip:   0.58 kB │ map:     3.79 kB
+dist/server/assets/fake-checkout._collectionId-Cd94pABo.js                1.49 kB │ gzip:   0.70 kB │ map:     4.94 kB
+dist/server/assets/admin-7y6XorIO.js                                      1.54 kB │ gzip:   0.83 kB │ map:     6.64 kB
+dist/server/assets/people.index-BOgBbkdH.js                               1.64 kB │ gzip:   0.85 kB │ map:     5.73 kB
+dist/server/assets/people-CyGIqrjj.js                                     1.81 kB │ gzip:   0.74 kB │ map:     4.57 kB
+dist/server/assets/payouts.index-CTil2yQS.js                              1.84 kB │ gzip:   0.91 kB │ map:     6.30 kB
+dist/server/assets/node-sqlite-dialect-DXmlEhVC.js                        1.86 kB │ gzip:   0.87 kB │ map:     6.02 kB
+dist/server/assets/bun-sqlite-dialect-DoOVo4ja-BbhgKOG2.js                1.87 kB │ gzip:   0.88 kB │ map:     6.01 kB
+dist/server/assets/confirm-email-1Mj56jVC.js                              1.87 kB │ gzip:   0.94 kB │ map:     6.26 kB
+dist/server/assets/recover-DedG91ug.js                                    1.95 kB │ gzip:   0.87 kB │ map:     6.56 kB
+dist/server/assets/sign-in-DUjYCrjW.js                                    1.96 kB │ gzip:   0.95 kB │ map:     7.08 kB
+dist/server/assets/usePopupHandleStore-DUthNMoM.js                        2.02 kB │ gzip:   0.85 kB │ map:     8.23 kB
+dist/server/assets/conversations-DXwDA5uE.js                              2.03 kB │ gzip:   0.82 kB │ map:     5.24 kB
+dist/server/assets/admin-B5UuPs28.js                                      2.05 kB │ gzip:   0.93 kB │ map:     8.57 kB
+dist/server/assets/photos-field-DbNm0xs-.js                               2.06 kB │ gzip:   1.14 kB │ map:     7.64 kB
+dist/server/assets/jobs-B3vvb4Ym.js                                       2.07 kB │ gzip:   1.02 kB │ map:     8.15 kB
+dist/server/assets/payouts-CAZIdZeL.js                                    2.11 kB │ gzip:   0.84 kB │ map:     5.51 kB
+dist/server/assets/regions-1DnfWGGG.js                                    2.12 kB │ gzip:   0.90 kB │ map:     5.98 kB
+dist/server/assets/sa-days-4YcLcfqo.js                                    2.19 kB │ gzip:   1.11 kB │ map:     8.82 kB
+dist/server/assets/profiles-BV88tgZK.js                                   2.27 kB │ gzip:   0.97 kB │ map:     5.90 kB
+dist/server/assets/support-CvxPJQiL.js                                    2.27 kB │ gzip:   1.02 kB │ map:     8.00 kB
+dist/server/assets/item-CHOI0avs.js                                       2.29 kB │ gzip:   0.95 kB │ map:     6.52 kB
+dist/server/assets/quotes-BNhhA-O_.js                                     2.40 kB │ gzip:   0.89 kB │ map:     6.52 kB
+dist/server/assets/jobs.index-BXvzJMjq.js                                 2.43 kB │ gzip:   0.99 kB │ map:     8.47 kB
+dist/server/assets/accounts-9tcejar2.js                                   2.47 kB │ gzip:   1.11 kB │ map:    11.86 kB
+dist/server/assets/reopen-DWNwCUrp.js                                     2.57 kB │ gzip:   1.09 kB │ map:     9.17 kB
+dist/server/assets/pager-BmvJFLd_.js                                      2.59 kB │ gzip:   1.11 kB │ map:     9.57 kB
+dist/server/assets/payouts._artisanId-Cw5BS0HX.js                         2.62 kB │ gzip:   1.04 kB │ map:     8.58 kB
+dist/server/assets/admins-D82LVZtl.js                                     2.69 kB │ gzip:   1.18 kB │ map:     9.38 kB
+dist/server/assets/input-CZ9Yr1P3.js                                      2.72 kB │ gzip:   1.36 kB │ map:    12.66 kB
+dist/server/assets/admin-CexxUURF.js                                      2.81 kB │ gzip:   1.17 kB │ map:     8.45 kB
+dist/server/assets/rules-C837-mGX.js                                      2.84 kB │ gzip:   1.16 kB │ map:     9.29 kB
+dist/server/assets/file-picker-ByxgkPIt.js                                2.87 kB │ gzip:   1.38 kB │ map:    10.23 kB
+dist/server/assets/d1-sqlite-dialect-Cru74LbR-BvyzhqoS.js                 3.02 kB │ gzip:   1.30 kB │ map:     9.81 kB
+dist/server/assets/sign-in-Ce8evc9d.js                                    3.14 kB │ gzip:   1.21 kB │ map:     9.85 kB
+dist/server/assets/payouts-jNTYl04m.js                                    3.23 kB │ gzip:   1.25 kB │ map:    11.07 kB
+dist/server/assets/profile-EnC_OgQh.js                                    3.28 kB │ gzip:   1.34 kB │ map:    11.40 kB
+dist/server/assets/suburbs-D_LzpoTy.js                                    3.40 kB │ gzip:   1.45 kB │ map:    11.56 kB
+dist/server/assets/lazyRouteComponent-Dadzr7DM.js                         3.48 kB │ gzip:   1.27 kB │ map:    27.50 kB
+dist/server/assets/regions-CnsVBOJ7.js                                    3.52 kB │ gzip:   1.50 kB │ map:    12.71 kB
+dist/server/assets/artisans._artisanId-CnX3Rrb1.js                        3.62 kB │ gzip:   1.67 kB │ map:    15.20 kB
+dist/server/assets/field-yhND_N07.js                                      3.84 kB │ gzip:   1.29 kB │ map:     8.97 kB
+dist/server/assets/useControlled-BOOqTBEi.js                              3.85 kB │ gzip:   1.80 kB │ map:    29.18 kB
+dist/server/assets/react-dom-Crnfhd9D.js                                  3.95 kB │ gzip:   1.46 kB │ map:    14.07 kB
+dist/server/assets/jobs-CZ4rUook.js                                       4.03 kB │ gzip:   1.51 kB │ map:    11.43 kB
+dist/server/assets/reason-parts-hFC-qo3v.js                               4.30 kB │ gzip:   1.98 kB │ map:    29.14 kB
+dist/server/assets/CompositeRoot-LJdHzgJD.js                              4.54 kB │ gzip:   2.01 kB │ map:    24.77 kB
+dist/server/assets/artisan-profile-COuthqB8.js                            5.06 kB │ gzip:   1.63 kB │ map:    14.31 kB
+dist/server/assets/routes-BTQ7yKUD.js                                     5.07 kB │ gzip:   1.97 kB │ map:    15.29 kB
+dist/server/assets/admin-DwLTgzK6.js                                      5.31 kB │ gzip:   1.78 kB │ map:    13.97 kB
+dist/server/assets/dist-BfifPkDz.js                                       5.54 kB │ gzip:   2.12 kB │ map:    26.14 kB
+dist/server/assets/engagements-IL0WBlhn.js                                5.60 kB │ gzip:   1.72 kB │ map:    14.76 kB
+dist/server/assets/job-form-CBK1zlxw.js                                   5.70 kB │ gzip:   2.08 kB │ map:    19.48 kB
+dist/server/assets/sign-up-BrAw4jEW.js                                    5.79 kB │ gzip:   2.06 kB │ map:    19.85 kB
+dist/server/assets/checkbox-BDuqz99n.js                                   5.89 kB │ gzip:   2.75 kB │ map:    32.29 kB
+dist/server/assets/Match-CJim4KVV.js                                      5.90 kB │ gzip:   2.34 kB │ map:    30.07 kB
+dist/server/assets/artisans.index-DZxcpPX2.js                             5.99 kB │ gzip:   2.29 kB │ map:    20.44 kB
+dist/server/assets/people._accountId-CjqfjL37.js                          6.72 kB │ gzip:   2.08 kB │ map:    21.84 kB
+dist/server/assets/radio-group-DN9CnPAg.js                                6.81 kB │ gzip:   3.03 kB │ map:    48.43 kB
+dist/server/assets/DialogTitle-CFT4Sm3K.js                                7.12 kB │ gzip:   2.78 kB │ map:    39.66 kB
+dist/server/assets/accounts-DY7gNiWi.js                                   7.37 kB │ gzip:   2.45 kB │ map:    19.78 kB
+dist/server/assets/verification-DXMrOEzW.js                               7.56 kB │ gzip:   2.75 kB │ map:    27.09 kB
+dist/server/assets/internal-request-response-DJYJtRAs.js                  9.31 kB │ gzip:   3.52 kB │ map:    50.55 kB
+dist/server/assets/tabs-B-yJ4P1y.js                                       9.41 kB │ gzip:   3.60 kB │ map:    48.10 kB
+dist/server/assets/createServerFn-Bu5rDRmQ.js                            10.07 kB │ gzip:   4.04 kB │ map:    41.41 kB
+dist/server/assets/account-BE_gBoZe.js                                   10.11 kB │ gzip:   2.82 kB │ map:    33.14 kB
+dist/server/assets/reviews-DJAdMnf0.js                                   11.66 kB │ gzip:   4.26 kB │ map:    46.09 kB
+dist/server/assets/ItemIndicator-BYmt--H8.js                             11.66 kB │ gzip:   4.84 kB │ map:    69.59 kB
+dist/server/assets/home-DvJ117c_.js                                      13.95 kB │ gzip:   4.44 kB │ map:    51.42 kB
+dist/server/assets/input-group-MT-JPn2s.js                               14.93 kB │ gzip:   5.30 kB │ map:    72.47 kB
+dist/server/assets/_tanstack-start-manifest_v-DO9lmNtd.js                16.36 kB │ gzip:   2.38 kB
+dist/server/assets/__23tanstack-start-server-fn-resolver-D_ID7OfR.js     20.87 kB │ gzip:   6.91 kB │ map:    14.19 kB
+dist/server/assets/items._itemId-Da0eETRr.js                             27.21 kB │ gzip:   9.98 kB │ map:   140.96 kB
+dist/server/assets/choose-DP8tSuW9.js                                    29.03 kB │ gzip:  10.26 kB │ map:   144.58 kB
+dist/server/assets/data-table-DNZMn8kC.js                                34.81 kB │ gzip:  10.87 kB │ map:   200.44 kB
+dist/server/assets/matchContext-CgvyDx3d.js                              59.27 kB │ gzip:  20.63 kB │ map:   319.54 kB
+dist/server/assets/jobs._jobId-D3z8H1w7.js                               74.64 kB │ gzip:  18.93 kB │ map:   258.79 kB
+dist/server/assets/serializeValue-COxrDgDx.js                            76.41 kB │ gzip:  27.42 kB │ map:   469.63 kB
+dist/server/assets/schemas-X-zG5UJ2.js                                   94.56 kB │ gzip:  26.57 kB │ map:   533.02 kB
+dist/server/assets/sqlite-introspector-DSCAP82F-Crx7Ny14.js             116.03 kB │ gzip:  23.33 kB │ map:   553.90 kB
+dist/server/assets/page-Db34RbTe.js                                     116.74 kB │ gzip:  40.36 kB │ map:   338.48 kB
+dist/server/assets/form-BusoqTiI.js                                     152.16 kB │ gzip:  41.76 kB │ map:   792.81 kB
+dist/server/assets/router-8XP1Kx_N.js                                   189.04 kB │ gzip:  58.32 kB │ map: 1,253.59 kB
+dist/server/index.js                                                    314.95 kB │ gzip:  98.12 kB │ map: 1,407.05 kB
+dist/server/assets/figures-BjfMhuL3.js                                  343.61 kB │ gzip: 102.39 kB │ map: 1,904.13 kB
+dist/server/assets/session-CfGpkDJD.js                                1,002.54 kB │ gzip: 275.45 kB │ map: 4,294.85 kB
+
+[plugin vite:css-post] [SOURCEMAP_BROKEN] Sourcemap is likely to be incorrect: a plugin (vite:css-post) was used to transform files, but didn't generate a sourcemap for the transformation. Consult the plugin documentation for help: https://rolldown.rs/guide/troubleshooting#warning-sourcemap-is-likely-to-be-incorrect
+
+✓ built in 2.57s
