@@ -1,0 +1,62 @@
++ vp test run test/fresh-review-export.test.ts
+
+ RUN  v5.0.4 /Users/sfx/phase1-evidence/checkouts/artisanconnect
+
+ ❯ test/fresh-review-export.test.ts (2 tests | 2 failed) 735ms
+   × a Client export preserves fee visibility 448ms
+   × a Client export preserves review visibility 286ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/fresh-review-export.test.ts > a Client export preserves fee visibility
+AssertionError: expected { …(10) } to not have property "artisanFeePercent"
+
+- Expected:
+undefined
+
++ Received:
+10
+
+ ❯ test/fresh-review-export.test.ts:26:58
+     24|   if (!file) throw new Error("Export missing");
+     25|   const data = JSON.parse(await new Response(file.body).text()) as { e…
+     26|   if (surface === "fee") expect(data.engagements[0]).not.toHavePropert…
+       |                                                          ^
+     27|   else expect(data.reviewsReceived).toEqual([]);
+     28| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  test/fresh-review-export.test.ts > a Client export preserves review visibility
+AssertionError: expected [ { …(4) } ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   {
++     "comment": "Private review pending staff.",
++     "engagementId": "75e97e72-5895-4276-8473-84ff944426be",
++     "rating": 2,
++     "writtenAt": "2026-10-05T06:00:00.000Z",
++   },
++ ]
+
+ ❯ test/fresh-review-export.test.ts:27:37
+     25|   const data = JSON.parse(await new Response(file.body).text()) as { e…
+     26|   if (surface === "fee") expect(data.engagements[0]).not.toHavePropert…
+     27|   else expect(data.reviewsReceived).toEqual([]);
+       |                                     ^
+     28| });
+     29|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed (2)
+   Start at  20:28:10
+   Duration  3.96s (transform 64%, tests 21%, import 15%)
+
+EXIT(1) >> /Users/sfx/phase1-evidence/logs/artisanconnect/fresh-review-export.log

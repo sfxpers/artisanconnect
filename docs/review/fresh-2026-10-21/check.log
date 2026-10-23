@@ -1,0 +1,4 @@
++ vp check
+pass: All 423 files are correctly formatted (795ms, 8 threads)
+pass: Found no warnings, lint errors, or type errors in 345 files (3.5s, 8 threads)
+EXIT(0) >> /Users/sfx/phase1-evidence/logs/artisanconnect/check.log

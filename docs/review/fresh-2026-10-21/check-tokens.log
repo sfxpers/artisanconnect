@@ -1,0 +1,7 @@
++ vp run check:tokens
+$ node scripts/check-tokens.mjs ◉ cache hit, replaying
+Tokens only, on the 4px grid: 101 files.
+
+---
+vp run: cache hit, 1.81s saved.
+EXIT(0) >> /Users/sfx/phase1-evidence/logs/artisanconnect/check-tokens.log

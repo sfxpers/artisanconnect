@@ -1,0 +1,1159 @@
++ vp test run
+
+ RUN  v5.0.4 /Users/sfx/phase1-evidence/checkouts/artisanconnect
+
+stderr | test/domain/jobs.test.ts > a Held Job > is Held when the Content check cannot run
+File photos/0b02359e-67ce-4d14-9ac4-d0bd0522e890.webp could not be read Error: The fake content reader is down.
+    at working (/Users/sfx/phase1-evidence/checkouts/artisanconnect/test/support/fakes/content-reader.ts:32:23)
+    at Object.readPhoto (/Users/sfx/phase1-evidence/checkouts/artisanconnect/test/support/fakes/content-reader.ts:52:7)
+    at readFiles (/Users/sfx/phase1-evidence/checkouts/artisanconnect/src/domain/content/check.ts:108:52)
+    at checkContent (/Users/sfx/phase1-evidence/checkouts/artisanconnect/src/domain/content/check.ts:55:16)
+    at Object.post (/Users/sfx/phase1-evidence/checkouts/artisanconnect/src/domain/jobs/index.ts:152:23)
+    at /Users/sfx/phase1-evidence/checkouts/artisanconnect/test/domain/jobs.test.ts:431:12
+    at Users/sfx/Developer/artisanconnect/node_modules/.pnpm/vitest@5.0.4_@types+node@24.19.2_@vitest+browser-preview@5.0.4_@vitest+ui@5.0.4_@voidze_596eb94238162db054a1c3ddba1615b6/node_modules/vitest/dist/chunks/run.Cm2sd7-x.js:2794:20
+
+ ✓ test/domain/jobs.test.ts (52 tests) 18839ms
+   ✓ a Draft (5)
+     ✓ may omit anything, and waits in My Jobs under Needs you 335ms
+     ✓ is continued by its Client, keeping the photos kept and adding more 382ms
+     ✓ is discarded by its Client, with its photos 344ms
+     ✓ is the Client's alone 489ms
+   ✓ posting a Job (15)
+     ✓ needs its Client while a Quote is Sent on it, and again while its work awaits Approval (#111 story 67) 667ms
+     ✓ refuses a Draft with no description, saying so, and keeps it 310ms
+     ✓ asks a Plumbing Job whether the work installs or removes gas, and a yes marks it gas work 314ms
+     ✓ is for the Client's own Draft only 339ms
+   ✓ the Content check on posting (4)
+     ✓ refuses a Job with a phone number at once, and keeps the Draft 379ms
+     ✓ refuses a Job with a link at once, and keeps the Draft 317ms
+   ✓ a Draft saved while posting reads it (2)
+     ✓ is not posted when the Content check is clear, and stays a Draft 325ms
+     ✓ is not posted when the Content check is unsure, and stays a Draft 325ms
+   ✓ a Held Job (6)
+     ✓ is Held when the Content check cannot run 305ms
+     ✓ released by the Admin opens for 14 days from then, and the Client is told 462ms
+     ✓ refused by the Admin is a Draft again, showing why, and the Client is told 523ms
+     ✓ withdrawn by its Client is a Draft again, and leaves the Admin nothing 421ms
+     ✓ cannot be withdrawn once the Admin has decided 339ms
+   ✓ editing a posted Job (10)
+     ✓ changes the title, description, photos, Site type, and Preferred start, and nothing else 415ms
+     ✓ locks the trade, the site, the gas answer, and the matching choice at posting 326ms
+     ✓ refuses no photo, a past Preferred start, or no change 407ms
+     ✓ keeps a Preferred start date that has passed since, while the rest changes 303ms
+     ✓ is read by the Content check, and a sure hit is refused and changes nothing 401ms
+     ✓ the Content check is unsure about waits for the Admin, and the Job shows as posted meanwhile 455ms
+     ✓ Held and released by the Admin is applied, and the Client is told 714ms
+     ✓ Held and refused by the Admin leaves the Job as it was, showing why 509ms
+     ✓ Held and withdrawn by the Client leaves the Job as it was, and deletes the photos it added 383ms
+     ✓ is for an Open or Expired Job only 373ms
+   ✓ who sees a Job (2)
+     ✓ no Visitor, Artisan, or other Client reads it, its suburb, or its street 567ms
+     ✓ serves its photos to its Client and the Admin, and nobody else 731ms
+   ✓ closing a Job (3)
+     ✓ closes an Open Job before Hire, which is Finished 329ms
+     ✓ withdraws an edit waiting for the Admin 323ms
+     ✓ is only for the Client's own Open Job 432ms
+   ✓ a Job's 14 days (3)
+     ✓ end in Expiry without a Hire, with the Client reminded 24 hours before 385ms
+     ✓ count from the Admin's release of a Held Job 340ms
+     ✓ end with no reminder or Expiry once the Job is closed 439ms
+   ✓ renewing a Job (2)
+     ✓ opens an Expired Job for a new 14 days, from now 335ms
+ ✓ test/domain/reports.test.ts (25 tests) 22656ms
+   ✓ reporting a Job (1)
+     ✓ puts it in the Reports queue, and tells the reporter it was received 1270ms
+   ✓ Reports of one thing (3)
+     ✓ are one per reporter 922ms
+     ✓ fold into one queue item with a count 796ms
+     ✓ open a new item once the last is decided 723ms
+   ✓ who may Report (2)
+     ✓ only an Account that can see the thing, and never its own 893ms
+     ✓ with one of the fixed reasons 777ms
+   ✓ a Report's note (2)
+     ✓ is refused on a sure hit, with the reason, and nothing reaches the Admin 742ms
+     ✓ goes to the Admin when the Content check is unsure, with what it made of it 852ms
+   ✓ reporting a Quote, a message, or a Profile (3)
+     ✓ a Client Reports a Quote Sent on their Job 819ms
+     ✓ the other party Reports a message delivered to them, never their own 794ms
+     ✓ any signed-in Account Reports an Artisan's Profile 675ms
+   ✓ deciding a Report (3)
+     ✓ dismissed, tells nobody 921ms
+     ✓ with a warning, tells the Account reported, never the reporter 936ms
+     ✓ with a Suspension, suspends the Account reported 1259ms
+   ✓ Leaving (3)
+     ✓ warns the first time, and suspends the second 1538ms
+     ✓ that openly dodges the fees suspends at once 806ms
+     ✓ again, while the Account is Suspended, offers no further Suspension 791ms
+   ✓ reading the Conversation from a Report (1)
+     ✓ is a logged click 865ms
+   ✓ taking a Job out of view (3)
+     ✓ hides it from every Artisan and stops its Quotes, telling the Client why 839ms
+     ✓ keeps it from being Hired until it is fixed 1054ms
+     ✓ until the Client's edit, which the Admin checks, fixes it, even after a Quote 786ms
+   ✓ taking a Profile out of view (1)
+     ✓ hides it from Browse and its page until a Profile edit fixes it, telling the Artisan 490ms
+   ✓ a Job out of view, and what comes due meanwhile (3)
+     ✓ gets its Batches again once the fix is released 1509ms
+     ✓ Hires nobody when a Payment arrives after it was taken out of view 945ms
+     ✓ stays out of view when an edit sent before it was taken out is released 647ms
+ ✓ test/domain/signals.test.ts (27 tests) 23370ms
+   ✓ a second sent-back Payout (2)
+     ✓ within 90 days raises a Signal, telling nobody 1205ms
+     ✓ more than 90 days after the first raises nothing 905ms
+   ✓ a Client and an Artisan who transact (7)
+     ✓ sharing a device they signed in on raises a Signal at Hire, telling nobody 710ms
+     ✓ sharing an IP, seen at a Payment, raises a Signal 559ms
+     ✓ sharing a device after Hire raises a Signal when it is seen 712ms
+     ✓ an Artisan's Payout account in the Client's name raises a Signal at Hire 547ms
+     ✓ a Payout account in the Client's name accepted after Hire raises a Signal 589ms
+     ✓ nothing shared raises nothing 667ms
+     ✓ the same finding raises one Signal; something new, once it is closed, another 1063ms
+   ✓ a new Account sharing a device or IP with a Suspended one (4)
+     ✓ raises a Signal when it signs in, telling nobody 564ms
+     ✓ raises a Signal when the Account it shares with is Suspended later 554ms
+     ✓ on an IP, an Artisan too 483ms
+     ✓ raises nothing for an Account no longer new, or one never Suspended 1170ms
+   ✓ repeated trouble (6)
+     ✓ an Artisan's third Cancellation or no-show in 90 days raises a Signal, telling nobody 1438ms
+     ✓ a Client's Cancellations before the start date raise nothing 1204ms
+     ✓ Cancellations spread over more than 90 days raise nothing 1562ms
+     ✓ a Client's third Dispute in 90 days raises a Signal 1272ms
+     ✓ a Client's third Fix request in 90 days raises a Signal 843ms
+     ✓ a Client's second Chargeback in 90 days raises a Signal 939ms
+   ✓ one Account refused again and again on one Job (3)
+     ✓ raises a Signal at the third send the Content check refuses, telling nobody 601ms
+     ✓ a Draft whose posting was refused may still be discarded 317ms
+     ✓ refusals on different Jobs, or of different Accounts, raise nothing 726ms
+   ✓ the Admin (5)
+     ✓ reads what was found, and whom it names, each linked to the People page 727ms
+     ✓ closes a Signal, telling nobody 1183ms
+     ✓ warns the Account chosen, telling only it 894ms
+     ✓ suspends the Account chosen 1081ms
+     ✓ holds an Artisan's Payouts, and only an Artisan's 847ms
+ ✓ test/domain/batches.test.ts (19 tests) 25030ms
+   ✓ the first Batch (1)
+     ✓ offers a matched Job at posting, with a Tell to each Artisan 1041ms
+   ✓ a further Batch (7)
+     ✓ goes every 24 hours to those eligible and not yet offered the Job 2954ms
+     ✓ keeps coming while the Job is Open, for an Artisan eligible only later 504ms
+     ✓ fills Jobs due together in posting order 2876ms
+     ✓ stops once the Job is closed or Expires, and Renew restarts it without offering anyone twice 823ms
+     ✓ waits while a Job is Held, and goes within the minute of the Admin releasing it 500ms
+     ✓ is not sent in the run that Expires the Job 891ms
+     ✓ never goes for an Invite-only Job 551ms
+   ✓ the offer order (2)
+     ✓ offers ten at most: the never offered first, ties to the older Account 3593ms
+     ✓ then the least recently offered, before the older Account, keeping the place while unavailable 3188ms
+   ✓ who is eligible (3)
+     ✓ only an Artisan verified for the category, in the Region, and Available for Jobs 1777ms
+     ✓ only a gas-registered plumber on a gas Job 796ms
+     ✓ not an Artisan whose Verification has lapsed 1008ms
+   ✓ a Job Match (6)
+     ✓ shows the Artisan the Region, never the suburb or street, the details and photos, and the Client's shown name and record 586ms
+     ✓ is the Artisan's alone: nobody else sees the Job as offered, nor its photos 945ms
+     ✓ may be passed, telling nobody, and the Job is not offered to the Artisan again 680ms
+     ✓ cannot be passed once the Job is no longer Open, and shows again when it is Renewed 536ms
+     ✓ cannot be passed by anyone not holding it 800ms
+     ✓ is never shown to the Client: no Batch and no count 976ms
+ ✓ test/domain/reviews.test.ts (26 tests) 26373ms
+   ✓ the Review window (1)
+     ✓ opens when the Engagement is Completed, and both parties are told 1014ms
+   ✓ the Review window, Completed otherwise (4)
+     ✓ opens when a Client's Dispute ends with the Engagement Completed 778ms
+     ✓ opens when the Artisan's Dispute of a Fix request ends with the Engagement Completed 679ms
+     ✓ stays shut when a Dispute against a Cancellation ends the Engagement Cancelled again 579ms
+     ✓ opens when the Admin's decision of a Chargeback Completes the Engagement 594ms
+   ✓ the Review window's clocks (3)
+     ✓ remind a side that has not written 48 hours before it closes, and tell both when it closes 548ms
+     ✓ wait while a Chargeback freezes the Engagement, then run on for the time left 730ms
+     ✓ remind neither side that has written 639ms
+   ✓ writing a Review (7)
+     ✓ each party writes one, a rating and an optional comment, which waits for the Admin 584ms
+     ✓ is one per party, and cannot be written again or changed 623ms
+     ✓ is not written on a Cancelled Engagement, nor before it is Completed 581ms
+     ✓ is not written once the seven days have passed 674ms
+     ✓ is written only by a party, with a rating from 1 to 5 731ms
+     ✓ a comment the Content check is sure of is refused, and nothing is recorded 1028ms
+     ✓ a comment the Content check is unsure of goes to the Admin with what it made of it 763ms
+   ✓ reading the other party's Review (2)
+     ✓ waits until both have written, and for the Admin to publish it 732ms
+     ✓ is read once the seven days pass, though the reader wrote none 791ms
+   ✓ the Admin's Pre-check (2)
+     ✓ publishes a Review written in the window even after it closes, telling its author 1235ms
+     ✓ refuses one only on a ground, telling its author, and it is never shown 959ms
+   ✓ Reviews of an Artisan (2)
+     ✓ show on the Profile to anyone, newest first, with one average and count 1260ms
+     ✓ come 20 at a time 3352ms
+   ✓ Browse (1)
+     ✓ orders by Available for Jobs, then higher Review average, then more Reviews, then name 3589ms
+   ✓ the Client's Quote list (1)
+     ✓ shows each Artisan's Review average and count, and Completed count 734ms
+   ✓ Reviews of a Client (1)
+     ✓ are read beside the Job Match by an Artisan offered, invited to, or Quoting on the Client's Job, and nobody else 1370ms
+   ✓ Reporting a Review (2)
+     ✓ anyone signed in may Report a Review shown, and the Admin may remove it, telling its author 909ms
+     ✓ is only of a Review the reporter can read, and never of their own 892ms
+ ✓ test/domain/payouts.test.ts (39 tests) 27969ms
+   ✓ the daily Payout run (6)
+     ✓ waits for its time of day 983ms
+     ✓ sends each Release owed as one Payout to the current Payout account 677ms
+     ✓ runs once a day, and sends each Release once 711ms
+     ✓ a run missed at its time runs the first minute after it 583ms
+     ✓ an Artisan with no current Payout account waits 542ms
+     ✓ a run that fails part-way retries the rest later that day, checking the float once 686ms
+   ✓ a Payout refused or sent back (14)
+     ✓ refused at sending leaves the Release standing and owed, and the account not current 663ms
+     ✓ refused by the bank after sending is the same 569ms
+     ✓ sent back days later makes the money owed again; the Artisan Fee is kept once 583ms
+     ✓ tells the Artisan, naming the original Receipt, which stands 671ms
+     ✓ refused, tells the Artisan with the Payout's reference and no Receipt 621ms
+     ✓ happens once, however often its event comes 581ms
+     ✓ every waiting Payout goes in the first daily run after the Admin accepts a new account 826ms
+     ✓ a Payout account the bank stopped cannot be sent again 808ms
+     ✓ a Payout never answered on the stopped account goes to the new one 900ms
+     ✓ a Payout the provider had, though its answer was lost, is not sent again 944ms
+     ✓ a later Payout of the run is not sent to an account the bank refused earlier in it 931ms
+     ✓ a Payout hold applies to the money sent back 1187ms
+     ✓ the Admin sees it in the Artisan's money history and the log, with no queue item 859ms
+     ✓ the money history is the Admin's only to see 539ms
+   ✓ a Payout hold (5)
+     ✓ is the Admin's: a held Artisan's Payouts wait, and go once it is lifted 616ms
+     ✓ also stops a Payout the adapter never answered from being asked again 652ms
+     ✓ tells the Artisan, and is written to the audit log 592ms
+     ✓ is placed once and lifted once 419ms
+     ✓ is only an Admin's to place, and only on an Artisan 569ms
+   ✓ the float check (5)
+     ✓ a float that cannot cover the run emails every Admin and shows a banner until it can 628ms
+     ✓ a float that covers the run emails nobody 652ms
+     ✓ counts the Payouts sent before and still unpaid 743ms
+     ✓ counts the Refunds on their way, which the float pays too 700ms
+   ✓ a Payout paid (2)
+     ✓ tells the Artisan, with a Receipt showing the Artisan Fee 670ms
+     ✓ is paid once, however often its event comes 778ms
+   ✓ a paused Payout (3)
+     ✓ stays unpaid with no Tell and no Receipt 737ms
+     ✓ after 3 days tells the Artisan it is delayed, not lost, and raises a Support request 957ms
+     ✓ paid within 3 days raises nothing 890ms
+   ✓ the Payouts view (2)
+     ✓ lists each Release, its Artisan Fee, the amount paid, and its state 565ms
+     ✓ is the Artisan's own 1113ms
+   ✓ the Admin's unpaid totals (2)
+     ✓ show each Artisan owed money, and each held one 1317ms
+ ✓ test/domain/profiles.test.ts (28 tests) 17740ms
+   ✓ Browse (6)
+     ✓ lists the Artisans verified for the Service Category, and nobody else 1578ms
+     ✓ narrowed by Region lists only the Artisans who work in it 1095ms
+     ✓ drops an Artisan once a check the category needs expires 607ms
+     ✓ leaves out an Artisan whose names are being checked 536ms
+     ✓ lists each Artisan with the first work photo shown, the badges, and the Completed count 688ms
+     ✓ is the same for a Visitor, a Client, and an Artisan 871ms
+   ✓ an Artisan Profile (4)
+     ✓ shows the categories verified, badges, Regions, Completed count, rating, and Reviews, and no contact 572ms
+     ✓ is the same for anyone who opens it 928ms
+     ✓ stays open once the Artisan's Verification lapses, showing no category, out of Browse 400ms
+     ✓ does not exist for an Artisan verified for nothing, a Client, or an unknown id 389ms
+   ✓ editing the Profile (13)
+     ✓ waits for the Admin's Pre-check, and the old version shows meanwhile 479ms
+     ✓ once the Admin releases it, shows it, and tells the Artisan 440ms
+     ✓ refused by the Admin leaves the old version shown, and tells the Artisan why 512ms
+     ✓ with a phone number is refused at once, and nothing waits 644ms
+     ✓ with a link is refused at once, and nothing waits 482ms
+     ✓ that the content reader is sure about is refused with its reason 469ms
+     ✓ has each photo added read by the Content check 462ms
+     ✓ the Content check is unsure about waits too, and the Admin sees why 443ms
+     ✓ waits one at a time, and a withdrawn edit leaves the old version shown 532ms
+     ✓ cannot withdraw an edit the Admin has decided 670ms
+     ✓ keeps, removes, and adds photos, in the order sent 578ms
+     ✓ refuses more than 10 photos, a photo not on the Profile, or no change 552ms
+   ✓ the Profiles anyone may open (1)
+     ✓ are listed for search engines, lapsed ones too, and nobody else's 1333ms
+   ✓ a Profile photo (4)
+     ✓ is served to anyone once shown, and before that only to its Artisan and the Admin 662ms
+     ✓ is no longer served to anyone else once an edit removes it 565ms
+     ✓ added by an edit the Artisan withdraws is deleted, and one kept stays 588ms
+     ✓ of an Artisan verified for nothing is served to nobody else 394ms
+ ✓ test/domain/invitations.test.ts (17 tests) 16250ms
+   ✓ an Invitation (1)
+     ✓ is a Tell to the Artisan, and shows among their Invitations 638ms
+   ✓ an invited Artisan (2)
+     ✓ sees the Job as one holding a Job Match does: the Region, never the suburb or street, and its photos 540ms
+     ✓ is the only one who sees an Invite-only Job 761ms
+   ✓ an Invitation and a Job Match (4)
+     ✓ an Invitation reaches an Artisan who passed on a Job Match for the Job 543ms
+     ✓ an Invitation turns an unanswered Job Match into an Invitation 638ms
+     ✓ the Artisan keeps their place in the offer order when a Job Match becomes an Invitation 3460ms
+     ✓ the invite list shows nothing of who holds or passed a Job Match 1310ms
+   ✓ passing an Invitation (3)
+     ✓ tells nobody, takes the Job from the Artisan, and leaves the Client's list as it was 714ms
+     ✓ that was a Job Match passes the Job Match too 667ms
+     ✓ is refused to anyone not holding it, and once the Job is not Open 911ms
+   ✓ a Batch (1)
+     ✓ leaves out an Artisan invited to the Job 533ms
+   ✓ inviting (3)
+     ✓ is refused for an Artisan not on the invite list, telling nobody 995ms
+     ✓ is the Job's Client's alone 878ms
+     ✓ is refused twice for one Artisan, and on a Job not Open 519ms
+   ✓ the invite list (3)
+     ✓ is Browse narrowed to the Job's category, marking those invited 1249ms
+     ✓ on a gas Job, holds only gas-registered plumbers 960ms
+     ✓ is the Job's Client's alone 928ms
+ ✓ test/domain/verification.test.ts (41 tests) 16846ms
+   ✓ submitting a check (1)
+     ✓ puts it before the Admin in one Verification item, and shows it waiting 388ms
+   ✓ submitting a check, refused (15)
+     ✓ for a South African ID number that fails its checksum 346ms
+     ✓ for an Identity Number another Artisan holds, without saying whose 708ms
+     ✓ for a Payout account another Artisan holds 479ms
+     ✓ while the same check waits for the Admin 306ms
+     ✓ for an account number left out 304ms
+     ✓ for a South African ID number of 12 digits 323ms
+     ✓ for a South African ID number failing its checksum 341ms
+   ✓ the Admin's Verification item (7)
+     ✓ has a row per check with what was sent and the automatic reading 315ms
+     ✓ opens the documents only on a logged click, by links only an Admin can follow 398ms
+     ✓ accepting a check makes it a badge, tells the Artisan, and logs the decision 398ms
+     ✓ is decided once no check on it waits, and a later check raises a new one 543ms
+     ✓ rejecting needs a reason, which the Artisan sees, and the Artisan may submit again 341ms
+   ✓ the Identity Number (2)
+     ✓ is recorded by the Admin, who may correct it from the document 444ms
+     ✓ accepted for one Artisan cannot be accepted for another 587ms
+   ✓ being verified for a Service Category (6)
+     ✓ needs identity, a Payout account, and three work photos in that category 558ms
+     ✓ for Plumbing needs a trained plumber, and for gas work a gas practitioner too 434ms
+     ✓ for Electrical needs a registered person and a current contractor registration 695ms
+     ✓ with a foreign passport needs a work permit; with a South African one or a refugee ID it does not 845ms
+     ✓ is not changed by the optional badges, which show their dates 382ms
+     ✓ shows anyone what it checked, but not a work permit, a Payout account, or an identity document's dates 668ms
+   ✓ a replacement (1)
+     ✓ of a Payout account leaves the current one until the Admin accepts it 473ms
+   ✓ removing a badge found false (1)
+     ✓ ends its Verification and tells the Artisan why, after the item is decided 495ms
+   ✓ a check that expires (2)
+     ✓ reminds the Artisan 30 and 7 days before, and stops being current on its expiry date 633ms
+   ✓ the automatic reading (3)
+     ✓ refuses work photos with contact details, as anything shown to others is 318ms
+     ✓ shows an unsure Content check on work photos to the Admin, who decides 401ms
+     ✓ asks the bank again about a Payout account while its answer is pending 441ms
+   ✓ an Identity Number once accepted (2)
+     ✓ stays held by its Artisan once replaced, so no other Artisan Account takes it 537ms
+     ✓ stays held by its Artisan once removed, so no other Artisan Account takes it 489ms
+   ✓ a work permit (1)
+     ✓ may be sent while a foreign passport waits to replace a South African ID 373ms
+ ✓ test/domain/quotes.test.ts (60 tests) 48281ms
+   ✓ sending a Quote (12)
+     ✓ on a Job Match Sends it to the Client, with a Tell 1045ms
+     ✓ is refused, with nothing sent, when it totals under R300 682ms
+     ✓ is refused, with nothing sent, when it has no Labour 489ms
+     ✓ is refused, with nothing sent, when it gives Labour in a form not rands 511ms
+     ✓ is refused, with nothing sent, when it charges Materials the Client supplies 466ms
+     ✓ is refused, with nothing sent, when it starts before today 463ms
+     ✓ is refused, with nothing sent, when it has no start date 537ms
+     ✓ is refused, with nothing sent, when it lasts no days 480ms
+     ✓ is refused, with nothing sent, when it lasts over a year 538ms
+     ✓ is refused, with nothing sent, when it lasts part of a day 509ms
+     ✓ is refused, with nothing sent, when it has no scope 568ms
+     ✓ totals R300 exactly, a start date of today, a year at most, and no Warranty 524ms
+   ✓ the Client's Quotes (2)
+     ✓ show each Artisan's record, their badges for the category, and the Payment with the Protection Fee 607ms
+     ✓ are the Client's only 578ms
+   ✓ a VAT-registered Artisan (3)
+     ✓ states a VAT number, which their Quotes carry: their amounts include VAT 591ms
+     ✓ who stops being one clears it, and their next revision carries none 742ms
+     ✓ gives a VAT number as SARS issues it: ten digits starting with 4 337ms
+   ✓ who may send a Quote (6)
+     ✓ an invited Artisan, on an Invite-only Job 623ms
+     ✓ not an Artisan holding neither a Job Match nor an Invitation, nor one who passed 823ms
+     ✓ not on a Job no longer Open 619ms
+     ✓ once per Job 815ms
+     ✓ not an Artisan no longer verified for the Job's category 1112ms
+     ✓ not a Client 301ms
+   ✓ the Content check (8)
+     ✓ refuses a sure hit with its reason, and nothing is sent 565ms
+     ✓ Holds an unsure Quote: not Sent, and only its Artisan sees it, being checked 611ms
+     ✓ a Held Quote the Admin releases is Sent then, and both are told 516ms
+     ✓ a Held Quote the Admin refuses shows its Artisan why, who may send another 621ms
+     ✓ a Held Quote its Artisan withdraws leaves the Admin's queue, and another may be sent 635ms
+     ✓ a Held Quote released once its Artisan is no longer verified is not Sent 859ms
+     ✓ a Held Quote released once its start date has passed is not Sent 632ms
+     ✓ a Held Quote released once the Job has Expired is not Sent, and its Artisan is told so 613ms
+   ✓ a Sent Quote (8)
+     ✓ its Artisan Withdraws, and the Client is told 520ms
+     ✓ the Client Declines, and its Artisan is told 968ms
+     ✓ only the Job's Client Declines 792ms
+     ✓ Expires 14 days after it was Sent, and its Artisan is told 695ms
+     ✓ Expires once, and its Artisan is told once, when two runs overlap 667ms
+     ✓ does not Expire once Withdrawn 567ms
+     ✓ is Declined when the Client closes the Job, and its Artisan told 649ms
+     ✓ stays Sent when the Job Expires, and its Artisan is told the Job expired 1017ms
+   ✓ revising a Sent Quote (9)
+     ✓ shows the new Quote at once, tells the Client, and keeps its 14 days 506ms
+     ✓ is refused by the same rules as sending, and when nothing changed 862ms
+     ✓ is refused once it is no longer Sent 531ms
+     ✓ Held, shows the Quote as it was to the Client until the Admin releases it 904ms
+     ✓ Held and refused, shows its Artisan why, and the Quote stays as it was 625ms
+     ✓ Held, is not shown once its start date has passed 741ms
+     ✓ needs no Verification, which is asked at sending and at Hire 558ms
+     ✓ Held, may be withdrawn by its Artisan 579ms
+     ✓ Held, is not shown once the Quote is Withdrawn 624ms
+   ✓ at five Quotes (5)
+     ✓ a Job takes no more, Declined and Withdrawn ones counting 2183ms
+     ✓ a Held Quote takes no slot, and is not Sent once five others are 2154ms
+     ✓ a Job gets no further Batch 3185ms
+     ✓ a Job takes no Invitation 2093ms
+     ✓ a Renewed Job counts its Quotes from zero, and its Sent ones stay Sent 2357ms
+   ✓ an Artisan who has Quoted (4)
+     ✓ finds the Job among their Quotes, no longer among Job Matches, and cannot pass it 799ms
+     ✓ finds an Invitation they Quoted on among their Quotes, and cannot pass it 723ms
+     ✓ sees the Job and its photos once it is closed, and no longer among their Quotes 627ms
+     ✓ is marked Quoted on the Client's invite list, from Sent on 1131ms
+   ✓ the first Quote (2)
+     ✓ locks the Job's edits, and a Held one does not 935ms
+     ✓ leaves an edit Held before it unshown, once the Admin releases it 583ms
+   ✓ closing a Job with a Held Quote (1)
+     ✓ takes the Quote out of the Admin's queue, and it is not Sent 676ms
+ ✓ test/domain/disputes.test.ts (33 tests) 26668ms
+   ✓ a Client's Dispute (5)
+     ✓ holds the named amount of the Labour: the Engagement is Disputed, the Admin's queue has it, and the Artisan is told 724ms
+     ✓ releases the rest of the Labour when the Client approves it, and stays Disputed 738ms
+     ✓ releases the rest of the Labour when the seven days end, telling both 608ms
+     ✓ reminds the Client 24 hours before the rest of the Labour is released 736ms
+     ✓ of all the Labour leaves nothing to release at Approval 807ms
+   ✓ an Artisan's Dispute against a Fix request (3)
+     ✓ holds all the Labour not yet released, ends an Updated Quote waiting, and tells the Client 618ms
+     ✓ decided, the Engagement is Completed 570ms
+     ✓ settled by the Artisan refunding it all, the Engagement is Completed 760ms
+   ✓ an Artisan's Dispute within a Cancellation's 72 hours (4)
+     ✓ stops the refund of the Labour and its reminder, and tells the Client 1014ms
+     ✓ decided, the Engagement is Cancelled again, its Cancellation as it was 691ms
+     ✓ after a Completion, decided, the Engagement is Cancelled again, and the seven days release nothing meanwhile 857ms
+     ✓ not once the 72 hours end, nor after a Cancellation before Work started 1092ms
+   ✓ settling a Dispute (4)
+     ✓ the Client may release part of what is held, less the Artisan Fee, and the Artisan is told 591ms
+     ✓ released whole by the Client, it is settled: Completed, the rest of the Labour released, both told, and the Admin's item closed 879ms
+     ✓ the Artisan's Refund of Labour takes from what is held first; refunded whole, it is settled 706ms
+     ✓ a Refund of more Labour than is held settles it and refunds the rest from the Labour not held 1019ms
+   ✓ the Admin's Dispute item (7)
+     ✓ offers one decision, a split of what is held, with the Job, the Completion, the parties, the money, and the Artisan record 586ms
+     ✓ shows the Completion's files to the Admin, and the Conversation on a logged click 833ms
+     ✓ splits what is held: Released less the Artisan Fee, Refunded to the Client, Completed with the rest released, and both told with the reason 1168ms
+     ✓ is final, needs a reason, and splits no more than is held 895ms
+     ✓ refuses a split of a held amount the parties changed since the Admin read it 691ms
+     ✓ offers nothing once the parties settled it 720ms
+     ✓ a Refund it decides goes on the Artisan record 700ms
+   ✓ on a clock that ticks between reads, as a real one does (1)
+     ✓ a Dispute opens, is settled, and is decided 1208ms
+   ✓ what each party may do on the Job page (2)
+     ✓ the Client may dispute up to the Labour not yet released while a Completion awaits them, and release what is held 766ms
+     ✓ the Artisan may dispute all the Labour not yet released against a Fix request, or within a Cancellation's 72 hours 901ms
+   ✓ opening a Dispute (7)
+     ✓ the Client may only at Awaiting approval, for an amount of the Labour not yet released 633ms
+     ✓ the Artisan may not at Awaiting approval, and nobody else may at all 765ms
+     ✓ once: a Disputed Engagement may not be disputed again, answered, or cancelled 760ms
+     ✓ is refused when the Labour not yet released changed while it was being read 640ms
+     ✓ its reason and photos are read: a sure hit is refused with the reason, and nothing is opened 860ms
+     ✓ an unsure reason leaves the Dispute standing, its reason and photos for the Admin only 915ms
+     ✓ its photos are served to its opener, the other party once checked, and the Admin 1203ms
+ ✓ test/domain/completion.test.ts (38 tests) 31936ms
+   ✓ the Artisan marks the work complete (8)
+     ✓ makes the Engagement Awaiting approval, and tells the Client the Approval time 711ms
+     ✓ its photos and documents are served to both parties and nobody else 1054ms
+     ✓ shows in the Conversation as a row that is not speech 614ms
+     ✓ needs Work started 814ms
+     ✓ needs a note, 1 to 10 after-work photos, and at most 5 documents 630ms
+     ✓ takes documents as photos or PDFs, never voice notes 614ms
+     ✓ sent twice at once, as by a double tap, makes one Completion and refuses the other 628ms
+     ✓ not again while it is Awaiting approval 642ms
+   ✓ on a clock that ticks between reads, as a real one does (1)
+     ✓ a Completion, made at once or released by the Admin, makes the Engagement Awaiting approval 1432ms
+   ✓ the Content check on a Completion (6)
+     ✓ refuses a sure hit with the reason, and keeps nothing 572ms
+     ✓ reads the note, photos, and documents after Payment, where contact may be shared 708ms
+     ✓ Holds an unsure one: being checked to the Artisan, nothing to the Client, and no seven days yet 979ms
+     ✓ released by the Admin, it is Awaiting approval, and the seven days start then 752ms
+     ✓ refused by the Admin, the Artisan sees why and may mark it complete again 738ms
+     ✓ the Artisan may withdraw a Held Completion, and mark it complete again 901ms
+   ✓ Completion evidence (8)
+     ✓ an Electrical Job needs a certificate of compliance 594ms
+     ✓ a Plumbing Job that installs or removes gas needs a certificate of conformity; other Plumbing Jobs none 1239ms
+     ✓ a certificate on a Job that needs none is refused 678ms
+     ✓ read as its kind with the Artisan's registration number, it passes 1221ms
+     ✓ read as another kind, without the registration number, or not read at all, it Holds the Completion 1948ms
+     ✓ a certificate's bank account number Holds the Completion rather than refusing it 744ms
+     ✓ is read by the content reader too, and what it finds Holds the Completion rather than refusing it 774ms
+     ✓ the Admin sees the Completion, its files, and the certificate's reading 678ms
+   ✓ Approval (5)
+     ✓ releases the Labour less the Artisan Fee, makes the Engagement Completed, and tells the Artisan 841ms
+     ✓ shows in the Conversation as a row that is not speech 695ms
+     ✓ the Labour's Release is sent by the daily Payout run 730ms
+     ✓ only while Awaiting approval, and once 873ms
+     ✓ with no Materials, releases the whole Hired Quote 779ms
+   ✓ Approval by seven days of silence (3)
+     ✓ the Client is reminded 24 hours before 623ms
+     ✓ after seven days it is Approved: the Labour released, Completed, and both told 637ms
+     ✓ once the Client approved, the reminder and the seven days do nothing 737ms
+   ✓ a Fix request (7)
+     ✓ stops the clock, makes the Engagement Fix requested, and tells the Artisan 819ms
+     ✓ the next Completion starts a new seven days, with no limit on rounds 995ms
+     ✓ needs a note 826ms
+     ✓ only while Awaiting approval, and the Client's only 1091ms
+     ✓ a note with a sure hit is refused, and nothing changes 960ms
+     ✓ an unsure note: the Fix request stands, but its note waits for the Admin 1013ms
+     ✓ a note the Admin refuses is never shown to the Artisan 646ms
+ ✓ test/domain/suspension.test.ts (21 tests) 11247ms
+   ✓ suspending an Account (1)
+     ✓ shows it the reason, and tells it 383ms
+   ✓ a Suspended Client (3)
+     ✓ cannot post a Job 402ms
+     ✓ has its Open Jobs closed, their Sent Quotes Declined and their Artisans told 732ms
+     ✓ has a Job being checked made a Draft again, so it never goes live 345ms
+   ✓ a Suspended Artisan (6)
+     ✓ has its Sent Quotes Withdrawn, each Client told 673ms
+     ✓ has a Quote being checked withdrawn, so it is never Sent 676ms
+     ✓ cannot Quote 540ms
+     ✓ is offered no Job, and no longer sees one offered before the Job opened 1131ms
+     ✓ is offered no Job, and no longer sees one offered after the Job opened 561ms
+     ✓ leaves Browse, and so cannot be invited 758ms
+   ✓ Hire while Suspended (1)
+     ✓ is refused to a Suspended Client, even from an Expired Job's Quote still Sent 577ms
+   ✓ a Payment arriving once either party is Suspended (2)
+     ✓ Hires nobody on a Suspended Client's Expired Job, and is refunded whole 613ms
+     ✓ refunds the whole Payment when the Artisan is Suspended while the checkout is open 635ms
+   ✓ a paid Engagement (1)
+     ✓ goes on when either party is Suspended 610ms
+   ✓ lifting a Suspension (2)
+     ✓ lets the Account start work again, and tells it 362ms
+   ✓ warning an Account (1)
+     ✓ tells it, and the warning stays after a Suspension is lifted 472ms
+   ✓ the People page's powers (2)
+     ✓ are the Admin's only 494ms
+     ✓ each write a line in the audit log 420ms
+ ✓ test/domain/hire-again.test.ts (16 tests) 14849ms
+   ✓ Hire Again (6)
+     ✓ is offered only once the Engagement is Completed 776ms
+     ✓ is the Client's alone 868ms
+     ✓ makes a Draft with the category, title, description, site, and gas answer, Invite-only, without photos 761ms
+     ✓ opens the same Draft while it is one 846ms
+     ✓ lets the Client change everything copied, and add photos, but stays Invite-only 724ms
+     ✓ needs the Client's photos before it is posted 1250ms
+   ✓ a Job opened by Hire Again (6)
+     ✓ invites that Artisan when posted, with a Tell, and offers it to nobody else 1220ms
+     ✓ invites nobody else 978ms
+     ✓ Held at posting invites the Artisan once the Admin releases it 887ms
+     ✓ Held at posting invites nobody once released if the Artisan was Suspended meanwhile 700ms
+     ✓ lists its Artisan whatever Region is asked for 651ms
+     ✓ is refused at posting if the Artisan does not do its Service Category 861ms
+   ✓ the Protected Relationship Period (4)
+     ✓ runs 365 days from the Client Relationship's first Payment, as the Admin sees for each party 969ms
+     ✓ never renews with a later Payment, and ends after 365 days 1028ms
+     ✓ shows both parties when it ends, on each of their Engagements, from their first Payment 1288ms
+     ✓ is no one's before a Payment 1037ms
+stderr | test/domain/accounts.test.ts > signing up > an Email held by any Account is refused, whatever its case and kind
+2026-10-05T06:01:00.000Z WARN [Better Auth]: Invalid password
+
+stderr | test/domain/accounts.test.ts > signing up > answers alike when the Email is an Admin's, and tells that address
+2026-10-05T06:01:00.000Z WARN [Better Auth]: User not found
+
+ ✓ test/domain/chargebacks.test.ts (33 tests) 28358ms
+   ✓ a Chargeback opened (4)
+     ✓ freezes the Engagement, suspends the Client and tells them, tells the Artisan, and raises a Chargebacks item 1099ms
+     ✓ shows the Suspension on the People page as the system's 764ms
+     ✓ refuses every step of the work, and every Release and Refund, while frozen 1121ms
+     ✓ ends an Updated Quote waiting for the Client; its Payment arriving later is refunded whole 760ms
+   ✓ every clock on a frozen Engagement (3)
+     ✓ does nothing when the Artisan's claim's 24 hours end 679ms
+     ✓ does nothing when a Completion's seven days end, nor reminds the Client 661ms
+     ✓ does nothing when a Cancellation's 72 hours end, nor reminds the Artisan 860ms
+   ✓ the Admin's decision (12)
+     ✓ waits for the bank to close the Chargeback 594ms
+     ✓ once the bank closes it, splits each unreleased line, with what it sent back recorded 591ms
+     ✓ releases what the Admin gives the Artisan and leaves the rest with the Chargeback: the Engagement is Cancelled, and the platform's loss recorded 633ms
+     ✓ refunds what is left to the Client beyond what the bank sent back, as when the platform won 706ms
+     ✓ makes an Engagement awaiting approval Completed 846ms
+     ✓ a Completion it made does not lower the Artisan Fee on the Client Relationship's later work 885ms
+     ✓ a Completion it made offers no Hire Again (#139), which would be at the repeat Artisan Fee 955ms
+     ✓ decides what a Dispute holds too, closing it and its item 905ms
+     ✓ may release part of the Materials before Work started, leaving the rest with the Chargeback 1122ms
+     ✓ decides the Engagement's money once for every Chargeback on it, once the bank closed each 1083ms
+     ✓ lets the Admin read the Conversation on a logged click 767ms
+     ✓ is final 549ms
+   ✓ on a clock that ticks between reads, as a real one does (1)
+     ✓ a Chargeback opens, closes, and is decided, ending the Engagement 525ms
+   ✓ money already released (2)
+     ✓ stays the Artisan's: its Payout still goes in the daily run, and once sent is the platform's loss 681ms
+     ✓ waits while the Admin holds the Artisan's Payouts 582ms
+   ✓ repeated and out-of-order Chargeback events (3)
+     ✓ change nothing twice 818ms
+     ✓ a closing that arrives first opens it, closed, and its opening then changes nothing 1164ms
+     ✓ an opening before its Payment's own event is left for the provider to send again 896ms
+   ✓ a Refund waiting on a charged-back Payment (1)
+     ✓ is not sent while frozen, and the decision marks it sent back by the bank, lowering the loss 1164ms
+   ✓ a Refund the bank sent back only part of (1)
+     ✓ is charged back for that part, and the rest is sent as a Refund of its own 1335ms
+   ✓ a failed Refund on a charged-back Payment (1)
+     ✓ cannot be paid by hand while frozen, and the decision charges it back 721ms
+   ✓ a Chargeback on other Payments (5)
+     ✓ on an Updated Quote's Payment freezes its Engagement 801ms
+     ✓ on the Hire's Payment refunds what the bank did not send back from an Updated Quote's Payment 1288ms
+     ✓ on a Payment that Hired nobody suspends the Client, and the Admin records the loss 914ms
+     ✓ on a Payment that Hired nobody whose Refund was not sent yet never sends it, and tells the Client 733ms
+     ✓ on a Client already Suspended leaves that Suspension standing, and still tells them 1138ms
+stderr | test/domain/conversations.test.ts > the Engagement's Conversation > Holds a message when the content reader does not answer, saying so to the Admin
+The content reader did not run Error: The fake content reader is down.
+    at working (/Users/sfx/phase1-evidence/checkouts/artisanconnect/test/support/fakes/content-reader.ts:32:23)
+    at Object.read (/Users/sfx/phase1-evidence/checkouts/artisanconnect/test/support/fakes/content-reader.ts:66:7)
+    at checkContent (/Users/sfx/phase1-evidence/checkouts/artisanconnect/src/domain/content/check.ts:71:45)
+    at Object.send (/Users/sfx/phase1-evidence/checkouts/artisanconnect/src/domain/conversations/index.ts:179:25)
+    at /Users/sfx/phase1-evidence/checkouts/artisanconnect/test/domain/conversations.test.ts:829:20
+    at Users/sfx/Developer/artisanconnect/node_modules/.pnpm/vitest@5.0.4_@types+node@24.19.2_@vitest+browser-preview@5.0.4_@vitest+ui@5.0.4_@voidze_596eb94238162db054a1c3ddba1615b6/node_modules/vitest/dist/chunks/run.Cm2sd7-x.js:2794:20
+
+stderr | test/domain/accounts.test.ts > signing in > a wrong password and an unknown Email are refused alike
+2026-10-05T06:00:00.000Z WARN [Better Auth]: Invalid password
+
+stderr | test/domain/accounts.test.ts > signing in > a wrong password and an unknown Email are refused alike
+2026-10-05T06:00:00.000Z WARN [Better Auth]: User not found
+
+stderr | test/domain/conversations.test.ts > the Engagement's Conversation > Holds a message when a photo cannot be read, saying so to the Admin
+File photos/7d758fd0-9f5b-479f-941f-5e2ccc03ea9e.webp could not be read Error: The fake content reader is down.
+    at working (/Users/sfx/phase1-evidence/checkouts/artisanconnect/test/support/fakes/content-reader.ts:32:23)
+    at Object.readPhoto (/Users/sfx/phase1-evidence/checkouts/artisanconnect/test/support/fakes/content-reader.ts:52:7)
+    at readFiles (/Users/sfx/phase1-evidence/checkouts/artisanconnect/src/domain/content/check.ts:108:52)
+    at checkContent (/Users/sfx/phase1-evidence/checkouts/artisanconnect/src/domain/content/check.ts:55:16)
+    at Object.send (/Users/sfx/phase1-evidence/checkouts/artisanconnect/src/domain/conversations/index.ts:179:25)
+    at /Users/sfx/phase1-evidence/checkouts/artisanconnect/test/domain/conversations.test.ts:829:20
+    at Users/sfx/Developer/artisanconnect/node_modules/.pnpm/vitest@5.0.4_@types+node@24.19.2_@vitest+browser-preview@5.0.4_@vitest+ui@5.0.4_@voidze_596eb94238162db054a1c3ddba1615b6/node_modules/vitest/dist/chunks/run.Cm2sd7-x.js:2794:20
+
+stderr | test/domain/accounts.test.ts > recovery > sets a new password with the Email code, and the old one stops working
+2026-10-05T06:01:00.000Z WARN [Better Auth]: Invalid password
+
+ ✓ test/domain/hire.test.ts (34 tests) 28270ms
+   ✓ hiring a Sent Quote (8)
+     ✓ opens a checkout for the Quote plus the Protection Fee, by card or Instant EFT, and changes nothing yet 753ms
+     ✓ needs the Client to acknowledge that the Protection Fee is not refunded 577ms
+     ✓ is the Job's Client's only 674ms
+     ✓ only of a Sent Quote 474ms
+     ✓ not of an Artisan no longer verified for the Job's trade 578ms
+     ✓ not of a Quote whose start date has passed: the Artisan revises it first 548ms
+     ✓ a start date that passes while the Client pays does not stop the Hire 586ms
+     ✓ works on an Expired Job with a Quote still Sent, without a Renew 541ms
+   ✓ when the Payment arrives (12)
+     ✓ the Quote is Hired: the Engagement is Paid, the Job Hired, and the Artisan told 652ms
+     ✓ writes the Payment and the Protection Fee to the ledger, nothing released 706ms
+     ✓ the Client never sees the Artisan Fee, and the Artisan never sees the Protection Fee 651ms
+     ✓ the Artisan Fee is 10% in a Client Relationship with no Completed Engagement, fixed at Hire 748ms
+     ✓ the Artisan Fee is 5% once the Client Relationship has a Completed Engagement, and the first keeps 10% 785ms
+     ✓ the Artisan sees the suburb and street, which no Artisan saw before 1139ms
+     ✓ the other Sent Quotes are Declined and their Artisans told; Held ones are never Sent 1355ms
+     ✓ only the Hired Quote's Conversation takes messages 856ms
+     ✓ waits on the Artisan until the work is marked complete, and again at a Fix request 812ms
+     ✓ joins the Artisan's Active Jobs, without the address 496ms
+     ✓ the Client gets an email Receipt that is not a tax invoice 622ms
+     ✓ a VAT-registered Artisan's amounts are said to include VAT on the Receipt 683ms
+   ✓ a failed attempt (1)
+     ✓ changes nothing, and the Client may try again 793ms
+   ✓ payment events (4)
+     ✓ one with no signature is refused and changes nothing 922ms
+     ✓ one signed with any other secret is refused and changes nothing 1657ms
+     ✓ a repeated one changes nothing twice 1005ms
+     ✓ a failure arriving after a later attempt's success changes nothing 920ms
+   ✓ the Hire is asked again when the Payment arrives (7)
+     ✓ a Payment for a Quote Declined because another was Hired is refunded whole 1415ms
+     ✓ a second Payment, after the Quote was Hired by another, is refunded whole and Hires nothing 1110ms
+     ✓ a Quote Withdrawn by its Artisan while the checkout was open: the whole Payment, Protection Fee included, is refunded 741ms
+     ✓ a Quote revised by its Artisan while the checkout was open: the whole Payment, Protection Fee included, is refunded 754ms
+     ✓ a Quote of an Artisan no longer verified while the checkout was open: the whole Payment, Protection Fee included, is refunded 748ms
+     ✓ a repeated event of a Payment that Hired nobody refunds it once 1007ms
+     ✓ a Refund the adapter did not take is sent by the repeated event 677ms
+   ✓ Verification after Hire (1)
+     ✓ a check that lapses or is removed changes nothing on a Hired Engagement 972ms
+   ✓ an Engagement's every step (1)
+     ✓ is its own party's only: to anyone else the Engagement does not exist 1305ms
+stderr | test/domain/accounts.test.ts > rate limits > stop a run of sign-in tries at one Email, from any IP, for 15 minutes
+2026-10-05T06:00:00.000Z WARN [Better Auth]: Invalid password
+
+stderr | test/domain/accounts.test.ts > rate limits > stop a run of sign-in tries at one Email, from any IP, for 15 minutes
+2026-10-05T06:00:00.000Z WARN [Better Auth]: Invalid password
+
+stderr | test/domain/conversations.test.ts > the Engagement's Conversation > Holds a message when a PDF cannot be read, saying so to the Admin
+File pdfs/11ff745d-408c-4dd5-a08f-3f4fbb6f03ca.pdf could not be read Error: The fake content reader reads only the PDFs the tests wrote.
+    at Object.readPdf (/Users/sfx/phase1-evidence/checkouts/artisanconnect/test/support/fakes/content-reader.ts:62:25)
+    at readFiles (/Users/sfx/phase1-evidence/checkouts/artisanconnect/src/domain/content/check.ts:119:55)
+    at checkContent (/Users/sfx/phase1-evidence/checkouts/artisanconnect/src/domain/content/check.ts:55:16)
+    at Object.send (/Users/sfx/phase1-evidence/checkouts/artisanconnect/src/domain/conversations/index.ts:179:25)
+    at /Users/sfx/phase1-evidence/checkouts/artisanconnect/test/domain/conversations.test.ts:829:20
+    at Users/sfx/Developer/artisanconnect/node_modules/.pnpm/vitest@5.0.4_@types+node@24.19.2_@vitest+browser-preview@5.0.4_@vitest+ui@5.0.4_@voidze_596eb94238162db054a1c3ddba1615b6/node_modules/vitest/dist/chunks/run.Cm2sd7-x.js:2794:20
+
+stderr | test/domain/accounts.test.ts > rate limits > stop a run of sign-in tries at one Email, from any IP, for 15 minutes
+2026-10-05T06:00:00.000Z WARN [Better Auth]: Invalid password
+
+stderr | test/domain/accounts.test.ts > rate limits > stop a run of sign-in tries at one Email, from any IP, for 15 minutes
+2026-10-05T06:00:00.000Z WARN [Better Auth]: Invalid password
+
+stderr | test/domain/accounts.test.ts > rate limits > stop a run of sign-in tries at one Email, from any IP, for 15 minutes
+2026-10-05T06:00:00.000Z WARN [Better Auth]: Invalid password
+
+stderr | test/domain/accounts.test.ts > rate limits > stop a run of sign-in tries at one Email, from any IP, for 15 minutes
+2026-10-05T06:00:00.000Z WARN [Better Auth]: Invalid password
+
+stderr | test/domain/accounts.test.ts > rate limits > stop a run of sign-in tries at one Email, from any IP, for 15 minutes
+2026-10-05T06:00:00.000Z WARN [Better Auth]: Invalid password
+
+stderr | test/domain/accounts.test.ts > rate limits > stop a run of sign-in tries at one Email, from any IP, for 15 minutes
+2026-10-05T06:00:00.000Z WARN [Better Auth]: Invalid password
+
+stderr | test/domain/accounts.test.ts > rate limits > stop a run of sign-in tries at one Email, from any IP, for 15 minutes
+2026-10-05T06:00:00.000Z WARN [Better Auth]: Invalid password
+
+stderr | test/domain/accounts.test.ts > rate limits > stop a run of sign-in tries at one Email, from any IP, for 15 minutes
+2026-10-05T06:00:00.000Z WARN [Better Auth]: Invalid password
+
+ ✓ test/domain/conversations.test.ts (69 tests) 52965ms
+   ✓ a Conversation (4)
+     ✓ opens when the first Quote is Sent, with a row for it that is not speech 763ms
+     ✓ opens with the Invitation, and the Quote Sent after it shows in the same one 565ms
+     ✓ is one per Job and Artisan, and only theirs 1111ms
+     ✓ does not open for a Job Match alone, nor for a Held Quote until it is Sent 526ms
+   ✓ a message (3)
+     ✓ is delivered to the other party, and is the sender's first no longer 750ms
+     ✓ takes up to five photos, which only the parties see 700ms
+     ✓ is refused with six photos, a voice note or a PDF, or nothing in it 661ms
+   ✓ the Content check of a message (28)
+     ✓ refuses a phone number, says why without the content reader, and delivers nothing 528ms
+     ✓ refuses a phone number with the country code, says why without the content reader, and delivers nothing 671ms
+     ✓ refuses a phone number broken up, says why without the content reader, and delivers nothing 801ms
+     ✓ refuses a phone number after a word in capitals, says why without the content reader, and delivers nothing 604ms
+     ✓ refuses a phone number after an abbreviation, says why without the content reader, and delivers nothing 528ms
+     ✓ refuses an email address, says why without the content reader, and delivers nothing 731ms
+     ✓ refuses a link, says why without the content reader, and delivers nothing 912ms
+     ✓ refuses a bare web address, says why without the content reader, and delivers nothing 647ms
+     ✓ refuses a bank account number, says why without the content reader, and delivers nothing 731ms
+     ✓ refuses an account number said to be one, says why without the content reader, and delivers nothing 695ms
+     ✓ refuses a card number, says why without the content reader, and delivers nothing 717ms
+     ✓ refuses the Job's street, says why without the content reader, and delivers nothing 525ms
+     ✓ refuses the Job's street, shortened, says why without the content reader, and delivers nothing 778ms
+     ✓ refuses the Job's suburb, says why without the content reader, and delivers nothing 666ms
+     ✓ refuses the Client's surname, says why without the content reader, and delivers nothing 515ms
+     ✓ lets amounts, dates, and sizes through the patterns: Labour R4 500, Materials R1 250 000.50 800ms
+     ✓ lets amounts, dates, and sizes through the patterns: Start 2026-10-05 at 08:00, done in 3 days 534ms
+     ✓ lets amounts, dates, and sizes through the patterns: Tiles 600 x 600, 12 boxes, registration 12345 839ms
+     ✓ lets amounts, dates, and sizes through the patterns: Email me here on ArtisanConnect. 1027ms
+     ✓ reads a photo's text, and refuses what it finds 827ms
+     ✓ lets a surname shown, or a trading name, through 531ms
+     ✓ refuses the surname of an Artisan known by a trading name 564ms
+     ✓ refuses a sure hit of the content reader with its reason 647ms
+     ✓ Holds an unsure message: being checked to its sender, nothing to the other party 652ms
+     ✓ a Held message the Admin releases is delivered then, and the other party told 661ms
+     ✓ a Held message the Admin refuses shows its sender why, and nobody else 619ms
+     ✓ a Held message its sender withdraws is gone, and leaves the Admin's queue 629ms
+     ✓ a Held message released once the Conversation is read-only is not delivered 625ms
+   ✓ being told of new messages (3)
+     ✓ is one Tell, with an email naming no message text, until the Conversation is opened 541ms
+     ✓ starts again once the Conversation is opened 503ms
+     ✓ is not for a refused send 594ms
+   ✓ a read-only Conversation (5)
+     ✓ is one whose Quote was Declined, and its messages stay 785ms
+     ✓ is one whose Quote was Withdrawn, and its messages stay 672ms
+     ✓ is one whose Quote was Expired, and its messages stay 812ms
+     ✓ is one on a Job the Client closed 793ms
+     ✓ is not one whose Quote is still Sent on an Expired Job, which may still be Hired 1115ms
+   ✓ an Invitation passed (1)
+     ✓ tells nobody: the Client may still write, and the Artisan no longer sees it 842ms
+   ✓ the Engagement's Conversation (25)
+     ✓ shows the Hire as a row that is not speech 889ms
+     ✓ takes a phone number, read as after Payment 582ms
+     ✓ takes an email address, read as after Payment 735ms
+     ✓ takes the Job's street, read as after Payment 656ms
+     ✓ takes the Job's suburb, read as after Payment 585ms
+     ✓ takes the Client's surname, read as after Payment 614ms
+     ✓ takes a link that is not a payment's, read as after Payment 777ms
+     ✓ still refuses a bank account number 824ms
+     ✓ still refuses a card number 1258ms
+     ✓ still refuses a payment link 1130ms
+     ✓ still refuses a payment service's link 1061ms
+     ✓ still refuses what the content reader is sure of: a payment QR code, an ask to pay off the platform 874ms
+     ✓ takes a voice note of up to five minutes, turned into text and checked 1356ms
+     ✓ refuses a voice note over five minutes, and a voice note asking for payment off the platform 1109ms
+     ✓ takes a PDF of up to 10 MB, its text extracted and checked 962ms
+     ✓ takes no video 645ms
+     ✓ Holds a message when the content reader cannot run, saying so to the Admin 900ms
+     ✓ Holds a message when the content reader does not answer, saying so to the Admin 699ms
+     ✓ Holds a message when a photo cannot be read, saying so to the Admin 1211ms
+     ✓ Holds a message when a PDF has scanned pages, saying so to the Admin 714ms
+     ✓ Holds a message when a PDF has a scanned page, saying so to the Admin 780ms
+     ✓ Holds a message when a PDF cannot be read, saying so to the Admin 987ms
+     ✓ shows the Admin a Held voice note or PDF to decide it, with what was read from them 997ms
+     ✓ goes read-only once the Engagement is Completed, and its messages stay 848ms
+     ✓ goes read-only once the Engagement is Cancelled; a message Held before is then unsent 1018ms
+ ✓ test/domain/accounts.test.ts (39 tests) 15597ms
+   ✓ signing up (8)
+     ✓ an Email held by any Account is refused, whatever its case and kind 851ms
+     ✓ answers alike whether or not the Email is held, and tells a held one by email 747ms
+     ✓ answers alike when the Email is an Admin's, and tells that address 458ms
+     ✓ a sign-up whose Email is not yet proven holds nothing, and once its code has stopped working a new sign-up replaces it 464ms
+     ✓ a sign-up whose code still works is not replaced 306ms
+   ✓ an Email code (8)
+     ✓ works for ten minutes: after 11, it is { ok: false, refusal: [Object] } 304ms
+     ✓ dies after five wrong tries: after 4, it is { ok: true } 408ms
+     ✓ dies after five wrong tries: after 5, it is { ok: false, refusal: [Object] } 517ms
+   ✓ signing in (5)
+     ✓ an Account signs in with its Email and password, and its session acts as it 308ms
+   ✓ recovery (3)
+     ✓ sets a new password with the Email code, and the old one stops working 610ms
+     ✓ refuses a wrong code alike for a held and an unheld Email 376ms
+   ✓ rate limits (1)
+     ✓ stop a run of sign-in tries at one Email, from any IP, for 15 minutes 1338ms
+   ✓ the Marketplace rules (8)
+     ✓ are published only by the Admin 308ms
+     ✓ once changed, must be accepted before signing in 431ms
+     ✓ changed while a sign-up proves its Email, must be accepted before signing in 554ms
+     ✓ once changed, are accepted at sign-in, with the version and time recorded 571ms
+     ✓ are listed for the Admin newest first, with the Accounts that accepted each last 508ms
+   ✓ one person's Client and Artisan Accounts (1)
+     ✓ hold different Emails and share nothing: kind, sign-in, Jobs, or Notices 508ms
+   ✓ a shown name (5)
+     ✓ shows a Client to Artisans by the first word and last initial 394ms
+     ✓ shows a Client to Artisans by its trading name, when it has one 339ms
+     ✓ shows a Client to Artisans by a one-word name whole 390ms
+     ✓ shows an Artisan to anyone by its public name 501ms
+     ✓ shows a Client to no Visitor and no other Client 577ms
+ ✓ test/domain/regions.test.ts (51 tests) 13153ms
+   ✓ searching suburbs (14)
+     ✓ finds every seeded suburb by its published name 617ms
+   ✓ adding a suburb (10)
+     ✓ puts the City's new suburb in a Region, found and posted in like any other 474ms
+     ✓ is the Admin's only 315ms
+     ✓ refuses a name too long 383ms
+   ✓ an Artisan's Regions (13)
+     ✓ are the one to three chosen: ["southern"] 303ms
+     ✓ are replaced by a new choice 316ms
+     ✓ are each Artisan's own 561ms
+     ✓ refuse none, and keep the last choice 414ms
+     ✓ refuse nothing at all, and keep the last choice 375ms
+   ✓ Available for Jobs (6)
+     ✓ is on for a new Artisan 314ms
+     ✓ keeps the Artisan's Regions 391ms
+     ✓ is each Artisan's own 642ms
+     ✓ refuses anything but on or off, and stays as it was 369ms
+stderr | test/domain/refunds.test.ts > a Refund by the Artisan > the adapter does not take at once is sent by the every-minute run
+Refunds of Payment ef2a9d70-c3ab-4f4a-a031-e71d4b3da2e0 were not sent; the every-minute run sends them Error: The provider is down
+    at Object.payments.refund (/Users/sfx/phase1-evidence/checkouts/artisanconnect/test/domain/refunds.test.ts:197:44)
+    at sendRefunds (/Users/sfx/phase1-evidence/checkouts/artisanconnect/src/domain/refunds/index.ts:381:28)
+    at sendEngagementRefunds (/Users/sfx/phase1-evidence/checkouts/artisanconnect/src/domain/refunds/index.ts:284:5)
+    at refundByArtisan (/Users/sfx/phase1-evidence/checkouts/artisanconnect/src/domain/refunds/index.ts:118:5)
+    at /Users/sfx/phase1-evidence/checkouts/artisanconnect/test/domain/refunds.test.ts:199:7
+    at Users/sfx/Developer/artisanconnect/node_modules/.pnpm/vitest@5.0.4_@types+node@24.19.2_@vitest+browser-preview@5.0.4_@vitest+ui@5.0.4_@voidze_596eb94238162db054a1c3ddba1615b6/node_modules/vitest/dist/chunks/run.Cm2sd7-x.js:2794:20
+
+ ✓ test/domain/updated-quote.test.ts (28 tests) 25446ms
+   ✓ proposing an Updated Quote (11)
+     ✓ tells the Client, who sees the difference to pay with its Protection Fee 711ms
+     ✓ may raise one line and keep the other 599ms
+     ✓ is refused when a line goes down, or nothing goes up 679ms
+     ✓ starts from the price now, lowered by a Refund made while it waits 918ms
+     ✓ starts from the price less what the Artisan refunded 889ms
+     ✓ keeps the Materials at zero when the Client supplies them 1489ms
+     ✓ is one at a time, by the Hired Artisan only 1297ms
+     ✓ is only before Completion 771ms
+     ✓ is not while the Artisan's Completion is being checked 902ms
+     ✓ may come after Work started, and after a Fix request 1341ms
+     ✓ stops the Artisan marking the work complete until it is answered or withdrawn 740ms
+   ✓ withdrawing or rejecting an Updated Quote (3)
+     ✓ the Artisan withdraws it, and the Client is told; the price stands 752ms
+     ✓ the Client rejects it, and the Artisan is told; the price stands 787ms
+     ✓ only the parties may answer it, each their own way 902ms
+   ✓ accepting an Updated Quote by paying (8)
+     ✓ asks for the difference plus 5% through checkout, once the fee is acknowledged 703ms
+     ✓ before Work started: the difference is paid in, the Artisan is told, and the Client gets a Receipt 968ms
+     ✓ before Work started: the extra Materials are released at Work started with the rest 852ms
+     ✓ after Work started: the extra Materials are released at once, at the Artisan Fee fixed at Hire 842ms
+     ✓ the extra Labour is released with the Labour at Approval 1540ms
+     ✓ a second Updated Quote starts from the first one's price 810ms
+     ✓ a repeated payment event changes nothing twice 1025ms
+     ✓ is refused once it is no longer proposed 764ms
+   ✓ a Payment that arrives once the Updated Quote is no longer proposed (3)
+     ✓ withdrawn while checkout was open is refunded whole, Protection Fee included 812ms
+     ✓ after a Cancellation is refunded whole, and the Cancellation ended the Updated Quote 772ms
+     ✓ after another Payment accepted it is refunded whole 886ms
+   ✓ the money an Updated Quote paid in (3)
+     ✓ is refunded from each Payment's collection, the Hire's first 789ms
+     ✓ is refunded with the rest at a Cancellation before Work started 952ms
+     ✓ its Labour is refunded 72 hours after a Cancellation after Work started; its Materials stay 943ms
+ ✓ test/domain/cancellation.test.ts (23 tests) 23782ms
+   ✓ a Cancellation before Work started (6)
+     ✓ by the Client refunds the Hired Quote at once, without the Protection Fee, and tells the Artisan 1001ms
+     ✓ by the Artisan tells the Client what is refunded to them 898ms
+     ✓ refunds only what the Artisan has not refunded already 1596ms
+     ✓ after the Artisan refunded everything makes no Refund 1244ms
+     ✓ ends the Artisan's claim to have started: no Work started 24 hours later 819ms
+     ✓ shows in the Conversation as a row that is not speech, then the Refund's 979ms
+   ✓ a Cancellation after Work started (9)
+     ✓ leaves the Materials with the Artisan and refunds the Labour 72 hours later 1431ms
+     ✓ by the Artisan tells the Client when the Labour is refunded to them 875ms
+     ✓ reminds the Artisan 24 hours before the Labour is refunded 723ms
+     ✓ refunds at 72 hours only what the Artisan has not refunded sooner 1052ms
+     ✓ whose Labour the Artisan refunded in full sooner makes no Refund and no reminder 735ms
+     ✓ refunds the Labour once, however late or often the clock runs 1326ms
+     ✓ at Awaiting approval stops the seven days: the Labour is refunded, never released 859ms
+     ✓ at Fix requested is allowed, as at Work started 844ms
+     ✓ leaves a Held Completion unsent once the Admin releases it 1523ms
+   ✓ a Cancellation (6)
+     ✓ is only before Approval 853ms
+     ✓ is once 801ms
+     ✓ finishes the Job in the Client's Jobs, and both lists show the Engagement's state 1009ms
+     ✓ takes a reason of at most 500 characters 755ms
+     ✓ ends the Conversation: it goes read-only, and its messages stay 766ms
+     ✓ on a clock that ticks between reads, as a real one does, still refunds and tells 1613ms
+   ✓ the Artisan record (2)
+     ✓ holds who cancelled, when, and the reason, for the Admin only 1146ms
+     ✓ shows beside the Artisan's items in the Admin's queues 927ms
+ ✓ test/domain/figures.test.ts (11 tests) 6399ms
+   ✓ the figures (11)
+     ✓ are only the Admin's 352ms
+     ✓ count Jobs posted, and of them those a Quote was Sent on 876ms
+     ✓ count a Held Job as posted when the Admin releases it 383ms
+     ✓ count a Renewed Job by when it was first posted 379ms
+     ✓ count Hires, what became of them, and the money 1403ms
+     ✓ count what the bank sent back by a Chargeback, and not as a party's Cancellation 720ms
+     ✓ count a Hire as repeat once its Client Relationship has a Completed Engagement 643ms
+     ✓ leave out what happened before the period 596ms
+     ✓ count Leaving warnings and Suspensions for Leaving 606ms
+stderr | test/domain/data-requests.test.ts > erasing an Account > frees its Email, ends its password, and it never reopens
+2026-10-05T06:00:00.000Z WARN [Better Auth]: User not found
+
+stderr | test/domain/refunds.test.ts > a Refund paid by the bank > whose sending the adapter took though its answer was lost is recorded sent and paid
+Refunds of Payment d7998735-3085-401a-968a-bd5e12d3123a were not sent; the every-minute run sends them Error: The answer was lost
+    at Object.payments.refund (/Users/sfx/phase1-evidence/checkouts/artisanconnect/test/domain/refunds.test.ts:287:13)
+    at sendRefunds (/Users/sfx/phase1-evidence/checkouts/artisanconnect/src/domain/refunds/index.ts:381:3)
+    at sendEngagementRefunds (/Users/sfx/phase1-evidence/checkouts/artisanconnect/src/domain/refunds/index.ts:284:5)
+    at refundByArtisan (/Users/sfx/phase1-evidence/checkouts/artisanconnect/src/domain/refunds/index.ts:118:5)
+    at refunded (/Users/sfx/phase1-evidence/checkouts/artisanconnect/test/domain/refunds.test.ts:548:16)
+    at /Users/sfx/phase1-evidence/checkouts/artisanconnect/test/domain/refunds.test.ts:289:5
+    at Users/sfx/Developer/artisanconnect/node_modules/.pnpm/vitest@5.0.4_@types+node@24.19.2_@vitest+browser-preview@5.0.4_@vitest+ui@5.0.4_@voidze_596eb94238162db054a1c3ddba1615b6/node_modules/vitest/dist/chunks/run.Cm2sd7-x.js:2794:20
+
+stderr | test/domain/email-change.test.ts > changing the Email > sends an Email code to the new address; the old one signs in until it is proven
+2026-10-05T06:00:00.000Z WARN [Better Auth]: User not found
+
+stderr | test/domain/email-change.test.ts > changing the Email > is done by the code: the new address signs in, the old one does not and is told
+2026-10-05T06:00:00.000Z WARN [Better Auth]: User not found
+
+ ✓ test/domain/data-requests.test.ts (16 tests) 7470ms
+   ✓ asking for a copy of the data (7)
+     ✓ puts it in the Data requests queue 451ms
+     ✓ is answered with an export the Account downloads, and it is told 412ms
+     ✓ exports the warnings and Suspensions with reasons and the Reports it made, never Reports of it 884ms
+     ✓ downloads for nobody but the Account, and only once sent 323ms
+     ✓ is refused, with the reason, by email 301ms
+   ✓ asking for erasure (2)
+     ✓ closes the Account and puts it in the Data requests queue 332ms
+     ✓ is refused while an Engagement is in progress, and nothing is asked 867ms
+   ✓ erasing an Account (7)
+     ✓ frees its Email, ends its password, and it never reopens 361ms
+     ✓ keeps its Reviews, shown without the name 625ms
+     ✓ keeps it without a name though names it gave are released afterwards 415ms
+     ✓ leaves the People page without its names or Email 385ms
+     ✓ waits until money still owed to it is paid 721ms
+     ✓ is withdrawn when the Account reopens, and it may ask again 618ms
+stderr | test/domain/admins.test.ts > an Admin > signs in with an Email code only, never a password
+2026-10-05T06:01:00.000Z WARN [Better Auth]: User not found
+
+stderr | test/domain/admins.test.ts > inviting an Admin > whose email fails is still told, and the every-minute run sends it
+The email of notice fc393e4a-eafa-4a2d-835f-cb0927be033a did not go Error: The fake mailer was told to fail
+    at Object.send (/Users/sfx/phase1-evidence/checkouts/artisanconnect/test/support/fakes/mailer.ts:23:15)
+    at emailTells (/Users/sfx/phase1-evidence/checkouts/artisanconnect/src/domain/tells.ts:148:30)
+    at Object.invite (/Users/sfx/phase1-evidence/checkouts/artisanconnect/src/domain/admins/index.ts:166:9)
+    at /Users/sfx/phase1-evidence/checkouts/artisanconnect/test/domain/admins.test.ts:161:5
+    at Users/sfx/Developer/artisanconnect/node_modules/.pnpm/vitest@5.0.4_@types+node@24.19.2_@vitest+browser-preview@5.0.4_@vitest+ui@5.0.4_@voidze_596eb94238162db054a1c3ddba1615b6/node_modules/vitest/dist/chunks/run.Cm2sd7-x.js:2794:20
+
+ ✓ test/domain/names.test.ts (18 tests) 5984ms
+   ✓ names at sign-up (7)
+     ✓ the check is unsure about are Held: the Account is made, and only it and the Admin see them 305ms
+     ✓ the check is cannot run about are Held: the Account is made, and only it and the Admin see them 408ms
+     ✓ that are Held reach the Admin's Pre-checks only once the Email is proven 323ms
+   ✓ the Pre-check of Held names (4)
+     ✓ released, shows the names to others, and tells the Account 452ms
+     ✓ refused, needs a reason, and tells the Account, which sees why 414ms
+     ✓ waits with no time limit 555ms
+   ✓ withdrawing names being checked (2)
+     ✓ takes them out of the Pre-checks queue, and the Admin can no longer decide them 369ms
+   ✓ changing names (5)
+     ✓ to clear ones shows them at once 344ms
+     ✓ to ones the check is unsure about Holds them, and the names shown stay shown meanwhile 304ms
+     ✓ of an Artisan waits for the Admin even when clear, as the names head the Profile 662ms
+     ✓ after a refusal gives the Account names that are shown 428ms
+ ✓ test/domain/refunds.test.ts (21 tests) 18100ms
+   ✓ the Artisan refunds (1)
+     ✓ part of the Labour: the money shows it refunded, and the adapter is asked by our id 1469ms
+   ✓ a Refund by the Artisan (9)
+     ✓ shows in the Conversation as a row that is not speech, with its amount 760ms
+     ✓ names an amount per unreleased line, up to what is unreleased 856ms
+     ✓ of the Materials is only before Work started, when they are released 778ms
+     ✓ of all the Materials leaves nothing to release at Work started 955ms
+     ✓ never has an Artisan Fee taken: only what is released does 787ms
+     ✓ and the Labour's Release at once never take the same money 1046ms
+     ✓ on a Completed Engagement is refused: nothing is unreleased 897ms
+     ✓ the adapter does not take at once is sent by the every-minute run 767ms
+     ✓ goes to the adapter one at a time per Payment: the next once the last is answered 728ms
+   ✓ a Refund paid by the bank (4)
+     ✓ tells the Client, with a Receipt that does not refund the Protection Fee 584ms
+     ✓ is paid once, however often its event comes 1021ms
+     ✓ whose sending the adapter took though its answer was lost is recorded sent and paid 859ms
+     ✓ of a Payment that Hired nobody sends a Receipt for the whole of it 644ms
+   ✓ a Refund the bank cannot take (3)
+     ✓ stays owed to the Client, tells them, and raises a Support request; nothing is retried 749ms
+     ✓ is paid by the Admin's bank transfer, recorded in the ledger, with a Receipt 900ms
+     ✓ needs the transfer's reference to be recorded 829ms
+   ✓ a paused Refund (4)
+     ✓ stays unpaid with no Tell; after 3 days the Client is told it is delayed, not lost, and a Support request is raised 858ms
+     ✓ raises a Support request that waits beside the Accounts' own, oldest first, and is resolved with a note, telling nobody 724ms
+     ✓ paid within 3 days raises nothing 682ms
+     ✓ holds back the Payment's next Refund until it is answered 1199ms
+ ✓ test/domain/email-change.test.ts (11 tests) 5789ms
+   ✓ changing the Email (4)
+     ✓ sends an Email code to the new address; the old one signs in until it is proven 708ms
+     ✓ is done by the code: the new address signs in, the old one does not and is told 805ms
+     ✓ tells the old address by email, naming no new address 429ms
+     ✓ takes an address an unproven sign-up waited on once its code stopped working 472ms
+   ✓ changing the Email, refused (7)
+     ✓ for an address another Account holds, whatever its case, sending nothing 353ms
+     ✓ for an Admin's address, sending nothing 466ms
+     ✓ for the address it has already, sending nothing 546ms
+     ✓ without the Account's password, so a session taken from it cannot change it, sending nothing 454ms
+     ✓ once another Account took the address while the code waited 536ms
+     ✓ with a wrong code, leaving the Email as it was 358ms
+     ✓ for anyone but the signed-in Account the session is 655ms
+ ✓ test/domain/closing.test.ts (12 tests) 6496ms
+   ✓ closing an Account (7)
+     ✓ ends its sessions, and it no longer signs in with its password 461ms
+     ✓ closes a Client's Open Jobs, their Sent Quotes Declined and their Artisans told 944ms
+     ✓ withdraws an Artisan's Sent Quotes, each Client told, and takes it out of Browse and offers 749ms
+     ✓ is refused while an Engagement is in progress, and allowed once it is Completed 1004ms
+     ✓ shows the Admin it is Closed on the People page 305ms
+     ✓ is allowed while Suspended, and the Suspension stands when it reopens 374ms
+   ✓ reopening a Closed Account (5)
+     ✓ with its Email and an Email code signs it in 360ms
+     ✓ keeps a Closed Artisan's Identity Number and Verification: its Profile is back in Browse 1070ms
+     ✓ sends a code only to a Closed Account's Email, with the same answer for any Email 316ms
+     ✓ accepts Marketplace rules changed while it was Closed, or is refused 311ms
+ ✓ test/domain/admins.test.ts (29 tests) 6800ms
+   ✓ setting up the first Admin (3)
+     ✓ is refused once there is an Admin 419ms
+     ✓ refuses an Email an Account holds 329ms
+   ✓ inviting an Admin (5)
+     ✓ refuses an Email an Account or an Admin holds 322ms
+   ✓ removing an Admin (6)
+     ✓ leaves one Admin when the last two remove each other at once 323ms
+     ✓ frees its Email to be invited again 354ms
+     ✓ is done only by an Admin 414ms
+   ✓ the audit log (6)
+     ✓ is read a page at a time, newest first 304ms
+stderr | test/domain/tells.test.ts > a Tell > whose email fails is still told, and the every-minute run sends the email
+The email of notice fd1e32f6a81c8b0540ac877e4e047731 did not go Error: The fake mailer was told to fail
+    at Object.send (/Users/sfx/phase1-evidence/checkouts/artisanconnect/test/support/fakes/mailer.ts:23:15)
+    at emailTells (/Users/sfx/phase1-evidence/checkouts/artisanconnect/src/domain/tells.ts:148:30)
+    at Object.send (/Users/sfx/phase1-evidence/checkouts/artisanconnect/src/domain/conversations/index.ts:222:7)
+    at /Users/sfx/phase1-evidence/checkouts/artisanconnect/test/domain/tells.test.ts:82:5
+    at Users/sfx/Developer/artisanconnect/node_modules/.pnpm/vitest@5.0.4_@types+node@24.19.2_@vitest+browser-preview@5.0.4_@vitest+ui@5.0.4_@voidze_596eb94238162db054a1c3ddba1615b6/node_modules/vitest/dist/chunks/run.Cm2sd7-x.js:2794:20
+
+ ✓ test/domain/tells.test.ts (8 tests) 4519ms
+   ✓ a Tell (5)
+     ✓ puts a notice in the Account's Notices stream 458ms
+     ✓ sends one email naming the event and linking back, with no message text 320ms
+     ✓ goes to every Account, and not to a sign-up whose Email is not proven 657ms
+     ✓ is never sent to the actor 1255ms
+     ✓ whose email fails is still told, and the every-minute run sends the email 736ms
+   ✓ the Notices stream (3)
+     ✓ shows an Account its own notices, newest first 702ms
+ ✓ test/domain/work-started.test.ts (16 tests) 12031ms
+   ✓ the Client marks Work started (6)
+     ✓ the Engagement is Work started and the Artisan told 522ms
+     ✓ releases the Materials, less the Artisan Fee, in one batch 867ms
+     ✓ rounds the Artisan Fee half up to the cent 655ms
+     ✓ with no Materials releases nothing, but still happens 797ms
+     ✓ shows in the Conversation as a row that is not speech 912ms
+     ✓ happens once: again changes and releases nothing 747ms
+   ✓ the Artisan says they've started (7)
+     ✓ the Client is told, with the 24-hour deadline to answer 803ms
+     ✓ with no answer in 24 hours it is Work started, the Materials released, and the Client told 747ms
+     ✓ the Client may mark Work started before the 24 hours, and the clock then does nothing 673ms
+     ✓ not before the Hired Quote's start date 1201ms
+     ✓ the Client may mark Work started before the start date 744ms
+     ✓ not twice while the Client has not answered 900ms
+     ✓ not once Work started 656ms
+   ✓ the Client answers Not started (3)
+     ✓ leaves the Engagement Paid, tells the Artisan, and the clock then does nothing 643ms
+     ✓ lets the Artisan say they've started again later, with a new 24 hours 640ms
+     ✓ only while the Artisan's claim waits for an answer 521ms
+ ✓ test/domain/queues.test.ts (9 tests) 3215ms
+   ✓ the Admin home (4)
+     ✓ is one stream of every queue's open items, oldest first, with counts 757ms
+     ✓ narrows to one queue, keeping every queue's count 536ms
+     ✓ and an item page are shown to no one but an Admin 559ms
+ ✓ test/domain/people.test.ts (4 tests) 950ms
+   ✓ finding people (2)
+     ✓ by name or Email, Clients and Artisans alike, with where each stands 363ms
+stderr | test/domain/uploads.test.ts > a PDF > is taken only after Payment, up to 10 MB, and as sent
+File pdfs/4630e0e5-21e9-48d5-93f9-9d2ccc8e04cd.pdf could not be read Error: The fake content reader reads only the PDFs the tests wrote.
+    at Object.readPdf (/Users/sfx/phase1-evidence/checkouts/artisanconnect/test/support/fakes/content-reader.ts:62:25)
+    at readFiles (/Users/sfx/phase1-evidence/checkouts/artisanconnect/src/domain/content/check.ts:119:55)
+    at checkContent (/Users/sfx/phase1-evidence/checkouts/artisanconnect/src/domain/content/check.ts:55:16)
+    at Object.send (/Users/sfx/phase1-evidence/checkouts/artisanconnect/src/domain/conversations/index.ts:179:25)
+    at /Users/sfx/phase1-evidence/checkouts/artisanconnect/test/domain/uploads.test.ts:140:12
+    at Users/sfx/Developer/artisanconnect/node_modules/.pnpm/vitest@5.0.4_@types+node@24.19.2_@vitest+browser-preview@5.0.4_@vitest+ui@5.0.4_@voidze_596eb94238162db054a1c3ddba1615b6/node_modules/vitest/dist/chunks/run.Cm2sd7-x.js:2794:20
+
+ ✓ test/domain/support.test.ts (10 tests) 2180ms
+   ✓ sending a Support request (1)
+     ✓ puts it in the Support queue under its topic 309ms
+ ✓ test/separation.test.ts (10 tests) 92ms
+stderr | test/domain/uploads.test.ts > a PDF > is taken only after Payment, up to 10 MB, and as sent
+File pdfs/1c903788-5d2d-4ff1-8d54-b08202fdaf50.pdf could not be read Error: The fake content reader reads only the PDFs the tests wrote.
+    at Object.readPdf (/Users/sfx/phase1-evidence/checkouts/artisanconnect/test/support/fakes/content-reader.ts:62:25)
+    at readFiles (/Users/sfx/phase1-evidence/checkouts/artisanconnect/src/domain/content/check.ts:119:55)
+    at checkContent (/Users/sfx/phase1-evidence/checkouts/artisanconnect/src/domain/content/check.ts:55:16)
+    at Object.send (/Users/sfx/phase1-evidence/checkouts/artisanconnect/src/domain/conversations/index.ts:179:25)
+    at /Users/sfx/phase1-evidence/checkouts/artisanconnect/test/domain/uploads.test.ts:149:13
+    at Users/sfx/Developer/artisanconnect/node_modules/.pnpm/vitest@5.0.4_@types+node@24.19.2_@vitest+browser-preview@5.0.4_@vitest+ui@5.0.4_@voidze_596eb94238162db054a1c3ddba1615b6/node_modules/vitest/dist/chunks/run.Cm2sd7-x.js:2794:20
+
+stderr | test/domain/uploads.test.ts > a PDF > is taken encrypted if it opens without a password, and refused if it carries a script or cannot be read
+File pdfs/4545e483-3c00-4f9c-abb2-58f6431789cb.pdf could not be read Error: The fake content reader reads only the PDFs the tests wrote.
+    at Object.readPdf (/Users/sfx/phase1-evidence/checkouts/artisanconnect/test/support/fakes/content-reader.ts:62:25)
+    at readFiles (/Users/sfx/phase1-evidence/checkouts/artisanconnect/src/domain/content/check.ts:119:55)
+    at checkContent (/Users/sfx/phase1-evidence/checkouts/artisanconnect/src/domain/content/check.ts:55:16)
+    at Object.send (/Users/sfx/phase1-evidence/checkouts/artisanconnect/src/domain/conversations/index.ts:179:25)
+    at outcomes (/Users/sfx/phase1-evidence/checkouts/artisanconnect/test/domain/uploads.test.ts:70:18)
+    at /Users/sfx/phase1-evidence/checkouts/artisanconnect/test/domain/uploads.test.ts:158:7
+    at Users/sfx/Developer/artisanconnect/node_modules/.pnpm/vitest@5.0.4_@types+node@24.19.2_@vitest+browser-preview@5.0.4_@vitest+ui@5.0.4_@voidze_596eb94238162db054a1c3ddba1615b6/node_modules/vitest/dist/chunks/run.Cm2sd7-x.js:2794:20
+
+stderr | test/domain/uploads.test.ts > a PDF > is taken encrypted if it opens without a password, and refused if it carries a script or cannot be read
+File pdfs/587f20ef-d814-4ce8-ae43-3c8289a837fe.pdf could not be read Error: The fake content reader reads only the PDFs the tests wrote.
+    at Object.readPdf (/Users/sfx/phase1-evidence/checkouts/artisanconnect/test/support/fakes/content-reader.ts:62:25)
+    at readFiles (/Users/sfx/phase1-evidence/checkouts/artisanconnect/src/domain/content/check.ts:119:55)
+    at checkContent (/Users/sfx/phase1-evidence/checkouts/artisanconnect/src/domain/content/check.ts:55:16)
+    at Object.send (/Users/sfx/phase1-evidence/checkouts/artisanconnect/src/domain/conversations/index.ts:179:25)
+    at outcomes (/Users/sfx/phase1-evidence/checkouts/artisanconnect/test/domain/uploads.test.ts:70:18)
+    at /Users/sfx/phase1-evidence/checkouts/artisanconnect/test/domain/uploads.test.ts:158:7
+    at Users/sfx/Developer/artisanconnect/node_modules/.pnpm/vitest@5.0.4_@types+node@24.19.2_@vitest+browser-preview@5.0.4_@vitest+ui@5.0.4_@voidze_596eb94238162db054a1c3ddba1615b6/node_modules/vitest/dist/chunks/run.Cm2sd7-x.js:2794:20
+
+stderr | test/domain/uploads.test.ts > a PDF > is taken encrypted if it opens without a password, and refused if it carries a script or cannot be read
+File pdfs/a4eaf502-d311-4987-be3d-50b8fd8c9419.pdf could not be read Error: The fake content reader reads only the PDFs the tests wrote.
+    at Object.readPdf (/Users/sfx/phase1-evidence/checkouts/artisanconnect/test/support/fakes/content-reader.ts:62:25)
+    at readFiles (/Users/sfx/phase1-evidence/checkouts/artisanconnect/src/domain/content/check.ts:119:55)
+    at checkContent (/Users/sfx/phase1-evidence/checkouts/artisanconnect/src/domain/content/check.ts:55:16)
+    at Object.send (/Users/sfx/phase1-evidence/checkouts/artisanconnect/src/domain/conversations/index.ts:179:25)
+    at outcomes (/Users/sfx/phase1-evidence/checkouts/artisanconnect/test/domain/uploads.test.ts:70:18)
+    at /Users/sfx/phase1-evidence/checkouts/artisanconnect/test/domain/uploads.test.ts:158:7
+    at Users/sfx/Developer/artisanconnect/node_modules/.pnpm/vitest@5.0.4_@types+node@24.19.2_@vitest+browser-preview@5.0.4_@vitest+ui@5.0.4_@voidze_596eb94238162db054a1c3ddba1615b6/node_modules/vitest/dist/chunks/run.Cm2sd7-x.js:2794:20
+
+ ✓ test/domain/uploads.test.ts (9 tests) 4530ms
+   ✓ a photo (3)
+     ✓ is kept as one resized copy and a thumbnail, with its location data stripped 723ms
+     ✓ animated, is kept as a still photo 477ms
+     ✓ is taken as JPEG, PNG, or WebP up to 10 MB, and no larger 544ms
+   ✓ a PDF (2)
+     ✓ is taken only after Payment, up to 10 MB, and as sent 1337ms
+   ✓ a voice note (1)
+     ✓ is taken only after Payment, as recorded in a browser or by a voice recorder, up to 5 minutes 467ms
+
+ Test Files  35 passed (35)
+      Tests  903 passed (903)
+   Start at  20:25:11
+   Duration  110.72s (tests 82%, transform 13%, import 5%)
+
+EXIT(0) >> /Users/sfx/phase1-evidence/logs/artisanconnect/test.log
