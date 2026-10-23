@@ -29,6 +29,62 @@ async function decided(
   if (!made.ok) throw new Error(made.refusal.message);
 }
 
+/** A Completed Engagement's parties and collection, for the export tests. */
+async function completedEngagement(given: Harness["given"]) {
+  const artisan = await given.matchableArtisan();
+  const client = await given.client();
+  const jobId = await given.openJob(client);
+  const collectionId = await given.hired(client, await given.sentQuote(artisan, jobId));
+  const engagementId = await given.engagementOf(client, jobId);
+  await given.workStarted(client, engagementId);
+  await given.markedComplete(artisan, engagementId);
+  await given.approved(client, engagementId);
+  return { artisan, client, engagementId, collectionId };
+}
+
+/** The Admin decides every Review waiting in Pre-checks, such as `publish` or `refuse.fraud`. */
+async function prechecked(
+  domain: Harness["domain"],
+  admin: { actor: AdminActor },
+  decision: string,
+  reason?: string,
+) {
+  const home = await domain.queues.home(admin.actor, { queue: "pre-checks" });
+  for (const item of home?.items ?? []) {
+    const made = await domain.queues.decide(admin.actor, { itemId: item.id, decision, reason });
+    if (!made.ok) throw new Error(made.refusal.message);
+  }
+}
+
+/** The JSON of the Account's sent export. */
+async function exportedJson(
+  domain: Harness["domain"],
+  admin: { actor: AdminActor },
+  account: { actor: Actor },
+) {
+  await domain.dataRequests.request(account.actor, { kind: "copy" });
+  await decided(domain, admin, "send-export");
+  return exported(domain, account);
+}
+
+/** The rating and comment of each Review row in an export list. */
+function reviewTexts(rows: unknown) {
+  return (rows as Record<string, unknown>[]).map((row) => ({
+    rating: row.rating,
+    comment: row.comment,
+  }));
+}
+
+/** The Review's author and the Account it is about, by who wrote it. */
+function parties(
+  role: "client" | "artisan",
+  both: { artisan: { actor: Actor }; client: { actor: Actor } },
+) {
+  const reviewer = role === "client" ? both.client : both.artisan;
+  const reviewed = role === "client" ? both.artisan : both.client;
+  return { reviewer, reviewed };
+}
+
 /** The export the Account downloads, read as JSON. */
 async function exported(domain: Harness["domain"], account: { actor: Actor }) {
   const [request] = await domain.dataRequests.mine(account.actor);
@@ -216,6 +272,86 @@ describe("asking for a copy of the data", () => {
       }).toEqual({ feePresent: role === "artisan", fee: role === "artisan" ? 10 : null });
     },
   );
+
+  test.each(
+    (
+      [
+        { when: "Held for its check", shows: false },
+        {
+          when: "refused",
+          shows: false,
+          decide: ["refuse.personal-data", "It names a minor."] as const,
+        },
+        { when: "published inside an open window", shows: false, decide: ["publish"] as const },
+        {
+          when: "published once both sides wrote",
+          shows: true,
+          decide: ["publish"] as const,
+          both: true,
+        },
+        {
+          when: "published once its window closes",
+          shows: true,
+          decide: ["publish"] as const,
+          days: 8,
+        },
+      ] as const
+    ).flatMap((each) =>
+      (["client", "artisan"] as const).map((role) => ({
+        decide: undefined,
+        both: false,
+        days: 0,
+        ...each,
+        role,
+      })),
+    ),
+  )(
+    "shows a Review to the reviewed Account only once it is shown - $when ($role)",
+    async ({ role, shows, decide, both, days }) => {
+      const { domain, given, clock } = await createHarness();
+      const admin = await given.admin();
+      const { artisan, client, engagementId } = await completedEngagement(given);
+      const { reviewer, reviewed } = parties(role, { artisan, client });
+      await domain.reviews.write(reviewer.actor, {
+        engagementId,
+        rating: 4,
+        comment: "Good work.",
+      });
+      if (both) await domain.reviews.write(reviewed.actor, { engagementId, rating: 5 });
+      if (decide) await prechecked(domain, admin, decide[0], decide[1]);
+      if (days) clock.advance({ days });
+
+      const theirs = await exportedJson(domain, admin, reviewed);
+      const mine = await exportedJson(domain, admin, reviewer);
+
+      expect(reviewTexts(theirs.reviewsReceived)).toEqual(
+        shows ? [{ rating: 4, comment: "Good work." }] : [],
+      );
+      // The author keeps its own submitted Review whatever its state.
+      expect(reviewTexts(mine.reviewsWritten)).toEqual([{ rating: 4, comment: "Good work." }]);
+    },
+  );
+
+  test("keeps a published Review out of the export while a Chargeback freezes its window", async () => {
+    const { domain, given, clock } = await createHarness();
+    const admin = await given.admin();
+    const { artisan, client, engagementId, collectionId } = await completedEngagement(given);
+    await domain.reviews.write(client.actor, {
+      engagementId,
+      rating: 4,
+      comment: "Good work.",
+    });
+    await prechecked(domain, admin, "publish");
+    await given.chargedBack(collectionId);
+
+    clock.advance({ days: 8 });
+
+    const theirs = await exportedJson(domain, admin, artisan);
+    const mine = await exportedJson(domain, admin, client);
+
+    expect(reviewTexts(theirs.reviewsReceived)).toEqual([]);
+    expect(reviewTexts(mine.reviewsWritten)).toEqual([{ rating: 4, comment: "Good work." }]);
+  });
 });
 
 describe("asking for erasure", () => {

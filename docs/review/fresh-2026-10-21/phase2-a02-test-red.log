@@ -1,0 +1,231 @@
+
+ RUN  v5.0.4 /Users/sfx/phase1-evidence/checkouts-a02/artisanconnect
+
+stderr | test/domain/data-requests.test.ts > erasing an Account > frees its Email, ends its password, and it never reopens
+2026-10-05T06:00:00.000Z WARN [Better Auth]: User not found
+
+ ❯ test/domain/data-requests.test.ts (29 tests | 7 failed) 6056ms
+   ❯ asking for a copy of the data (20)
+     ✓ puts it in the Data requests queue 156ms
+     ✓ is answered with an export the Account downloads, and it is told 216ms
+     ✓ exports the warnings and Suspensions with reasons and the Reports it made, never Reports of it 249ms
+     ✓ downloads for nobody but the Account, and only once sent 167ms
+     ✓ waits one at a time per kind 117ms
+     ✓ is refused, with the reason, by email 116ms
+     ✓ is refused to anyone but a signed-in Account, and for an unknown kind 110ms
+     ✓ shows the Artisan Fee only to the Artisan (client) 264ms
+     ✓ shows the Artisan Fee only to the Artisan (artisan) 229ms
+     × keeps a Review out of the export while it waits for its check (client) 254ms
+     × keeps a Review out of the export while it waits for its check (artisan) 244ms
+     × keeps a refused Review out of the export (client) 257ms
+     × keeps a refused Review out of the export (artisan) 244ms
+     × keeps a published Review out of the export while the other side's window is open (client) 256ms
+     × keeps a published Review out of the export while the other side's window is open (artisan) 263ms
+     ✓ includes a published Review once both sides wrote (client) 253ms
+     ✓ includes a published Review once both sides wrote (artisan) 265ms
+     ✓ includes a published Review once its window closes (client) 243ms
+     ✓ includes a published Review once its window closes (artisan) 253ms
+     × keeps a published Review out of the export while a Chargeback freezes its window 267ms
+   ✓ asking for erasure (2)
+     ✓ closes the Account and puts it in the Data requests queue 152ms
+     ✓ is refused while an Engagement is in progress, and nothing is asked 217ms
+   ✓ erasing an Account (7)
+     ✓ frees its Email, ends its password, and it never reopens 201ms
+     ✓ keeps its Reviews, shown without the name 246ms
+     ✓ keeps it without a name though names it gave are released afterwards 196ms
+     ✓ leaves nobody to email when a request is refused afterwards 118ms
+     ✓ leaves the People page without its names or Email 116ms
+     ✓ waits until money still owed to it is paid 266ms
+     ✓ is withdrawn when the Account reopens, and it may ask again 120ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 7 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/domain/data-requests.test.ts > asking for a copy of the data > keeps a Review out of the export while it waits for its check (client)
+AssertionError: expected [ { …(4) } ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   {
++     "comment": "Good work.",
++     "engagementId": "6ed0e628-0391-4682-97a2-cf6dc74a069f",
++     "rating": 4,
++     "writtenAt": "2026-10-05T06:00:00.000Z",
++   },
++ ]
+
+ ❯ test/domain/data-requests.test.ts:282:62
+    280|       });
+    281|
+    282|       expect(await exportedReviews(domain, admin, reviewed)).toEqual([…
+       |                                                              ^
+    283|     },
+    284|   );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/7]⎯
+
+ FAIL  test/domain/data-requests.test.ts > asking for a copy of the data > keeps a Review out of the export while it waits for its check (artisan)
+AssertionError: expected [ { …(4) } ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   {
++     "comment": "Good work.",
++     "engagementId": "2548da0c-94ad-4656-843d-d879c8a8efd8",
++     "rating": 4,
++     "writtenAt": "2026-10-05T06:00:00.000Z",
++   },
++ ]
+
+ ❯ test/domain/data-requests.test.ts:282:62
+    280|       });
+    281|
+    282|       expect(await exportedReviews(domain, admin, reviewed)).toEqual([…
+       |                                                              ^
+    283|     },
+    284|   );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/7]⎯
+
+ FAIL  test/domain/data-requests.test.ts > asking for a copy of the data > keeps a refused Review out of the export (client)
+AssertionError: expected [ { …(4) } ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   {
++     "comment": "It names their child.",
++     "engagementId": "61f1c4a4-c062-4e7a-8606-b6b35c182880",
++     "rating": 1,
++     "writtenAt": "2026-10-05T06:00:00.000Z",
++   },
++ ]
+
+ ❯ test/domain/data-requests.test.ts:300:62
+    298|       await prechecked(domain, admin, "refuse.personal-data", "It name…
+    299|
+    300|       expect(await exportedReviews(domain, admin, reviewed)).toEqual([…
+       |                                                              ^
+    301|     },
+    302|   );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/7]⎯
+
+ FAIL  test/domain/data-requests.test.ts > asking for a copy of the data > keeps a refused Review out of the export (artisan)
+AssertionError: expected [ { …(4) } ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   {
++     "comment": "It names their child.",
++     "engagementId": "f03c0e3c-f2af-4a29-bfd5-883e2db3a4ad",
++     "rating": 1,
++     "writtenAt": "2026-10-05T06:00:00.000Z",
++   },
++ ]
+
+ ❯ test/domain/data-requests.test.ts:300:62
+    298|       await prechecked(domain, admin, "refuse.personal-data", "It name…
+    299|
+    300|       expect(await exportedReviews(domain, admin, reviewed)).toEqual([…
+       |                                                              ^
+    301|     },
+    302|   );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/7]⎯
+
+ FAIL  test/domain/data-requests.test.ts > asking for a copy of the data > keeps a published Review out of the export while the other side's window is open (client)
+AssertionError: expected [ { …(4) } ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   {
++     "comment": "Good work.",
++     "engagementId": "65392082-1fdd-40be-b161-cde7a2551568",
++     "rating": 4,
++     "writtenAt": "2026-10-05T06:00:00.000Z",
++   },
++ ]
+
+ ❯ test/domain/data-requests.test.ts:318:62
+    316|       await prechecked(domain, admin, "publish");
+    317|
+    318|       expect(await exportedReviews(domain, admin, reviewed)).toEqual([…
+       |                                                              ^
+    319|     },
+    320|   );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/7]⎯
+
+ FAIL  test/domain/data-requests.test.ts > asking for a copy of the data > keeps a published Review out of the export while the other side's window is open (artisan)
+AssertionError: expected [ { …(4) } ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   {
++     "comment": "Good work.",
++     "engagementId": "4244b173-1cde-423b-951a-2fe2d98f2f45",
++     "rating": 4,
++     "writtenAt": "2026-10-05T06:00:00.000Z",
++   },
++ ]
+
+ ❯ test/domain/data-requests.test.ts:318:62
+    316|       await prechecked(domain, admin, "publish");
+    317|
+    318|       expect(await exportedReviews(domain, admin, reviewed)).toEqual([…
+       |                                                              ^
+    319|     },
+    320|   );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/7]⎯
+
+ FAIL  test/domain/data-requests.test.ts > asking for a copy of the data > keeps a published Review out of the export while a Chargeback freezes its window
+AssertionError: expected [ { …(4) } ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   {
++     "comment": "Good work.",
++     "engagementId": "e2bc62b5-6e4a-4394-b9e7-ab6a24785ddd",
++     "rating": 4,
++     "writtenAt": "2026-10-05T06:00:00.000Z",
++   },
++ ]
+
+ ❯ test/domain/data-requests.test.ts:379:59
+    377|     clock.advance({ days: 8 });
+    378|
+    379|     expect(await exportedReviews(domain, admin, artisan)).toEqual([]);
+       |                                                           ^
+    380|   });
+    381| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/7]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  7 failed | 22 passed (29)
+   Start at  21:38:16
+   Duration  10.43s (tests 61%, transform 34%, import 5%)
+
+EXIT:1

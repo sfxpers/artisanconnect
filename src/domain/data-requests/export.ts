@@ -22,6 +22,7 @@ import {
   supportRequests,
   verificationChecks,
 } from "../schema";
+import { shownAt } from "../reviews/rows";
 import { suspensionsOf, warningsOf } from "../standing";
 
 // A copy of an Account's data (#141): what it gave and did, and what the
@@ -169,7 +170,10 @@ export async function exportOf(ctx: Context, accountId: string) {
         writtenAt: reviews.writtenAt,
       })
       .from(reviews)
-      .where(eq(reviews.reviewedId, accountId))
+      .innerJoin(engagements, eq(engagements.id, reviews.engagementId))
+      // Received Reviews are the Account's only once shown to it, the same
+      // rule the Job page and Profile apply (US163/US165/US199).
+      .where(and(eq(reviews.reviewedId, accountId), shownAt(ctx, ctx.now())))
       .orderBy(asc(reviews.writtenAt)),
   ]);
 

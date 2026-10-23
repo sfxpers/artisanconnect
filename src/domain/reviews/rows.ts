@@ -55,7 +55,7 @@ export async function reviewsOn(ctx: Context, engagementId: string): Promise<Rev
  * party has written theirs or the window has closed, not waiting on a
  * Chargeback. Join `engagements`.
  */
-function shownAt(ctx: Context, now: Date) {
+export function shownAt(ctx: Context, now: Date) {
   const other = alias(reviews, "other_review");
   return and(
     eq(reviews.state, "published"),

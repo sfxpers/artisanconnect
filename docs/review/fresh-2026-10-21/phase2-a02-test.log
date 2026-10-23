@@ -1,0 +1,42 @@
+
+ RUN  v5.0.4 /Users/sfx/phase1-evidence/checkouts-a02/artisanconnect
+
+ ✓ test/domain/data-requests.test.ts > asking for a copy of the data > puts it in the Data requests queue 137ms
+ ✓ test/domain/data-requests.test.ts > asking for a copy of the data > is answered with an export the Account downloads, and it is told 168ms
+ ✓ test/domain/data-requests.test.ts > asking for a copy of the data > exports the warnings and Suspensions with reasons and the Reports it made, never Reports of it 249ms
+ ✓ test/domain/data-requests.test.ts > asking for a copy of the data > downloads for nobody but the Account, and only once sent 166ms
+ ✓ test/domain/data-requests.test.ts > asking for a copy of the data > waits one at a time per kind 111ms
+ ✓ test/domain/data-requests.test.ts > asking for a copy of the data > is refused, with the reason, by email 111ms
+ ✓ test/domain/data-requests.test.ts > asking for a copy of the data > is refused to anyone but a signed-in Account, and for an unknown kind 108ms
+ ✓ test/domain/data-requests.test.ts > asking for a copy of the data > shows the Artisan Fee only to the Artisan (client) 230ms
+ ✓ test/domain/data-requests.test.ts > asking for a copy of the data > shows the Artisan Fee only to the Artisan (artisan) 230ms
+ ✓ test/domain/data-requests.test.ts > asking for a copy of the data > shows a Review to the reviewed Account only once it is shown - Held for its check (client) 255ms
+ ✓ test/domain/data-requests.test.ts > asking for a copy of the data > shows a Review to the reviewed Account only once it is shown - Held for its check (artisan) 281ms
+ ✓ test/domain/data-requests.test.ts > asking for a copy of the data > shows a Review to the reviewed Account only once it is shown - refused (client) 256ms
+ ✓ test/domain/data-requests.test.ts > asking for a copy of the data > shows a Review to the reviewed Account only once it is shown - refused (artisan) 257ms
+ ✓ test/domain/data-requests.test.ts > asking for a copy of the data > shows a Review to the reviewed Account only once it is shown - published inside an open window (client) 253ms
+ ✓ test/domain/data-requests.test.ts > asking for a copy of the data > shows a Review to the reviewed Account only once it is shown - published inside an open window (artisan) 257ms
+ ✓ test/domain/data-requests.test.ts > asking for a copy of the data > shows a Review to the reviewed Account only once it is shown - published once both sides wrote (client) 253ms
+ ✓ test/domain/data-requests.test.ts > asking for a copy of the data > shows a Review to the reviewed Account only once it is shown - published once both sides wrote (artisan) 259ms
+ ✓ test/domain/data-requests.test.ts > asking for a copy of the data > shows a Review to the reviewed Account only once it is shown - published once its window closes (client) 257ms
+ ✓ test/domain/data-requests.test.ts > asking for a copy of the data > shows a Review to the reviewed Account only once it is shown - published once its window closes (artisan) 261ms
+ ✓ test/domain/data-requests.test.ts > asking for a copy of the data > keeps a published Review out of the export while a Chargeback freezes its window 260ms
+ ✓ test/domain/data-requests.test.ts > asking for erasure > closes the Account and puts it in the Data requests queue 153ms
+ ✓ test/domain/data-requests.test.ts > asking for erasure > is refused while an Engagement is in progress, and nothing is asked 210ms
+stderr | test/domain/data-requests.test.ts > erasing an Account > frees its Email, ends its password, and it never reopens
+2026-10-05T06:00:00.000Z WARN [Better Auth]: User not found
+
+ ✓ test/domain/data-requests.test.ts > erasing an Account > frees its Email, ends its password, and it never reopens 208ms
+ ✓ test/domain/data-requests.test.ts > erasing an Account > keeps its Reviews, shown without the name 272ms
+ ✓ test/domain/data-requests.test.ts > erasing an Account > keeps it without a name though names it gave are released afterwards 166ms
+ ✓ test/domain/data-requests.test.ts > erasing an Account > leaves nobody to email when a request is refused afterwards 122ms
+ ✓ test/domain/data-requests.test.ts > erasing an Account > leaves the People page without its names or Email 121ms
+ ✓ test/domain/data-requests.test.ts > erasing an Account > waits until money still owed to it is paid 242ms
+ ✓ test/domain/data-requests.test.ts > erasing an Account > is withdrawn when the Account reopens, and it may ask again 120ms
+
+ Test Files  1 passed (1)
+      Tests  29 passed (29)
+   Start at  21:42:34
+   Duration  8.67s (tests 71%, transform 23%, import 6%)
+
+EXIT:0
