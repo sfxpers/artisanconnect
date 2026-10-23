@@ -1,0 +1,7 @@
+=== artisanconnect .gitignore ===
+pnpm-*
+
+=== artisanconnect symlinks (target + resolves?) ===
+./void -> ../../node_modules/.pnpm/void@1.1.12_@tanstack+react-start@1.169.2_@voidzero-dev+vite-plus-core@1.2.0_@types+nod_4354965bcee9ef0e9edadad04f1cab7f/node_modules/void/skills/void [BROKEN]
+=== artisanconnect package skill inventories ===
+--- ./void

@@ -1,0 +1,36 @@
+{
+  "captured": "2026-10-21",
+  "baselineSha": "b47e2cfdb9bb074e6e200ce3f063d2a63b93f7ea",
+  "branch": "review/fresh-2026-10-21",
+  "phase": "Phase 1 review - documentation only",
+  "discovery": {
+    "source": "README.md source-of-truth table",
+    "result": "Identifies issue #111 as the governing product specification; no issue-list query was run for this repository."
+  },
+  "governingSource": {
+    "command": "gh issue view 111 --repo sfxpers/artisanconnect --json number,title,body,url,updatedAt",
+    "result": "captured verbatim in spec-111.json",
+    "url": "https://github.com/sfxpers/artisanconnect/issues/111"
+  },
+  "skillsUpstream": {
+    "repo": "https://github.com/mattpocock/skills",
+    "pinnedSha": "5beb35b040e3de97e54fa9e386d7e42d15c295c2",
+    "tree": "https://github.com/mattpocock/skills/tree/5beb35b040e3de97e54fa9e386d7e42d15c295c2",
+    "promotedDefinition": "https://github.com/mattpocock/skills/blob/5beb35b040e3de97e54fa9e386d7e42d15c295c2/AGENTS.md",
+    "promotedManifest": "https://github.com/mattpocock/skills/blob/5beb35b040e3de97e54fa9e386d7e42d15c295c2/.claude-plugin/plugin.json",
+    "promoted": "27 locked skills; updated 0, added 0, removed 0",
+    "unpromoted": [
+      "misc/git-guardrails-claude-code",
+      "misc/migrate-to-shoehorn",
+      "misc/scaffold-exercises",
+      "misc/setup-pre-commit",
+      "in-progress/chief-of-staff",
+      "in-progress/claude-handoff",
+      "in-progress/loop-me",
+      "in-progress/setup-ts-deep-modules",
+      "in-progress/writing-beats",
+      "in-progress/writing-fragments",
+      "in-progress/writing-shape"
+    ]
+  }
+}

@@ -1,0 +1,28 @@
+import { expect, test } from "vite-plus/test";
+import { createHarness } from "./support/harness";
+
+test.each(["fee", "review"] as const)("a Client export preserves %s visibility", async (surface) => {
+  const h = await createHarness();
+  const { domain, given } = h;
+  const admin = await given.admin();
+  const client = await given.client();
+  const artisan = await given.matchableArtisan();
+  const jobId = await given.openJob(client);
+  await given.hired(client, await given.sentQuote(artisan, jobId));
+  const engagementId = await given.engagementOf(client, jobId);
+  await given.workStarted(client, engagementId);
+  await given.markedComplete(artisan, engagementId);
+  await given.approved(client, engagementId);
+  expect(await domain.reviews.write(artisan.actor, { engagementId, rating: 2, comment: "Private review pending staff." })).toMatchObject({ ok: true });
+  expect((await domain.jobs.view(client.actor, { jobId }))?.engagement?.reviews?.theirs).toBeNull();
+  const asked = await domain.dataRequests.request(client.actor, { kind: "copy" });
+  if (!asked.ok) throw new Error(asked.refusal.message);
+  const [item] = (await domain.queues.home(admin.actor, { queue: "data-requests" }))?.items ?? [];
+  if (!item) throw new Error("Data request missing");
+  expect(await domain.queues.decide(admin.actor, { itemId: item.id, decision: "send-export" })).toMatchObject({ ok: true });
+  const file = await domain.dataRequests.exportFile(client.actor, { requestId: asked.value.requestId });
+  if (!file) throw new Error("Export missing");
+  const data = JSON.parse(await new Response(file.body).text()) as { engagements: Record<string, unknown>[]; reviewsReceived: unknown[] };
+  if (surface === "fee") expect(data.engagements[0]).not.toHaveProperty("artisanFeePercent");
+  else expect(data.reviewsReceived).toEqual([]);
+});

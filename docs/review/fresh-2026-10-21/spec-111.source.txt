@@ -1,0 +1,461 @@
+Product language is `GLOSSARY.md`, which wins over this spec; decisions that are hard to reverse are in `docs/adr/`.
+
+## Problem Statement
+
+A Cape Town Client who needs a plumber, an electrician, or another tradesperson has no safe way to find one they can trust in their home, agree a fixed price, and be sure that the money only goes to the Artisan once the work is actually done. They hire on word of mouth or classifieds, pay cash up front or after, and have no recourse when an Artisan never arrives, walks off half-way, or leaves poor work.
+
+A verified Cape Town Artisan has the mirror problem: they quote for work, buy materials out of their own pocket, and are paid late, partly, or not at all. They have no portable record of good work, and the Clients they do win expect to haggle or pay off the books.
+
+Today there is no product: the repository is a TanStack Start scaffold on Cloudflare Workers with no domain code. The launch decisions settle every rule of a single-city marketplace; nothing has been built.
+
+## Solution
+
+ArtisanConnect: a responsive web marketplace for the City of Cape Town in which a Client posts a Job, the platform offers it in rotating Batches to verified Artisans in its Region (or the Client invites Artisans), up to five Artisans send fixed-price Quotes, and the Client Hires one by paying for it. The platform holds the Payment and releases it in two parts: the Materials when work starts on site, and the Labour when the Client approves the Completion (or says nothing for seven days). Fix requests, Updated Quotes, Refunds, Cancellations, and Disputes each have one fixed path; the Admin decides only what the rules cannot. Everything sent is read by the Content check, nothing doubtful goes live without the Admin, and Reports catch what both walls miss. Once Completed, each party Reviews the other, and the Client can Hire Again at the lower repeat Artisan Fee.
+
+Launch money is fake: the payment adapter is a fake shaped like Stitch, so the whole flow runs end to end in local, staging, and production without moving real money.
+
+## User Stories
+
+### Visitors and Browse
+
+1. As a Visitor, I want a landing page that shows how a Job goes, the eight trades, that fees are shown before paying, and that a badge is a check and not a guarantee, so that I can judge the marketplace before signing up.
+2. As a Visitor, I want to browse Artisans one Service Category at a time, optionally narrowed by Region, so that I can see who works near me.
+3. As a Visitor, I want Browse ordered by Available for Jobs first, then higher Review average, then more Reviews, then public name A to Z, so that the order is predictable and cannot be bought.
+4. As a Visitor, I want to open any Artisan Profile with its verified categories, Verification Badges, work photos, Regions, Completed count, rating, and Reviews, so that I can judge an Artisan.
+5. As a Visitor, I want no direct contact on a Profile, so that I understand work is arranged on the platform.
+6. As a Visitor, I want posting, inviting, and hiring to ask me to sign up, so that I know what an Account is for.
+7. As an Artisan, I want a shareable public link to my Profile that search engines can find, so that it is my best marketing.
+8. As a Visitor, I want never to see a Job, so that Clients' homes stay private.
+
+### Accounts and sign-up
+
+9. As a person signing up, I want to choose Client or Artisan once, so that I know which kind of Account I hold.
+10. As a person signing up, I want to give my Email and password and prove the Email with an Email code, so that only I can use it.
+11. As a person signing up, I want to give my name and an optional trading name, so that I appear as I choose.
+12. As a person signing up, I want to accept the Marketplace rules with POPIA consent, including that my data may be stored outside South Africa, so that I know how my data is used.
+13. As a Client, I want to post my first Job right after sign-up with no Identity Number and no Admin approval, so that I am not slowed down.
+14. As an Artisan, I want sign-up to lead me into Verification and Regions, so that I know what I must do before I can Quote.
+15. As a person, I want one Email to hold one Account, and I may hold a Client and an Artisan Account with different Emails that share nothing, so that the two roles stay separate.
+16. As a person signing up, I want my names text-checked like everything else, so that names cannot carry contact details.
+17. As a Client, I want to appear to Artisans as my first word and last initial ("Thandi M."), so that my full name stays private.
+18. As an Account, I want an Email code to work once, for ten minutes, die after five wrong tries, and be replaced by a new one after 60 seconds, so that codes are safe.
+19. As an Account, I want recovery to answer the same whether or not the address is held, so that nobody can probe who has an Account.
+20. As an Account, I want sign-up, sign-in, and code requests guarded by Turnstile and rate limits, so that bots cannot abuse them.
+21. As an Account, I want to change my Email by proving the new one with an Email code, while the old one still signs in until then and is told of the change, so that a stolen session cannot silently take my Account.
+22. As an Account, I want an Email already held by any Account or an Admin refused, so that one Email is one identity.
+23. As an Account, I want to accept a new Marketplace rules version at my next sign-in, with the version and time recorded, so that I always know the current rules.
+24. As an Account with no Engagement in progress, I want to close my Account, so that I can leave; my Open Jobs close, my Sent Quotes are Withdrawn, and my Reviews stay.
+25. As a Closed Account, I want to reopen with my Email and an Email code, so that I can come back.
+26. As a Closed Artisan Account, I want to keep my Identity Number, so that reopening does not need new Verification of my identity.
+27. As an Account, I want to send a Support request under a fixed topic (Account, Payment, Verification, Suspension, Other) and get the answer by email, so that I can reach the platform.
+28. As a Suspended Account, I want to see the reason and still send a Support request, so that I can contest it.
+29. As an Account, I want to ask for a copy of my data or for erasure, so that I can use my POPIA rights.
+30. As an Account, I want settings rows for names, Email, Marketplace rules, Contact support, Request my data, and Close Account (and, for an Artisan, VAT, Payout account, and a read-only Identity Number), so that everything about my Account is in one place.
+
+### Artisan Verification and Profile
+
+31. As an Artisan, I want to submit an identity document (South African ID, refugee ID, or passport) and a selfie holding it, so that the Admin can verify who I am.
+32. As an Artisan with a foreign passport, I want to submit a work permit that allows self-employed work, with its expiry date, so that I may work on my own account.
+33. As an Artisan, I want to submit a bank confirmation letter in my own name as my Payout account, so that I can be paid.
+34. As an Artisan, I want my South African ID number checked by its checksum, so that a mistyped number is caught early.
+35. As an Artisan, I want an Identity Number or Payout account already held by another Artisan refused without saying whose, so that nobody holds two Artisan Accounts and nobody learns another's details.
+36. As an Artisan, I want per Service Category to submit three photos of my own finished work and any Credential that category needs, so that I can be verified for each trade.
+37. As a plumber, I want my trained-plumber certificate verified for Plumbing, and optionally a gas practitioner registration for gas work, so that I can Quote on gas Jobs too, and on other Plumbing Jobs without it.
+38. As an electrician, I want a registered person certificate and a current electrical contractor registration, both in my own name, verified for Electrical, so that I can Quote on Electrical Jobs.
+39. As an Artisan in one of the other six trades, I want only work photos to be needed, so that Verification is not harder than the law requires.
+40. As an Artisan, I want to add an optional police clearance (shown with its issue date) and business insurance (shown with its expiry date) as badges, so that Clients see extra checks, without them gating a Quote.
+41. As an Artisan, I want each check to show as submitted, accepted (a Verification Badge), or rejected with a reason I can resubmit against, so that I always know where I stand.
+42. As an Artisan, I want my checks in three groups (once, per category, optional), each with its state and submit action, so that I can see what is missing.
+43. As an Artisan, I want reminders 30 and 7 days before a check expires, and the check to stop being current on its expiry date, so that I can renew in time.
+44. As an Artisan, I want an expired check never to affect an Engagement already Hired, so that my current work continues.
+45. As an Artisan, I want to submit a replacement Payout account without losing the current one until the Admin accepts it, so that Payouts keep flowing.
+46. As an Artisan, I want to select one to three Regions, and open each to see its suburbs, so that I am offered Jobs only where I work.
+47. As an Artisan, I want to turn Available for Jobs off and on without hiding my Profile or losing my place in the offer order, so that I can take a break.
+48. As an Artisan, I want to edit my Profile in place, with each edit shown only once the Admin approves it and the old version showing meanwhile, so that my public page is never broken.
+49. As an Artisan, I want my Profile to show only the categories I am verified for, so that Clients see what I may Quote on.
+50. As a VAT-registered Artisan, I want to state my VAT number and have my amounts include VAT, so that my prices are correct.
+
+### Posting a Job
+
+51. As a Client, I want to post a Job with a Service Category, a Site type, a suburb from the City's official list, a street address, a title, a description, and 1 to 10 photos, so that Artisans can understand the work.
+52. As a Client, I want to search suburbs ignoring case, spaces, and punctuation, so that I can find mine however I type it.
+53. As a Client, I want the Region derived from my suburb, so that I never have to know district names.
+54. As a Client, I want my street address withheld from Artisans until Payment, so that strangers do not learn where I live.
+55. As a Client posting a Plumbing Job, I want one required question about whether the work installs or removes gas, so that only gas-registered Artisans are offered it and a certificate of conformity is required at Completion.
+56. As a Client, I want an optional Preferred start date, so that Artisans know my timing.
+57. As a Client, I want not to be asked for a budget, phone number, measurements, or who supplies materials, so that posting is quick.
+58. As a Client, I want to save a draft that may omit anything, and continue or discard it later, so that I can post when ready.
+59. As a Client, I want to choose "Find Artisans for me" or "Only Artisans I invite", so that I control who sees my Job.
+60. As a Client, I want to change the title, description, photos, Site type, and Preferred start until the first Quote arrives, so that I can fix mistakes.
+61. As a Client, I want the Service Category, suburb, street, gas answer, and matching choice locked at posting, so that Artisans quote on what was posted; a different trade or site is a new Job.
+62. As a Client, I want my Job's text and photos read by the Content check, with a sure hit refused with the reason and my draft kept, so that I can fix it at once.
+63. As a Client, I want a Job the Content check is unsure about to show "being checked" and be matched only once the Admin releases it, or withdrawn by me meanwhile, so that nothing doubtful goes out.
+64. As a Client, I want to close my Job before Hire, with its Sent Quotes Declined and their Artisans told, so that I can stop.
+65. As a Client, I want my Job to expire after 14 days without a Hire, with a reminder 24 hours before, so that stale Jobs do not linger.
+66. As a Client, I want to Renew an Expired Job in one tap, starting a new 14 days, counting Quotes from zero, and restarting Batches, with Sent Quotes staying Sent, so that I can try again.
+67. As a Client, I want My Jobs grouped as Needs you, In progress, and Finished, so that I see what needs me first.
+
+### Batches, Job Matches, and Invitations
+
+68. As a Client who chose "Find Artisans for me", I want my Job offered at posting to up to ten eligible Artisans, so that I get Quotes without searching.
+69. As a Client, I want a further Batch every 24 hours while my Job is Open with fewer than five Quotes and someone eligible is left, so that Quotes keep coming.
+70. As an Artisan, I want to be offered Jobs fairly: those offered any Job least recently first, never-offered first, ties to the older Account, with nothing paid, no rating, and no badge moving anyone, so that newcomers get a look.
+71. As an Artisan, I want to be offered a Job only if I am verified for its category (gas-registered on a gas Job), have selected its Region, am Available for Jobs, am not Suspended, and have not already been offered or Quoted on it, so that Job Matches fit me.
+72. As an Artisan, I want each Job Match by in-app notice and email, so that I do not miss it.
+73. As an Artisan holding a Job Match, I want to see the Region (not the suburb or street), the details and photos, the Client's shown name, the Client's Review average and count, the Client's Completed count, and Reviews of the Client, so that I can decide whether to Quote.
+74. As an Artisan, I want to Quote on or pass a Job Match, with nobody told that I passed, so that passing costs me nothing.
+75. As a Client, I want never to see a Batch or a count of who was offered my Job, so that matching stays fair.
+76. As a Client, I want an invite list that is Browse narrowed to my Job's category (and gas-registered Artisans on a gas Job), marking "Invited" or "Quoted", so that I can invite Artisans I choose.
+77. As a Client, I want an Invitation to reach an Artisan even if they passed on a Job Match for it, and to turn an unanswered Job Match into an Invitation, so that the list reveals nothing about Batches.
+78. As a Client with an Invite-only Job, I want it offered to nobody but the Artisans I invite, so that it stays private.
+79. As a Client, I want my Job to stop taking Job Matches, Invitations, and Quotes at five Quotes (Declined, Withdrawn, and Expired ones still counting), so that I am not flooded.
+80. As a Client, I want a Held Job never matched until released, so that unchecked Jobs reach nobody.
+
+### Quotes and Hire
+
+81. As an Artisan, I want to send one Quote per Job with a scope, Labour above zero, Materials of zero or more, who supplies the materials (me, the Client, or both, with the scope naming the Client's part), a start date of today or later, a duration of 1 to 365 whole days, and an optional Warranty, so that my price is clear.
+82. As an Artisan, I want a Quote totalling under R300 refused, so that I know the minimum.
+83. As an Artisan, I want to Quote only while every check that category needs is current, so that I know what keeps me eligible.
+84. As an Artisan, I want my Quote read by the Content check, with a sure hit refused with the reason and my draft kept, so that I can fix it.
+85. As an Artisan, I want a Held Quote to show "being checked", take no slot among the five, start no clock, and be withdrawable, so that a check does not cost me.
+86. As an Artisan, I want my Quote Sent for 14 days and revisable while Sent, with the Client told it was revised and the 14 days not restarting, so that I can adjust to what we discuss.
+87. As an Artisan, I want to Withdraw my Quote, so that I can back out before Hire.
+88. As an Artisan, I want to be told when my Quote is Declined or Expired, so that I can move on.
+89. As a Client, I want to be told when a Quote is Sent, revised, or Withdrawn, so that I can act.
+90. As a Client, I want to compare Quotes in the order sent, optionally sorted by total, each showing the Artisan's name, Review average and count, Completed count, badges for that category, Labour, Materials, total, who supplies materials, start date, duration, Warranty, and the Payment I would make with the 5% Protection Fee, so that I can choose; nothing is labelled best or cheapest.
+91. As a Client, I want to Decline a Quote, so that the Artisan knows.
+92. As a Client, I want to Hire a Sent Quote by paying for it by card or Instant EFT, after ticking that the Protection Fee is non-refundable, so that hiring is one step.
+93. As a Client, I want a failed payment attempt to change nothing, so that I can try again.
+94. As a Client, I want Hire refused unless the Quote is Sent and the Artisan is verified and not Suspended, so that I never hire an unchecked Artisan.
+95. As a Client, I want my other Sent Quotes on the Job Declined at Hire and their Artisans told, so that they stop waiting.
+96. As an Artisan, I want to be told at once when I am Hired, so that I can plan the work.
+97. As an Artisan, I want no acceptance step after Hire, because my Quote's dates were my commitment, so that Hire is final.
+98. As a Client, I want an emailed Receipt for my Payment that says it is not a tax invoice, so that I have a record.
+
+### Conversation
+
+99. As a Client or Artisan, I want a Conversation for each Job and Artisan, opened by the first Quote or the Invitation, so that we can discuss the work.
+100. As a party, I want to be told before my first message that the Admin may read the Conversation, so that I know it is not private.
+101. As a party before Payment, I want to send text and photos only, with contact details, links, social handles, the street or suburb, surnames beyond what is shown, and ways to pay off the platform refused, so that the Job stays on the platform.
+102. As a party after Payment, I want to swap phone numbers, emails, and the address in that Engagement's Conversation, and send voice notes and PDFs too, so that we can coordinate the work.
+103. As a party after Payment, I want bank account numbers, payment links, payment QR codes, and asks to pay off the platform still refused, so that nobody is talked into paying outside a Payment.
+104. As a party, I want a refused send to show why under the composer and keep my draft, so that I can rewrite it, and a refusal never to count as a warning.
+105. As a party, I want a Held message to show "being checked" to me and nothing to the other party until released, so that doubtful messages are looked at.
+106. As a party, I want no video anywhere, and files over their limit refused before they are stored, so that limits are clear.
+107. As a party, I want Quote sent, Hire, Work started, Completion, Fix request, Approval, Refund, and Dispute to show in the Conversation as rows that are not speech, so that the history reads in one place.
+108. As a party, I want delivered messages never editable or deletable, so that the record can be trusted.
+109. As a party, I want one email per Conversation for new messages until I open it, then in-app only, with no message text in the email, so that I am told without being spammed.
+110. As a party, I want the Conversation read-only once the Quote is Declined, Withdrawn, or Expired, the Job closes, or the Engagement ends, so that finished work stays finished.
+111. As a party, I want the address shown to the Artisan only after Payment, so that the Artisan can come to the site.
+
+### Work started
+
+112. As a Client, I want to tap "Work started" when the Artisan is on site, so that the Materials are released.
+113. As an Artisan, I want to tap "I've started" and have it become Work started if the Client does not answer "Not started" within 24 hours, so that no Client can hold the Materials hostage.
+114. As a Client, I want to be told of "I've started" with the 24-hour deadline, and answer "Not started", so that a false start is stopped.
+115. As an Artisan, I want to be told of "Not started" and be able to tap again later, so that a genuine start is not lost.
+116. As a party, I want to be told when Work started is set by the other party, so that we agree on where the work is.
+117. As an Artisan, I want the Materials released at Work started, less the Artisan Fee, and paid out in the next daily run, so that I am not out of pocket for goods.
+118. As a party with zero Materials, I want Work started still required before Completion, so that the two kinds of Cancellation stay clear.
+
+### Completion, Approval, and Fix requests
+
+119. As an Artisan, I want to mark the work complete after Work started, with a note, 1 to 10 after-work photos, and any Completion evidence (up to 5 documents), so that the Client can check it.
+120. As an Artisan on an Electrical Job, I want a certificate of compliance required at Completion, and on a gas Plumbing Job a certificate of conformity, so that I meet the law.
+121. As an Artisan, I want my certificate read for its kind and my registration number, with a sure reading letting the Completion through and an unsure or mismatched one Held for the Admin, so that fake certificates are stopped without slowing real ones.
+122. As an Artisan, I want the seven days to start only when a Held Completion is released, so that the Client always has seven days.
+123. As a Client, I want to be told of a Completion with the time Approval by silence will happen, so that I know my deadline.
+124. As a Client, I want to Approve a Completion, releasing the Labour and making the Engagement Completed, so that the Artisan is paid.
+125. As a Client, I want to Request a fix with a note, stopping the clock, so that the Artisan puts it right.
+126. As an Artisan, I want to be told of a Fix request, fix the work, and mark complete again, starting a new seven days, with no limit on rounds, so that the work can be finished properly.
+127. As an Artisan, I want to open a Dispute against a Fix request instead of fixing, so that an unreasonable Fix request is decided by the Admin.
+128. As a Client, I want a reminder 24 hours before Approval by silence, so that I do not approve by accident.
+129. As an Artisan, I want the Labour released seven days after Completion if the Client says nothing, and both of us told, so that I am never left unpaid by silence.
+130. As a Client, I want a Payments card showing Materials and Labour as two numbered payments, each with its state, and a bar to Approval by silence, so that I can see where the money is.
+
+### Updated Quote
+
+131. As an Artisan, I want to propose an Updated Quote before Completion when the site differs from the Job, with new Labour and Materials neither of which goes down, so that I can price what I found.
+132. As an Artisan, I want only one Updated Quote pending at a time, which I may withdraw, so that the Client sees one proposal.
+133. As a Client, I want to be told of an Updated Quote and accept it by paying the difference plus its 5% Protection Fee, or reject it so the Hired Quote stands, so that the price only changes with my Payment.
+134. As an Artisan, I want to be told whether my Updated Quote was accepted or rejected, so that I know the price.
+135. As an Artisan, I want extra Materials released at acceptance if work has started, otherwise at Work started, and extra Labour to go with the Labour, so that the money follows the same rule.
+136. As a Client, I want an emailed Receipt for the Updated Quote's Payment, so that I have a record.
+
+### Refunds
+
+137. As an Artisan, I want to Refund any unreleased amount at any time, including a disputed one, without needing the Client's agreement, so that I can lower the price or settle.
+138. As a Client, I want to be told of every Refund and receive a Receipt, so that I know money is coming back.
+139. As a Client, I want a Refund never to include the Protection Fee, and to have been told so when paying, so that there are no surprises.
+140. As a Client whose bank cannot take a Refund, I want the money to stay owed to me and be paid by hand by the Admin, so that it is never lost.
+
+### Cancellation
+
+141. As a Client or Artisan, I want to cancel an Engagement before Approval with an optional reason, so that I can end work that is not going ahead.
+142. As a Client, I want a Cancellation before Work started to refund the Hired Quote at once, without the Protection Fee, so that I am not kept waiting.
+143. As an Artisan, I want the Materials to stay with me on a Cancellation after Work started, so that I am not out of pocket for goods.
+144. As a Client, I want the unreleased Labour refunded 72 hours after a Cancellation after Work started, unless the Artisan opens a Dispute, so that I get it back without the Admin.
+145. As an Artisan, I want a reminder 24 hours before a Cancellation refunds the Labour, and to open a Dispute for work already done within the 72 hours, so that I can claim what I earned.
+146. As an Artisan, I want to refund sooner than the 72 hours, so that I can settle quickly.
+147. As the other party, I want to be told of a Cancellation, so that I know the Engagement ended.
+
+### Disputes
+
+148. As a Client at Awaiting approval, I want to Dispute a named part of the Labour with a reason and optional photos, so that only that part is held and the rest released at Approval or when the seven days end.
+149. As a party, I want a Dispute to go to the Admin's queue at once and the other party told, so that it is decided without delay.
+150. As a Client in a Dispute, I want to still release, and as an Artisan to still refund, with the Dispute closing when nothing is held, so that we can settle ourselves.
+151. As a party, I want the Admin to read the Job, the Conversation, and the Completion, and split the held amount between Release and Refund with a reason sent to both, so that the decision is reasoned.
+152. As a party, I want the Admin's decision final, with no appeal and no rework order, so that the Engagement ends.
+
+### Chargebacks
+
+153. As an Artisan, I want to be told when a Client charges back a card Payment, and to know that money already paid out to me stays mine, so that I am not punished for the Client's act.
+154. As the platform, I want a Chargeback to freeze every clock on the Engagement and release nothing more, suspend the Client, and put the unreleased money to the Admin, so that a reversed Payment is not paid out.
+
+### Payouts
+
+155. As an Artisan, I want each Release paid out to my current Payout account in the next daily run, less the Artisan Fee, with an emailed Receipt showing the fee, so that I know what I earned.
+156. As an Artisan, I want a Payouts view listing each Release, the Artisan Fee, the amount paid, and its state, with a refused or sent-back Payout shown red, so that I can follow my money.
+157. As an Artisan whose bank refuses a Payout or sends one back (even days later), I want the money to stay owed to me, the Artisan Fee not charged twice, my Payout account to stop being current, and to be told with the original Receipt named, so that I can submit a new bank letter.
+158. As an Artisan, I want all my waiting Payouts sent in the first daily run after the Admin accepts my new Payout account, so that I am paid as soon as possible.
+159. As a Client or Artisan whose Refund or Payout has been paused for three days because the float is low, I want a "delayed, not lost" notice, so that I am not worried.
+160. As an Artisan, I want the Artisan Fee to be 10% in a Client Relationship with no Completed Engagement and 5% once there is one, set at Hire, so that repeat work costs me less.
+161. As a Client, I never want to see the Artisan Fee, and as an Artisan I never want to see the Protection Fee, so that each side sees only its own charges.
+
+### Reviews
+
+162. As a party to a Completed Engagement, I want to write one Review of the other, a 1 to 5 rating with an optional text-checked comment, so that the next person can judge.
+163. As a party, I want neither of us to read the other's Review until both submit or seven days pass, so that Reviews are honest.
+164. As a party, I want a reminder 48 hours before the Review window closes, and to be unable to write after it, so that Reviews are timely.
+165. As a party, I want my Review checked by the Admin before it publishes, even after the window if I submitted inside it, and refused only for fraud, abuse, or personal data, never for a low score, so that Reviews are fair.
+166. As an Artisan, I want Client Reviews shown on my Profile newest first, 20 at a time, each with its Service Category and the reviewer's shown name, with one average and count, so that my record follows me.
+167. As an Artisan, I want to read Reviews of a Client when I hold a Job Match, Invitation, or Quote on their Job, so that I can decide whether to work with them.
+168. As a party, I want no Reviews on a Cancelled Engagement, and Reviews I cannot edit or withdraw, so that a Review costs a real, approved Job.
+169. As an author, I want to be told if my Review is refused or removed, so that I know.
+
+### Hire Again and the Client Relationship
+
+170. As a Client with a Completed Engagement, I want Hire Again to open an Invite-only Job prefilled with the category, title, description, site, and gas answer (all editable), inviting only that Artisan, so that I can rehire easily.
+171. As an Artisan, I want a Hire Again Invitation to follow the ordinary Quote and Hire flow at the repeat Artisan Fee, so that a cheaper repeat keeps us on the platform.
+172. As a Client and Artisan, I want to know that for 365 days from our first Payment, arranging work between us off the platform is Leaving, with the period never renewing or pausing, so that the rule is clear and ends.
+
+### Reports, Leaving, and Suspension
+
+173. As a signed-in Account, I want one Report action on a Job, Quote, message, Artisan Profile, or Review I can see, with one fixed reason and an optional note, so that the Admin can act on what the checks missed.
+174. As a reporter, I want to be told my Report was received, never the outcome, and never to be named to the reported Account, so that reporting is safe.
+175. As a reported Account, I want to be told only if something happens to me, so that dismissed Reports do not worry me.
+176. As an Account found Leaving, I want a warning the first time and a Suspension the second (or at once if I openly dodge the fees), with no fines, so that the ladder is clear.
+177. As a Suspended Account, I want my paid Engagements to continue while I cannot post, Quote, Hire, invite, or be offered a Job, so that work in progress is not abandoned.
+178. As a Suspended Artisan, I want my Open Jobs closed, Sent Quotes Withdrawn, and Profile out of Browse, so that the Suspension is effective.
+
+### The Admin
+
+179. As the first Admin, I want to be created by a deploy-time setup command, so that the platform has staff from day one.
+180. As an Admin, I want to sign in with an Email code only, so that staff sign-in is simple and strong.
+181. As an Admin, I want to invite another Admin by Email and remove one but never the last, so that the team can change safely.
+182. As an Admin, I want one home stream of the eight queues (Verification, Pre-checks, Signals, Reports, Disputes, Chargebacks, Support, Data requests), oldest first, with counts, so that I can work through them.
+183. As an Admin, I want each queue item to be a page with a highlighted Decision card offering only the allowed decisions and saying who is told, with evidence, the Conversation, and the Job in tabs and the parties, money, Artisan record, and timeline in a sidebar, so that I can decide well.
+184. As an Admin, I want a recorded decision never reopened, so that outcomes are final.
+185. As an Admin, I want to accept or reject each Verification check on its own row, with the automatic reading shown and the document opened on a logged click, and to correct the Identity Number from the document, so that Verification is accurate.
+186. As an Admin, I want to release or refuse a Held item with a reason, with no time limit, so that nothing doubtful passes by timeout.
+187. As an Admin, I want to pre-check every Artisan Profile edit, every Review, every unsure certificate, and every Held item, so that the second wall stands.
+188. As an Admin, I want Signals (shared device, IP, or Payout-account name between a Client and Artisan who transact; repeated Cancellations or no-shows; repeated Disputes, Fix requests, or Chargebacks; repeated refusals on one Job; a new Account linked to a Suspended one; a second sent-back Payout within 90 days) as queue items with no automatic sanction, so that I judge them.
+189. As an Admin, I want to close a Signal or act on it with a warning, a Suspension, or a Payout hold, so that I can respond proportionately.
+190. As an Admin, I want to dismiss a Report, take a Job or Profile out of view until it is fixed, remove a Review, warn, or suspend, so that Reports have outcomes.
+191. As an Admin deciding a Dispute, I want a slider that splits the held amount between Release and Refund with a reason to both, so that the decision is exact.
+192. As an Admin deciding a Chargeback, I want to decide the unreleased money, so that it goes where it should.
+193. As an Admin, I want to read an Artisan record of Cancellations, Cancellations by Clients before Work started (with reasons such as "never arrived"), and Disputes decided against them, which no Account sees, so that I see reliability.
+194. As an Admin, I want to read a Conversation only from a Report, Dispute, or Chargeback on that Job, with every read logged, so that privacy is respected.
+195. As an Admin, I want to warn, suspend, or lift a Suspension, and hold or free an Account's Payouts, from a People page, so that I can act on an Account directly.
+196. As an Admin, I want to remove a Verification Badge found false, so that badges stay true.
+197. As an Admin, I want to answer a Support request in the product and have the answer emailed, so that Accounts are answered.
+198. As an Admin, I want system-raised Support requests for failed Refunds and long-paused money, and to record a manual bank transfer in the ledger, so that owed money is paid by hand.
+199. As an Admin, I want to send a data export, or anonymise a Closed Account while keeping its money records and Reviews (shown without the name), after settling any money it is still owed, so that Data requests are met.
+200. As an Admin, I want an email and a banner on the Admin home when the float cannot cover the next daily run, the one thing I am emailed about, so that Payouts and Refunds are not stuck.
+201. As an Admin, I want each Artisan's unpaid total visible, so that money owed is never forgotten.
+202. As an Admin, I want to publish a new Marketplace rules version, add a suburb the City newly creates (never move, rename, or remove one), and read the audit log, so that the platform stays current and accountable.
+203. As an Admin, I want a Figures page (Jobs posted, Jobs with a Quote, Hires, Payment value, Protection Fees, Artisan Fees, repeat Hire rate, Completed rate, Cancellation rate, Dispute rate, Leaving warnings, refused sends) with no targets, so that I can see how the marketplace is doing.
+204. As an Admin, I want every decision and every read of a Conversation or identity document logged with who, what, and when, so that staff power is accountable.
+
+### Separation and operations
+
+205. As the operator, I want the product to have no path to or from EcoBuiltConnect (no import, export, identity match, shared session, store, or bucket), so that ADR `0018` holds, and a test to prove it.
+206. As the operator, I want local, staging, and production each with their own D1, R2, and secrets, and a fake payment adapter in all three, so that no live money moves at launch.
+207. As the operator, I want every clock to fire within a minute of its due time, so that 24-hour and seven-day promises are kept.
+208. As the operator, I want errors in Workers Logs, grouped by Workers Issues, so that problems are seen.
+
+## Implementation Decisions
+
+### Architecture
+
+- **One domain module** holds every rule. The web app reaches it only through TanStack Start server functions; the Worker's scheduled handler and the payment webhook route are thin adapters onto it. No rule lives in a route, component, or handler. An HTTP API over the same module waits for a native app (ADR `0017`).
+- **Ports.** The module is constructed with: the D1 database (via Drizzle), the R2 file store, **Cloudflare Images** (which draws each photo again), a **clock**, a **content reader** (Workers AI behind it), a **payment adapter**, and a **mailer** (Cloudflare Email Sending). Clock, content reader, payment adapter, and mailer have fakes; D1 and R2 are real (local in tests). There is no other port: in particular no import, export, or shared-identity port, which is how ADR `0018` is made testable.
+- **Interface shape.** Commands grouped by area (accounts, verification, jobs, quotes, engagements, conversation, reviews, reports, support and data requests, admin), each taking the acting party explicitly (Visitor, Client, Artisan, Admin, or the system) and returning either the new state or a typed refusal with a reason the UI can show. Permission checks live inside each command, never in the UI.
+- **Per-viewer queries.** Read models are projections per viewer: the Job page as Client, as Artisan, or as Admin; the Artisan home; My Jobs; Browse; an Artisan Profile; the Admin home and items. Projections enforce visibility rules (an Artisan sees the Region, not the suburb or street, before Payment; the Client never sees the Artisan Fee; the Artisan never sees the Protection Fee; a Held item exists only for its sender and the Admin; a Review of a Client is visible only to Artisans holding a Job Match, Invitation, or Quote on that Client's Job).
+- **System entry points** on the same module: run due clocks (called by the every-minute cron), run the daily Payout run (preceded by the float check), receive a payment event (called by the webhook route after signature verification), and set up the first Admin (called by a deploy-time command).
+- **Wrangler config** matches ADR `0017`: the cron becomes every minute (the scaffold's hourly cron is the rejected option); the scaffold's Queue, Analytics Engine, and inbound email handler go, since the stack uses none of them.
+- **UI stack:** shadcn on Base UI with Tailwind v4, TanStack Form, and Zod schemas shared with the domain module; pages load through the router's loaders, with no TanStack Query (ADR `0017`). All copy in English, kept in one place for later translation. Copy, colour, and type are placeholders.
+
+### Lifecycles
+
+- **Job:** Draft → Open → Hired, or Open → Closed (by the Client, a Suspension, or Account closing), or Open → Expired (14 days without a Hire) → Open again by Renew. A Held Job is not yet Open. Category, suburb, street, gas answer, and matching choice lock at posting; title, description, photos, Site type, and Preferred start lock at the first Quote.
+- **Quote:** (Held →) Sent → Hired, Declined, Withdrawn, or Expired. Revising keeps it Sent and does not restart its 14 days. Five Quotes (counting Declined, Withdrawn, and Expired) stop the Job taking Job Matches, Invitations, and Quotes; Renew counts from zero.
+- **Engagement:** created at Hire, in one of Paid, Work started, Awaiting approval, Fix requested, Disputed, Completed, Cancelled.
+
+  | From | Event | To |
+  |---|---|---|
+  | Paid | Client taps Work started, or "I've started" unanswered for 24h | Work started (Materials released) |
+  | Paid / Work started / Awaiting approval / Fix requested | Cancellation | Cancelled (before Work started: refund at once; after: Labour refund due in 72h unless the Artisan Disputes) |
+  | Work started / Fix requested | Completion (released, if Held) | Awaiting approval (seven-day clock) |
+  | Awaiting approval | Approve, or seven days of silence | Completed (Labour released) |
+  | Awaiting approval | Fix request | Fix requested (clock stopped) |
+  | Awaiting approval | Client Dispute of a named amount | Disputed (rest of Labour released at Approval or at seven days) |
+  | Fix requested / Cancellation's 72h | Artisan Dispute | Disputed |
+  | Disputed | Admin decision, or nothing left held | Completed (after a Completion) or Cancelled |
+
+  "I've started" answered "Not started" leaves it Paid; the Artisan may tap again. A Held Completion leaves the Engagement where it was until released. A Chargeback is a freeze over any state, not a state.
+- **Updated Quote:** proposed (one at a time) → withdrawn, rejected, or accepted by Payment. Only before Completion; neither line may go down.
+- **Verification check:** submitted → accepted (badge) or rejected (resubmit) → expired on its expiry date, or removed by the Admin. Gating is evaluated at Quote and at Hire only; a lapse never touches a Hired Engagement.
+- **Review:** written → Held for Pre-check → published or refused; published → removed. Hidden from the other party until both submit or the seven-day window closes.
+
+### Clocks
+
+Every clock is a row with a due time, fired by the every-minute cron; nothing uses Workflows (ADR `0017`). Clocks measure elapsed time from the event; a date a person enters is a South African calendar day, and a Quote's duration counts the start date as day 1. A Chargeback freeze pauses every clock on that Engagement. Clocks: next Batch (24h), Quote expiry (14d), Job expiry (14d, Client reminder at 13d), "I've started" answer (24h), Approval by silence (7d after a released Completion, Client reminder 24h before), Cancellation Labour refund (72h, Artisan reminder 24h before), Review window (7d, reminder 48h before close to a side that has not written), check expiry (Artisan reminders at 30 and 7 days), paused money (3 days → "delayed, not lost" notice and a system Support request). Firing is idempotent: a clock whose condition no longer holds (the Client already answered, the Engagement was Approved) does nothing.
+
+### Batches
+
+On a Job becoming Open (not Invite-only), and every 24 hours while it is Open, has fewer than five Quotes, and someone eligible is left, up to ten eligible Artisans get a Job Match and a Tell. Eligible: verified for the category (gas-registered on a gas Job), selected the Region, Available for Jobs, not Suspended, not already offered, invited, or Quoted on this Job. Order: last offer time ascending with never-offered first, ties to the older Account. The offer time is when the Batch is sent; Jobs due together are filled in posting order; after a missed cron run they are filled in the order their Batches fell due, which can differ for a Renewed Job (known and accepted, #122). Toggling availability keeps the last offer time.
+
+### Regions and suburbs
+
+Seeded data: the City's eight Development Management Districts and 778 official suburbs, each suburb in exactly one Region (a straddling suburb in the district holding most of its address points; Clifton in the district it borders), seeded once from City open data with no sync and no geocoder. Suburb search normalises case, spaces, and punctuation. The Admin may add a suburb and never move, rename, or remove one. A later city is a new seed, not a code change.
+
+### Money
+
+- **Units.** Integer cents everywhere, converted at the adapter edge. Each fee is rounded half up.
+- **Ledger.** Append-only rows, every event written in one atomic D1 batch. Entry kinds cover: Payment in (Quote or Updated Quote difference, and its Protection Fee); Release of Materials or Labour with its Artisan Fee; Refund owed, sent, failed, and paid by hand; Payout created, sent, refused, and sent back; Chargeback opened and closed with the reversed amount; Dispute split. Balances are derived, never stored: per Engagement, paid in, released, unreleased, held in Dispute, refunded; per Artisan, owed and paid; per Client, Refunds owed.
+- **Payment.** The Hired Quote plus 5% Protection Fee, or an Updated Quote's difference plus 5%. Card or Instant EFT through a checkout URL; the Hire (or the Updated Quote's acceptance) happens only on the collection-succeeded event. Cash, direct transfer, and proof of payment are not a Payment.
+- **Artisan Fee.** Taken from each Release, Materials and Labour alike: 10% if the Client Relationship had no Completed Engagement at Hire, 5% if it had one, fixed at Hire for the life of the Engagement, including its Updated Quotes. Refunded money never had one taken. Example: R6,000 Labour at 10% pays out R5,400.
+- **Releases.** Materials at Work started; Labour at Approval; extra Materials from an Updated Quote at acceptance if work has started, else at Work started; extra Labour with the Labour. In a Dispute only the named amount is held. A Release is a ledger row with no provider call.
+- **Refunds.** Never include the Protection Fee. The Artisan may refund any unreleased amount at any time. A Cancellation or a Dispute decision also refunds. A failed Refund stays owed to the Client and raises a system Support request tagged as a failed Refund; the Admin pays by manual bank transfer, recorded in the ledger. No automatic retry.
+- **Payouts.** Each Release becomes one Payout, to the current Payout account, in the next daily run, unless the Artisan's Payouts are held. Before the run the float balance is checked; if it cannot cover the run, the Admin is emailed and a banner shows on the Admin home until it can, and paused items stay unpaid with no Tell and no Receipt until the money moves. A refused or sent-back Payout leaves the Release standing, makes the money owed again (the Artisan Fee is not charged twice), and makes the Payout account not current; it is not retried to that account, and every waiting Payout goes in the first daily run after the Admin accepts a new account. A second send-back within 90 days raises a Signal. Receipts are never edited or withdrawn; a Payout that lands later gets its own Receipt.
+- **Chargeback.** Freezes every clock on the Engagement and every further Release, suspends the Client Account, and raises a Chargebacks queue item. The Admin decides the unreleased money. A Payout already sent stays the platform's loss.
+- **Receipts** are emails for each Payment and Refund to the Client and each Payout (with the Artisan Fee) to the Artisan. They are not tax invoices. A VAT-registered Artisan states a VAT number; their amounts include VAT.
+
+### Payment adapter (Stitch-shaped fake)
+
+Operations: create collection (returns a checkout URL; the result arrives by event), get collection, refund (one at a time per collection), get refund, verify bank account (may stay pending up to 120 seconds), create payout (may be refused at once for a bad check digit), get payout, get float balance, verify webhook. Events: collection succeeded or failed; refund succeeded, failed, or paused; payout succeeded, failed, sent back (`payout.reversed`), or paused; chargeback opened or closed (the reversed amount is on closed). Rules: integer cents; our id is both the idempotency key and the reference; bank-statement references at most 20 characters for the beneficiary and 12 for the payer; every movement is async; webhooks are signed, may repeat, and may arrive out of order, so event handling is idempotent and checks current state. The fake keeps its state in memory for tests, exposes controls to succeed, fail, pause, refuse, send back, open and close a Chargeback, and set the float, and in local, staging, and production serves a fake checkout page with succeed and fail buttons, until a real provider replaces it.
+
+### Content check
+
+- **Pipeline.** Everything sent (Job, Quote, Artisan Profile, names, message, Review comment, Completion note, Fix request note, Dispute reason, Report note) becomes text: photos by OCR, voice notes by speech-to-text, PDFs by text extraction. Patterns run first and refuse a phone number, email address, link, or bank account number at once. The content reader then reads for what patterns miss (spelled-out numbers, social handles, asks to deal or pay off the platform, contact cards or contact screenshots in photos, threats, slurs, harassment). Verdicts: clear, sure hit (refused with the reason; the draft is kept; counts toward nothing), or unsure (Held). A check that cannot run Holds.
+- **Context.** Before Payment, contact, the street or suburb, and off-platform payment are refused everywhere. After Payment, inside that Engagement's Conversation only, phone numbers, emails, and the address are allowed; bank account numbers, payment links, payment QR codes, and asks to pay off the platform are still refused.
+- **Certificates.** Completion evidence is read for its kind (certificate of compliance or certificate of conformity) and the Artisan's registration number from Verification. Sure match passes; unsure or mismatched Holds the Completion. The certificate is also read by the patterns and the content reader, but what they find Holds the Completion rather than refusing it, since a certificate carries long numbers of its own and cannot be rewritten. An unsure Fix request note Holds only the note: the Fix request stands and stops the clock, and the Artisan sees the note once the Admin releases it.
+- **Held** items exist only for the sender ("being checked", withdrawable) and the Admin's Pre-checks queue, with no time limit. A Held Quote takes no slot and starts no clock; a Held Job is not matched.
+- The exact patterns and prompts are implementation detail behind the content reader port.
+
+### Uploads
+
+Photos up to 10 MB (JPEG, PNG, WebP), stored in R2 as one resized copy and a thumbnail with location data stripped. After Payment only: PDFs up to 10 MB and voice notes up to 5 minutes. Verification documents are the exception: only the Admin sees them, so they take photos and PDFs at any time (a selfie and work photos are photos only), never voice notes (#118). No video and no type that can carry a script, anywhere. Counts: 10 photos on a Job; 10 photos and 5 documents on a Completion; 5 attachments per message. A file over its limit is refused before it is stored.
+
+### Signals
+
+Detection writes Signals as Admin queue items, never a sanction: a Client and Artisan who transact sharing a device, IP, or Payout-account name; an Artisan with repeated Cancellations or no-shows; a Client with repeated Disputes, Fix requests, or Chargebacks; one Account refused again and again on one Job; a new Account sharing a device or IP with a Suspended one; a second sent-back Payout within 90 days. Device and IP are recorded at sign-in and at each Payment.
+
+### Tells and reminders
+
+A Tell is an in-app notice plus one email naming the event and linking back, with no message text. It goes to the Account whose action the event needs, or whose money, Job, or standing it changes, never to the actor. "Told" means the notice row was written. Event Tells go at once; clock Tells when the clock fires. The Admin is never told, except the float email. New messages: one email per Conversation until opened, then in-app only. Nobody is told of a refused send, a Held item, a Signal, a dismissed Report, or a passed Job Match.
+
+| Event | Told |
+|---|---|
+| Job Match; Invitation (including Hire Again) | the Artisan |
+| Quote Sent, revised, or Withdrawn | the Client |
+| Quote Declined or expired | the Artisan |
+| Job expires | the Client, and Artisans with a Sent Quote |
+| Hire | the Artisan |
+| "I've started" | the Client, with the 24-hour deadline |
+| Work started | the other party |
+| "Not started" | the Artisan |
+| Completion | the Client, with the Approval time |
+| Fix request | the Artisan |
+| Approval (by the Client or by silence) | the Artisan (and the Client, by silence) |
+| Updated Quote proposed or withdrawn | the Client |
+| Updated Quote accepted or rejected | the Artisan |
+| Refund | the Client |
+| Cancellation | the other party |
+| Dispute opened or settled | the other party |
+| Dispute decided | both |
+| Completed (Review window opens); Review window closes | both |
+| Payout sent or rejected | the Artisan |
+| Chargeback | the Artisan (the Client is suspended and told) |
+| Check or Profile change accepted, rejected, removed, or expired | the Artisan |
+| Warning, Suspension, lifted, Payouts held or freed | that Account |
+| Job or Profile out of view; Review removed | its owner or author |
+| Report received | the reporter |
+| Held item released or refused | the sender, with the reason if refused |
+| Marketplace rules changed | every Account |
+| Email changed | the old address |
+| Support request answered | that Account (by email) |
+| Data request done (export sent, or erased) | that Account (by email) |
+| Payment, Refund, or Payout | Receipt to the payer or payee (by email) |
+| Admin invited | the invited address |
+| New message | the recipient: one email per Conversation until opened, then in-app only |
+
+### Accounts, sign-in, and the Admin
+
+- better-auth with Email and password plus Email codes; no social login, no SMS, no account switcher. Its admin plugin marks staff only, with impersonation and user management off. Turnstile and rate limits on sign-up, sign-in, and code requests.
+- An Admin is a staff identity, not an Account, signs in with an Email code, and holds every power (ADR `0015`). The first is written by a setup command. Every Admin decision and every read of a Conversation or identity document is written to an audit log (who, what, when).
+- Marketplace rules versions are recorded; each Account's accepted version and time are recorded, and sign-in requires the current one.
+- Closing needs no Engagement in progress. Erasure anonymises a Closed Account, keeps money records and Reviews (shown without the name), and is done only after money owed to it is settled.
+
+### Interface
+
+The layout is an Upwork-style contract page:
+- **Job page,** one page for the Job's whole life: breadcrumb, title with one status badge, category, suburb, and Site type; tabs for Overview (a highlighted Next step card with the viewer's action, its clock, form, buttons, and who is told; a Payments card after Hire with Materials and Labour as two numbered payments; Activity oldest first), Messages (the Conversation with event rows that are not speech), and Job details; a sidebar with the other party (badges for an Artisan), Money (paid in, released, not yet released, refunded, and the Protection Fee for the Client only), and the Hired Quote's start and Warranty. Before Hire, the Next step card lists the Quotes, each with Hire, Message, and Details.
+- **Artisan home:** the same highlighted card for whatever is waiting; tabs for Job Matches, Invitations, Active Jobs, and Notices; a sidebar with the Profile and Available for Jobs switch, Regions, and Payouts (a refused or sent-back Payout red).
+- **Admin item:** breadcrumb with queue counts, a highlighted Decision card with only the allowed decisions and who is told, tabs for evidence, the Conversation (logged click), and the Job, and a sidebar with the parties, the money, the Artisan record, and a timeline. A Dispute has a slider splitting the held amount; Verification has a row per check with the automatic reading and the document on a logged click.
+- Screens not drawn (Visitor pages, sign-up, My Jobs, the Admin home stream, People, Admins, Figures, audit log, Suburbs, Marketplace rules, Settings) follow the same look. Client header: Jobs, Find Artisans, Account. Artisan header: Home, Profile, Payouts, Account. Visitor header: Find Artisans, Sign up, Sign in.
+
+## Testing Decisions
+
+- **What a good test is.** It drives the domain module's public commands and queries as a real party would and asserts on outcomes a party can observe: the per-viewer projection, the typed refusal, the Tells written, the emails sent, the ledger-derived balances, and the adapter calls made. It never reaches into tables or private functions, so the schema can change without tests changing.
+- **Seam 1: the domain module** (agreed). Vitest on the Workers pool against real local D1 and R2, with a fake clock, a fake content reader, a fake payment adapter, and a fake mailer. Tests drive whole Engagements: post, match, Quote, Hire by collection event, Work started, Completion, Approval, Payouts, Reviews. Time moves only by advancing the fake clock and calling run due clocks; Payouts only by calling the daily run; money events only by the fake adapter emitting events into receive payment event.
+- **Seam 2: a few Playwright smoke tests** (agreed): sign-up, Hire (through the fake checkout page), and Approval, against the local app.
+- **Not tested on their own:** server functions, the cron handler, and the webhook route; they are thin adapters onto seam 1.
+- **Coverage at seam 1** includes at least:
+  - every Engagement transition in the table, and every refusal for a transition not allowed from the current state or by that party;
+  - every clock firing, firing late, firing after its condition lapsed (a no-op), and pausing under a Chargeback freeze;
+  - fees and rounding: Protection Fee per Payment, Artisan Fee 10% then 5% set at Hire, never refunded, half-up cents, the R300 minimum;
+  - Releases, Refunds (including a partial and a disputed one), Updated Quotes before and after Work started, Cancellations on both sides of Work started, Disputes by each party and their split, and a Chargeback before and after a Payout;
+  - Payouts refused, sent back days later, the account becoming not current, waiting Payouts sent after a new account is accepted, the second send-back Signal, Payout holds, a low float pausing the run and the three-day notice, and a failed Refund becoming a Support request;
+  - repeated and out-of-order adapter events changing nothing twice;
+  - Batch selection order, eligibility, five-Quote stop, Invitations converting Job Matches, and Renew;
+  - Content check verdicts (clear, sure, unsure, cannot run) before and after Payment, Held items invisible to others, and certificate Holds delaying the seven days;
+  - visibility in projections: Region not suburb before Payment, the address after it, fees each side never sees, Reviews hidden until both submit or seven days, Reviews of Clients only to Artisans with a Job Match, Invitation, or Quote;
+  - Verification gating at Quote and Hire, expiry, and lapses not touching Hired Engagements;
+  - Admin powers, the never-remove-the-last-Admin rule, and an audit row for every decision and every logged read;
+  - **ADR `0018`:** the module's ports are exactly the listed ones, and the Worker's bindings in every environment are exactly those ADR `0017` names; no binding, port, or outbound host exists for another product.
+- **Prior art.** None: the repository is a scaffold with no tests. The first Engagement test sets the pattern (a builder that creates verified Artisans, Clients, Jobs, and Hired Engagements through the public commands), and later tests follow it.
+
+## Out of Scope
+
+- **Later, prepared for:** native apps (and the HTTP API they bring), a second city, other languages, WhatsApp notifications and a mobile number, and a consented import of verification documents from EcoBuiltConnect.
+- **Money and tax:** a live provider signup, production money movement, tax invoices, and tax sign-off. Choosing Stitch commercially (prices, terms) is a sales conversation, not this build.
+- **Legal:** legal and privacy-policy text; whether a non-refundable 5% fee is reasonable under the Consumer Protection Act (s17); whether the platform may hold Clients' money or must register as a third-party payment provider or be SARB-authorised; what the law says about money owed to an Artisan who never gives a new Payout account.
+- **Not built:** a Worker, an Artisan Business, or a Registration Number; milestones and staged payments beyond Materials and Labour; site visits before Payment; video; paid leads or placement; Admin grants or roles; social login or SMS; a geocoder or suburb sync; automatic sanctions from Signals.
+- **Not decided here:** notification wording, the content check's exact patterns and prompts, operational playbooks, and final copy, colour, and type.
+
+## Further Notes
+
+- **Launch preconditions** (ADR `0005`), outside the build: a legal opinion that the platform may hold Clients' money, and a provider whose merchant terms let money wait until Approval, possibly weeks. If either fails, TradeSafe is the fallback and reopens rules in ADRs `0001`, `0005`, and `0019`.
+- **Small gaps this spec fills, to be confirmed in review:**
+  - The time of the daily Payout run is a single configured South African time of day.
+  - Hire is checked when the checkout opens and again when the collection succeeds; if the Quote is no longer Sent, another Quote was Hired, or the Artisan is no longer verified or is Suspended by then, the whole Payment, Protection Fee included, is refunded, because no Hire happened. The same applies to an Updated Quote withdrawn while its checkout was open.
+  - An Artisan's Refund names an amount per unreleased line (Materials before Work started, Labour, or extra Updated Quote Materials).
+  - The thresholds for "repeated" in the repeat-trouble and repeated-refusal Signals are constants in the domain module, set at implementation.
+  - The Artisan may say "I've started" only from the Hired Quote's start date; the Client may mark Work started at any time.
+  - The fake adapter implements verify bank account; the Admin still decides from the bank letter, and the reading is shown as evidence when available.
+- **Glossary.** "Tell" and "float" are defined in `GLOSSARY.md`. A bank "sends back" a Payout; "Return" and "Reversal" stay avoided.
+- Sources: ADRs `0001`–`0021`.
+
+
