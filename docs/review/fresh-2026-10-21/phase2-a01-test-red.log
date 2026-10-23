@@ -1,0 +1,25 @@
+ FAIL  test/domain/data-requests.test.ts > asking for a copy of the data > shows the Artisan Fee only to the Artisan (client)
+AssertionError: expected { …(10) } to not have property "artisanFeePercent"
+
+- Expected:
+undefined
+
++ Received:
+10
+
+ ❯ test/domain/data-requests.test.ts:212:53
+    210|       const [engagement] = data.engagements as Record<string, unknown>…
+    211|
+    212|       if (role === "client") expect(engagement).not.toHaveProperty("ar…
+       |                                                     ^
+    213|       else expect(engagement.artisanFeePercent).toBe(10);
+    214|     },
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 17 passed (18)
+   Start at  21:31:05
+   Duration  8.44s (tests 46%, transform 46%, import 8%)
+

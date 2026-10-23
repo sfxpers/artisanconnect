@@ -127,7 +127,9 @@ export async function exportOf(ctx: Context, accountId: string) {
         jobId: engagements.jobId,
         quoteId: engagements.quoteId,
         state: engagements.state,
-        artisanFeePercent: engagements.artisanFeePercent,
+        // The Artisan Fee is for the Artisan and the platform, never the
+        // Client (US161); an Account is exclusively one or the other.
+        ...(artisan ? { artisanFeePercent: engagements.artisanFeePercent } : {}),
         hiredAt: engagements.hiredAt,
         workStartedAt: engagements.workStartedAt,
         completedAt: engagements.completedAt,

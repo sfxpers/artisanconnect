@@ -1,0 +1,31 @@
+
+ RUN  v5.0.4 /Users/sfx/Developer/artisanconnect
+
+Using secrets defined in .env
+Using secrets defined in .env
+stderr | test/domain/data-requests.test.ts > erasing an Account > frees its Email, ends its password, and it never reopens
+2026-10-05T06:00:00.000Z WARN [Better Auth]: User not found
+
+ ✓ test/domain/data-requests.test.ts (18 tests) 3324ms
+ ✓ test/domain/reviews.test.ts (26 tests) 8736ms
+   ✓ the Review window (1)
+     ✓ opens when the Engagement is Completed, and both parties are told 347ms
+   ✓ the Review window's clocks (3)
+     ✓ wait while a Chargeback freezes the Engagement, then run on for the time left 318ms
+   ✓ Reviews of an Artisan (2)
+     ✓ show on the Profile to anyone, newest first, with one average and count 438ms
+     ✓ come 20 at a time 1058ms
+   ✓ Browse (1)
+     ✓ orders by Available for Jobs, then higher Review average, then more Reviews, then name 879ms
+   ✓ Reviews of a Client (1)
+     ✓ are read beside the Job Match by an Artisan offered, invited to, or Quoting on the Client's Job, and nobody else 412ms
+   ✓ Reporting a Review (2)
+     ✓ anyone signed in may Report a Review shown, and the Admin may remove it, telling its author 332ms
+     ✓ is only of a Review the reporter can read, and never of their own 305ms
+
+ Test Files  2 passed (2)
+      Tests  44 passed (44)
+   Start at  21:33:43
+   Duration  11.35s (tests 72%, transform 22%, import 6%)
+
+EXIT:0

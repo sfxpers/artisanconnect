@@ -192,6 +192,30 @@ describe("asking for a copy of the data", () => {
       refusal: { reason: "invalid" },
     });
   });
+
+  test.each(["client", "artisan"] as const)(
+    "shows the Artisan Fee only to the Artisan (%s)",
+    async (role) => {
+      const { domain, given } = await createHarness();
+      const admin = await given.admin();
+      const artisan = await given.matchableArtisan();
+      const client = await given.client();
+      const jobId = await given.openJob(client);
+      await given.hired(client, await given.sentQuote(artisan, jobId));
+      const account = role === "client" ? client : artisan;
+      await domain.dataRequests.request(account.actor, { kind: "copy" });
+      await decided(domain, admin, "send-export");
+
+      const data = await exported(domain, account);
+      const [engagement] = data.engagements as Record<string, unknown>[];
+      if (!engagement) throw new Error("No engagement in the export");
+
+      expect({
+        feePresent: "artisanFeePercent" in engagement,
+        fee: engagement.artisanFeePercent ?? null,
+      }).toEqual({ feePresent: role === "artisan", fee: role === "artisan" ? 10 : null });
+    },
+  );
 });
 
 describe("asking for erasure", () => {
